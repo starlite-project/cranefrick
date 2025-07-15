@@ -5,3 +5,7 @@ version = 4
 [[package]]
 name = "cranefrick"
 version = "0.1.0"
+
+[[package]]
+name = "cranefrick_mir"
+version = "0.1.0"
