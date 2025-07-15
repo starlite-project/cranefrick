@@ -1,0 +1,19 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "cranefrick_hir"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+logos = { version = "0.15", default-features = false, features = [
+    "export_derive",
+    "logos-derive"
+] }
+serde = { workspace = true, default-features = false, features = [
+    "alloc",
+    "derive"
+] }
+tracing.workspace = true
