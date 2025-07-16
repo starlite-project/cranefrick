@@ -137,6 +137,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "cranefrick_compiler",
  "cranefrick_hir",
  "cranelift",
  "libc",
@@ -147,6 +148,10 @@ dependencies = [
 [[package]]
 name = "cranefrick_compiler"
 version = "0.1.0"
+dependencies = [
+ "cranefrick_hir",
+ "serde",
+]
 
 [[package]]
 name = "cranefrick_hir"
@@ -156,10 +161,6 @@ dependencies = [
  "serde",
  "tracing",
 ]
-
-[[package]]
-name = "cranefrick_mir"
-version = "0.1.0"
 
 [[package]]
 name = "cranelift"

@@ -1,11 +1,15 @@
+lints.workspace = true
+
 [package]
-name = "cranefrick_compiler"
 edition.workspace = true
 license.workspace = true
+name = "cranefrick_compiler"
 rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-
-[lints]
-workspace = true
+cranefrick_hir = { path = "../hir" }
+serde = { workspace = true, default-features = false, features = [
+    "alloc",
+    "derive"
+] }

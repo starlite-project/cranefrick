@@ -1,8 +1,0 @@
-lints.workspace = true
-
-[package]
-edition.workspace = true
-license.workspace = true
-name = "cranefrick_mir"
-rust-version.workspace = true
-version.workspace = true

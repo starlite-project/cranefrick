@@ -8,6 +8,7 @@ use std::{
 
 use anyhow::{Context as _, Result};
 use clap::Parser;
+use cranefrick_compiler::{BrainMir, Compiler};
 use cranefrick_hir::{BrainHir, Parser as BrainParser};
 use cranelift::{
 	codegen::{
@@ -126,41 +127,46 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHir>) -> Result<Vec<u8>> {
 		(read_sig, read_addr)
 	};
 
-	for op in parsed {
-		match op {
-			BrainHir::IncrementCell => {
-				let ptr_value = builder.use_var(ptr);
-				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
-				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
-				let cell_value = builder.ins().iadd_imm(cell_value, 1);
-				builder.ins().store(mem_flags, cell_value, cell_addr, 0);
-			}
-			BrainHir::DecrementCell => {
-				let ptr_value = builder.use_var(ptr);
-				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
-				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
-				let cell_value = builder.ins().iadd_imm(cell_value, -1);
-				builder.ins().store(mem_flags, cell_value, cell_addr, 0);
-			}
-			BrainHir::MovePtrLeft => {
-				let ptr_value = builder.use_var(ptr);
-				let ptr_minus_one = builder.ins().iadd_imm(ptr_value, -1);
+	let mut compiler = Compiler::from_iter(parsed);
 
-				let wrapped = builder.ins().iconst(ptr_type, 30_000 - 1);
+	compiler.optimize();
+
+	for op in compiler {
+		match op {
+			BrainMir::SetCell(v) => {
+				let ptr_value = builder.use_var(ptr);
+				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
+				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
+				let value = builder.ins().iconst(types::I8, v as i64);
+				builder.ins().store(mem_flags, cell_value, value, 0);
+			}
+			BrainMir::ChangeCell(v) => {
+				let ptr_value = builder.use_var(ptr);
+				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
+				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
+				let cell_value = builder.ins().iadd_imm(cell_value, i64::from(v));
+				builder.ins().store(mem_flags, cell_value, cell_addr, 0);
+			}
+			BrainMir::MovePtr(i) if i < 0 => {
+
+				let ptr_value = builder.use_var(ptr);
+				let ptr_minus_one = builder.ins().iadd_imm(ptr_value, i );
+
+				let wrapped = builder.ins().iconst(ptr_type, 30_000 - i);
 				let ptr_value = builder.ins().select(ptr_value, ptr_minus_one, wrapped);
 
 				builder.def_var(ptr, ptr_value);
 			}
-			BrainHir::MovePtrRight => {
+			BrainMir::MovePtr(i) => {
 				let ptr_value = builder.use_var(ptr);
-				let ptr_plus_one = builder.ins().iadd_imm(ptr_value, 1);
+				let ptr_plus_one = builder.ins().iadd_imm(ptr_value, i);
 
 				let cmp = builder.ins().icmp_imm(IntCC::Equal, ptr_plus_one, 30_000);
 				let ptr_value = builder.ins().select(cmp, zero, ptr_plus_one);
 
 				builder.def_var(ptr, ptr_value);
 			}
-			BrainHir::StartLoop => {
+			BrainMir::StartLoop => {
 				let inner_block = builder.create_block();
 				let after_block = builder.create_block();
 
@@ -176,7 +182,7 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHir>) -> Result<Vec<u8>> {
 
 				stack.push((inner_block, after_block));
 			}
-			BrainHir::EndLoop => {
+			BrainMir::EndLoop => {
 				let (inner_block, after_block) = stack.pop().context("unmatched brackets")?;
 				let ptr_value = builder.use_var(ptr);
 				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
@@ -191,7 +197,7 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHir>) -> Result<Vec<u8>> {
 
 				builder.switch_to_block(after_block);
 			}
-			BrainHir::PutOutput => {
+			BrainMir::PutOutput => {
 				let ptr_value = builder.use_var(ptr);
 				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
 				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
@@ -210,7 +216,7 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHir>) -> Result<Vec<u8>> {
 				builder.seal_block(after_block);
 				builder.switch_to_block(after_block);
 			}
-			BrainHir::GetInput => {
+			BrainMir::GetInput => {
 				let ptr_value = builder.use_var(ptr);
 				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
 
