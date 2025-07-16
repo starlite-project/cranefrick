@@ -68,6 +68,8 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHir>) -> Result<Vec<u8>> {
 
 	let mut settings_builder = settings::builder();
 	settings_builder.set("opt_level", "speed_and_size")?;
+	settings_builder.set("stack_switch_model", "update_windows_tib")?;
+	settings_builder.enable("enable_pcc")?;
 
 	let isa = isa::lookup(current_triple)?.finish(settings::Flags::new(settings_builder))?;
 
