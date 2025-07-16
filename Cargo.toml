@@ -5,8 +5,17 @@ name = "cranefrick"
 rust-version.workspace = true
 version.workspace = true
 
+[dependencies]
+anyhow = "1.0.98"
+clap = { version = "4.5.41", features = ["derive"] }
+cranefrick_hir = { path = "crates/hir" }
+cranelift = { version = "0.121" }
+libc = "0.2"
+memmap2 = "0.9"
+target-lexicon = "0.13.2"
+
 [workspace]
-members = [ "crates/compiler","crates/hir", "crates/mir"]
+members = ["crates/compiler", "crates/hir", "crates/mir"]
 resolver = "3"
 
 [workspace.dependencies]
