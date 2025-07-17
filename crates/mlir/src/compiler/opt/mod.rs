@@ -20,7 +20,7 @@ where
 	let mut progress = false;
 
 	while v.len() >= N && i < v.len() - (N - 1) {
-		let window = core::array::from_fn(|index| v[i + index]);
+		let window = core::array::from_fn(|index| v[i + index].clone());
 
 		let change = pass(&window);
 

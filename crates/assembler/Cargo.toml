@@ -1,0 +1,8 @@
+lints.workspace = true
+
+[package]
+name = "cranefrick_assembler"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+version.workspace = true

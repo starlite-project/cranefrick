@@ -17,9 +17,11 @@ tracing.workspace = true
 tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 color-eyre = { version = "0.6", features = ["capture-spantrace"] }
+ron = "0.10"
+serde.workspace = true
 
 [workspace]
-members = ["crates/mlir", "crates/hlir", "crates/utils"]
+members = ["crates/mlir", "crates/hlir", "crates/utils", "crates/assembler"]
 resolver = "3"
 
 [workspace.dependencies]

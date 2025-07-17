@@ -1,6 +1,7 @@
 mod opt;
 
 use alloc::vec::Vec;
+use opt::passes::optimize_loops;
 use core::{
 	ops::{Deref, DerefMut},
 	slice,
@@ -15,6 +16,7 @@ use super::BrainMlir;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(transparent)]
+#[serde(transparent)]
 pub struct Compiler {
 	inner: Vec<BrainMlir>,
 }
@@ -61,6 +63,8 @@ impl Compiler {
 		*progress |= run_peephole_pass(&mut *self, passes::combine_instructions);
 
 		*progress |= run_peephole_pass(&mut *self, passes::clear_cell);
+
+		*progress |= optimize_loops(&mut *self);
 	}
 }
 

@@ -2,6 +2,7 @@ use std::{
 	fs,
 	io::{self, Error as IoError, prelude::*},
 	mem,
+	ops::{Deref, DerefMut},
 	path::PathBuf,
 	ptr, slice,
 };
@@ -14,11 +15,13 @@ use cranelift::{
 	codegen::{
 		Context,
 		control::ControlPlane,
-		ir::{Function, UserFuncName},
+		ir::{Function, SigRef, UserFuncName},
 		verify_function,
 	},
 	prelude::*,
 };
+use ron::ser::PrettyConfig;
+use serde::Serialize as _;
 use target_lexicon::Triple;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
@@ -107,10 +110,7 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHlir>) -> Result<Vec<u8>> {
 	let zero = builder.ins().iconst(ptr_type, 0);
 	let memory_address = builder.block_params(block)[0];
 
-	let mut stack = Vec::<(Block, Block)>::new();
-	let mem_flags = MemFlags::new();
-
-	let (write_sig, write_addr) = {
+	let write = {
 		let mut write_sig = Signature::new(isa.default_call_conv());
 		write_sig.params.push(AbiParam::new(types::I8));
 		write_sig.returns.push(AbiParam::new(ptr_type));
@@ -121,7 +121,7 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHlir>) -> Result<Vec<u8>> {
 		(write_sig, write_addr)
 	};
 
-	let (read_sig, read_addr) = {
+	let read = {
 		let mut read_sig = Signature::new(isa.default_call_conv());
 		read_sig.params.push(AbiParam::new(ptr_type));
 		read_sig.returns.push(AbiParam::new(ptr_type));
@@ -134,112 +134,23 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHlir>) -> Result<Vec<u8>> {
 
 	let mut compiler = Compiler::from_iter(parsed);
 
+	serialize_compiler(&compiler, "unoptimized")?;
+
 	compiler.optimize();
 
-	for op in compiler {
-		match op {
-			BrainMlir::SetCell(v) => {
-				let ptr_value = builder.use_var(ptr);
-				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
-				let value = builder.ins().iconst(types::I8, i64::from(v));
-				builder.ins().store(mem_flags, value, cell_addr, 0);
-			}
-			BrainMlir::ChangeCell(v) => {
-				let ptr_value = builder.use_var(ptr);
-				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
-				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
-				let cell_value = builder.ins().iadd_imm(cell_value, i64::from(v));
-				builder.ins().store(mem_flags, cell_value, cell_addr, 0);
-			}
-			BrainMlir::MovePtr(i) if i < 0 => {
-				let ptr_value = builder.use_var(ptr);
-				let ptr_minus_one = builder.ins().iadd_imm(ptr_value, i);
+	serialize_compiler(&compiler, "optimized")?;
 
-				let wrapped = builder.ins().iconst(ptr_type, 30_000 - i);
-				let ptr_value = builder.ins().select(ptr_value, ptr_minus_one, wrapped);
-
-				builder.def_var(ptr, ptr_value);
-			}
-			BrainMlir::MovePtr(i) => {
-				let ptr_value = builder.use_var(ptr);
-				let ptr_plus_one = builder.ins().iadd_imm(ptr_value, i);
-
-				let cmp = builder.ins().icmp_imm(IntCC::Equal, ptr_plus_one, 30_000);
-				let ptr_value = builder.ins().select(cmp, zero, ptr_plus_one);
-
-				builder.def_var(ptr, ptr_value);
-			}
-			BrainMlir::StartLoop => {
-				let inner_block = builder.create_block();
-				let after_block = builder.create_block();
-
-				let ptr_value = builder.use_var(ptr);
-				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
-				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
-
-				builder
-					.ins()
-					.brif(cell_value, inner_block, &[], after_block, &[]);
-
-				builder.switch_to_block(inner_block);
-
-				stack.push((inner_block, after_block));
-			}
-			BrainMlir::EndLoop => {
-				let (inner_block, after_block) = stack.pop().unwrap();
-				let ptr_value = builder.use_var(ptr);
-				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
-				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
-
-				builder
-					.ins()
-					.brif(cell_value, inner_block, &[], after_block, &[]);
-
-				builder.seal_block(inner_block);
-				builder.seal_block(after_block);
-
-				builder.switch_to_block(after_block);
-			}
-			BrainMlir::PutOutput => {
-				let ptr_value = builder.use_var(ptr);
-				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
-				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
-
-				let inst = builder
-					.ins()
-					.call_indirect(write_sig, write_addr, &[cell_value]);
-				let result = builder.inst_results(inst)[0];
-
-				let after_block = builder.create_block();
-
-				builder
-					.ins()
-					.brif(result, exit_block, &[result.into()], after_block, &[]);
-
-				builder.seal_block(after_block);
-				builder.switch_to_block(after_block);
-			}
-			BrainMlir::GetInput => {
-				let ptr_value = builder.use_var(ptr);
-				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
-
-				let inst = builder
-					.ins()
-					.call_indirect(read_sig, read_addr, &[cell_addr]);
-				let result = builder.inst_results(inst)[0];
-
-				let after_block = builder.create_block();
-
-				builder
-					.ins()
-					.brif(result, exit_block, &[result.into()], after_block, &[]);
-
-				builder.seal_block(after_block);
-				builder.switch_to_block(after_block);
-			}
-			i => panic!("unimplemented instruction {i:?}"),
-		}
+	let mut builder = OpsGenerator {
+		builder,
+		ptr_var: ptr,
+		memory_address,
+		ptr_type,
+		write,
+		read,
+		exit_block,
+		jump_stack: Vec::new(),
 	}
+	.generate(compiler);
 
 	{
 		builder.ins().return_(&[zero]);
@@ -323,6 +234,190 @@ struct Args {
 	pub file_path: PathBuf,
 }
 
+struct OpsGenerator<'a> {
+	builder: FunctionBuilder<'a>,
+	ptr_var: Variable,
+	memory_address: Value,
+	ptr_type: Type,
+	write: (SigRef, Value),
+	read: (SigRef, Value),
+	exit_block: Block,
+	jump_stack: Vec<(Block, Block)>,
+}
+
+impl<'a> OpsGenerator<'a> {
+	fn generate(mut self, compiler: Compiler) -> FunctionBuilder<'a> {
+		self.ops(&compiler);
+
+		self.builder
+	}
+
+	fn ops(&mut self, ops: &[BrainMlir]) {
+		for op in ops {
+			match op {
+				BrainMlir::SetCell(v) => self.set_cell(*v),
+				BrainMlir::ChangeCell(v) => self.change_cell(*v),
+				BrainMlir::MovePtr(v) => self.move_ptr(*v),
+				BrainMlir::DynamicLoop(ops) => self.dynamic_loop(ops),
+				BrainMlir::GetInput => self.get_input(),
+				BrainMlir::PutOutput => self.put_output(),
+				BrainMlir::JumpRight => self.jump_right(),
+				BrainMlir::JumpLeft => self.jump_left(),
+				i => unimplemented!("{i:?}"),
+			}
+		}
+	}
+
+	fn store(&mut self, value: Value) {
+		let addr = self.cell_addr();
+
+		self.ins().store(MemFlags::new(), value, addr, 0);
+	}
+
+	fn change_cell(&mut self, v: i8) {
+		let cell_value = self.cell_value();
+		let cell_value = self.ins().iadd_imm(cell_value, i64::from(v));
+		self.store(cell_value);
+	}
+
+	fn set_cell(&mut self, value: i8) {
+		let value = self.ins().iconst(types::I8, i64::from(value));
+		self.store(value);
+	}
+
+	fn move_ptr(&mut self, offset: i64) {
+		let ptr_type = self.ptr_type;
+		let value = self.ptr_value();
+		let offset_ptr = self.ins().iadd_imm(value, offset);
+
+		let ptr_value = if offset < 0 {
+			let wrapped = self.ins().iconst(ptr_type, 30_000 - offset);
+			self.ins().select(value, offset_ptr, wrapped)
+		} else {
+			let cmp = self.ins().icmp_imm(IntCC::Equal, offset_ptr, 30_000);
+			let zero = self.ins().iconst(ptr_type, 0);
+
+			self.ins().select(cmp, zero, offset_ptr)
+		};
+
+		self.builder.def_var(self.ptr_var, ptr_value);
+	}
+
+	fn jump_right(&mut self) {
+		let inner_block = self.create_block();
+		let after_block = self.create_block();
+
+		let cell_value = self.cell_value();
+
+		self.ins()
+			.brif(cell_value, inner_block, &[], after_block, &[]);
+		self.switch_to_block(inner_block);
+
+		self.jump_stack.push((inner_block, after_block));
+	}
+
+	fn jump_left(&mut self) {
+		let (inner_block, after_block) = self.jump_stack.pop().unwrap();
+		let cell_value = self.cell_value();
+
+		self.ins()
+			.brif(cell_value, inner_block, &[], after_block, &[]);
+
+		self.seal_block(inner_block);
+		self.seal_block(after_block);
+
+		self.switch_to_block(after_block);
+	}
+
+	fn dynamic_loop(&mut self, ops: &[BrainMlir]) {
+		let head = self.create_block();
+
+		let body = self.create_block();
+
+		let next = self.create_block();
+
+		self.ins().jump(head, &[]);
+
+		self.switch_to_block(head);
+
+		let cell_value = self.cell_value();
+
+		self.ins().brif(cell_value, body, &[], next, &[]);
+
+		self.switch_to_block(body);
+		self.ops(ops);
+		self.ins().jump(head, &[]);
+
+		self.switch_to_block(next);
+		self.set_cell(0);
+	}
+
+	fn ptr_value(&mut self) -> Value {
+		self.builder.use_var(self.ptr_var)
+	}
+
+	fn put_output(&mut self) {
+		let (write_sig, write_addr) = self.write;
+		let exit_block = self.exit_block;
+
+		let cell_value = self.cell_value();
+
+		let inst = self
+			.ins()
+			.call_indirect(write_sig, write_addr, &[cell_value]);
+		let result = self.inst_results(inst)[0];
+
+		let after_block = self.create_block();
+
+		self.ins()
+			.brif(result, exit_block, &[result.into()], after_block, &[]);
+
+		self.seal_block(after_block);
+		self.switch_to_block(after_block);
+	}
+
+	fn get_input(&mut self) {
+		let exit_block = self.exit_block;
+		let (read_sig, read_addr) = self.read;
+		let cell_addr = self.cell_addr();
+
+		let inst = self.ins().call_indirect(read_sig, read_addr, &[cell_addr]);
+		let result = self.inst_results(inst)[0];
+
+		let after_block = self.create_block();
+
+		self.ins()
+			.brif(result, exit_block, &[result.into()], after_block, &[]);
+		self.seal_block(after_block);
+		self.switch_to_block(after_block);
+	}
+
+	fn cell_addr(&mut self) -> Value {
+		let ptr_value = self.ptr_value();
+		let addr = self.memory_address;
+		self.ins().iadd(addr, ptr_value)
+	}
+
+	fn cell_value(&mut self) -> Value {
+		let addr = self.cell_addr();
+		self.ins().load(types::I8, MemFlags::new(), addr, 0)
+	}
+}
+
+impl<'a> Deref for OpsGenerator<'a> {
+	type Target = FunctionBuilder<'a>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.builder
+	}
+}
+
+impl<'a> DerefMut for OpsGenerator<'a> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.builder
+	}
+}
+
 fn install_tracing() {
 	fs::create_dir_all("./out").unwrap();
 
@@ -358,4 +453,19 @@ fn install_tracing() {
 		.with(fmt_layer)
 		.with(ErrorLayer::default())
 		.init();
+}
+
+fn serialize_compiler(comp: &Compiler, file_name: &str) -> Result<()> {
+	let mut output = String::new();
+	let mut serializer = ron::Serializer::with_options(
+		&mut output,
+		Some(PrettyConfig::new().separate_tuple_members(true)),
+		&ron::Options::default(),
+	)?;
+
+	comp.serialize(&mut serializer)?;
+
+	fs::write(format!("./out/{file_name}.ron"), output)?;
+
+	Ok(())
 }
