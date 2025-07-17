@@ -83,7 +83,7 @@ impl AssemblerFlags {
 		}
 	}
 
-    #[must_use]
+	#[must_use]
 	pub const fn probestack_strategy(self) -> &'static str {
 		match self.probestack_strategy {
 			ProbestackStrategy::Inline => "inline",

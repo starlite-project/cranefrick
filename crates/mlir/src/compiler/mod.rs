@@ -7,6 +7,7 @@ use core::{
 };
 
 use cranefrick_hlir::BrainHlir;
+use opt::run_loop_pass;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -62,6 +63,12 @@ impl Compiler {
 		*progress |= run_peephole_pass(&mut *self, passes::combine_instructions);
 
 		*progress |= run_peephole_pass(&mut *self, passes::clear_cell);
+
+		*progress |= run_peephole_pass(&mut *self, passes::remove_unreachable_loops);
+
+		*progress |= run_loop_pass(&mut *self, passes::remove_infinite_loops);
+
+		*progress |= run_loop_pass(&mut *self, passes::remove_empty_loops);
 	}
 }
 

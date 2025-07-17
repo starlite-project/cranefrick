@@ -9,6 +9,16 @@ use tracing::debug;
 pub use self::change::*;
 use crate::BrainMlir;
 
+pub fn run_loop_pass<F>(v: &mut Vec<BrainMlir>, pass: F) -> bool
+where
+	F: Fn(&[BrainMlir]) -> Option<Change> + Copy,
+{
+	run_peephole_pass(v, |ops: &[BrainMlir; 1]| match &ops[0] {
+		BrainMlir::DynamicLoop(i) => pass(i),
+		_ => None,
+	})
+}
+
 pub fn run_peephole_pass<F, const N: usize>(v: &mut Vec<BrainMlir>, pass: F) -> bool
 where
 	F: Fn(&[BrainMlir; N]) -> Option<Change> + Copy,
