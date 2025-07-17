@@ -8,6 +8,7 @@ use core::{
 
 use cranefrick_hlir::BrainHlir;
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 use self::opt::run_peephole_pass;
 use super::BrainMlir;
@@ -35,6 +36,7 @@ impl Compiler {
 		self.inner.push(i);
 	}
 
+	#[tracing::instrument("optimize mlir", skip(self))]
 	pub fn optimize(&mut self) {
 		let mut progress = self.optimization_pass();
 
@@ -43,10 +45,14 @@ impl Compiler {
 		}
 	}
 
+	#[tracing::instrument("run passes", skip(self))]
 	fn optimization_pass(&mut self) -> bool {
+		let starting_instruction_count = self.inner.len();
 		let mut progress = false;
 
 		self.run_all_passes(&mut progress);
+
+		info!("{starting_instruction_count} -> {}", self.inner.len());
 
 		progress
 	}

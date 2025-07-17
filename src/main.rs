@@ -6,8 +6,8 @@ use std::{
 	ptr, slice,
 };
 
-use anyhow::{Context as _, Result};
 use clap::Parser;
+use color_eyre::Result;
 use cranefrick_hlir::{BrainHlir, Parser as BrainParser};
 use cranefrick_mlir::{BrainMlir, Compiler};
 use cranelift::{
@@ -20,8 +20,17 @@ use cranelift::{
 	prelude::*,
 };
 use target_lexicon::Triple;
+use tracing_error::ErrorLayer;
+use tracing_subscriber::{
+	EnvFilter,
+	fmt::{self, format::FmtSpan},
+	prelude::*,
+};
 
 fn main() -> Result<()> {
+	install_tracing();
+	color_eyre::install()?;
+
 	let args = match Args::try_parse() {
 		Ok(a) => a,
 		Err(e) => {
@@ -29,10 +38,6 @@ fn main() -> Result<()> {
 			return Ok(());
 		}
 	};
-
-	_ = fs::remove_dir_all("./out");
-
-	fs::create_dir_all("./out")?;
 
 	let raw_data = fs::read_to_string(args.file_path)?;
 
@@ -182,7 +187,7 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHlir>) -> Result<Vec<u8>> {
 				stack.push((inner_block, after_block));
 			}
 			BrainMlir::EndLoop => {
-				let (inner_block, after_block) = stack.pop().context("unmatched brackets")?;
+				let (inner_block, after_block) = stack.pop().unwrap();
 				let ptr_value = builder.use_var(ptr);
 				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
 				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
@@ -316,4 +321,41 @@ unsafe extern "C" fn read(buf: *mut u8) -> *mut IoError {
 #[command(version, about, long_about = None)]
 struct Args {
 	pub file_path: PathBuf,
+}
+
+fn install_tracing() {
+	fs::create_dir_all("./out").unwrap();
+
+	let log_file = fs::OpenOptions::new()
+		.create(true)
+		.write(true)
+		.truncate(true)
+		.open("./out/output.log")
+		.expect("failed to create log file");
+
+	let json_log_file = fs::OpenOptions::new()
+		.create(true)
+		.truncate(true)
+		.write(true)
+		.open("./out/output.json")
+		.expect("failed to create json log file");
+
+	let file_layer = fmt::layer().with_ansi(false).with_writer(log_file);
+
+	let filter_layer = EnvFilter::new("info");
+	let fmt_layer = fmt::layer().with_target(false).with_filter(filter_layer);
+
+	let json_file_layer = fmt::layer()
+		.with_ansi(false)
+		.json()
+		.flatten_event(true)
+		.with_span_events(FmtSpan::FULL)
+		.with_writer(json_log_file);
+
+	tracing_subscriber::registry()
+		.with(json_file_layer)
+		.with(file_layer)
+		.with(fmt_layer)
+		.with(ErrorLayer::default())
+		.init();
 }
