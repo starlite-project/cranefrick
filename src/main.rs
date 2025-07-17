@@ -41,18 +41,6 @@ fn main() -> Result<()> {
 
 	serialize_compiler(&compiler, &args.output_path, "optimized")?;
 
-	// let assembler_flags = if let Some(path)  =&args.flags_path {
-	// 	// fs::read(path)
-	// 	match fs::read(path) {
-	// 		Ok(e) => e,
-	// 		Err(e) => {
-	// 			warn!("error occurred reading flags file: {e}");
-	// 			warn!("resorting to default flags");
-
-	// 		}
-	// 	}
-	// }
-
 	let flags = get_flags(args.flags_path.as_deref());
 
 	let module = AssembledModule::assemble(compiler, flags, &args.output_path)?;
