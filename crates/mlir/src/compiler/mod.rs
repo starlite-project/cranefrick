@@ -7,11 +7,10 @@ use core::{
 };
 
 use cranefrick_hlir::BrainHlir;
-use opt::run_loop_pass;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use self::opt::{passes, run_peephole_pass};
+use self::opt::{passes, passes::remove_early_loops, run_loop_pass, run_peephole_pass};
 use super::BrainMlir;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,6 +68,8 @@ impl Compiler {
 		*progress |= run_loop_pass(&mut *self, passes::remove_infinite_loops);
 
 		*progress |= run_loop_pass(&mut *self, passes::remove_empty_loops);
+
+		*progress |= remove_early_loops(&mut *self);
 	}
 }
 

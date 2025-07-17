@@ -1,5 +1,7 @@
 #![allow(clippy::trivially_copy_pass_by_ref)]
 
+use alloc::vec::Vec;
+
 use super::Change;
 use crate::BrainMlir;
 
@@ -53,4 +55,13 @@ pub const fn remove_infinite_loops(ops: &[BrainMlir]) -> Option<Change> {
 
 pub fn remove_empty_loops(ops: &[BrainMlir]) -> Option<Change> {
 	ops.is_empty().then_some(Change::remove())
+}
+
+pub fn remove_early_loops(ops: &mut Vec<BrainMlir>) -> bool {
+	if matches!(ops.first(), Some(BrainMlir::DynamicLoop(..))) {
+		ops.remove(0);
+		true
+	} else {
+		false
+	}
 }
