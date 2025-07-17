@@ -141,9 +141,8 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHlir>) -> Result<Vec<u8>> {
 			BrainMlir::SetCell(v) => {
 				let ptr_value = builder.use_var(ptr);
 				let cell_addr = builder.ins().iadd(memory_address, ptr_value);
-				let cell_value = builder.ins().load(types::I8, mem_flags, cell_addr, 0);
-				let value = builder.ins().iconst(types::I8, v as i64);
-				builder.ins().store(mem_flags, cell_value, value, 0);
+				let value = builder.ins().iconst(types::I8, i64::from(v));
+				builder.ins().store(mem_flags, value, cell_addr, 0);
 			}
 			BrainMlir::ChangeCell(v) => {
 				let ptr_value = builder.use_var(ptr);
@@ -238,6 +237,7 @@ fn generate_ir(parsed: impl IntoIterator<Item = BrainHlir>) -> Result<Vec<u8>> {
 				builder.seal_block(after_block);
 				builder.switch_to_block(after_block);
 			}
+			i => panic!("unimplemented instruction {i:?}"),
 		}
 	}
 

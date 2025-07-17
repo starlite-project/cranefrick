@@ -18,3 +18,14 @@ pub fn combine_instructions(ops: &[BrainMlir; 2]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub const fn clear_cell(ops: &[BrainMlir; 3]) -> Option<Change> {
+	match ops {
+		[
+			BrainMlir::StartLoop,
+			BrainMlir::ChangeCell(-1),
+			BrainMlir::EndLoop,
+		] => Some(Change::replace(BrainMlir::SetCell(0))),
+		_ => None,
+	}
+}

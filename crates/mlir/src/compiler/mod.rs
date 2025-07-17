@@ -10,7 +10,7 @@ use cranefrick_hlir::BrainHlir;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use self::opt::run_peephole_pass;
+use self::opt::{passes, run_peephole_pass};
 use super::BrainMlir;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -58,7 +58,9 @@ impl Compiler {
 	}
 
 	fn run_all_passes(&mut self, progress: &mut bool) {
-		*progress |= run_peephole_pass(&mut *self, self::opt::passes::combine_instructions);
+		*progress |= run_peephole_pass(&mut *self, passes::combine_instructions);
+
+		*progress |= run_peephole_pass(&mut *self, passes::clear_cell);
 	}
 }
 

@@ -12,6 +12,7 @@ pub use self::compiler::*;
 
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum BrainMlir {
 	ChangeCell(i8),
 	MovePtr(i64),
