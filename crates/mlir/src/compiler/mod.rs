@@ -39,15 +39,18 @@ impl Compiler {
 
 	#[tracing::instrument("optimize mlir", skip(self))]
 	pub fn optimize(&mut self) {
-		let mut progress = self.optimization_pass();
+		let mut iteration = 0usize;
+
+		let mut progress = self.optimization_pass(iteration);
 
 		while progress {
-			progress = self.optimization_pass();
+			iteration += 1;
+			progress = self.optimization_pass(iteration);
 		}
 	}
 
 	#[tracing::instrument("run passes", skip(self))]
-	fn optimization_pass(&mut self) -> bool {
+	fn optimization_pass(&mut self, iteration: usize) -> bool {
 		let starting_instruction_count = self.inner.len();
 		let mut progress = false;
 
@@ -59,17 +62,28 @@ impl Compiler {
 	}
 
 	fn run_all_passes(&mut self, progress: &mut bool) {
+		self.pass_info("combine instructions");
 		*progress |= run_peephole_pass(&mut *self, passes::combine_instructions);
 
+		self.pass_info("optimize clear cell instructions");
 		*progress |= run_peephole_pass(&mut *self, passes::clear_cell);
 
+		self.pass_info("remove unreachable loops");
 		*progress |= run_peephole_pass(&mut *self, passes::remove_unreachable_loops);
 
+		self.pass_info("remove infinite loops");
 		*progress |= run_loop_pass(&mut *self, passes::remove_infinite_loops);
 
+		self.pass_info("remove empty loops");
 		*progress |= run_loop_pass(&mut *self, passes::remove_empty_loops);
 
+		self.pass_info("remove useless beginning loops");
 		*progress |= remove_early_loops(&mut *self);
+	}
+
+	fn pass_info(&self, pass: &str) {
+		let op_count = self.inner.len();
+		info!("running pass {pass} with {op_count} instructions");
 	}
 }
 

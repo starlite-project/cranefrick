@@ -10,7 +10,7 @@ use cranefrick_hlir::Parser as BrainParser;
 use cranefrick_mlir::Compiler;
 use ron::ser::PrettyConfig;
 use serde::Serialize as _;
-use tracing::warn;
+use tracing::{info, warn};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
 	EnvFilter,
@@ -44,6 +44,8 @@ fn main() -> Result<()> {
 	let flags = get_flags(args.flags_path.as_deref());
 
 	let module = AssembledModule::assemble(compiler, flags, &args.output_path)?;
+
+	info!("running code");
 
 	module.execute()?;
 
