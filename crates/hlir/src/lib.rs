@@ -35,7 +35,7 @@ impl<'source> Parser<'source> {
 
 	pub fn parse<I>(self) -> Result<I, ParseError>
 	where
-		I: Default + Extend<BrainHir>,
+		I: Default + Extend<BrainHlir>,
 	{
 		info!("scanning {} chars", self.inner.source().len());
 
@@ -45,18 +45,18 @@ impl<'source> Parser<'source> {
 
 		for (i, op) in self.inner.filter_map(Result::ok).enumerate() {
 			let repr = match op {
-				InnerOpCode::MoveLeft => BrainHir::MovePtrLeft,
-				InnerOpCode::MoveRight => BrainHir::MovePtrRight,
-				InnerOpCode::Increment => BrainHir::IncrementCell,
-				InnerOpCode::Decrement => BrainHir::DecrementCell,
-				InnerOpCode::Input => BrainHir::GetInput,
-				InnerOpCode::Output => BrainHir::PutOutput,
+				InnerOpCode::MoveLeft => BrainHlir::MovePtrLeft,
+				InnerOpCode::MoveRight => BrainHlir::MovePtrRight,
+				InnerOpCode::Increment => BrainHlir::IncrementCell,
+				InnerOpCode::Decrement => BrainHlir::DecrementCell,
+				InnerOpCode::Input => BrainHlir::GetInput,
+				InnerOpCode::Output => BrainHlir::PutOutput,
 				InnerOpCode::StartLoop => {
 					bracket_stack.push(i);
-					BrainHir::StartLoop
+					BrainHlir::StartLoop
 				}
 				InnerOpCode::EndLoop => match bracket_stack.pop() {
-					Some(_) => BrainHir::EndLoop,
+					Some(_) => BrainHlir::EndLoop,
 					None => return Err(ParseError(i)),
 				},
 			};
@@ -70,7 +70,7 @@ impl<'source> Parser<'source> {
 
 /// High-level intermediate representation. 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum BrainHir {
+pub enum BrainHlir {
 	/// Move the pointer left (<).
 	MovePtrLeft,
 	/// Move the pointer right (>).
@@ -89,7 +89,7 @@ pub enum BrainHir {
 	EndLoop,
 }
 
-impl Display for BrainHir {
+impl Display for BrainHlir {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.write_char(match *self {
 			Self::MovePtrLeft => '<',
@@ -121,13 +121,13 @@ impl CoreError for ParseError {}
 mod tests {
 	use alloc::vec::Vec;
 
-	use super::{BrainHir, ParseError, Parser};
+	use super::{BrainHlir, ParseError, Parser};
 
 	#[test]
 	fn basic_inc() -> Result<(), ParseError> {
 		let parsed = Parser::new("+++++").parse::<Vec<_>>()?;
 
-		assert_eq!(parsed, [BrainHir::IncrementCell; 5]);
+		assert_eq!(parsed, [BrainHlir::IncrementCell; 5]);
 
 		Ok(())
 	}

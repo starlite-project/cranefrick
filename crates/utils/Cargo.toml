@@ -1,0 +1,12 @@
+lints.workspace = true
+
+[package]
+name = "cranefrick_utils"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[features]
+alloc = []
+insert_or_push = ["alloc"]

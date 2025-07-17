@@ -3,13 +3,17 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "cranefrick_compiler"
+name = "cranefrick_hlir"
 rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-cranefrick_hir = { path = "../hir" }
+logos = { version = "0.15", default-features = false, features = [
+    "export_derive",
+    "logos-derive"
+] }
 serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"
 ] }
+tracing.workspace = true

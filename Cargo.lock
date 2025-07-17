@@ -137,8 +137,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "cranefrick_compiler",
- "cranefrick_hir",
+ "cranefrick_hlir",
+ "cranefrick_mlir",
  "cranelift",
  "libc",
  "memmap2",
@@ -146,21 +146,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "cranefrick_compiler"
-version = "0.1.0"
-dependencies = [
- "cranefrick_hir",
- "serde",
-]
-
-[[package]]
-name = "cranefrick_hir"
+name = "cranefrick_hlir"
 version = "0.1.0"
 dependencies = [
  "logos",
  "serde",
  "tracing",
 ]
+
+[[package]]
+name = "cranefrick_mlir"
+version = "0.1.0"
+dependencies = [
+ "cranefrick_hlir",
+ "cranefrick_utils",
+ "serde",
+]
+
+[[package]]
+name = "cranefrick_utils"
+version = "0.1.0"
 
 [[package]]
 name = "cranelift"

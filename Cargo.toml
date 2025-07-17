@@ -8,20 +8,21 @@ version.workspace = true
 [dependencies]
 anyhow = "1.0.98"
 clap = { version = "4.5.41", features = ["derive"] }
-cranefrick_compiler = { path = "crates/compiler" }
-cranefrick_hir = { path = "crates/hir" }
+cranefrick_mlir = { path = "crates/mlir" }
+cranefrick_hlir = { path = "crates/hlir" }
 cranelift = { version = "0.121" }
 libc = "0.2"
 memmap2 = "0.9"
 target-lexicon = "0.13.2"
 
 [workspace]
-members = ["crates/compiler", "crates/hir"]
+members = ["crates/mlir", "crates/hlir", "crates/utils"]
 resolver = "3"
 
 [workspace.dependencies]
 serde = { version = "1", default-features = false }
 tracing = "0.1"
+cranefrick_utils = { path = "crates/utils" }
 
 [workspace.lints.rust]
 elided_lifetimes_in_paths = "warn"
