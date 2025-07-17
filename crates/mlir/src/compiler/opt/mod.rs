@@ -3,9 +3,6 @@ pub mod passes;
 
 use alloc::vec::Vec;
 
-use cranefrick_utils::ShortName;
-use tracing::debug;
-
 pub use self::change::*;
 use crate::BrainMlir;
 
@@ -23,8 +20,6 @@ pub fn run_peephole_pass<F, const N: usize>(v: &mut Vec<BrainMlir>, pass: F) -> 
 where
 	F: Fn(&[BrainMlir; N]) -> Option<Change> + Copy,
 {
-	debug!("running pass {}", ShortName::of::<F>());
-
 	let mut i = 0;
 
 	let mut progress = false;

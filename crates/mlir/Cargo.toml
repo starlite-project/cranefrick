@@ -13,8 +13,5 @@ serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive",
 ] }
-cranefrick_utils = { workspace = true, features = [
-    "insert_or_push",
-    "shortname",
-] }
+cranefrick_utils = { workspace = true, features = ["insert_or_push"] }
 tracing.workspace = true
