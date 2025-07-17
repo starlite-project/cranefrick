@@ -101,7 +101,7 @@ impl Extend<BrainHlir> for Compiler {
 	{
 		let old = iter.into_iter().collect::<Vec<_>>();
 
-		self.extend(fix_loops(&old))
+		self.extend(fix_loops(&old));
 	}
 }
 
@@ -185,7 +185,7 @@ fn fix_loops(program: &[BrainHlir]) -> Vec<BrainMlir> {
 					if matches!(loop_stack, 0) {
 						current_stack.push(BrainMlir::dynamic_loop({
 							let s = &program[loop_start + 1..i];
-							fix_loops(&s)
+							fix_loops(s)
 						}));
 					}
 				}
