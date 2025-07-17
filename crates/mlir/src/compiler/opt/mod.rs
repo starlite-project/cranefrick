@@ -38,5 +38,11 @@ where
 		}
 	}
 
+	for i in v {
+		if let BrainMlir::DynamicLoop(instrs) = i {
+			progress |= run_peephole_pass::<_, N>(instrs, pass);
+		}
+	}
+
 	progress
 }

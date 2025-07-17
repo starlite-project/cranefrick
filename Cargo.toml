@@ -9,10 +9,7 @@ version.workspace = true
 clap = { version = "4.5.41", features = ["derive"] }
 cranefrick_mlir = { path = "crates/mlir" }
 cranefrick_hlir = { path = "crates/hlir" }
-cranelift = { version = "0.121" }
-libc = "0.2"
-memmap2 = "0.9"
-target-lexicon = "0.13.2"
+cranefrick_assembler = { path = "crates/assembler" }
 tracing.workspace = true
 tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }

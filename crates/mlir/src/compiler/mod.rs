@@ -1,7 +1,6 @@
 mod opt;
 
 use alloc::vec::Vec;
-use opt::passes::optimize_loops;
 use core::{
 	ops::{Deref, DerefMut},
 	slice,
@@ -63,8 +62,6 @@ impl Compiler {
 		*progress |= run_peephole_pass(&mut *self, passes::combine_instructions);
 
 		*progress |= run_peephole_pass(&mut *self, passes::clear_cell);
-
-		*progress |= optimize_loops(&mut *self);
 	}
 }
 
@@ -102,7 +99,9 @@ impl Extend<BrainHlir> for Compiler {
 	where
 		T: IntoIterator<Item = BrainHlir>,
 	{
-		self.extend(iter.into_iter().map(BrainMlir::from));
+		let old = iter.into_iter().collect::<Vec<_>>();
+
+		self.extend(fix_loops(&old))
 	}
 }
 
@@ -119,7 +118,11 @@ impl FromIterator<BrainMlir> for Compiler {
 
 impl FromIterator<BrainHlir> for Compiler {
 	fn from_iter<T: IntoIterator<Item = BrainHlir>>(iter: T) -> Self {
-		iter.into_iter().map(BrainMlir::from).collect::<Self>()
+		let old = iter.into_iter().collect::<Vec<_>>();
+
+		Self {
+			inner: fix_loops(&old),
+		}
 	}
 }
 
@@ -148,4 +151,48 @@ impl IntoIterator for Compiler {
 	fn into_iter(self) -> Self::IntoIter {
 		self.inner.into_iter()
 	}
+}
+
+fn fix_loops(program: &[BrainHlir]) -> Vec<BrainMlir> {
+	let mut current_stack = Vec::new();
+	let mut loop_stack = 0usize;
+	let mut loop_start = 0usize;
+
+	for (i, op) in program.iter().enumerate() {
+		if matches!(loop_stack, 0) {
+			if let Some(instr) = match op {
+				BrainHlir::EndLoop => unreachable!(),
+				BrainHlir::StartLoop => {
+					loop_start = i;
+					loop_stack += 1;
+					None
+				}
+				// i => Some(i.clone()),
+				BrainHlir::IncrementCell => Some(BrainMlir::change_cell(1)),
+				BrainHlir::DecrementCell => Some(BrainMlir::change_cell(-1)),
+				BrainHlir::MovePtrLeft => Some(BrainMlir::move_ptr(-1)),
+				BrainHlir::MovePtrRight => Some(BrainMlir::move_ptr(1)),
+				BrainHlir::GetInput => Some(BrainMlir::get_input()),
+				BrainHlir::PutOutput => Some(BrainMlir::put_output()),
+			} {
+				current_stack.push(instr);
+			}
+		} else {
+			match op {
+				BrainHlir::StartLoop => loop_stack += 1,
+				BrainHlir::EndLoop => {
+					loop_stack -= 1;
+					if matches!(loop_stack, 0) {
+						current_stack.push(BrainMlir::dynamic_loop({
+							let s = &program[loop_start + 1..i];
+							fix_loops(&s)
+						}));
+					}
+				}
+				_ => {}
+			}
+		}
+	}
+
+	current_stack
 }
