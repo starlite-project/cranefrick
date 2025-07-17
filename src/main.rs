@@ -5,11 +5,12 @@ use std::{
 
 use clap::Parser;
 use color_eyre::Result;
-use cranefrick_assembler::AssembledModule;
+use cranefrick_assembler::{AssembledModule, AssemblerFlags};
 use cranefrick_hlir::Parser as BrainParser;
 use cranefrick_mlir::Compiler;
 use ron::ser::PrettyConfig;
 use serde::Serialize as _;
+use tracing::warn;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
 	EnvFilter,
@@ -40,7 +41,21 @@ fn main() -> Result<()> {
 
 	serialize_compiler(&compiler, &args.output_path, "optimized")?;
 
-	let module = AssembledModule::assemble(compiler, &args.output_path)?;
+	// let assembler_flags = if let Some(path)  =&args.flags_path {
+	// 	// fs::read(path)
+	// 	match fs::read(path) {
+	// 		Ok(e) => e,
+	// 		Err(e) => {
+	// 			warn!("error occurred reading flags file: {e}");
+	// 			warn!("resorting to default flags");
+
+	// 		}
+	// 	}
+	// }
+
+	let flags = get_flags(args.flags_path.as_deref());
+
+	let module = AssembledModule::assemble(compiler, flags, &args.output_path)?;
 
 	module.execute()?;
 
@@ -53,6 +68,8 @@ struct Args {
 	pub file_path: PathBuf,
 	#[arg(short, long)]
 	pub output_path: PathBuf,
+	#[arg(short, long)]
+	pub flags_path: Option<PathBuf>,
 }
 
 fn install_tracing(folder_path: &Path) {
@@ -108,4 +125,28 @@ fn serialize_compiler(comp: &Compiler, folder_path: &Path, file_name: &str) -> R
 	fs::write(folder_path.join(format!("{file_name}.ron")), output)?;
 
 	Ok(())
+}
+
+fn get_flags(path: Option<&Path>) -> AssemblerFlags {
+	if let Some(path) = path {
+		let data = match fs::read(path) {
+			Ok(data) => data,
+			Err(e) => {
+				warn!("error reading flags file: {e}");
+				warn!("resorting to default flags");
+				return AssemblerFlags::default();
+			}
+		};
+
+		match toml::from_slice(&data) {
+			Ok(flags) => flags,
+			Err(e) => {
+				warn!("error deserializing flags: {e}");
+				warn!("resorting to default flags");
+				AssemblerFlags::default()
+			}
+		}
+	} else {
+		AssemblerFlags::default()
+	}
 }

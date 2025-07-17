@@ -10,3 +10,4 @@ version.workspace = true
 [dependencies]
 cranelift = { version = "0.121.1", features = ["jit", "module", "native"] }
 cranefrick_mlir = { path = "../mlir" }
+serde = { workspace = true, features = ["derive", "std"] }

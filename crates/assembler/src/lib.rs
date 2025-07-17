@@ -1,5 +1,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
+mod flags;
+
 use std::{
 	error::Error as StdError,
 	fmt::{Debug, Display, Formatter, Result as FmtResult},
@@ -18,22 +20,22 @@ use cranelift::{
 	prelude::*,
 };
 
+pub use self::flags::*;
+
 pub struct AssembledModule {
 	module: Option<JITModule>,
 	main: FuncId,
 }
 
 impl AssembledModule {
-	pub fn assemble(compiler: Compiler, output_path: &Path) -> Result<Self, AssemblyError> {
-		let mut flag_builder = settings::builder();
-
-		flag_builder.set("opt_level", "speed_and_size")?;
-		flag_builder.set("stack_switch_model", "update_windows_tib")?;
-		flag_builder.enable("enable_pcc")?;
-
+	pub fn assemble(
+		compiler: Compiler,
+		flags: AssemblerFlags,
+		output_path: &Path,
+	) -> Result<Self, AssemblyError> {
 		let isa = cranelift::native::builder()
 			.map_err(AssemblyError::Custom)?
-			.finish(settings::Flags::new(flag_builder))?;
+			.finish(setup_flags(flags)?)?;
 
 		let mut jit_builder =
 			JITBuilder::with_isa(isa.clone(), cranelift::module::default_libcall_names());
@@ -76,12 +78,6 @@ impl AssembledModule {
 				let mut write_sig = module.make_signature();
 				write_sig.params.push(AbiParam::new(types::I8));
 				write_sig.returns.push(AbiParam::new(ptr_type));
-				// let write_sig = builder.import_signature(write_sig);
-
-				// let write_addr = write as *const () as i64;
-				// let write_addr = builder.ins().iconst(ptr_type, write_addr);
-				// (write_sig, write_addr)
-
 				module.declare_function("write", Linkage::Import, &write_sig)?
 			};
 
@@ -89,11 +85,6 @@ impl AssembledModule {
 				let mut read_sig = module.make_signature();
 				read_sig.params.push(AbiParam::new(ptr_type));
 				read_sig.returns.push(AbiParam::new(ptr_type));
-				// let read_sig = builder.import_signature(read_sig);
-
-				// let read_addr = read as *const () as i64;
-				// let read_addr = builder.ins().iconst(ptr_type, read_addr);
-				// (read_sig, read_addr)
 				module.declare_function("read", Linkage::Import, &read_sig)?
 			};
 
@@ -268,6 +259,7 @@ impl<'a> Assembler<'a> {
 		let cell_value = self.current_cell_value();
 
 		let inst = self.ins().call(write, &[cell_value]);
+
 		let result = self.inst_results(inst)[0];
 
 		let after_block = self.create_block();
@@ -433,4 +425,89 @@ unsafe extern "C" fn read(buf: *mut u8) -> *mut IoError {
 
 		return ptr::null_mut();
 	}
+}
+
+fn setup_flags(flags: AssemblerFlags) -> settings::SetResult<settings::Flags> {
+	let mut flag_builder = settings::builder();
+	flag_builder.enable("enable_pcc")?;
+	flag_builder.enable("enable_pinned_reg")?;
+
+	flag_builder.set("regalloc_algorithm", flags.regalloc_algorithm())?;
+	flag_builder.set("opt_level", flags.opt_level())?;
+	flag_builder.set("tls_model", flags.tls_model())?;
+	flag_builder.set("libcall_call_conv", flags.libcall_call_conv())?;
+	flag_builder.set("probestack_strategy", flags.probestack_strategy())?;
+
+	flag_builder.set(
+		"probestack_size_log2",
+		&flags.probestack_size_log2.to_string(),
+	)?;
+
+	flag_builder.set(
+		"bb_padding_log2_minus_one",
+		&flags.bb_padding_log2_minus_one.to_string(),
+	)?;
+
+	flag_builder.set(
+		"log2_min_function_alignment",
+		&flags.log2_min_function_alignment.to_string(),
+	)?;
+
+	let get_bool = |b| if b { "true" } else { "false" };
+
+	flag_builder.set("regalloc_checker", get_bool(flags.regalloc_checker))?;
+	flag_builder.set(
+		"regalloc_verbose_logs",
+		get_bool(flags.regalloc_verbose_logs),
+	)?;
+	flag_builder.set(
+		"enable_alias_analysis",
+		get_bool(flags.enable_alias_analysis),
+	)?;
+	flag_builder.set("enable_verifier", get_bool(flags.enable_verifier))?;
+	flag_builder.set("is_pic", get_bool(flags.is_pic))?;
+	flag_builder.set(
+		"use_colocated_libcalls",
+		get_bool(flags.use_colocated_libcalls),
+	)?;
+	flag_builder.set("enable_float", get_bool(flags.enable_float))?;
+	flag_builder.set(
+		"enable_nan_canonicalization",
+		get_bool(flags.enable_nan_canonicalization),
+	)?;
+	flag_builder.set("enable_atomics", get_bool(flags.enable_atomics))?;
+	flag_builder.set("enable_safepoints", get_bool(flags.enable_safepoints))?;
+	flag_builder.set(
+		"enable_llvm_abi_extensions",
+		get_bool(flags.enable_llvm_abi_extensions),
+	)?;
+	flag_builder.set(
+		"enable_multi_ret_implicit_sret",
+		get_bool(flags.enable_multi_ret_implicit_sret),
+	)?;
+	flag_builder.set("unwind_info", get_bool(flags.unwind_info))?;
+	flag_builder.set(
+		"preserve_frame_pointers",
+		get_bool(flags.preserve_frame_pointers),
+	)?;
+	flag_builder.set(
+		"machine_code_cfg_info",
+		get_bool(flags.machine_code_cfg_info),
+	)?;
+	flag_builder.set("enable_probestack", get_bool(flags.enable_probestack))?;
+	flag_builder.set("enable_jump_tables", get_bool(flags.enable_jump_tables))?;
+	flag_builder.set(
+		"enable_heap_access_spectre_mitigation",
+		get_bool(flags.enable_heap_access_spectre_mitigation),
+	)?;
+	flag_builder.set(
+		"enable_table_access_spectre_mitigation",
+		get_bool(flags.enable_table_access_spectre_mitigation),
+	)?;
+	flag_builder.set(
+		"enable_incremental_compilation_cache_checks",
+		get_bool(flags.enable_incremental_compilation_cache_checks),
+	)?;
+
+	Ok(settings::Flags::new(flag_builder))
 }

@@ -15,6 +15,7 @@ tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 color-eyre = { version = "0.6", features = ["capture-spantrace"] }
 ron = "0.10"
+toml = { version = "0.9", features = ["serde"] }
 serde.workspace = true
 
 [workspace]

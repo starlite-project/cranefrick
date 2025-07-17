@@ -1,0 +1,10 @@
+opt_level = "speed_and_size"
+stack_switch_mode = "update_windows_tib"
+regalloc_checker = true
+use_colocated_libcalls = true
+unwind_info = true
+preserve_frame_pointers = true
+machine_code_cfg_info = true
+enable_probestack = true
+enable_jump_tables = true
+probestack_strategy = "inline"
