@@ -33,16 +33,24 @@ pub fn optimize_sets(ops: &[BrainMlir; 2]) -> Option<Change> {
 		[l @ BrainMlir::DynamicLoop(..), BrainMlir::ChangeCell(i1)] => {
 			Some(Change::swap([l.clone(), BrainMlir::set_cell(*i1 as u8)]))
 		}
+		[BrainMlir::ChangeCell(..), BrainMlir::SetCell(..)] => Some(Change::remove_offset(0)),
 		_ => None,
 	}
 }
 
-pub const fn clear_cell(ops: &[BrainMlir; 1]) -> Option<Change> {
+// pub const fn clear_cell(ops: &[BrainMlir; 1]) -> Option<Change> {
+// 	match ops {
+// 		[BrainMlir::DynamicLoop(v)] => match v.as_slice() {
+// 			[BrainMlir::ChangeCell(-1)] => Some(Change::replace(BrainMlir::set_cell(0))),
+// 			_ => None,
+// 		},
+// 		_ => None,
+// 	}
+// }
+
+pub const fn clear_cell(ops: &[BrainMlir]) -> Option<Change> {
 	match ops {
-		[BrainMlir::DynamicLoop(v)] => match v.as_slice() {
-			[BrainMlir::ChangeCell(-1)] => Some(Change::replace(BrainMlir::set_cell(0))),
-			_ => None,
-		},
+		[BrainMlir::ChangeCell(..)] => Some(Change::replace(BrainMlir::set_cell(0))),
 		_ => None,
 	}
 }
@@ -79,13 +87,16 @@ pub fn remove_early_loops(ops: &mut Vec<BrainMlir>) -> bool {
 }
 
 pub fn unroll_basic_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
-	extern crate std;
-
 	match ops {
 		[BrainMlir::ChangeCell(v), BrainMlir::DynamicLoop(l)]
-			if *v >= 1 && matches!(calculate_ptr_movement(l), Some(0)) =>
+			if *v >= 1
+				&& matches!(calculate_ptr_movement(l), Some(0))
+				&& matches!(
+					l.as_slice(),
+					[.., BrainMlir::ChangeCell(-1)] | [BrainMlir::ChangeCell(-1), ..]
+				) =>
 		{
-			if !matches!(l.as_slice(), [.., BrainMlir::ChangeCell(-1)]) {
+			if l.iter().any(|op| matches!(op, BrainMlir::DynamicLoop(..))) {
 				return None;
 			}
 
@@ -98,6 +109,52 @@ pub fn unroll_basic_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
 			out.insert(0, BrainMlir::change_cell(*v));
 
 			out.push(BrainMlir::dynamic_loop(l.iter().cloned()));
+
+			Some(Change::swap(out))
+		}
+		[BrainMlir::SetCell(v), BrainMlir::DynamicLoop(l)]
+			if *v >= 1
+				&& matches!(calculate_ptr_movement(l), Some(0))
+				&& matches!(l.as_slice(), [.., BrainMlir::ChangeCell(-1)]) =>
+		{
+			if l.iter().any(|op| matches!(op, BrainMlir::DynamicLoop(..))) {
+				return None;
+			}
+
+			let without_decrement = {
+				let mut owned = l.clone();
+				owned.pop();
+				owned
+			};
+
+			let mut out = Vec::with_capacity(without_decrement.len() * *v as usize);
+
+			for _ in 0..*v {
+				out.extend_from_slice(&without_decrement);
+			}
+
+			Some(Change::swap(out))
+		}
+		[BrainMlir::SetCell(v), BrainMlir::DynamicLoop(l)]
+			if *v >= 1
+				&& matches!(calculate_ptr_movement(l), Some(0))
+				&& matches!(l.as_slice(), [BrainMlir::ChangeCell(-1), ..]) =>
+		{
+			if l.iter().any(|op| matches!(op, BrainMlir::DynamicLoop(..))) {
+				return None;
+			}
+
+			let without_decrement = {
+				let mut owned = l.clone();
+				owned.remove(0);
+				owned
+			};
+
+			let mut out = Vec::with_capacity(without_decrement.len() * *v as usize);
+
+			for _ in 0..*v {
+				out.extend_from_slice(&without_decrement);
+			}
 
 			Some(Change::swap(out))
 		}

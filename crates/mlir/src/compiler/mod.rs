@@ -51,12 +51,9 @@ impl Compiler {
 
 	#[tracing::instrument("run passes", skip(self))]
 	fn optimization_pass(&mut self, iteration: usize) -> bool {
-		let starting_instruction_count = self.inner.len();
 		let mut progress = false;
 
 		self.run_all_passes(&mut progress);
-
-		info!("{starting_instruction_count} -> {}", self.inner.len());
 
 		progress
 	}
@@ -66,7 +63,7 @@ impl Compiler {
 		*progress |= run_peephole_pass(&mut *self, passes::combine_instructions);
 
 		self.pass_info("optimize clear cell instructions");
-		*progress |= run_peephole_pass(&mut *self, passes::clear_cell);
+		*progress |= run_loop_pass(&mut *self, passes::clear_cell);
 
 		self.pass_info("optimize set values");
 		*progress |= run_peephole_pass(&mut *self, passes::optimize_sets);
@@ -88,8 +85,34 @@ impl Compiler {
 	}
 
 	fn pass_info(&self, pass: &str) {
-		let op_count = self.inner.len();
-		info!("running pass {pass} with {op_count} instructions");
+		let (op_count, dloop_count) = self.stats();
+		info!("running pass {pass} with {op_count} instructions ({dloop_count}) loops");
+	}
+
+	fn stats(&self) -> (usize, usize) {
+		Self::stats_of(self)
+	}
+
+	#[expect(clippy::single_match)]
+	fn stats_of(ops: &[BrainMlir]) -> (usize, usize) {
+		let mut op_count = 0;
+		let mut dloop_count = 0;
+
+		for op in ops {
+			op_count += 1;
+			match op {
+				BrainMlir::DynamicLoop(l) => {
+					let (ops, dloops) = Self::stats_of(l);
+
+					op_count += ops;
+					dloop_count += 1;
+					dloop_count += dloops;
+				}
+				_ => {}
+			}
+		}
+
+		(op_count, dloop_count)
 	}
 }
 
