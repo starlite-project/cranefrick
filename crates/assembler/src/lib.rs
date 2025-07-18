@@ -76,6 +76,10 @@ impl AssembledModule {
 
 		fs::write(output_path.join("optimized.clif"), ctx.func.to_string())?;
 
+		let compiled_func = ctx.compile(&*isa, &mut ControlPlane::default()).unwrap();
+
+		fs::write(output_path.join("program.bin"), compiled_func.code_buffer())?;
+
 		module.define_function(func, &mut ctx)?;
 		module.clear_context(&mut ctx);
 
