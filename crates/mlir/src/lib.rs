@@ -50,6 +50,21 @@ impl BrainMlir {
 	}
 
 	#[must_use]
+	pub const fn child_ops(&self) -> Option<&Vec<Self>> {
+		match self {
+			Self::DynamicLoop(ops) => Some(ops),
+			_ => None,
+		}
+	}
+
+	pub const fn child_ops_mut(&mut self) -> Option<&mut Vec<Self>> {
+		match self {
+			Self::DynamicLoop(ops) => Some(ops),
+			_ => None,
+		}
+	}
+
+	#[must_use]
 	pub fn dynamic_loop(instrs: impl IntoIterator<Item = Self>) -> Self {
 		Self::DynamicLoop(instrs.into_iter().collect())
 	}
