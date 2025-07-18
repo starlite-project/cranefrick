@@ -1,9 +1,9 @@
 lints.workspace = true
 
 [package]
-name = "cranefrick_utils"
 edition.workspace = true
 license.workspace = true
+name = "cranefrick_utils"
 rust-version.workspace = true
 version.workspace = true
 
