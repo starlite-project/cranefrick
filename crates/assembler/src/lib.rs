@@ -152,11 +152,18 @@ impl AssembledModule {
 
 		let code = module.get_finalized_function(self.main);
 
-		let exec = unsafe { std::mem::transmute::<*const u8, for<'a, 'b> fn(*mut u8)>(code) };
+		let exec =
+			unsafe { std::mem::transmute::<*const u8, for<'a, 'b> fn(*mut u8) -> *mut ()>(code) };
 
 		let mut heap = [0u8; 30_000];
 
-		exec(heap.as_mut_ptr());
+		let ptr = exec(heap.as_mut_ptr());
+
+		if !ptr.is_null() {
+			let e = unsafe { Box::from_raw(ptr.cast::<IoError>()) };
+
+			return Err((*e).into());
+		}
 
 		Ok(())
 	}
