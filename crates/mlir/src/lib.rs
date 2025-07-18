@@ -15,7 +15,7 @@ pub use self::compiler::*;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum BrainMlir {
-	ChangeCell(i8, i64),
+	ChangeCell(i8),
 	MovePtr(i64),
 	SetCell(u8),
 	GetInput,
@@ -26,12 +26,7 @@ pub enum BrainMlir {
 impl BrainMlir {
 	#[must_use]
 	pub const fn change_cell(value: i8) -> Self {
-		Self::change_cell_at(value, 0)
-	}
-
-	#[must_use]
-	pub const fn change_cell_at(value: i8, offset: i64) -> Self {
-		Self::ChangeCell(value, offset)
+		Self::ChangeCell(value)
 	}
 
 	#[must_use]

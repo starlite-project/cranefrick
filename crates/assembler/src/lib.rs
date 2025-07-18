@@ -189,10 +189,10 @@ impl<'a> Assembler<'a> {
 		Ok(self.builder)
 	}
 
-	fn change_cell(&mut self, v: i8, offset: i64) {
+	fn change_cell(&mut self, v: i8) {
 		let cell_value = self.current_cell_value();
 		let cell_value = self.ins().iadd_imm(cell_value, i64::from(v));
-		self.store(cell_value, offset);
+		self.store(cell_value, 0);
 	}
 
 	fn move_ptr(&mut self, offset: i64) {
@@ -282,7 +282,7 @@ impl<'a> Assembler<'a> {
 	fn ops(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
 		for op in ops {
 			match op {
-				BrainMlir::ChangeCell(i, offset) => self.change_cell(*i, *offset),
+				BrainMlir::ChangeCell(i) => self.change_cell(*i),
 				BrainMlir::MovePtr(offset) => self.move_ptr(*offset),
 				BrainMlir::DynamicLoop(l) => self.dynamic_loop(l)?,
 				BrainMlir::SetCell(v) => self.set_cell(*v),
