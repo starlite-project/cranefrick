@@ -20,7 +20,7 @@ use cranelift::{
 		ir::{FuncRef, Function, immediates::Offset32},
 	},
 	jit::{JITBuilder, JITModule},
-	module::{FuncId, Linkage, Module, ModuleError},
+	module::{DataDescription, FuncId, Linkage, Module, ModuleError},
 	prelude::*,
 };
 use tracing::info;
@@ -59,7 +59,7 @@ impl AssembledModule {
 
 		let mut sig = module.make_signature();
 
-		sig.params.extend([AbiParam::new(ptr_type); 1]);
+		// sig.params.extend([AbiParam::new(ptr_type); 1]);
 		sig.returns.push(AbiParam::new(ptr_type));
 
 		let func = module.declare_function("main", Linkage::Local, &sig)?;
@@ -96,12 +96,9 @@ impl AssembledModule {
 
 		let code = module.get_finalized_function(self.main);
 
-		let exec =
-			unsafe { std::mem::transmute::<*const u8, for<'a, 'b> fn(*mut u8) -> *mut ()>(code) };
+		let exec = unsafe { std::mem::transmute::<*const u8, fn() -> *mut ()>(code) };
 
-		let mut heap = [0u8; 30_000];
-
-		let ptr = exec(heap.as_mut_ptr());
+		let ptr = exec();
 
 		if !ptr.is_null() {
 			let e = unsafe { Box::from_raw(ptr.cast::<IoError>()) };
@@ -140,6 +137,18 @@ impl<'a> Assembler<'a> {
 		module: &mut JITModule,
 		ptr_type: Type,
 	) -> Result<Self, AssemblyError> {
+		let data_id = module.declare_anonymous_data(true, false)?;
+
+		let tape_ptr = module.declare_data_in_func(data_id, func);
+
+		{
+			let mut data = DataDescription::new();
+
+			data.define_zeroinit(30_000);
+
+			module.define_data(data_id, &data)?;
+		}
+
 		let mut builder = FunctionBuilder::new(func, fn_ctx);
 
 		let frontend_config = module.isa().frontend_config();
@@ -152,7 +161,8 @@ impl<'a> Assembler<'a> {
 		builder.switch_to_block(block);
 		builder.append_block_params_for_function_params(block);
 
-		let memory_address = builder.block_params(block)[0];
+		// let memory_address = builder.block_params(block)[0];
+		let memory_address = builder.ins().global_value(ptr_type, tape_ptr);
 
 		let zero = builder.ins().iconst(types::I8, 0);
 		let mem_size = builder.ins().iconst(ptr_type, 30_000);
