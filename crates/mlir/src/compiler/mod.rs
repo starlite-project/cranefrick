@@ -71,6 +71,9 @@ impl Compiler {
 		self.pass_info("optimize set values");
 		*progress |= run_peephole_pass(&mut *self, passes::optimize_sets);
 
+		self.pass_info("optimize instruction offsets");
+		*progress |= run_peephole_pass(&mut *self, passes::set_indices);
+
 		self.pass_info("remove unreachable loops");
 		*progress |= run_peephole_pass(&mut *self, passes::remove_unreachable_loops);
 

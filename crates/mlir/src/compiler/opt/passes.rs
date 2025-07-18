@@ -25,6 +25,21 @@ pub fn combine_instructions(ops: &[BrainMlir; 2]) -> Option<Change> {
 	}
 }
 
+pub fn set_indices(ops: &[BrainMlir; 3]) -> Option<Change> {
+	match ops {
+		[
+			BrainMlir::MovePtr(x),
+			BrainMlir::ChangeCell(a, 0),
+			BrainMlir::MovePtr(y),
+		] if *x == -y => Some(Change::swap([
+			// BrainMlir::change_cell_at(*a, *x),
+			// BrainMlir::move_ptr(x.wrapping_add(*y)),
+			BrainMlir::change_cell_at(*a, *x),
+		])),
+		_ => None,
+	}
+}
+
 pub fn optimize_sets(ops: &[BrainMlir; 2]) -> Option<Change> {
 	match ops {
 		[BrainMlir::SetCell(i1), BrainMlir::ChangeCell(i2, 0)] => Some(Change::replace(

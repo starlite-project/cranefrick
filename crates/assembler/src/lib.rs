@@ -14,7 +14,11 @@ use std::{
 
 use cranefrick_mlir::{BrainMlir, Compiler};
 use cranelift::{
-	codegen::{CodegenError, control::ControlPlane, ir::FuncRef},
+	codegen::{
+		CodegenError,
+		control::ControlPlane,
+		ir::{FuncRef, immediates::Offset32},
+	},
 	jit::{JITBuilder, JITModule},
 	module::{FuncId, Linkage, Module, ModuleError},
 	prelude::*,
@@ -185,7 +189,7 @@ impl<'a> Assembler<'a> {
 		Ok(self.builder)
 	}
 
-	fn change_cell(&mut self, v: i8, offset: i32) {
+	fn change_cell(&mut self, v: i8, offset: i64) {
 		let cell_value = self.current_cell_value();
 		let cell_value = self.ins().iadd_imm(cell_value, i64::from(v));
 		self.store(cell_value, offset);
@@ -291,9 +295,14 @@ impl<'a> Assembler<'a> {
 		Ok(())
 	}
 
-	fn store(&mut self, value: Value, offset: i32) {
+	fn store(&mut self, value: Value, offset: i64) {
 		let addr = self.memory_address();
-		self.ins().store(MemFlags::new(), value, addr, offset);
+		self.ins().store(
+			MemFlags::new(),
+			value,
+			addr,
+			Offset32::try_from_i64(offset).unwrap(),
+		);
 	}
 
 	fn ptr_value(&mut self) -> Value {
