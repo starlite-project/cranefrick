@@ -1,0 +1,13 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "cranefrick_playground"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow = "1.0.98"
+cranelift = { version = "0.121" }
+target-lexicon = "0.13"

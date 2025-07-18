@@ -138,6 +138,8 @@ impl<'a> Assembler<'a> {
 	) -> Result<Self, AssemblyError> {
 		let mut builder = FunctionBuilder::new(func, fn_ctx);
 
+		let frontend_config = module.isa().frontend_config();
+
 		let ptr = Variable::new(0);
 		builder.declare_var(ptr, ptr_type);
 
@@ -147,6 +149,11 @@ impl<'a> Assembler<'a> {
 		builder.append_block_params_for_function_params(block);
 
 		let memory_address = builder.block_params(block)[0];
+
+		let zero = builder.ins().iconst(types::I8, 0);
+		let mem_size = builder.ins().iconst(ptr_type, 30_000);
+
+		builder.call_memset(frontend_config, memory_address, zero, mem_size);
 
 		let exit_block = builder.create_block();
 		builder.append_block_param(exit_block, ptr_type);

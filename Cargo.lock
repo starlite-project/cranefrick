@@ -271,6 +271,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cranefrick_playground"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cranelift",
+ "target-lexicon",
+]
+
+[[package]]
 name = "cranefrick_utils"
 version = "0.1.0"
 

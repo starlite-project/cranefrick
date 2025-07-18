@@ -19,7 +19,7 @@ toml = { version = "0.9", features = ["serde"] }
 serde.workspace = true
 
 [workspace]
-members = ["crates/mlir", "crates/hlir", "crates/utils", "crates/assembler"]
+members = ["crates/mlir", "crates/hlir", "crates/utils", "crates/assembler", "crates/playground"]
 resolver = "3"
 
 [workspace.dependencies]

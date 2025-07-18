@@ -32,7 +32,7 @@
     "rust-analyzer.lens.references.enumVariant.enable": false,
     "rust-analyzer.typing.autoClosingAngleBrackets.enable": true,
     "lldb.displayFormat": "auto",
-    "lldb.showDisassembly": "auto",
+    "lldb.showDisassembly": "always",
     "lldb.dereferencePointers": true,
     "lldb.consoleMode": "commands",
     "rust-analyzer.diagnostics.experimental.enable": true,
