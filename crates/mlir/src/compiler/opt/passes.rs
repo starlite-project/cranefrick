@@ -2,7 +2,7 @@
 
 use alloc::vec::Vec;
 
-use super::Change;
+use super::{Change, utils::calculate_ptr_movement};
 use crate::BrainMlir;
 
 pub fn combine_instructions(ops: &[BrainMlir; 2]) -> Option<Change> {
@@ -75,5 +75,32 @@ pub fn remove_early_loops(ops: &mut Vec<BrainMlir>) -> bool {
 		true
 	} else {
 		false
+	}
+}
+
+pub fn unroll_basic_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
+	extern crate std;
+
+	match ops {
+		[BrainMlir::ChangeCell(v), BrainMlir::DynamicLoop(l)]
+			if *v >= 1 && matches!(calculate_ptr_movement(l), Some(0)) =>
+		{
+			if !matches!(l.as_slice(), [.., BrainMlir::ChangeCell(-1)]) {
+				return None;
+			}
+
+			let mut out = Vec::with_capacity(l.len() * *v as usize);
+
+			for _ in 0..*v {
+				out.extend_from_slice(l);
+			}
+
+			out.insert(0, BrainMlir::change_cell(*v));
+
+			out.push(BrainMlir::dynamic_loop(l.iter().cloned()));
+
+			Some(Change::swap(out))
+		}
+		_ => None,
 	}
 }

@@ -82,6 +82,9 @@ impl Compiler {
 
 		self.pass_info("remove useless beginning loops");
 		*progress |= remove_early_loops(&mut *self);
+
+		self.pass_info("unrolling basic loops");
+		*progress |= run_peephole_pass(&mut *self, passes::unroll_basic_loops);
 	}
 
 	fn pass_info(&self, pass: &str) {
