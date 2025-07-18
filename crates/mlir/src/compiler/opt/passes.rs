@@ -7,20 +7,32 @@ use crate::BrainMlir;
 
 pub fn combine_instructions(ops: &[BrainMlir; 2]) -> Option<Change> {
 	match ops {
-		[BrainMlir::ChangeCell(i1), BrainMlir::ChangeCell(i2)] if *i1 == -i2 => {
+		[BrainMlir::ChangeCell(i1, x), BrainMlir::ChangeCell(i2, y)] if *i1 == -i2 && *x == *y => {
 			Some(Change::remove())
 		}
-		[BrainMlir::ChangeCell(i1), BrainMlir::ChangeCell(i2)] => Some(Change::replace(
-			BrainMlir::change_cell(i1.wrapping_add(*i2)),
-		)),
+		[BrainMlir::ChangeCell(i1, x), BrainMlir::ChangeCell(i2, y)] if *x == *y => Some(
+			Change::replace(BrainMlir::change_cell_at(i1.wrapping_add(*i2), *x)),
+		),
 		[BrainMlir::MovePtr(i1), BrainMlir::MovePtr(i2)] if *i1 == -i2 => Some(Change::remove()),
 		[BrainMlir::MovePtr(i1), BrainMlir::MovePtr(i2)] => {
 			Some(Change::replace(BrainMlir::move_ptr(i1.wrapping_add(*i2))))
 		}
-		[BrainMlir::SetCell(i1), BrainMlir::ChangeCell(i2)] => Some(Change::replace(
+		[
+			BrainMlir::SetCell(..) | BrainMlir::ChangeCell(.., 0),
+			BrainMlir::SetCell(..),
+		] => Some(Change::remove_offset(0)),
+		_ => None,
+	}
+}
+
+pub fn optimize_sets(ops: &[BrainMlir; 2]) -> Option<Change> {
+	match ops {
+		[BrainMlir::SetCell(i1), BrainMlir::ChangeCell(i2, 0)] => Some(Change::replace(
 			BrainMlir::set_cell(i1.wrapping_add_signed(*i2)),
 		)),
-		[BrainMlir::SetCell(_), BrainMlir::SetCell(_)] => Some(Change::remove_offset(0)),
+		[l @ BrainMlir::DynamicLoop(..), BrainMlir::ChangeCell(i1, 0)] => {
+			Some(Change::swap([l.clone(), BrainMlir::set_cell(*i1 as u8)]))
+		}
 		_ => None,
 	}
 }
@@ -28,7 +40,7 @@ pub fn combine_instructions(ops: &[BrainMlir; 2]) -> Option<Change> {
 pub const fn clear_cell(ops: &[BrainMlir; 1]) -> Option<Change> {
 	match ops {
 		[BrainMlir::DynamicLoop(v)] => match v.as_slice() {
-			[BrainMlir::ChangeCell(-1)] => Some(Change::replace(BrainMlir::set_cell(0))),
+			[BrainMlir::ChangeCell(-1, 0)] => Some(Change::replace(BrainMlir::set_cell(0))),
 			_ => None,
 		},
 		_ => None,

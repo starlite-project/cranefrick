@@ -68,6 +68,9 @@ impl Compiler {
 		self.pass_info("optimize clear cell instructions");
 		*progress |= run_peephole_pass(&mut *self, passes::clear_cell);
 
+		self.pass_info("optimize set values");
+		*progress |= run_peephole_pass(&mut *self, passes::optimize_sets);
+
 		self.pass_info("remove unreachable loops");
 		*progress |= run_peephole_pass(&mut *self, passes::remove_unreachable_loops);
 
@@ -189,7 +192,6 @@ fn fix_loops(program: &[BrainHlir]) -> Vec<BrainMlir> {
 					loop_stack += 1;
 					None
 				}
-				// i => Some(i.clone()),
 				BrainHlir::IncrementCell => Some(BrainMlir::change_cell(1)),
 				BrainHlir::DecrementCell => Some(BrainMlir::change_cell(-1)),
 				BrainHlir::MovePtrLeft => Some(BrainMlir::move_ptr(-1)),

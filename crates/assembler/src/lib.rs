@@ -19,6 +19,7 @@ use cranelift::{
 	module::{FuncId, Linkage, Module, ModuleError},
 	prelude::*,
 };
+use tracing::info;
 
 pub use self::flags::*;
 
@@ -28,11 +29,14 @@ pub struct AssembledModule {
 }
 
 impl AssembledModule {
+	#[tracing::instrument(skip_all)]
 	pub fn assemble(
 		compiler: Compiler,
 		flags: AssemblerFlags,
 		output_path: &Path,
 	) -> Result<Self, AssemblyError> {
+		info!("beginning lowering to cranelift IR");
+
 		let isa = cranelift::native::builder()
 			.map_err(AssemblyError::Custom)?
 			.finish(setup_flags(flags)?)?;
@@ -181,10 +185,10 @@ impl<'a> Assembler<'a> {
 		Ok(self.builder)
 	}
 
-	fn change_cell(&mut self, v: i8) {
+	fn change_cell(&mut self, v: i8, offset: i32) {
 		let cell_value = self.current_cell_value();
 		let cell_value = self.ins().iadd_imm(cell_value, i64::from(v));
-		self.store(cell_value);
+		self.store(cell_value, offset);
 	}
 
 	fn move_ptr(&mut self, offset: i64) {
@@ -250,7 +254,7 @@ impl<'a> Assembler<'a> {
 
 	fn set_cell(&mut self, v: u8) {
 		let value = self.ins().iconst(types::I8, i64::from(v));
-		self.store(value);
+		self.store(value, 0);
 	}
 
 	fn put_output(&mut self) {
@@ -274,7 +278,7 @@ impl<'a> Assembler<'a> {
 	fn ops(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
 		for op in ops {
 			match op {
-				BrainMlir::ChangeCell(i) => self.change_cell(*i),
+				BrainMlir::ChangeCell(i, offset) => self.change_cell(*i, *offset),
 				BrainMlir::MovePtr(offset) => self.move_ptr(*offset),
 				BrainMlir::DynamicLoop(l) => self.dynamic_loop(l)?,
 				BrainMlir::SetCell(v) => self.set_cell(*v),
@@ -287,9 +291,9 @@ impl<'a> Assembler<'a> {
 		Ok(())
 	}
 
-	fn store(&mut self, value: Value) {
+	fn store(&mut self, value: Value, offset: i32) {
 		let addr = self.memory_address();
-		self.ins().store(MemFlags::new(), value, addr, 0);
+		self.ins().store(MemFlags::new(), value, addr, offset);
 	}
 
 	fn ptr_value(&mut self) -> Value {

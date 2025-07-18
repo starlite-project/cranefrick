@@ -248,6 +248,7 @@ dependencies = [
  "cranefrick_mlir",
  "cranelift",
  "serde",
+ "tracing",
 ]
 
 [[package]]
