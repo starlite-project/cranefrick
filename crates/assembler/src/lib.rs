@@ -17,7 +17,7 @@ use cranelift::{
 	codegen::{
 		CodegenError,
 		control::ControlPlane,
-		ir::{FuncRef, immediates::Offset32},
+		ir::{FuncRef, Function, immediates::Offset32},
 	},
 	jit::{JITBuilder, JITModule},
 	module::{FuncId, Linkage, Module, ModuleError},
@@ -39,7 +39,7 @@ impl AssembledModule {
 		flags: AssemblerFlags,
 		output_path: &Path,
 	) -> Result<Self, AssemblyError> {
-		info!("beginning lowering to cranelift IR");
+		info!("lowering to cranelift IR");
 
 		let isa = cranelift::native::builder()
 			.map_err(AssemblyError::Custom)?
@@ -66,67 +66,7 @@ impl AssembledModule {
 
 		ctx.func.signature = sig;
 
-		{
-			let mut builder = FunctionBuilder::new(&mut ctx.func, &mut func_ctx);
-
-			let ptr = Variable::new(0);
-			builder.declare_var(ptr, ptr_type);
-
-			let block = builder.create_block();
-
-			builder.switch_to_block(block);
-			builder.append_block_params_for_function_params(block);
-
-			let memory_address = builder.block_params(block)[0];
-
-			let exit_block = builder.create_block();
-			builder.append_block_param(exit_block, ptr_type);
-
-			let write = {
-				let mut write_sig = module.make_signature();
-				write_sig.params.push(AbiParam::new(types::I8));
-				write_sig.returns.push(AbiParam::new(ptr_type));
-				module.declare_function("write", Linkage::Import, &write_sig)?
-			};
-
-			let read = {
-				let mut read_sig = module.make_signature();
-				read_sig.params.push(AbiParam::new(ptr_type));
-				read_sig.returns.push(AbiParam::new(ptr_type));
-				module.declare_function("read", Linkage::Import, &read_sig)?
-			};
-
-			let read = module.declare_func_in_func(read, builder.func);
-			let write = module.declare_func_in_func(write, builder.func);
-
-			let assembler = Assembler {
-				ptr,
-				ptr_type,
-				builder,
-				read,
-				write,
-				exit_block,
-				memory_address,
-			};
-
-			let mut builder = assembler.assemble(compiler)?;
-
-			{
-				let zero = builder.ins().iconst(ptr_type, 0);
-
-				builder.ins().return_(&[zero]);
-
-				builder.switch_to_block(exit_block);
-				builder.seal_block(exit_block);
-
-				let result = builder.block_params(exit_block)[0];
-				builder.ins().return_(&[result]);
-
-				builder.seal_all_blocks();
-
-				builder.finalize();
-			}
-		}
+		Assembler::new(&mut ctx.func, &mut func_ctx, &mut module, ptr_type)?.assemble(compiler)?;
 
 		fs::write(output_path.join("unoptimized.clif"), ctx.func.to_string())?;
 
@@ -190,10 +130,79 @@ struct Assembler<'a> {
 }
 
 impl<'a> Assembler<'a> {
-	fn assemble(mut self, compiler: Compiler) -> Result<FunctionBuilder<'a>, AssemblyError> {
+	fn new(
+		func: &'a mut Function,
+		fn_ctx: &'a mut FunctionBuilderContext,
+		module: &mut JITModule,
+		ptr_type: Type,
+	) -> Result<Self, AssemblyError> {
+		let mut builder = FunctionBuilder::new(func, fn_ctx);
+
+		let ptr = Variable::new(0);
+		builder.declare_var(ptr, ptr_type);
+
+		let block = builder.create_block();
+
+		builder.switch_to_block(block);
+		builder.append_block_params_for_function_params(block);
+
+		let memory_address = builder.block_params(block)[0];
+
+		let exit_block = builder.create_block();
+		builder.append_block_param(exit_block, ptr_type);
+
+		let write = {
+			let mut write_sig = module.make_signature();
+			write_sig.params.push(AbiParam::new(types::I8));
+			write_sig.returns.push(AbiParam::new(ptr_type));
+			module.declare_function("write", Linkage::Import, &write_sig)?
+		};
+
+		let read = {
+			let mut read_sig = module.make_signature();
+			read_sig.params.push(AbiParam::new(ptr_type));
+			read_sig.returns.push(AbiParam::new(ptr_type));
+			module.declare_function("read", Linkage::Import, &read_sig)?
+		};
+
+		let write = module.declare_func_in_func(write, builder.func);
+		let read = module.declare_func_in_func(read, builder.func);
+
+		Ok(Self {
+			ptr,
+			ptr_type,
+			builder,
+			read,
+			write,
+			exit_block,
+			memory_address,
+		})
+	}
+
+	fn assemble(mut self, compiler: Compiler) -> Result<(), AssemblyError> {
 		self.ops(&compiler)?;
 
-		Ok(self.builder)
+		let Self {
+			ptr_type,
+			exit_block,
+			..
+		} = self;
+
+		let zero = self.ins().iconst(ptr_type, 0);
+
+		self.ins().return_(&[zero]);
+
+		self.switch_to_block(exit_block);
+		self.seal_block(exit_block);
+
+		let result = self.block_params(exit_block)[0];
+		self.ins().return_(&[result]);
+
+		self.seal_all_blocks();
+
+		self.builder.finalize();
+
+		Ok(())
 	}
 
 	fn change_cell(&mut self, v: i8) {
