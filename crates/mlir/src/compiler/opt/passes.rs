@@ -1,5 +1,6 @@
 #![allow(clippy::trivially_copy_pass_by_ref)]
 
+use alloc::vec::Vec;
 use core::num::NonZero;
 
 use super::Change;
@@ -81,6 +82,20 @@ pub fn remove_empty_loops(ops: &[BrainMlir]) -> Option<Change> {
 	ops.is_empty().then_some(Change::remove())
 }
 
+pub fn fix_beginning_instructions(ops: &mut Vec<BrainMlir>) -> bool {
+	match ops.first_mut() {
+		Some(BrainMlir::DynamicLoop(..)) => {
+			ops.remove(0);
+			true
+		}
+		Some(instr @ &mut BrainMlir::ChangeCell(i, x)) => {
+			*instr = BrainMlir::set_cell_at(i as u8, x.map_or(0, NonZero::get));
+			true
+		}
+		_ => false,
+	}
+}
+
 pub fn add_offsets(ops: &[BrainMlir; 3]) -> Option<Change> {
 	match ops {
 		[
@@ -88,6 +103,11 @@ pub fn add_offsets(ops: &[BrainMlir; 3]) -> Option<Change> {
 			BrainMlir::ChangeCell(i, None),
 			BrainMlir::MovePointer(y),
 		] if *x == -y => Some(Change::replace(BrainMlir::change_cell_at(*i, *x))),
+		[
+			BrainMlir::MovePointer(x),
+			BrainMlir::SetCell(i, None),
+			BrainMlir::MovePointer(y),
+		] if *x == -y => Some(Change::replace(BrainMlir::set_cell_at(*i, *x))),
 		_ => None,
 	}
 }

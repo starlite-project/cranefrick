@@ -65,6 +65,9 @@ impl Compiler {
 		self.pass_info("adding relavent offsets");
 		*progress |= run_peephole_pass(self, passes::add_offsets);
 
+		self.pass_info("fixing beginning instructions");
+		*progress |= passes::fix_beginning_instructions(self);
+
 		self.pass_info("optimizing clear-cell instructions");
 		*progress |= run_loop_pass(self, passes::clear_cell);
 
