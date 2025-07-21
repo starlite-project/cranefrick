@@ -4,7 +4,7 @@ mod flags;
 
 use std::{
 	error::Error as StdError,
-	fmt::{Debug, Display, Formatter, Result as FmtResult},
+	fmt::{Debug, Display, Error as FmtError, Formatter, Result as FmtResult},
 	fs,
 	io::{self, Error as IoError, prelude::*},
 	ops::{Deref, DerefMut},
@@ -16,6 +16,7 @@ use cranefrick_mlir::{BrainMlir, Compiler};
 use cranelift::{
 	codegen::{
 		CodegenError,
+		cfg_printer::CFGPrinter,
 		control::ControlPlane,
 		ir::{FuncRef, Function, immediates::Offset32},
 	},
@@ -23,7 +24,7 @@ use cranelift::{
 	module::{DataDescription, FuncId, Linkage, Module, ModuleError},
 	prelude::*,
 };
-use tracing::info;
+use tracing::{info, info_span};
 
 pub use self::flags::*;
 
@@ -39,11 +40,10 @@ impl AssembledModule {
 		flags: AssemblerFlags,
 		output_path: &Path,
 	) -> Result<Self, AssemblyError> {
-		info!("lowering to cranelift IR");
-
 		let isa = cranelift::native::builder()
 			.map_err(AssemblyError::Custom)?
 			.finish(setup_flags(flags)?)?;
+		info!(triple = %isa.triple(), "lowering to cranelift IR");
 
 		let mut jit_builder =
 			JITBuilder::with_isa(isa.clone(), cranelift::module::default_libcall_names());
@@ -59,7 +59,6 @@ impl AssembledModule {
 
 		let mut sig = module.make_signature();
 
-		// sig.params.extend([AbiParam::new(ptr_type); 1]);
 		sig.returns.push(AbiParam::new(ptr_type));
 
 		let func = module.declare_function("main", Linkage::Local, &sig)?;
@@ -68,17 +67,45 @@ impl AssembledModule {
 
 		Assembler::new(&mut ctx.func, &mut func_ctx, &mut module, ptr_type)?.assemble(compiler)?;
 
-		fs::write(output_path.join("unoptimized.clif"), ctx.func.to_string())?;
+		let span = info_span!("writing files");
 
+		span.in_scope(|| {
+			info!("writing unoptimized cranelift-IR");
+			fs::write(output_path.join("unoptimized.clif"), ctx.func.to_string())
+		})?;
+
+		info!("running cranelift optimizations");
 		ctx.verify(&*isa).unwrap();
 		ctx.optimize(&*isa, &mut ControlPlane::default())?;
 		ctx.verify(&*isa).unwrap();
 
-		fs::write(output_path.join("optimized.clif"), ctx.func.to_string())?;
+		span.in_scope(|| {
+			info!("writing optimized cranelift-IR");
+			fs::write(output_path.join("optimized.clif"), ctx.func.to_string())
+		})?;
 
 		let compiled_func = ctx.compile(&*isa, &mut ControlPlane::default()).unwrap();
 
-		fs::write(output_path.join("program.bin"), compiled_func.code_buffer())?;
+		span.in_scope(|| {
+			info!("writing compiled binary");
+			fs::write(output_path.join("program.bin"), compiled_func.code_buffer())
+		})?;
+
+		span.in_scope(|| {
+			info!("writing CFG dot graph");
+
+			let mut out = String::new();
+
+			let printer = CFGPrinter::new(&ctx.func);
+
+			printer.write(&mut out)?;
+
+			fs::write(output_path.join("program.dot"), out)?;
+
+			Ok::<(), AssemblyError>(())
+		})?;
+
+		drop(span);
 
 		module.define_function(func, &mut ctx)?;
 		module.clear_context(&mut ctx);
@@ -374,6 +401,7 @@ pub enum AssemblyError {
 	Module(Box<ModuleError>),
 	Custom(&'static str),
 	NotImplemented(BrainMlir),
+	Fmt(FmtError),
 }
 
 impl Display for AssemblyError {
@@ -390,6 +418,7 @@ impl Display for AssemblyError {
 			Self::Codegen(_) => f.write_str("a codegen error occurred"),
 			Self::Module(..) => f.write_str("a module error occurred"),
 			Self::Custom(s) => f.write_str(s),
+			Self::Fmt(..) => f.write_str("an error occurred during formatting"),
 		}
 	}
 }
@@ -401,6 +430,7 @@ impl StdError for AssemblyError {
 			Self::Set(e) => Some(e),
 			Self::Codegen(e) => Some(e),
 			Self::Module(e) => Some(e),
+			Self::Fmt(e) => Some(e),
 			Self::NoModuleFound | Self::Custom(..) | Self::NotImplemented(..) => None,
 		}
 	}
@@ -427,6 +457,12 @@ impl From<CodegenError> for AssemblyError {
 impl From<ModuleError> for AssemblyError {
 	fn from(value: ModuleError) -> Self {
 		Self::Module(Box::new(value))
+	}
+}
+
+impl From<FmtError> for AssemblyError {
+	fn from(value: FmtError) -> Self {
+		Self::Fmt(value)
 	}
 }
 
