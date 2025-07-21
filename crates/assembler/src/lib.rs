@@ -22,7 +22,7 @@ use cranelift_codegen::{
 	isa,
 	settings::{self, Configurable as _},
 };
-use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Switch};
+use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
 use target_lexicon::Triple;
@@ -188,6 +188,7 @@ impl<'a> Assembler<'a> {
 		let memory_address = builder.ins().global_value(ptr_type, tape_ptr);
 
 		let exit_block = builder.create_block();
+		builder.append_block_param(exit_block, ptr_type);
 
 		let write = {
 			let mut write_sig = module.make_signature();
@@ -232,7 +233,7 @@ impl<'a> Assembler<'a> {
 		self.switch_to_block(exit_block);
 		self.seal_block(exit_block);
 
-		let result = self.ins().get_pinned_reg(ptr_type);
+		let result = self.block_params(exit_block)[0];
 		self.ins().return_(&[result]);
 
 		self.seal_all_blocks();
@@ -347,14 +348,10 @@ impl<'a> Assembler<'a> {
 		let inst = self.ins().call(write, &[value]);
 		let result = self.inst_results(inst)[0];
 
-		self.ins().set_pinned_reg(result);
-
 		let after_block = self.create_block();
 
-		let mut switch = Switch::new();
-		switch.set_entry(0, after_block);
-
-		switch.emit(self, result, exit_block);
+		self.ins()
+			.brif(result, exit_block, &[result.into()], after_block, &[]);
 
 		self.switch_to_block(after_block);
 		self.seal_block(after_block);
@@ -368,14 +365,10 @@ impl<'a> Assembler<'a> {
 		let inst = self.ins().call(read, &[memory_address]);
 		let result = self.inst_results(inst)[0];
 
-		self.ins().set_pinned_reg(result);
-
 		let after_block = self.create_block();
 
-		let mut switch = Switch::new();
-		switch.set_entry(0, after_block);
-
-		switch.emit(self, result, exit_block);
+		self.ins()
+			.brif(result, exit_block, &[result.into()], after_block, &[]);
 
 		self.switch_to_block(after_block);
 		self.seal_block(after_block);
