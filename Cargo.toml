@@ -30,6 +30,11 @@ resolver = "3"
 
 [workspace.dependencies]
 cranefrick_utils = { path = "crates/utils" }
+cranelift-codegen = "0.121.2"
+cranelift-frontend = "0.121.2"
+cranelift-jit = "0.121.2"
+cranelift-module = "0.121.2"
+cranelift-native = "0.121.2"
 serde = { version = "1", default-features = false }
 tracing = { version = "0.1", features = ["attributes"] }
 

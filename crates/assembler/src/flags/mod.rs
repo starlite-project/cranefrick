@@ -1,6 +1,9 @@
 mod serde_with;
 
-use cranelift::prelude::settings::*;
+use cranelift_codegen::settings::{
+	Flags, LibcallCallConv, OptLevel, ProbestackStrategy, RegallocAlgorithm, StackSwitchModel,
+	TlsModel,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -94,7 +97,7 @@ impl AssemblerFlags {
 
 impl Default for AssemblerFlags {
 	fn default() -> Self {
-		let flags = Flags::new(cranelift::codegen::settings::builder());
+		let flags = Flags::new(cranelift_codegen::settings::builder());
 
 		Self::from(flags)
 	}

@@ -9,6 +9,11 @@ version.workspace = true
 
 [dependencies]
 cranefrick_mlir = { path = "../mlir" }
-cranelift = { version = "0.121.1", features = ["jit", "module", "native"] }
+cranelift-codegen.workspace = true
+cranelift-jit.workspace = true
+cranelift-module.workspace = true
+cranelift-frontend.workspace = true
+cranelift-native.workspace = true
 serde = { workspace = true, features = ["derive", "std"] }
+target-lexicon = "0.13"
 tracing.workspace = true

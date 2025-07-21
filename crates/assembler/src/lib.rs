@@ -13,17 +13,22 @@ use std::{
 };
 
 use cranefrick_mlir::{BrainMlir, Compiler};
-use cranelift::{
-	codegen::{
-		CodegenError,
-		cfg_printer::CFGPrinter,
-		control::ControlPlane,
-		ir::{FuncRef, Function, immediates::Offset32},
+use cranelift_codegen::{
+	CodegenError,
+	cfg_printer::CFGPrinter,
+	control::ControlPlane,
+	entity::EntityRef as _,
+	ir::{
+		AbiParam, Block, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value,
+		condcodes::IntCC, immediates::Offset32, types,
 	},
-	jit::{JITBuilder, JITModule},
-	module::{DataDescription, FuncId, Linkage, Module, ModuleError},
-	prelude::*,
+	isa,
+	settings::{self, Configurable as _},
 };
+use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Variable};
+use cranelift_jit::{JITBuilder, JITModule};
+use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
+use target_lexicon::Triple;
 use tracing::{info, info_span};
 
 pub use self::flags::*;
@@ -40,13 +45,13 @@ impl AssembledModule {
 		flags: AssemblerFlags,
 		output_path: &Path,
 	) -> Result<Self, AssemblyError> {
-		let isa = cranelift::native::builder()
-			.map_err(AssemblyError::Custom)?
-			.finish(setup_flags(flags)?)?;
+		let triple = Triple::host();
+
+		let isa = isa::lookup(triple)?.finish(setup_flags(flags)?)?;
 		info!(triple = %isa.triple(), "lowering to cranelift IR");
 
 		let mut jit_builder =
-			JITBuilder::with_isa(isa.clone(), cranelift::module::default_libcall_names());
+			JITBuilder::with_isa(isa.clone(), cranelift_module::default_libcall_names());
 
 		jit_builder.symbol("write", write as *const u8);
 		jit_builder.symbol("read", read as *const u8);
@@ -402,6 +407,7 @@ pub enum AssemblyError {
 	Custom(&'static str),
 	NotImplemented(BrainMlir),
 	Fmt(FmtError),
+	Lookup(isa::LookupError),
 }
 
 impl Display for AssemblyError {
@@ -419,6 +425,7 @@ impl Display for AssemblyError {
 			Self::Module(..) => f.write_str("a module error occurred"),
 			Self::Custom(s) => f.write_str(s),
 			Self::Fmt(..) => f.write_str("an error occurred during formatting"),
+			Self::Lookup(..) => f.write_str("an error occurred during ISA lookup"),
 		}
 	}
 }
@@ -431,6 +438,7 @@ impl StdError for AssemblyError {
 			Self::Codegen(e) => Some(e),
 			Self::Module(e) => Some(e),
 			Self::Fmt(e) => Some(e),
+			Self::Lookup(e) => Some(e),
 			Self::NoModuleFound | Self::Custom(..) | Self::NotImplemented(..) => None,
 		}
 	}
@@ -463,6 +471,12 @@ impl From<ModuleError> for AssemblyError {
 impl From<FmtError> for AssemblyError {
 	fn from(value: FmtError) -> Self {
 		Self::Fmt(value)
+	}
+}
+
+impl From<isa::LookupError> for AssemblyError {
+	fn from(value: isa::LookupError) -> Self {
+		Self::Lookup(value)
 	}
 }
 

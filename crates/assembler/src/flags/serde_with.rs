@@ -1,4 +1,4 @@
-use cranelift::codegen::settings::{
+use cranelift_codegen::settings::{
 	LibcallCallConv, OptLevel, ProbestackStrategy, RegallocAlgorithm, StackSwitchModel, TlsModel,
 };
 use serde::{Deserialize, Serialize};
