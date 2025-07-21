@@ -3,6 +3,8 @@
 use alloc::vec::Vec;
 use core::num::NonZero;
 
+use itertools::Itertools as _;
+
 use super::Change;
 use crate::{BrainMlir, compiler::opt::utils::calculate_ptr_movement};
 
@@ -39,6 +41,29 @@ pub fn optimize_sets(ops: &[BrainMlir; 2]) -> Option<Change> {
 		] => Some(Change::swap([l.clone(), BrainMlir::set_cell(*i1 as u8)])),
 		_ => None,
 	}
+}
+
+pub fn sort_increments(ops: &[BrainMlir; 2]) -> Option<Change> {
+	fn sorter_key(i: &BrainMlir) -> (i32, Option<i8>) {
+		(i.offset().unwrap_or_default(), get_change_value(i))
+	}
+
+	const fn get_change_value(i: &BrainMlir) -> Option<i8> {
+		match i {
+			BrainMlir::ChangeCell(i, ..) => Some(*i),
+			_ => None,
+		}
+	}
+
+	if !ops.iter().all(|i| matches!(i, BrainMlir::ChangeCell(..))) {
+		return None;
+	}
+
+	if ops.iter().is_sorted_by_key(sorter_key) {
+		return None;
+	}
+
+	Some(Change::swap(ops.iter().cloned().sorted_by_key(sorter_key)))
 }
 
 pub fn clear_cell(ops: &[BrainMlir]) -> Option<Change> {

@@ -67,6 +67,17 @@ impl BrainMlir {
 	}
 
 	#[must_use]
+	pub const fn offset(&self) -> Option<i32> {
+		match self {
+			Self::ChangeCell(.., offset) | Self::SetCell(.., offset) => match offset {
+				None => Some(0),
+				Some(i) => Some(i.get()),
+			},
+			_ => None,
+		}
+	}
+
+	#[must_use]
 	pub const fn child_ops(&self) -> Option<&Vec<Self>> {
 		match self {
 			Self::DynamicLoop(ops) => Some(ops),

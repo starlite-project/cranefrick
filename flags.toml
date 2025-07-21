@@ -8,3 +8,4 @@ machine_code_cfg_info = true
 enable_probestack = true
 enable_jump_tables = true
 probestack_strategy = "inline"
+enable_alias_analysis = true
