@@ -6,6 +6,7 @@ extern crate alloc;
 mod compiler;
 
 use alloc::vec::Vec;
+use core::num::NonZeroI64;
 
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +17,7 @@ pub use self::compiler::*;
 #[non_exhaustive]
 pub enum BrainMlir {
 	ChangeCell(i8),
+	ChangeCellAt(i8, NonZeroI64),
 	MovePtr(i64),
 	SetCell(u8),
 	GetInput,
@@ -27,6 +29,15 @@ impl BrainMlir {
 	#[must_use]
 	pub const fn change_cell(value: i8) -> Self {
 		Self::ChangeCell(value)
+	}
+
+	#[must_use]
+	pub const fn change_cell_at(value: i8, offset: i64) -> Self {
+		if let Some(offset) = NonZeroI64::new(offset) {
+			Self::ChangeCellAt(value, offset)
+		} else {
+			Self::change_cell(value)
+		}
 	}
 
 	#[must_use]

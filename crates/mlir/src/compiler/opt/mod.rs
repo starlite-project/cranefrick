@@ -44,13 +44,6 @@ where
 		}
 	}
 
-	// for i in v {
-	// 	// if let BrainMlir::DynamicLoop(instrs) = i {
-	// 	// 	progress |= run_peephole_pass::<_, N>(instrs, pass);
-	// 	// }
-
-	// }
-
 	v.iter_mut()
 		.filter_map(BrainMlir::child_ops_mut)
 		.for_each(|ops| {

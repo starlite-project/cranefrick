@@ -82,6 +82,9 @@ impl Compiler {
 
 		self.pass_info("unrolling basic loops");
 		*progress |= run_peephole_pass(&mut *self, passes::unroll_basic_loops);
+
+		self.pass_info("adding offsets to instructions");
+		*progress |= run_peephole_pass(&mut *self, passes::add_offsets);
 	}
 
 	fn pass_info(&self, pass: &str) {

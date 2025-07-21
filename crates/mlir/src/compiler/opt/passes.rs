@@ -161,3 +161,17 @@ pub fn unroll_basic_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn add_offsets(ops: &[BrainMlir; 3]) -> Option<Change> {
+	match ops {
+		[
+			BrainMlir::MovePtr(x),
+			BrainMlir::ChangeCell(i),
+			BrainMlir::MovePtr(y),
+		] => Some(Change::swap([
+			BrainMlir::change_cell_at(*i, x.wrapping_add(*y)),
+			BrainMlir::move_ptr(x.wrapping_add(*y)),
+		])),
+		_ => None,
+	}
+}
