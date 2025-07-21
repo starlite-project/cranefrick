@@ -6,7 +6,7 @@ extern crate alloc;
 mod compiler;
 
 use alloc::vec::Vec;
-use core::num::NonZeroI64;
+use core::num::NonZeroI32;
 
 use serde::{Deserialize, Serialize};
 
@@ -16,10 +16,15 @@ pub use self::compiler::*;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum BrainMlir {
-	ChangeCell(i8),
-	ChangeCellAt(i8, NonZeroI64),
-	MovePtr(i64),
-	SetCell(u8),
+	ChangeCell(
+		i8,
+		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI32>,
+	),
+	MovePointer(i32),
+	SetCell(
+		u8,
+		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI32>,
+	),
 	GetInput,
 	PutOutput,
 	DynamicLoop(Vec<Self>),
@@ -28,26 +33,27 @@ pub enum BrainMlir {
 impl BrainMlir {
 	#[must_use]
 	pub const fn change_cell(value: i8) -> Self {
-		Self::ChangeCell(value)
+		Self::change_cell_at(value, 0)
 	}
 
 	#[must_use]
-	pub const fn change_cell_at(value: i8, offset: i64) -> Self {
-		if let Some(offset) = NonZeroI64::new(offset) {
-			Self::ChangeCellAt(value, offset)
-		} else {
-			Self::change_cell(value)
-		}
+	pub const fn change_cell_at(value: i8, offset: i32) -> Self {
+		Self::ChangeCell(value, NonZeroI32::new(offset))
 	}
 
 	#[must_use]
-	pub const fn move_ptr(offset: i64) -> Self {
-		Self::MovePtr(offset)
+	pub const fn move_pointer(offset: i32) -> Self {
+		Self::MovePointer(offset)
 	}
 
 	#[must_use]
 	pub const fn set_cell(value: u8) -> Self {
-		Self::SetCell(value)
+		Self::set_cell_at(value, 0)
+	}
+
+	#[must_use]
+	pub const fn set_cell_at(value: u8, offset: i32) -> Self {
+		Self::SetCell(value, NonZeroI32::new(offset))
 	}
 
 	#[must_use]

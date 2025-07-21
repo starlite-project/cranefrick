@@ -1,6 +1,5 @@
 use std::{
 	fs,
-	io::Write,
 	path::{Path, PathBuf},
 };
 
@@ -8,7 +7,7 @@ use clap::Parser;
 use color_eyre::Result;
 use cranefrick_assembler::{AssembledModule, AssemblerFlags};
 use cranefrick_hlir::Parser as BrainParser;
-use cranefrick_mlir::{BrainMlir, Compiler};
+use cranefrick_mlir::Compiler;
 use ron::ser::PrettyConfig;
 use serde::Serialize as _;
 use tracing::{info, warn};
@@ -36,22 +35,9 @@ fn main() -> Result<()> {
 
 	let mut compiler = Compiler::from_iter(parsed.clone());
 
-	// {
-	// 	let mut out = fs::OpenOptions::new()
-	// 	.create(true).append(true).write(true).open(&args.output_path)
-
-	// 	dump_ops(&mut out, &compiler, 0)?;
-
-	// 	println!("{}", String::from_utf8(out)?);
-	// }
-
-	dump_compiler(&compiler, &args.output_path, "unoptimized")?;
-
 	serialize_compiler(&compiler, &args.output_path, "unoptimized")?;
 
 	compiler.optimize();
-
-	dump_compiler(&compiler, &args.output_path, "optimized")?;
 
 	serialize_compiler(&compiler, &args.output_path, "optimized")?;
 
@@ -153,57 +139,4 @@ fn get_flags(path: Option<&Path>) -> AssemblerFlags {
 	} else {
 		AssemblerFlags::default()
 	}
-}
-
-fn dump_compiler(comp: &Compiler, output_path: &Path, name: &str) -> Result<(), std::io::Error> {
-	let mut file = fs::OpenOptions::new()
-		.create(true)
-		.truncate(true)
-		.write(true)
-		.open(output_path.join(format!("{name}.bfir")))?;
-
-	dump_ops(&mut file, comp, 0)?;
-
-	Ok(())
-}
-
-fn dump_ops<W: Write>(
-	output: &mut W,
-	ops: &[BrainMlir],
-	indent: usize,
-) -> Result<(), std::io::Error> {
-	for op in ops {
-		for _ in 0..indent {
-			write!(output, "| ")?;
-		}
-
-		match op {
-			BrainMlir::ChangeCell(i) => {
-				if *i > 0 {
-					writeln!(output, "INC {i}")?;
-				} else {
-					writeln!(output, "DEC {i}")?;
-				}
-			}
-			BrainMlir::MovePtr(i) => {
-				if *i > 0 {
-					writeln!(output, "INC_PTR {i}")?;
-				} else {
-					writeln!(output, "DEC_PTR {i}")?;
-				}
-			}
-			BrainMlir::SetCell(i) => {
-				writeln!(output, "SET {i}")?;
-			}
-			BrainMlir::GetInput => writeln!(output, "GETC")?,
-			BrainMlir::PutOutput => writeln!(output, "PUTC")?,
-			BrainMlir::DynamicLoop(l) => {
-				writeln!(output, "DLOOP")?;
-				dump_ops(output, l, indent + 1)?;
-			}
-			_ => {}
-		}
-	}
-
-	Ok(())
 }

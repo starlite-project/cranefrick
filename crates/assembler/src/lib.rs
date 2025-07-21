@@ -7,9 +7,11 @@ use std::{
 	fmt::{Debug, Display, Error as FmtError, Formatter, Result as FmtResult},
 	fs,
 	io::{self, Error as IoError, prelude::*},
+	num::NonZero,
 	ops::{Deref, DerefMut},
 	path::Path,
-	ptr, slice,
+	process::exit,
+	slice,
 };
 
 use cranefrick_mlir::{BrainMlir, Compiler};
@@ -17,15 +19,11 @@ use cranelift_codegen::{
 	CodegenError,
 	cfg_printer::CFGPrinter,
 	control::ControlPlane,
-	entity::EntityRef as _,
-	ir::{
-		AbiParam, Block, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value,
-		condcodes::IntCC, immediates::Offset32, types,
-	},
+	ir::{AbiParam, Block, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
 	isa,
 	settings::{self, Configurable as _},
 };
-use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Variable};
+use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
 use target_lexicon::Triple;
@@ -112,6 +110,7 @@ impl AssembledModule {
 
 		drop(span);
 
+		info!("finishing up module definitions");
 		module.define_function(func, &mut ctx)?;
 		module.clear_context(&mut ctx);
 
@@ -128,15 +127,9 @@ impl AssembledModule {
 
 		let code = module.get_finalized_function(self.main);
 
-		let exec = unsafe { std::mem::transmute::<*const u8, fn() -> *mut ()>(code) };
+		let exec = unsafe { std::mem::transmute::<*const u8, fn()>(code) };
 
-		let ptr = exec();
-
-		if !ptr.is_null() {
-			let e = unsafe { Box::from_raw(ptr.cast::<IoError>()) };
-
-			return Err((*e).into());
-		}
+		exec();
 
 		Ok(())
 	}
@@ -153,7 +146,6 @@ impl Drop for AssembledModule {
 }
 
 struct Assembler<'a> {
-	ptr: Variable,
 	ptr_type: Type,
 	builder: FunctionBuilder<'a>,
 	read: FuncRef,
@@ -183,9 +175,6 @@ impl<'a> Assembler<'a> {
 
 		let mut builder = FunctionBuilder::new(func, fn_ctx);
 
-		let ptr = Variable::new(0);
-		builder.declare_var(ptr, ptr_type);
-
 		let block = builder.create_block();
 
 		builder.switch_to_block(block);
@@ -199,14 +188,12 @@ impl<'a> Assembler<'a> {
 		let write = {
 			let mut write_sig = module.make_signature();
 			write_sig.params.push(AbiParam::new(types::I8));
-			write_sig.returns.push(AbiParam::new(ptr_type));
 			module.declare_function("write", Linkage::Import, &write_sig)?
 		};
 
 		let read = {
 			let mut read_sig = module.make_signature();
 			read_sig.params.push(AbiParam::new(ptr_type));
-			read_sig.returns.push(AbiParam::new(ptr_type));
 			module.declare_function("read", Linkage::Import, &read_sig)?
 		};
 
@@ -214,7 +201,6 @@ impl<'a> Assembler<'a> {
 		let read = module.declare_func_in_func(read, builder.func);
 
 		Ok(Self {
-			ptr,
 			ptr_type,
 			builder,
 			read,
@@ -250,136 +236,115 @@ impl<'a> Assembler<'a> {
 		Ok(())
 	}
 
-	fn change_cell(&mut self, v: i8) {
-		let cell_value = self.current_cell_value();
-		let cell_value = self.ins().iadd_imm(cell_value, i64::from(v));
-		self.store(cell_value, 0);
-	}
-
-	fn move_ptr(&mut self, offset: i64) {
-		let ptr_type = self.ptr_type;
-		let value = self.ptr_value();
-		let offset_ptr = self.ins().iadd_imm(value, offset);
-
-		let ptr_value = if offset < 0 {
-			let wrapped = self.ins().iconst(ptr_type, 30_000 - offset);
-			self.ins().select(value, offset_ptr, wrapped)
-		} else {
-			let cmp = self.ins().icmp_imm(IntCC::Equal, offset_ptr, 30_000);
-			let zero = self.ins().iconst(ptr_type, 0);
-
-			self.ins().select(cmp, zero, offset_ptr)
-		};
-
-		let ptr = self.ptr;
-
-		self.def_var(ptr, ptr_value);
-	}
-
-	fn get_input(&mut self) {
-		let exit_block = self.exit_block;
-		let read = self.read;
-		let cell_addr = self.memory_address();
-
-		let inst = self.ins().call(read, &[cell_addr]);
-
-		let result = self.inst_results(inst)[0];
-
-		let after_block = self.create_block();
-
-		self.ins()
-			.brif(result, exit_block, &[result.into()], after_block, &[]);
-		self.seal_block(after_block);
-		self.switch_to_block(after_block);
-	}
-
-	fn dynamic_loop(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
-		let head_block = self.create_block();
-		let body_block = self.create_block();
-		let next_block = self.create_block();
-
-		self.ins().jump(head_block, &[]);
-
-		self.switch_to_block(head_block);
-
-		let cell_value = self.current_cell_value();
-
-		self.ins()
-			.brif(cell_value, body_block, &[], next_block, &[]);
-
-		self.switch_to_block(body_block);
-		self.ops(ops)?;
-		self.ins().jump(head_block, &[]);
-
-		self.switch_to_block(next_block);
-		self.set_cell(0);
-
-		Ok(())
-	}
-
-	fn set_cell(&mut self, v: u8) {
-		let value = self.ins().iconst(types::I8, i64::from(v));
-		self.store(value, 0);
-	}
-
-	fn put_output(&mut self) {
-		let write = self.write;
-		let exit_block = self.exit_block;
-		let cell_value = self.current_cell_value();
-
-		let inst = self.ins().call(write, &[cell_value]);
-
-		let result = self.inst_results(inst)[0];
-
-		let after_block = self.create_block();
-
-		self.ins()
-			.brif(result, exit_block, &[result.into()], after_block, &[]);
-
-		self.seal_block(after_block);
-		self.switch_to_block(after_block);
-	}
-
 	fn ops(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
 		for op in ops {
 			match op {
-				BrainMlir::ChangeCell(i) => self.change_cell(*i),
-				BrainMlir::MovePtr(offset) => self.move_ptr(*offset),
-				BrainMlir::DynamicLoop(l) => self.dynamic_loop(l)?,
-				BrainMlir::SetCell(v) => self.set_cell(*v),
+				BrainMlir::ChangeCell(i, offset) => {
+					self.change_cell(*i, offset.map_or(0, NonZero::get));
+				}
+				BrainMlir::MovePointer(offset) => self.move_pointer(*offset),
+				BrainMlir::DynamicLoop(ops) => self.dynamic_loop(ops)?,
 				BrainMlir::PutOutput => self.put_output(),
 				BrainMlir::GetInput => self.get_input(),
-				i => return Err(AssemblyError::NotImplemented(i.clone())),
+				BrainMlir::SetCell(value, offset) => {
+					self.set_cell(*value, offset.map_or(0, NonZero::get));
+				}
+				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}
 
 		Ok(())
 	}
 
-	fn store(&mut self, value: Value, offset: i64) {
-		let addr = self.memory_address();
-		self.ins().store(
-			MemFlags::new(),
+	fn load(&mut self, offset: i32) -> Value {
+		let memory_address = self.memory_address;
+		self.ins()
+			.load(types::I8, MemFlags::new(), memory_address, offset)
+	}
+
+	fn store(&mut self, value: Value, offset: i32) {
+		let memory_address = self.memory_address;
+		self.ins()
+			.store(MemFlags::new(), value, memory_address, offset);
+	}
+
+	fn const_u8(&mut self, value: u8) -> Value {
+		self.ins().iconst(types::I8, i64::from(value))
+	}
+
+	fn move_pointer(&mut self, offset: i32) {
+		let ptr_type = self.ptr_type;
+		let memory_address = self.memory_address;
+
+		let value = self.ins().iconst(ptr_type, i64::from(offset));
+		self.memory_address = self.ins().iadd(memory_address, value);
+	}
+
+	fn change_cell(&mut self, value: i8, offset: i32) {
+		let heap_value = self.load(offset);
+		let changed = self.ins().iadd_imm(heap_value, i64::from(value));
+		self.store(changed, offset);
+	}
+
+	fn dynamic_loop(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
+		let ptr_type = self.ptr_type;
+		let memory_address = self.memory_address;
+
+		let head_block = self.create_block();
+		let body_block = self.create_block();
+		let next_block = self.create_block();
+
+		self.append_block_param(head_block, ptr_type);
+		self.append_block_param(body_block, ptr_type);
+		self.append_block_param(next_block, ptr_type);
+
+		self.ins().jump(head_block, &[memory_address.into()]);
+
+		self.switch_to_block(head_block);
+		self.memory_address = self.block_params(head_block)[0];
+
+		let value = self.load(0);
+		let memory_address = self.memory_address;
+
+		self.ins().brif(
 			value,
-			addr,
-			Offset32::try_from_i64(offset).unwrap(),
+			body_block,
+			&[memory_address.into()],
+			next_block,
+			&[memory_address.into()],
 		);
+
+		self.switch_to_block(body_block);
+		self.ops(ops)?;
+
+		let memory_address = self.memory_address;
+		self.ins().jump(head_block, &[memory_address.into()]);
+
+		self.switch_to_block(next_block);
+		self.memory_address = self.block_params(next_block)[0];
+
+		self.set_cell(0, 0);
+
+		Ok(())
 	}
 
-	fn ptr_value(&mut self) -> Value {
-		let ptr = self.ptr;
-		self.use_var(ptr)
+	fn set_cell(&mut self, value: u8, offset: i32) {
+		let value = self.const_u8(value);
+		self.store(value, offset);
 	}
 
-	fn memory_address(&mut self) -> Value {
-		let ptr_value = self.ptr_value();
-		let addr = self.memory_address;
-		self.ins().iadd(addr, ptr_value)
+	fn put_output(&mut self) {
+		let write = self.write;
+
+		let value = self.load(0);
+		self.ins().call(write, &[value]);
 	}
 
-	fn current_cell_value(&mut self) -> Value {
-		let addr = self.memory_address();
-		self.ins().load(types::I8, MemFlags::new(), addr, 0)
+	fn get_input(&mut self) {
+		let read = self.read;
+		let memory_address = self.memory_address;
+
+		self.ins().call(read, &[memory_address]);
 	}
 }
 
@@ -480,22 +445,21 @@ impl From<isa::LookupError> for AssemblyError {
 	}
 }
 
-unsafe extern "C" fn write(value: u8) -> *mut IoError {
+unsafe extern "C" fn write(value: u8) {
 	if cfg!(target_os = "windows") && value >= 128 {
-		return ptr::null_mut();
+		return;
 	}
 
 	let mut stdout = io::stdout().lock();
 
 	let result = stdout.write_all(&[value]).and_then(|()| stdout.flush());
 
-	match result {
-		Err(e) => Box::into_raw(Box::new(e)),
-		_ => ptr::null_mut(),
+	if result.is_err() {
+		exit(1);
 	}
 }
 
-unsafe extern "C" fn read(buf: *mut u8) -> *mut IoError {
+unsafe extern "C" fn read(buf: *mut u8) {
 	let mut stdin = io::stdin().lock();
 	loop {
 		let mut value = 0;
@@ -503,7 +467,7 @@ unsafe extern "C" fn read(buf: *mut u8) -> *mut IoError {
 
 		if let Err(e) = err {
 			if !matches!(e.kind(), io::ErrorKind::UnexpectedEof) {
-				return Box::into_raw(Box::new(e));
+				exit(1);
 			}
 
 			value = 0;
@@ -515,7 +479,7 @@ unsafe extern "C" fn read(buf: *mut u8) -> *mut IoError {
 
 		unsafe { *buf = value };
 
-		return ptr::null_mut();
+		break;
 	}
 }
 

@@ -1,56 +1,58 @@
 #![allow(clippy::trivially_copy_pass_by_ref)]
 
-use alloc::vec::Vec;
+use core::num::NonZero;
 
-use super::{Change, utils::calculate_ptr_movement};
+use super::Change;
 use crate::BrainMlir;
 
-pub fn combine_instructions(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn optimize_consecutive_instructions(ops: &[BrainMlir; 2]) -> Option<Change> {
 	match ops {
-		[BrainMlir::ChangeCell(i1), BrainMlir::ChangeCell(i2)] if *i1 == -i2 => {
-			Some(Change::remove())
+		[BrainMlir::ChangeCell(a, x), BrainMlir::ChangeCell(b, y)] if *x == *y => {
+			Some(Change::replace(BrainMlir::change_cell_at(
+				a.wrapping_add(*b),
+				x.map_or(0, NonZero::get),
+			)))
 		}
-		[BrainMlir::ChangeCell(i1), BrainMlir::ChangeCell(i2)] => Some(Change::replace(
-			BrainMlir::change_cell(i1.wrapping_add(*i2)),
-		)),
-		[BrainMlir::MovePtr(i1), BrainMlir::MovePtr(i2)] if *i1 == -i2 => Some(Change::remove()),
-		[BrainMlir::MovePtr(i1), BrainMlir::MovePtr(i2)] => {
-			Some(Change::replace(BrainMlir::move_ptr(i1.wrapping_add(*i2))))
+		[BrainMlir::MovePointer(a), BrainMlir::MovePointer(b)] => {
+			Some(Change::replace(BrainMlir::move_pointer(a.wrapping_add(*b))))
 		}
-		[
-			BrainMlir::SetCell(..) | BrainMlir::ChangeCell(.., 0),
-			BrainMlir::SetCell(..),
-		] => Some(Change::remove_offset(0)),
 		_ => None,
 	}
 }
 
 pub fn optimize_sets(ops: &[BrainMlir; 2]) -> Option<Change> {
 	match ops {
-		[BrainMlir::SetCell(i1), BrainMlir::ChangeCell(i2)] => Some(Change::replace(
-			BrainMlir::set_cell(i1.wrapping_add_signed(*i2)),
-		)),
-		[l @ BrainMlir::DynamicLoop(..), BrainMlir::ChangeCell(i1)] => {
-			Some(Change::swap([l.clone(), BrainMlir::set_cell(*i1 as u8)]))
+		[
+			BrainMlir::SetCell(.., a) | BrainMlir::ChangeCell(.., a),
+			BrainMlir::SetCell(.., b),
+		] if *a == *b => Some(Change::remove_offset(0)),
+		[BrainMlir::SetCell(i1, x), BrainMlir::ChangeCell(i2, y)] if *x == *y => {
+			Some(Change::replace(BrainMlir::set_cell_at(
+				i1.wrapping_add_signed(*i2),
+				x.map_or(0, NonZero::get),
+			)))
 		}
-		[BrainMlir::ChangeCell(..), BrainMlir::SetCell(..)] => Some(Change::remove_offset(0)),
+		[
+			l @ BrainMlir::DynamicLoop(..),
+			BrainMlir::ChangeCell(i1, None),
+		] => Some(Change::swap([l.clone(), BrainMlir::set_cell(*i1 as u8)])),
 		_ => None,
 	}
 }
 
-// pub const fn clear_cell(ops: &[BrainMlir; 1]) -> Option<Change> {
-// 	match ops {
-// 		[BrainMlir::DynamicLoop(v)] => match v.as_slice() {
-// 			[BrainMlir::ChangeCell(-1)] => Some(Change::replace(BrainMlir::set_cell(0))),
-// 			_ => None,
-// 		},
-// 		_ => None,
-// 	}
-// }
-
-pub const fn clear_cell(ops: &[BrainMlir]) -> Option<Change> {
+pub fn clear_cell(ops: &[BrainMlir]) -> Option<Change> {
 	match ops {
-		[BrainMlir::ChangeCell(..)] => Some(Change::replace(BrainMlir::set_cell(0))),
+		[BrainMlir::ChangeCell(.., offset)] => Some(Change::replace(BrainMlir::set_cell_at(
+			0,
+			offset.map_or(0, NonZero::get),
+		))),
+		_ => None,
+	}
+}
+
+pub const fn remove_noop_instructions(ops: &[BrainMlir; 1]) -> Option<Change> {
+	match ops {
+		[BrainMlir::ChangeCell(0, ..) | BrainMlir::MovePointer(0)] => Some(Change::remove()),
 		_ => None,
 	}
 }
@@ -58,7 +60,7 @@ pub const fn clear_cell(ops: &[BrainMlir]) -> Option<Change> {
 pub const fn remove_unreachable_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainMlir::SetCell(0) | BrainMlir::DynamicLoop(..),
+			BrainMlir::SetCell(0, None) | BrainMlir::DynamicLoop(..),
 			BrainMlir::DynamicLoop(..),
 		] => Some(Change::remove_offset(1)),
 		_ => None,
@@ -67,8 +69,10 @@ pub const fn remove_unreachable_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
 
 pub const fn remove_infinite_loops(ops: &[BrainMlir]) -> Option<Change> {
 	match ops {
-		[.., BrainMlir::SetCell(v)] if !matches!(v, 0) => Some(Change::remove()),
-		[.., BrainMlir::GetInput] => Some(Change::remove()),
+		[
+			..,
+			BrainMlir::SetCell(1..=u8::MAX, None) | BrainMlir::GetInput,
+		] => Some(Change::remove()),
 		_ => None,
 	}
 }
@@ -77,101 +81,13 @@ pub fn remove_empty_loops(ops: &[BrainMlir]) -> Option<Change> {
 	ops.is_empty().then_some(Change::remove())
 }
 
-pub fn remove_early_loops(ops: &mut Vec<BrainMlir>) -> bool {
-	if matches!(ops.first(), Some(BrainMlir::DynamicLoop(..))) {
-		ops.remove(0);
-		true
-	} else {
-		false
-	}
-}
-
-pub fn unroll_basic_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
-	match ops {
-		[BrainMlir::ChangeCell(v), BrainMlir::DynamicLoop(l)]
-			if *v >= 1
-				&& matches!(calculate_ptr_movement(l), Some(0))
-				&& matches!(
-					l.as_slice(),
-					[.., BrainMlir::ChangeCell(-1)] | [BrainMlir::ChangeCell(-1), ..]
-				) =>
-		{
-			if l.iter().any(|op| matches!(op, BrainMlir::DynamicLoop(..))) {
-				return None;
-			}
-
-			let mut out = Vec::with_capacity(l.len() * *v as usize);
-
-			for _ in 0..*v {
-				out.extend_from_slice(l);
-			}
-
-			out.insert(0, BrainMlir::change_cell(*v));
-
-			out.push(BrainMlir::dynamic_loop(l.iter().cloned()));
-
-			Some(Change::swap(out))
-		}
-		[BrainMlir::SetCell(v), BrainMlir::DynamicLoop(l)]
-			if *v >= 1
-				&& matches!(calculate_ptr_movement(l), Some(0))
-				&& matches!(l.as_slice(), [.., BrainMlir::ChangeCell(-1)]) =>
-		{
-			if l.iter().any(|op| matches!(op, BrainMlir::DynamicLoop(..))) {
-				return None;
-			}
-
-			let without_decrement = {
-				let mut owned = l.clone();
-				owned.pop();
-				owned
-			};
-
-			let mut out = Vec::with_capacity(without_decrement.len() * *v as usize);
-
-			for _ in 0..*v {
-				out.extend_from_slice(&without_decrement);
-			}
-
-			Some(Change::swap(out))
-		}
-		[BrainMlir::SetCell(v), BrainMlir::DynamicLoop(l)]
-			if *v >= 1
-				&& matches!(calculate_ptr_movement(l), Some(0))
-				&& matches!(l.as_slice(), [BrainMlir::ChangeCell(-1), ..]) =>
-		{
-			if l.iter().any(|op| matches!(op, BrainMlir::DynamicLoop(..))) {
-				return None;
-			}
-
-			let without_decrement = {
-				let mut owned = l.clone();
-				owned.remove(0);
-				owned
-			};
-
-			let mut out = Vec::with_capacity(without_decrement.len() * *v as usize);
-
-			for _ in 0..*v {
-				out.extend_from_slice(&without_decrement);
-			}
-
-			Some(Change::swap(out))
-		}
-		_ => None,
-	}
-}
-
 pub fn add_offsets(ops: &[BrainMlir; 3]) -> Option<Change> {
 	match ops {
 		[
-			BrainMlir::MovePtr(x),
-			BrainMlir::ChangeCell(i),
-			BrainMlir::MovePtr(y),
-		] => Some(Change::swap([
-			BrainMlir::change_cell_at(*i, x.wrapping_add(*y)),
-			BrainMlir::move_ptr(x.wrapping_add(*y)),
-		])),
+			BrainMlir::MovePointer(x),
+			BrainMlir::ChangeCell(i, None),
+			BrainMlir::MovePointer(y),
+		] if *x == -y => Some(Change::replace(BrainMlir::change_cell_at(*i, *x))),
 		_ => None,
 	}
 }

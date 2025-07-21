@@ -3,7 +3,10 @@ use std::fs;
 use anyhow::Result;
 use cranelift::{
 	codegen::{
-		cfg_printer::CFGPrinter, control::ControlPlane, ir::{Function, UserFuncName}, Context
+		Context,
+		cfg_printer::CFGPrinter,
+		control::ControlPlane,
+		ir::{Function, UserFuncName},
 	},
 	prelude::*,
 };

@@ -10,7 +10,7 @@ use cranefrick_hlir::BrainHlir;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use self::opt::{passes, passes::remove_early_loops, run_loop_pass, run_peephole_pass};
+use self::opt::{passes, run_loop_pass, run_peephole_pass};
 use super::BrainMlir;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -59,32 +59,29 @@ impl Compiler {
 	}
 
 	fn run_all_passes(&mut self, progress: &mut bool) {
-		self.pass_info("combine instructions");
-		*progress |= run_peephole_pass(&mut *self, passes::combine_instructions);
+		self.pass_info("combine relavent instructions");
+		*progress |= run_peephole_pass(self, passes::optimize_consecutive_instructions);
 
-		self.pass_info("optimize clear cell instructions");
-		*progress |= run_loop_pass(&mut *self, passes::clear_cell);
+		self.pass_info("adding relavent offsets");
+		*progress |= run_peephole_pass(self, passes::add_offsets);
 
-		self.pass_info("optimize set values");
-		*progress |= run_peephole_pass(&mut *self, passes::optimize_sets);
+		self.pass_info("optimizing clear-cell instructions");
+		*progress |= run_loop_pass(self, passes::clear_cell);
 
-		self.pass_info("remove unreachable loops");
-		*progress |= run_peephole_pass(&mut *self, passes::remove_unreachable_loops);
+		self.pass_info("optimizing set-based instructions");
+		*progress |= run_peephole_pass(self, passes::optimize_sets);
 
-		self.pass_info("remove infinite loops");
-		*progress |= run_loop_pass(&mut *self, passes::remove_infinite_loops);
+		self.pass_info("removing no-op instructions");
+		*progress |= run_peephole_pass(self, passes::remove_noop_instructions);
 
-		self.pass_info("remove empty loops");
-		*progress |= run_loop_pass(&mut *self, passes::remove_empty_loops);
+		self.pass_info("removing unreachable loops");
+		*progress |= run_peephole_pass(self, passes::remove_unreachable_loops);
 
-		self.pass_info("remove useless beginning loops");
-		*progress |= remove_early_loops(&mut *self);
+		self.pass_info("removing infinite loops");
+		*progress |= run_loop_pass(self, passes::remove_infinite_loops);
 
-		self.pass_info("unrolling basic loops");
-		*progress |= run_peephole_pass(&mut *self, passes::unroll_basic_loops);
-
-		self.pass_info("adding offsets to instructions");
-		*progress |= run_peephole_pass(&mut *self, passes::add_offsets);
+		self.pass_info("removing empty loops");
+		*progress |= run_loop_pass(self, passes::remove_empty_loops);
 	}
 
 	fn pass_info(&self, pass: &str) {
@@ -223,8 +220,8 @@ fn fix_loops(program: &[BrainHlir]) -> Vec<BrainMlir> {
 				}
 				BrainHlir::IncrementCell => Some(BrainMlir::change_cell(1)),
 				BrainHlir::DecrementCell => Some(BrainMlir::change_cell(-1)),
-				BrainHlir::MovePtrLeft => Some(BrainMlir::move_ptr(-1)),
-				BrainHlir::MovePtrRight => Some(BrainMlir::move_ptr(1)),
+				BrainHlir::MovePtrLeft => Some(BrainMlir::move_pointer(-1)),
+				BrainHlir::MovePtrRight => Some(BrainMlir::move_pointer(1)),
 				BrainHlir::GetInput => Some(BrainMlir::get_input()),
 				BrainHlir::PutOutput => Some(BrainMlir::put_output()),
 			} {
