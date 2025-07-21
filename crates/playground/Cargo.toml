@@ -1,6 +1,7 @@
 lints.workspace = true
 
 [package]
+default-run = "cranefrick_playground"
 edition.workspace = true
 license.workspace = true
 name = "cranefrick_playground"
