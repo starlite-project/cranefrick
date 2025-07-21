@@ -10,8 +10,7 @@ use std::{
 	num::NonZero,
 	ops::{Deref, DerefMut},
 	path::Path,
-	process::exit,
-	slice,
+	ptr, slice,
 };
 
 use cranefrick_mlir::{BrainMlir, Compiler};
@@ -23,7 +22,7 @@ use cranelift_codegen::{
 	isa,
 	settings::{self, Configurable as _},
 };
-use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
+use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Switch};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
 use target_lexicon::Triple;
@@ -127,9 +126,15 @@ impl AssembledModule {
 
 		let code = module.get_finalized_function(self.main);
 
-		let exec = unsafe { std::mem::transmute::<*const u8, fn()>(code) };
+		let exec = unsafe { std::mem::transmute::<*const u8, fn() -> *mut ()>(code) };
 
-		exec();
+		let ptr = exec();
+
+		if !ptr.is_null() {
+			let err = unsafe { Box::<IoError>::from_raw(ptr.cast::<IoError>()) };
+
+			return Err((*err).into());
+		}
 
 		Ok(())
 	}
@@ -183,17 +188,18 @@ impl<'a> Assembler<'a> {
 		let memory_address = builder.ins().global_value(ptr_type, tape_ptr);
 
 		let exit_block = builder.create_block();
-		builder.append_block_param(exit_block, ptr_type);
 
 		let write = {
 			let mut write_sig = module.make_signature();
 			write_sig.params.push(AbiParam::new(types::I8));
+			write_sig.returns.push(AbiParam::new(ptr_type));
 			module.declare_function("write", Linkage::Import, &write_sig)?
 		};
 
 		let read = {
 			let mut read_sig = module.make_signature();
 			read_sig.params.push(AbiParam::new(ptr_type));
+			read_sig.returns.push(AbiParam::new(ptr_type));
 			module.declare_function("read", Linkage::Import, &read_sig)?
 		};
 
@@ -226,7 +232,7 @@ impl<'a> Assembler<'a> {
 		self.switch_to_block(exit_block);
 		self.seal_block(exit_block);
 
-		let result = self.block_params(exit_block)[0];
+		let result = self.ins().get_pinned_reg(ptr_type);
 		self.ins().return_(&[result]);
 
 		self.seal_all_blocks();
@@ -335,16 +341,44 @@ impl<'a> Assembler<'a> {
 
 	fn put_output(&mut self) {
 		let write = self.write;
+		let exit_block = self.exit_block;
 
 		let value = self.load(0);
-		self.ins().call(write, &[value]);
+		let inst = self.ins().call(write, &[value]);
+		let result = self.inst_results(inst)[0];
+
+		self.ins().set_pinned_reg(result);
+
+		let after_block = self.create_block();
+
+		let mut switch = Switch::new();
+		switch.set_entry(0, after_block);
+
+		switch.emit(self, result, exit_block);
+
+		self.switch_to_block(after_block);
+		self.seal_block(after_block);
 	}
 
 	fn get_input(&mut self) {
 		let read = self.read;
 		let memory_address = self.memory_address;
+		let exit_block = self.exit_block;
 
-		self.ins().call(read, &[memory_address]);
+		let inst = self.ins().call(read, &[memory_address]);
+		let result = self.inst_results(inst)[0];
+
+		self.ins().set_pinned_reg(result);
+
+		let after_block = self.create_block();
+
+		let mut switch = Switch::new();
+		switch.set_entry(0, after_block);
+
+		switch.emit(self, result, exit_block);
+
+		self.switch_to_block(after_block);
+		self.seal_block(after_block);
 	}
 }
 
@@ -445,21 +479,22 @@ impl From<isa::LookupError> for AssemblyError {
 	}
 }
 
-unsafe extern "C" fn write(value: u8) {
+unsafe extern "C" fn write(value: u8) -> *mut IoError {
 	if cfg!(target_os = "windows") && value >= 128 {
-		return;
+		return ptr::null_mut();
 	}
 
 	let mut stdout = io::stdout().lock();
 
 	let result = stdout.write_all(&[value]).and_then(|()| stdout.flush());
 
-	if result.is_err() {
-		exit(1);
+	match result {
+		Ok(()) => ptr::null_mut(),
+		Err(e) => Box::into_raw(Box::new(e)),
 	}
 }
 
-unsafe extern "C" fn read(buf: *mut u8) {
+unsafe extern "C" fn read(buf: *mut u8) -> *mut IoError {
 	let mut stdin = io::stdin().lock();
 	loop {
 		let mut value = 0;
@@ -467,7 +502,7 @@ unsafe extern "C" fn read(buf: *mut u8) {
 
 		if let Err(e) = err {
 			if !matches!(e.kind(), io::ErrorKind::UnexpectedEof) {
-				exit(1);
+				return Box::into_raw(Box::new(e));
 			}
 
 			value = 0;
@@ -479,7 +514,7 @@ unsafe extern "C" fn read(buf: *mut u8) {
 
 		unsafe { *buf = value };
 
-		break;
+		break ptr::null_mut();
 	}
 }
 
