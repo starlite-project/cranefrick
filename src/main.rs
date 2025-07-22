@@ -18,6 +18,10 @@ use tracing_subscriber::{
 	prelude::*,
 };
 
+#[cfg(target_os = "windows")]
+#[global_allocator]
+static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 fn main() -> Result<()> {
 	let args = match Args::try_parse() {
 		Ok(a) => a,
