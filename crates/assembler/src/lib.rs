@@ -264,6 +264,7 @@ impl<'a> Assembler<'a> {
 				BrainMlir::SetCell(value, offset) => {
 					self.set_cell(*value, offset.map_or(0, NonZero::get));
 				}
+				BrainMlir::ScaleAndMoveValue(factor, offset) => self.scale_and_move_value(*factor, *offset),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}
@@ -293,6 +294,19 @@ impl<'a> Assembler<'a> {
 
 		let value = self.ins().iconst(ptr_type, i64::from(offset));
 		self.memory_address = self.ins().iadd(memory_address, value);
+	}
+
+	fn scale_and_move_value(&mut self, factor: u8, offset: i32) {
+		let current_value = self.load(0);
+		self.set_cell(0, 0);
+
+		let other_cell = self.load(offset);
+
+		let value_to_add = self.ins().imul_imm(current_value, i64::from(factor));
+
+		let added = self.ins().iadd(other_cell, value_to_add);
+
+		self.store(added, offset);
 	}
 
 	fn change_cell(&mut self, value: i8, offset: i32) {

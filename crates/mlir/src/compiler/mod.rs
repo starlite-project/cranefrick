@@ -94,6 +94,9 @@ impl Compiler {
 
 		self.pass_info("sorting cell changes");
 		*progress |= run_peephole_pass(self, passes::sort_increments);
+
+		self.pass_info("optimize scale and move cell instructions");
+		*progress |= run_loop_pass(self, passes::optimize_scale_and_move_cell);
 	}
 
 	fn pass_info(&self, pass: &str) {

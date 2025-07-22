@@ -28,6 +28,7 @@ pub enum BrainMlir {
 	GetInput,
 	PutOutput,
 	DynamicLoop(Vec<Self>),
+	ScaleAndMoveValue(u8, i32),
 }
 
 impl BrainMlir {
@@ -64,6 +65,11 @@ impl BrainMlir {
 	#[must_use]
 	pub const fn put_output() -> Self {
 		Self::PutOutput
+	}
+
+	#[must_use]
+	pub const fn scale_and_move_value(value: u8, offset: i32) -> Self {
+		Self::ScaleAndMoveValue(value, offset)
 	}
 
 	#[must_use]

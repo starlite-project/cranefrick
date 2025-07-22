@@ -224,3 +224,16 @@ pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainMlir; 2]) -> Option<Chang
 		_ => None,
 	}
 }
+
+pub const fn optimize_scale_and_move_cell(ops: &[BrainMlir]) -> Option<Change> {
+	match ops {
+		[
+			BrainMlir::ChangeCell(-1, None),
+			BrainMlir::ChangeCell(i, Some(offset)),
+		] if i.is_positive() => Some(Change::replace(BrainMlir::scale_and_move_value(
+			i.unsigned_abs(),
+			offset.get(),
+		))),
+		_ => None,
+	}
+}
