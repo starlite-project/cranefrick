@@ -10,5 +10,5 @@ version.workspace = true
 
 [dependencies]
 anyhow = "1.0.98"
-cranelift = { version = "0.121" }
+cranelift = { version = "0.122" }
 target-lexicon = "0.13"
