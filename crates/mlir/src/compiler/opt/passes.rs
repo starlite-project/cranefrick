@@ -127,12 +127,18 @@ pub fn add_offsets(ops: &[BrainMlir; 3]) -> Option<Change> {
 			BrainMlir::MovePointer(x),
 			BrainMlir::ChangeCell(i, None),
 			BrainMlir::MovePointer(y),
-		] if *x == -y => Some(Change::replace(BrainMlir::change_cell_at(*i, *x))),
+		] => Some(Change::swap([
+			BrainMlir::change_cell_at(*i, *x),
+			BrainMlir::move_pointer(x.wrapping_add(*y)),
+		])),
 		[
 			BrainMlir::MovePointer(x),
 			BrainMlir::SetCell(i, None),
 			BrainMlir::MovePointer(y),
-		] if *x == -y => Some(Change::replace(BrainMlir::set_cell_at(*i, *x))),
+		] => Some(Change::swap([
+			BrainMlir::set_cell_at(*i, *x),
+			BrainMlir::move_pointer(x.wrapping_add(*y)),
+		])),
 		_ => None,
 	}
 }
