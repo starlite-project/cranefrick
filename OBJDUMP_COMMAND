@@ -1,0 +1,1 @@
+objdump -b binary -D -M intel,x86-64 -m i386:x86-64 .\out\program.bin

@@ -109,6 +109,14 @@ impl AssembledModule {
 
 		drop(span);
 
+		info_span!("loop analysis").in_scope(|| {
+			info!("performing loop analysis");
+
+			let mut loop_analyzer = cranelift_codegen::loop_analysis::LoopAnalysis::new();
+
+			loop_analyzer.compute(&ctx.func, &ctx.cfg, &ctx.domtree);
+		});
+
 		info!("finishing up module definitions");
 		module.define_function(func, &mut ctx)?;
 		module.clear_context(&mut ctx);
