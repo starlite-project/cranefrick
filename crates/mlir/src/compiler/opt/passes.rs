@@ -43,7 +43,38 @@ pub fn optimize_sets(ops: &[BrainMlir; 2]) -> Option<Change> {
 	}
 }
 
-pub fn sort_increments(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn sort_changes(ops: &[BrainMlir; 2]) -> Option<Change> {
+	if let Some(change) = sort_dynamic_changes(ops) {
+		Some(change)
+	} else {
+		sort_static_changes(ops)
+	}
+}
+
+pub fn sort_static_changes(ops: &[BrainMlir; 2]) -> Option<Change> {
+	fn sorter_key(i: &BrainMlir) -> (i32, Option<u8>) {
+		(i.offset().unwrap_or_default(), get_set_value(i))
+	}
+
+	const fn get_set_value(i: &BrainMlir) -> Option<u8> {
+		match i {
+			BrainMlir::SetCell(i, ..) => Some(*i),
+			_ => None,
+		}
+	}
+
+	if !ops.iter().all(|i| matches!(i, BrainMlir::SetCell(..))) {
+		return None;
+	}
+
+	if ops.iter().is_sorted_by_key(sorter_key) {
+		return None;
+	}
+
+	Some(Change::swap(ops.iter().cloned().sorted_by_key(sorter_key)))
+}
+
+pub fn sort_dynamic_changes(ops: &[BrainMlir; 2]) -> Option<Change> {
 	fn sorter_key(i: &BrainMlir) -> (i32, Option<i8>) {
 		(i.offset().unwrap_or_default(), get_change_value(i))
 	}

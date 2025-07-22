@@ -264,7 +264,9 @@ impl<'a> Assembler<'a> {
 				BrainMlir::SetCell(value, offset) => {
 					self.set_cell(*value, offset.map_or(0, NonZero::get));
 				}
-				BrainMlir::ScaleAndMoveValue(factor, offset) => self.scale_and_move_value(*factor, *offset),
+				BrainMlir::ScaleAndMoveValue(factor, offset) => {
+					self.scale_and_move_value(*factor, *offset)
+				}
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

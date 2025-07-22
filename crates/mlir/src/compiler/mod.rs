@@ -93,7 +93,7 @@ impl Compiler {
 		*progress |= run_peephole_pass(self, passes::partially_unroll_basic_dynamic_loop);
 
 		self.pass_info("sorting cell changes");
-		*progress |= run_peephole_pass(self, passes::sort_increments);
+		*progress |= run_peephole_pass(self, passes::sort_changes);
 
 		self.pass_info("optimize scale and move cell instructions");
 		*progress |= run_loop_pass(self, passes::optimize_scale_and_move_cell);
