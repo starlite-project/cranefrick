@@ -8,7 +8,6 @@ use cranelift::{
 		control::ControlPlane,
 		ir::{Function, UserFuncName},
 	},
-	frontend::Switch,
 	prelude::*,
 };
 use target_lexicon::Triple;
@@ -23,14 +22,30 @@ fn main() -> Result<()> {
 		flags_builder
 	}))?;
 
-	let sig = Signature::new(isa.default_call_conv());
+	let mut sig = Signature::new(isa.default_call_conv());
+
+	sig.params.push(AbiParam::new(types::I8X2));
+	sig.returns.push(AbiParam::new(types::I8X2));
 
 	let mut fn_ctx = FunctionBuilderContext::new();
 	let mut func = Function::with_name_signature(UserFuncName::testcase("sample"), sig);
 
-
 	{
 		let mut builder = FunctionBuilder::new(&mut func, &mut fn_ctx);
+
+		let block = builder.create_block();
+		builder.append_block_params_for_function_params(block);
+
+		builder.switch_to_block(block);
+		builder.seal_block(block);
+
+		let first_param = builder.block_params(block)[0];
+
+		let other = builder.ins().iconst(types::I8X2, 1);
+
+		let added = builder.ins().iadd(first_param, other);
+
+		builder.ins().return_(&[added]);
 
 		builder.finalize();
 	};

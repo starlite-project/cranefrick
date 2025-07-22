@@ -10,9 +10,9 @@ version.workspace = true
 [dependencies]
 cranefrick_hlir = { path = "../hlir" }
 cranefrick_utils = { workspace = true, features = ["insert_or_push"] }
+itertools = "0.14"
 serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"
 ] }
-tracing.workspace = true
-itertools = "0.14"
+tracing = { workspace = true, features = ["attributes"] }
