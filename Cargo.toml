@@ -22,7 +22,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 mimalloc = "0.1"
 
 [workspace]
-members = [
+members = [ "bigbrain/regalloc",
     "crates/assembler",
     "crates/hlir",
     "crates/mlir",
