@@ -1,7 +1,6 @@
 lints.workspace = true
 
 [package]
-default-run = "cranefrick_playground"
 edition.workspace = true
 license.workspace = true
 name = "cranefrick_playground"
@@ -11,4 +10,5 @@ version.workspace = true
 [dependencies]
 anyhow = "1.0.98"
 cranelift = { version = "0.122" }
+egg = "0.10"
 target-lexicon = "0.13"
