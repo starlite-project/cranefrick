@@ -1,6 +1,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
 mod flags;
+mod internal;
 
 use std::{
 	error::Error as StdError,
@@ -18,7 +19,10 @@ use cranelift_codegen::{
 	CodegenError,
 	cfg_printer::CFGPrinter,
 	control::ControlPlane,
-	ir::{AbiParam, Block, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
+	ir::{
+		AbiParam, Block, BlockCall, ExceptionTableData, FuncRef, Function, Inst, InstBuilder as _,
+		MemFlags, Type, Value, types,
+	},
 	isa, settings,
 };
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
@@ -28,6 +32,7 @@ use target_lexicon::Triple;
 use tracing::{info, info_span};
 
 pub use self::flags::*;
+use self::internal::*;
 
 pub struct AssembledModule {
 	module: Option<JITModule>,
@@ -384,6 +389,7 @@ impl<'a> Assembler<'a> {
 
 		self.switch_to_block(after_block);
 		self.seal_block(after_block);
+		self.exception_table_test(inst, after_block);
 	}
 
 	fn get_input(&mut self) {
@@ -401,6 +407,20 @@ impl<'a> Assembler<'a> {
 
 		self.switch_to_block(after_block);
 		self.seal_block(after_block);
+	}
+
+	fn exception_table_test(&mut self, inst: Inst, block: Block) {
+		let Some(call_sig) = self.func.dfg.call_signature(inst) else {
+			return;
+		};
+
+		let et = ExceptionTableData::new(
+			call_sig,
+			BlockCall::new(block, std::iter::empty(), &mut self.func.dfg.value_lists),
+			[],
+		);
+
+		println!("{}", et.display(&self.func.dfg.value_lists))
 	}
 }
 
