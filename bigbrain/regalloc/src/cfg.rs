@@ -134,7 +134,7 @@ impl CfgInfo {
 		Ok(())
 	}
 
-	pub fn domtree(&self, a: Block, b: Block) -> bool {
+	pub fn dominates(&self, a: Block, b: Block) -> bool {
 		domtree::dominates(&self.domtree[..], a, b)
 	}
 }
