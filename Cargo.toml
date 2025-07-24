@@ -28,8 +28,7 @@ members = [
     "crates/hlir",
     "crates/mlir",
     "crates/playground",
-    "crates/utils",
-    "utils/llvmenv"
+    "crates/utils"
 ]
 resolver = "3"
 
