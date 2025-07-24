@@ -56,9 +56,9 @@ impl AssembledModule {
 		let ptr_type = module.target_config().pointer_type();
 
 		let mut ctx = module.make_context();
-		let mut func_ctx = FunctionBuilderContext::new();
+		ctx.func.collect_debug_info();
 
-		ctx.func.dfg.collect_debug_info();
+		let mut func_ctx = FunctionBuilderContext::new();
 
 		let mut sig = module.make_signature();
 
