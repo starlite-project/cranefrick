@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 use core::{
+	error::Error as CoreError,
 	fmt::{Debug, Display, Error as FmtError, Formatter, Result as FmtResult, Write as _},
 	ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign},
-	error::Error as CoreError,
 };
 
 use serde::{Deserialize, Serialize};
