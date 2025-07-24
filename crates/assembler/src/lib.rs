@@ -184,6 +184,7 @@ impl<'a> Assembler<'a> {
 			let mut data = DataDescription::new();
 
 			data.define_zeroinit(30_000);
+			data.set_used(true);
 
 			module.define_data(data_id, &data)?;
 		}
