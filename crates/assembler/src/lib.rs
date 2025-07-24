@@ -58,6 +58,8 @@ impl AssembledModule {
 		let mut ctx = module.make_context();
 		let mut func_ctx = FunctionBuilderContext::new();
 
+		ctx.func.dfg.collect_debug_info();
+
 		let mut sig = module.make_signature();
 
 		sig.returns.push(AbiParam::new(ptr_type));
@@ -242,6 +244,8 @@ impl<'a> Assembler<'a> {
 		self.seal_block(exit_block);
 
 		let result = self.block_params(exit_block)[0];
+
+		self.set_cold_block(exit_block);
 		self.ins().return_(&[result]);
 
 		self.seal_all_blocks();
