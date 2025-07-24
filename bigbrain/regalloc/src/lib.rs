@@ -6,6 +6,11 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+#[macro_use]
+mod index;
 mod registers;
 
-pub use self::registers::*;
+pub use self::{
+	index::{Block, Instruction, InstructionRange, InstructionRangeIter},
+	registers::*,
+};
