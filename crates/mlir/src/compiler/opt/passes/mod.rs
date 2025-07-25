@@ -8,7 +8,7 @@ use core::num::NonZero;
 
 pub use self::{loops::*, sort::*};
 use super::Change;
-use crate::{BrainMlir, compiler::opt::utils::calculate_ptr_movement};
+use crate::BrainMlir;
 
 pub fn optimize_consecutive_instructions(ops: &[BrainMlir; 2]) -> Option<Change> {
 	match ops {

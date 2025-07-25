@@ -87,6 +87,7 @@ impl AssembledModule {
 			fs::write(output_path.join("optimized.clif"), ctx.func.to_string())
 		})?;
 
+		info!("compiling binary");
 		let compiled_func = ctx.compile(&*isa, &mut ControlPlane::default()).unwrap();
 
 		span.in_scope(|| {

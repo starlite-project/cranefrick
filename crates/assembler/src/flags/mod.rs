@@ -47,59 +47,33 @@ pub struct AssemblerFlags {
 
 impl AssemblerFlags {
 	#[must_use]
-	pub const fn regalloc_algorithm(self) -> &'static str {
-		match self.regalloc_algorithm {
-			RegallocAlgorithm::Backtracking => "backtracking",
-		}
+	pub fn regalloc_algorithm(self) -> String {
+		self.regalloc_algorithm.to_string()
 	}
 
 	#[must_use]
-	pub const fn opt_level(self) -> &'static str {
-		match self.opt_level {
-			OptLevel::None => "none",
-			OptLevel::Speed => "speed",
-			OptLevel::SpeedAndSize => "speed_and_size",
-		}
+	pub fn opt_level(self) -> String {
+		self.opt_level.to_string()
 	}
 
 	#[must_use]
-	pub const fn tls_model(self) -> &'static str {
-		match self.tls_model {
-			TlsModel::None => "none",
-			TlsModel::Coff => "coff",
-			TlsModel::ElfGd => "elf_gd",
-			TlsModel::Macho => "macho",
-		}
+	pub fn tls_model(self) -> String {
+		self.tls_model.to_string()
 	}
 
 	#[must_use]
-	pub const fn libcall_call_conv(self) -> &'static str {
-		match self.libcall_call_conv {
-			LibcallCallConv::IsaDefault => "isa_default",
-			LibcallCallConv::Cold => "cold",
-			LibcallCallConv::Fast => "fast",
-			LibcallCallConv::AppleAarch64 => "apple_aarch64",
-			LibcallCallConv::Probestack => "probestack",
-			LibcallCallConv::SystemV => "system_v",
-			LibcallCallConv::WindowsFastcall => "windows_fastcall",
-		}
+	pub fn libcall_call_conv(self) -> String {
+		self.libcall_call_conv.to_string()
 	}
 
 	#[must_use]
-	pub const fn probestack_strategy(self) -> &'static str {
-		match self.probestack_strategy {
-			ProbestackStrategy::Inline => "inline",
-			ProbestackStrategy::Outline => "outline",
-		}
+	pub fn probestack_strategy(self) -> String {
+		self.probestack_strategy.to_string()
 	}
 
 	#[must_use]
-	pub const fn stack_switch_model(self) -> &'static str {
-		match self.stack_switch_model {
-			StackSwitchModel::None => "none",
-			StackSwitchModel::Basic => "basic",
-			StackSwitchModel::UpdateWindowsTib => "update_windows_tib",
-		}
+	pub fn stack_switch_model(self) -> String {
+		self.stack_switch_model.to_string()
 	}
 }
 
@@ -157,12 +131,12 @@ impl TryFrom<AssemblerFlags> for Flags {
 		flag_builder.enable("enable_pinned_reg")?;
 		flag_builder.set("is_pic", "false")?;
 
-		flag_builder.set("regalloc_algorithm", flags.regalloc_algorithm())?;
-		flag_builder.set("stack_switch_model", flags.stack_switch_model())?;
-		flag_builder.set("opt_level", flags.opt_level())?;
-		flag_builder.set("tls_model", flags.tls_model())?;
-		flag_builder.set("libcall_call_conv", flags.libcall_call_conv())?;
-		flag_builder.set("probestack_strategy", flags.probestack_strategy())?;
+		flag_builder.set("regalloc_algorithm", &flags.regalloc_algorithm())?;
+		flag_builder.set("stack_switch_model", &flags.stack_switch_model())?;
+		flag_builder.set("opt_level", &flags.opt_level())?;
+		flag_builder.set("tls_model", &flags.tls_model())?;
+		flag_builder.set("libcall_call_conv", &flags.libcall_call_conv())?;
+		flag_builder.set("probestack_strategy", &flags.probestack_strategy())?;
 
 		flag_builder.set(
 			"probestack_size_log2",
