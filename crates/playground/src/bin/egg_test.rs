@@ -5,13 +5,13 @@ use std::iter::Peekable;
 use anyhow::Result;
 use egg::*;
 
-pub type EGraph<L = Operations> = egg::EGraph<L, ()>;
-pub type Rewrite<L = Operations> = egg::Rewrite<L, ()>;
+pub type EGraph<L = Operation> = egg::EGraph<L, ()>;
+pub type Rewrite<L = Operation> = egg::Rewrite<L, ()>;
 
 const BF: &str = include_str!("../../../../programs/test.bf");
 
 define_language! {
-	pub enum Operations {
+	pub enum Operation {
 		ConstantCell(i8),
 		ConstantShift(i32),
 		"add" = Inc(Id),
@@ -52,7 +52,7 @@ fn make_rules() -> Vec<Rewrite> {
 	vec![rewrite!("clear-cell"; "(loop (add -1))" => "clear")]
 }
 
-fn parse(s: &str) -> RecExpr<Operations> {
+fn parse(s: &str) -> RecExpr<Operation> {
 	let mut expr = RecExpr::default();
 	let mut chars = s.chars().peekable();
 
@@ -60,18 +60,18 @@ fn parse(s: &str) -> RecExpr<Operations> {
 	expr
 }
 
-fn build_seq(expr: &mut RecExpr<Operations>, ids: Vec<Id>) -> Id {
+fn build_seq(expr: &mut RecExpr<Operation>, ids: Vec<Id>) -> Id {
 	let mut ids = ids.into_iter().rev();
 	let mut current = ids.next().expect("empty sequence");
 
 	for id in ids {
-		current = expr.add(Operations::Seq([id, current]));
+		current = expr.add(Operation::Seq([id, current]));
 	}
 
 	current
 }
 
-fn parse_inner<I>(chars: &mut Peekable<I>, expr: &mut RecExpr<Operations>) -> Id
+fn parse_inner<I>(chars: &mut Peekable<I>, expr: &mut RecExpr<Operation>) -> Id
 where
 	I: Iterator<Item = char>,
 {
@@ -79,63 +79,42 @@ where
 
 	while let Some(&c) = chars.peek() {
 		match c {
-			'+' | '-' => {
-				let mut count = 0i8;
-				while let Some(&c2) = chars.peek() {
-					match c2 {
-						'+' => {
-							count = count.wrapping_add(1);
-							chars.next();
-						}
-						'-' => {
-							count = count.wrapping_sub(1);
-							chars.next();
-						}
-						_ => break,
-					}
-				}
-
-				if !matches!(count, 0) {
-					let const_id = expr.add(Operations::ConstantCell(count));
-					let add_id = expr.add(Operations::Inc(const_id));
-					instructions.push(add_id);
-				}
+			'+' => {
+				chars.next();
+				let const_id = expr.add(Operation::ConstantCell(1));
+				let add_id = expr.add(Operation::Inc(const_id));
+				instructions.push(add_id);
 			}
-			'>' | '<' => {
-				let mut shifted = 0i32;
-				while let Some(&c2) = chars.peek() {
-					match c2 {
-						'>' => {
-							shifted = shifted.wrapping_add(1);
-							chars.next();
-						}
-						'<' => {
-							shifted = shifted.wrapping_sub(1);
-							chars.next();
-						}
-						_ => break,
-					}
-
-					if !matches!(shifted, 0) {
-						let const_id = expr.add(Operations::ConstantShift(shifted));
-						let shift_id = expr.add(Operations::ShiftPtr(const_id));
-
-						instructions.push(shift_id);
-					}
-				}
+			'-' => {
+				chars.next();
+				let const_id = expr.add(Operation::ConstantCell(-1));
+				let add_id = expr.add(Operation::Inc(const_id));
+				instructions.push(add_id);
+			}
+			'>' => {
+				chars.next();
+				let const_id = expr.add(Operation::ConstantShift(1));
+				let shift_id = expr.add(Operation::ShiftPtr(const_id));
+				instructions.push(shift_id);
+			}
+			'<' => {
+				chars.next();
+				let const_id = expr.add(Operation::ConstantShift(-1));
+				let shift_id = expr.add(Operation::ShiftPtr(const_id));
+				instructions.push(shift_id);
 			}
 			'.' => {
 				chars.next();
-				instructions.push(expr.add(Operations::Output));
+				instructions.push(expr.add(Operation::Output));
 			}
 			',' => {
 				chars.next();
-				instructions.push(expr.add(Operations::Input));
+				instructions.push(expr.add(Operation::Input));
 			}
 			'[' => {
 				chars.next();
 				let loop_body = parse_inner(chars, expr);
-				instructions.push(expr.add(Operations::Loop(loop_body)));
+				instructions.push(expr.add(Operation::Loop(loop_body)));
 			}
 			']' => {
 				chars.next();
