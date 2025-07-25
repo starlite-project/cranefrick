@@ -11,11 +11,13 @@ color-eyre = { version = "0.6", features = ["capture-spantrace"] }
 cranefrick_assembler = { path = "crates/assembler" }
 cranefrick_hlir = { path = "crates/hlir" }
 cranefrick_mlir = { path = "crates/mlir" }
+indicatif = "0.18"
 ron = "0.10"
 serde.workspace = true
 toml = { version = "0.9", features = ["serde"] }
 tracing.workspace = true
 tracing-error = "0.2.1"
+tracing-indicatif = "0.3"
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]

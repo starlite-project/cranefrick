@@ -8,7 +8,7 @@ use core::{
 
 use cranefrick_hlir::BrainHlir;
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{debug, info};
 
 use self::opt::{passes, run_loop_pass, run_peephole_pass};
 use super::BrainMlir;
@@ -101,7 +101,7 @@ impl Compiler {
 
 	fn pass_info(&self, pass: &str) {
 		let (op_count, dloop_count) = self.stats();
-		info!("running pass {pass} with {op_count} instructions ({dloop_count}) loops");
+		debug!("running pass {pass} with {op_count} instructions ({dloop_count}) loops");
 	}
 
 	fn stats(&self) -> (usize, usize) {

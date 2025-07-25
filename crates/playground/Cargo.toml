@@ -10,5 +10,8 @@ version.workspace = true
 [dependencies]
 anyhow = "1.0.98"
 cranelift = { version = "0.122" }
-egg = "0.10"
+indicatif = "0.18"
 target-lexicon = "0.13"
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tracing-indicatif = "0.3"

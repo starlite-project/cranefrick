@@ -12,6 +12,7 @@ use ron::ser::PrettyConfig;
 use serde::Serialize as _;
 use tracing::{info, warn};
 use tracing_error::ErrorLayer;
+use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{
 	EnvFilter,
 	fmt::{self, format::FmtSpan},
@@ -85,10 +86,15 @@ fn install_tracing(folder_path: &Path) {
 		.open(folder_path.join("output.json"))
 		.expect("failed to create json log file");
 
+	let indicatif_layer = IndicatifLayer::new();
+
 	let file_layer = fmt::layer().with_ansi(false).with_writer(log_file);
 
 	let filter_layer = EnvFilter::new("info,cranelift_jit=warn");
-	let fmt_layer = fmt::layer().with_target(false).with_filter(filter_layer);
+	let fmt_layer = fmt::layer()
+		.with_target(false)
+		.with_writer(indicatif_layer.get_stderr_writer())
+		.with_filter(filter_layer);
 
 	let json_file_layer = fmt::layer()
 		.with_ansi(false)
@@ -101,6 +107,7 @@ fn install_tracing(folder_path: &Path) {
 		.with(json_file_layer)
 		.with(file_layer)
 		.with(fmt_layer)
+		.with(indicatif_layer)
 		.with(ErrorLayer::default())
 		.init();
 }
