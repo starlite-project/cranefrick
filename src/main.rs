@@ -86,7 +86,13 @@ fn install_tracing(folder_path: &Path) {
 		.open(folder_path.join("output.json"))
 		.expect("failed to create json log file");
 
-	let indicatif_layer = IndicatifLayer::new();
+	let indicatif_layer = IndicatifLayer::new().with_progress_style(
+		tracing_indicatif::style::ProgressStyle::with_template(
+			"{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}]",
+		)
+		.unwrap()
+		.progress_chars("#>-"),
+	);
 
 	let file_layer = fmt::layer().with_ansi(false).with_writer(log_file);
 

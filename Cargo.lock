@@ -285,6 +285,7 @@ dependencies = [
  "serde",
  "target-lexicon",
  "tracing",
+ "tracing-indicatif",
 ]
 
 [[package]]
@@ -294,6 +295,7 @@ dependencies = [
  "logos",
  "serde",
  "tracing",
+ "tracing-indicatif",
 ]
 
 [[package]]

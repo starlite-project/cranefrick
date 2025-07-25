@@ -17,3 +17,4 @@ serde = { workspace = true, default-features = false, features = [
     "derive"
 ] }
 tracing.workspace = true
+tracing-indicatif.workspace = true

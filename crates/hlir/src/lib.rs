@@ -14,7 +14,8 @@ use core::{
 
 use logos::Lexer;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info};
+use tracing::{Span, debug, info};
+use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
 
 use self::inner::InnerOpCode;
 
@@ -38,7 +39,18 @@ impl<'source> Parser<'source> {
 	where
 		I: Default + Extend<BrainHlir>,
 	{
-		info!("scanning {} chars", self.inner.source().len());
+		extern crate std;
+
+		let len = self.inner.source().len();
+
+		{
+			let span = Span::current();
+
+			span.pb_set_style(&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:38}] ({eta})").unwrap());
+			span.pb_set_length(len as u64);
+		}
+
+		info!(len = len, "scanning chars");
 
 		let mut result = I::default();
 
@@ -61,6 +73,8 @@ impl<'source> Parser<'source> {
 					None => return Err(ParseError(i)),
 				},
 			};
+
+			Span::current().pb_inc(1);
 
 			result.extend(once(repr));
 		}

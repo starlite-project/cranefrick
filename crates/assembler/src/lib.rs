@@ -26,6 +26,7 @@ use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
 use target_lexicon::Triple;
 use tracing::{info, info_span};
+use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
 
 pub use self::flags::*;
 
@@ -72,8 +73,15 @@ impl AssembledModule {
 
 		let span = info_span!("writing files");
 
+		span.pb_set_style(
+			&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:38}] ({eta})")
+				.unwrap(),
+		);
+		span.pb_set_length(4);
+
 		span.in_scope(|| {
 			info!("writing unoptimized cranelift-IR");
+			span.pb_inc(1);
 			fs::write(output_path.join("unoptimized.clif"), ctx.func.to_string())
 		})?;
 
@@ -84,6 +92,7 @@ impl AssembledModule {
 
 		span.in_scope(|| {
 			info!("writing optimized cranelift-IR");
+			span.pb_inc(1);
 			fs::write(output_path.join("optimized.clif"), ctx.func.to_string())
 		})?;
 
@@ -92,6 +101,7 @@ impl AssembledModule {
 
 		span.in_scope(|| {
 			info!("writing compiled binary");
+			span.pb_inc(1);
 			fs::write(output_path.join("program.bin"), compiled_func.code_buffer())
 		})?;
 
@@ -103,7 +113,7 @@ impl AssembledModule {
 			let printer = CFGPrinter::new(&ctx.func);
 
 			printer.write(&mut out)?;
-
+			span.pb_inc(1);
 			fs::write(output_path.join("program.dot"), out)?;
 
 			Ok::<(), AssemblyError>(())

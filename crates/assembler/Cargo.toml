@@ -17,3 +17,4 @@ cranelift-native.workspace = true
 serde = { workspace = true, features = ["derive", "std"] }
 target-lexicon = "0.13"
 tracing.workspace = true
+tracing-indicatif.workspace = true
