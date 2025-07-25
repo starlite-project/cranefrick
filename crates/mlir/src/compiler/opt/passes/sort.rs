@@ -1,7 +1,6 @@
 use cranefrick_utils::IteratorExt as _;
 
-use super::Change;
-use crate::BrainMlir;
+use super::{BrainMlir, Change};
 
 pub fn sort_changes(ops: &[BrainMlir; 2]) -> Option<Change> {
 	if !ops

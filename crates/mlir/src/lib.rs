@@ -8,6 +8,7 @@ mod compiler;
 use alloc::vec::Vec;
 use core::num::NonZeroI32;
 
+use cranefrick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
 pub use self::compiler::*;
@@ -106,6 +107,6 @@ impl BrainMlir {
 
 	#[must_use]
 	pub fn dynamic_loop(instrs: impl IntoIterator<Item = Self>) -> Self {
-		Self::DynamicLoop(instrs.into_iter().collect())
+		Self::DynamicLoop(instrs.collect_to())
 	}
 }

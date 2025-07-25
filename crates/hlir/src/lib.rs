@@ -33,6 +33,7 @@ impl<'source> Parser<'source> {
 		}
 	}
 
+	#[tracing::instrument(skip(self))]
 	pub fn parse<I>(self) -> Result<I, ParseError>
 	where
 		I: Default + Extend<BrainHlir>,

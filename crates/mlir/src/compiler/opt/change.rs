@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use cranefrick_utils::InsertOrPush as _;
+use cranefrick_utils::{InsertOrPush as _, IntoIteratorExt as _};
 use tracing::trace;
 
 use crate::BrainMlir;
@@ -23,7 +23,7 @@ impl Change {
 	}
 
 	pub fn swap(instrs: impl IntoIterator<Item = BrainMlir>) -> Self {
-		Self::Swap(instrs.into_iter().collect())
+		Self::Swap(instrs.collect_to())
 	}
 
 	pub const fn replace(i: BrainMlir) -> Self {
