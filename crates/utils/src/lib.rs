@@ -6,6 +6,10 @@ extern crate alloc;
 
 #[cfg(feature = "insert_or_push")]
 mod insert_or_push;
+#[cfg(feature = "iter")]
+mod iter;
 
 #[cfg(feature = "insert_or_push")]
 pub use self::insert_or_push::*;
+#[cfg(feature = "iter")]
+pub use self::iter::*;

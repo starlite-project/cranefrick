@@ -10,3 +10,4 @@ version.workspace = true
 [features]
 alloc = []
 insert_or_push = ["alloc"]
+iter = []
