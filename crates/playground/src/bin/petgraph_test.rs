@@ -15,7 +15,7 @@ pub enum Operation {
 	Loop(Vec<NodeIndex>),
 }
 
-const BF: &str = include_str!("../../../../programs/test.bf");
+const BF: &str = include_str!("../../../../programs/hello_world.bf");
 
 fn main() -> Result<()> {
 	let graph = parse(BF);
