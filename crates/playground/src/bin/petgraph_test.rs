@@ -1,109 +1,183 @@
-use std::{fs, iter::Peekable};
+use std::collections::{HashMap, HashSet};
 
-use anyhow::Result;
-use petgraph::{
-	dot::{Config, Dot},
-	graph::{DiGraph, NodeIndex},
-};
+use petgraph::{algo::toposort, dot::Dot, prelude::*, stable_graph::DefaultIx};
+
+fn main() {}
 
 #[derive(Debug, Clone)]
-pub enum Operation {
-	ChangeValue(i8),
-	ShiftPtr(i32),
-	Input,
-	Output,
-	Loop(Vec<NodeIndex>),
+struct BbDag {
+	pub graph: BbGraph,
+	pub live: LiveMap,
+	pub users: UserMap,
+	current_users: UserMap,
+	beginning: BbGraphNodeIndex,
+	pub last_io: Option<BbGraphNodeIndex>,
 }
 
-const BF: &str = include_str!("../../../../programs/hello_world.bf");
-
-fn main() -> Result<()> {
-	let graph = parse(BF);
-
-	let dot = Dot::with_config(dbg!(&graph), &[Config::EdgeNoLabel]);
-
-	fs::write("../../out/playground.dot", format!("{dot:?}"))?;
-
-	for node in graph.node_indices() {
-		println!("{:?}", graph[node]);
+impl DagProperties for BbDag {
+	fn has_body(&self) -> bool {
+		true
 	}
 
-	Ok(())
+	fn has_conditional(&self) -> bool {
+		self.graph.node_weights().any(DagProperties::has_conditional)
+	}
+
+	fn has_loop(&self) -> bool {
+		self.graph.node_weights().any(DagProperties::has_loop)
+	}
+
+	fn has_io(&self) -> bool {
+		self.last_io.is_some()
+	}
+
+	fn read_offsets(&self) -> HashSet<TapeAddr> {
+		let mut results = HashSet::new();
+		for node in self.graph.node_weights() {
+			results.extend(node.read_offsets());
+		}
+
+		results
+	}
+
+	fn write_offsets(&self) -> HashSet<TapeAddr> {
+		let mut results = HashSet::new();
+		for node in self.graph.node_weights() {
+			results.extend(node.write_offsets());
+		}
+
+		results
+	}
 }
 
-fn parse(s: &str) -> DiGraph<Operation, ()> {
-	let mut graph = DiGraph::new();
-	let mut chars = s.chars().peekable();
-
-	parse_inner(&mut chars, &mut graph);
-
-	graph
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+struct LinkData {
+	pub id: BbGraphNodeIndex,
+	pub cond: bool,
 }
 
-fn parse_inner<I>(
-	chars: &mut Peekable<I>,
-	graph: &mut DiGraph<Operation, ()>,
-) -> (Vec<NodeIndex>, Option<NodeIndex>)
-where
-	I: Iterator<Item = char>,
-{
-	let mut nodes = Vec::new();
-	let mut prev = None;
+impl LinkData {
+	const fn new(id: BbGraphNodeIndex, cond: bool) -> Self {
+		Self { id, cond }
+	}
+}
 
-	while let Some(&c) = chars.peek() {
-		let node = match c {
-            '+' => {
-                chars.next();
-                Some(graph.add_node(Operation::ChangeValue(1)))
-            }
-            '-' => {
-                chars.next();
-                Some(graph.add_node(Operation::ChangeValue(-1)))
-            }
-            '>' => {
-                chars.next();
-                Some(graph.add_node(Operation::ShiftPtr(1)))
-            }
-            '<' => {
-                chars.next();
-                Some(graph.add_node(Operation::ShiftPtr(-1)))
-            }
-			'.' => {
-				chars.next();
-				Some(graph.add_node(Operation::Output))
-			}
-			',' => {
-				chars.next();
-				Some(graph.add_node(Operation::Input))
-			}
-			'[' => {
-				chars.next();
-				let (body_nodes, _) = parse_inner(chars, graph);
-				let loop_node = graph.add_node(Operation::Loop(body_nodes.clone()));
-				for i in 0..body_nodes.len().saturating_sub(1) {
-					graph.add_edge(body_nodes[i], body_nodes[i + 1], ());
-				}
-				Some(loop_node)
-			}
-			']' => {
-				chars.next();
-				break;
-			}
-			_ => {
-				chars.next();
-				None
-			}
-		};
+struct NodeLinks {
+	pub io_before: Option<BbGraphNodeIndex>,
+	pub io_after: Option<BbGraphNodeIndex>,
+	pub in_uses: HashMap<TapeAddr, LinkData>,
+	pub in_replaces: HashMap<TapeAddr, LinkData>,
+	pub in_clobbering: UserMap,
+	pub out_uses: UserMap,
+	pub out_replaces: HashMap<TapeAddr, LinkData>,
+	pub out_clobbering: UserMap,
+}
 
-		if let Some(node) = node {
-			if let Some(prev_node) = prev {
-				graph.add_edge(prev_node, node, ());
-			}
+#[derive(Debug, Clone)]
+struct BbDagNode {
+	pub op: BbDagOperation,
+	pub offset: TapeAddr,
+}
 
-			prev = Some(node);
-			nodes.push(node);
+impl BbDagNode {
+	fn body(&self) -> Option<&BbDag> {
+		self.op.body()
+	}
+
+	fn body_mut(&mut self) -> Option<&mut BbDag> {
+		self.op.body_mut()
+	}
+}
+
+impl DagProperties for BbDagNode {
+	fn has_body(&self) -> bool {
+		matches!(self.op, BbDagOperation::Loop(..) | BbDagOperation::If(..))
+	}
+
+	fn has_conditional(&self) -> bool {
+		self.has_body()
+	}
+
+	fn has_loop(&self) -> bool {
+		match &self.op {
+			BbDagOperation::Loop(..) => true,
+			BbDagOperation::If(body) => body.has_loop(),
+			_ => false,
 		}
 	}
 
-	(nodes, prev)
+	fn has_io(&self) -> bool {
+		match &self.op {
+			BbDagOperation::If(body) | BbDagOperation::Loop(body) => body.has_io(),
+			BbDagOperation::Input | BbDagOperation::Output => true,
+			_ => false,
+		}
+	}
+
+	fn read_offsets(&self) -> HashSet<TapeAddr> {
+		HashSet::new()
+	}
+
+	fn write_offsets(&self) -> HashSet<TapeAddr> {
+		HashSet::new()
+	}
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BbDagEdge {
+	Using { addr: TapeAddr, cond: bool },
+	Replacing { addr: TapeAddr, cond: bool },
+	Clobbering { addr: TapeAddr, cond: bool },
+	Io,
+}
+
+#[derive(Debug, Clone)]
+enum BbDagOperation {
+	Start,
+	Loop(Box<BbDag>),
+	If(Box<BbDag>),
+	Add(u8),
+	Set(u8),
+	Input,
+	Output,
+}
+
+impl BbDagOperation {
+	fn body(&self) -> Option<&BbDag> {
+		match self {
+			Self::Loop(body) | Self::If(body) => Some(body.as_ref()),
+			_ => None,
+		}
+	}
+
+	fn body_mut(&mut self) -> Option<&mut BbDag> {
+		match self {
+			Self::Loop(body) | Self::If(body) => Some(body.as_mut()),
+			_ => None,
+		}
+	}
+}
+
+trait DagProperties {
+	fn has_body(&self) -> bool;
+
+	fn has_conditional(&self) -> bool;
+
+	fn has_loop(&self) -> bool;
+
+	fn has_io(&self) -> bool;
+
+	fn read_offsets(&self) -> HashSet<TapeAddr>;
+
+	fn write_offsets(&self) -> HashSet<TapeAddr>;
+}
+
+type BbGraphIx = DefaultIx;
+type BbGraphNodeIndex = NodeIndex<BbGraphIx>;
+type BbGraphEdgeIndex = EdgeIndex<BbGraphIx>;
+type BbGraphNodeSet = HashSet<BbGraphNodeIndex>;
+type LinkSet = HashSet<LinkData>;
+type BbGraph = StableDiGraph<BbDagNode, BbDagEdge, BbGraphIx>;
+type LiveMap = HashMap<i32, BbGraphNodeIndex>;
+type UserMap = HashMap<i32, LinkSet>;
+type TapeAddr = i32;
