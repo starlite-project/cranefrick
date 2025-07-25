@@ -23,6 +23,7 @@ mimalloc = "0.1"
 
 [workspace]
 members = [
+    "bigbrain/regalloc",
     "crates/assembler",
     "crates/hlir",
     "crates/mlir",
