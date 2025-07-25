@@ -117,7 +117,9 @@ pub const fn remove_noop_instructions(ops: &[BrainMlir; 1]) -> Option<Change> {
 pub const fn remove_unreachable_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainMlir::SetCell(0, None) | BrainMlir::DynamicLoop(..),
+			BrainMlir::SetCell(0, None)
+			| BrainMlir::DynamicLoop(..)
+			| BrainMlir::ScaleAndMoveValue(..),
 			BrainMlir::DynamicLoop(..),
 		] => Some(Change::remove_offset(1)),
 		_ => None,
@@ -256,7 +258,7 @@ pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainMlir; 2]) -> Option<Chang
 	}
 }
 
-pub const fn optimize_scale_and_move_cell(ops: &[BrainMlir]) -> Option<Change> {
+pub const fn optimize_scale_and_move_value(ops: &[BrainMlir]) -> Option<Change> {
 	match ops {
 		[
 			BrainMlir::ChangeCell(-1, None),
@@ -265,6 +267,15 @@ pub const fn optimize_scale_and_move_cell(ops: &[BrainMlir]) -> Option<Change> {
 			i.unsigned_abs(),
 			offset.get(),
 		))),
+		_ => None,
+	}
+}
+
+pub const fn optimize_move_value(ops: &[BrainMlir; 1]) -> Option<Change> {
+	match ops {
+		[BrainMlir::ScaleAndMoveValue(1, offset)] => {
+			Some(Change::replace(BrainMlir::move_value(*offset)))
+		}
 		_ => None,
 	}
 }

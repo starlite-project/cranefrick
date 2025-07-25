@@ -228,6 +228,7 @@ impl<'a> Assembler<'a> {
 		})
 	}
 
+	#[tracing::instrument("creating cranelift ir", skip_all)]
 	fn assemble(mut self, compiler: Compiler) -> Result<(), AssemblyError> {
 		self.ops(&compiler)?;
 
@@ -272,6 +273,7 @@ impl<'a> Assembler<'a> {
 				BrainMlir::ScaleAndMoveValue(factor, offset) => {
 					self.scale_and_move_value(*factor, *offset);
 				}
+				BrainMlir::MoveValue(offset) => self.move_value(*offset),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}
@@ -301,6 +303,17 @@ impl<'a> Assembler<'a> {
 
 		let value = self.ins().iconst(ptr_type, i64::from(offset));
 		self.memory_address = self.ins().iadd(memory_address, value);
+	}
+
+	fn move_value(&mut self, offset: i32) {
+		let current_value = self.load(0);
+		self.set_cell(0, 0);
+
+		let other_cell = self.load(offset);
+
+		let added = self.ins().iadd(current_value, other_cell);
+
+		self.store(added, offset);
 	}
 
 	fn scale_and_move_value(&mut self, factor: u8, offset: i32) {

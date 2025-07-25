@@ -47,6 +47,8 @@ impl Compiler {
 			iteration += 1;
 			progress = self.optimization_pass(iteration);
 		}
+
+		info!(iterations = iteration, "finished optimizing mlir");
 	}
 
 	#[tracing::instrument("run passes", skip(self))]
@@ -95,8 +97,9 @@ impl Compiler {
 		self.pass_info("sorting cell changes");
 		*progress |= run_peephole_pass(self, passes::sort_changes);
 
-		self.pass_info("optimize scale and move cell instructions");
-		*progress |= run_loop_pass(self, passes::optimize_scale_and_move_cell);
+		self.pass_info("optimize scale and move value instructions and move value instructions");
+		*progress |= run_loop_pass(self, passes::optimize_scale_and_move_value);
+		*progress |= run_peephole_pass(self, passes::optimize_move_value);
 	}
 
 	fn pass_info(&self, pass: &str) {
