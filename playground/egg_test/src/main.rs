@@ -8,7 +8,7 @@ use egg::*;
 pub type EGraph<L = Operation> = egg::EGraph<L, ()>;
 pub type Rewrite<L = Operation> = egg::Rewrite<L, ()>;
 
-const BF: &str = include_str!("../../../../programs/test.bf");
+const BF: &str = include_str!("../../../programs/test.bf");
 
 define_language! {
 	pub enum Operation {

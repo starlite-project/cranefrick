@@ -1,0 +1,12 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "egg_test"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+egg = "0.10"

@@ -1,0 +1,13 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "cranelift_test"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+cranelift = "0.122"
+target-lexicon = "0.13"
