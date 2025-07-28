@@ -8,7 +8,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-logos = { version = "0.15", default-features = false, features = [
+logos = { workspace = true, default-features = false, features = [
     "export_derive",
     "logos-derive"
 ] }

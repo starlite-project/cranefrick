@@ -31,7 +31,8 @@ members = [
     "crates/utils",
     "playground/cranelift_test",
     "playground/egg_test",
-    "playground/indicatif_test"
+    "playground/indicatif_test",
+    "playground/logos_test"
 ]
 resolver = "3"
 
@@ -44,6 +45,11 @@ cranelift-frontend = "0.122.0"
 cranelift-jit = "0.122.0"
 cranelift-module = "0.122.0"
 cranelift-native = "0.122.0"
+logos = { version = "0.15", default-features = false, features = [
+    "debug",
+    "export_derive",
+    "logos-derive"
+] }
 serde = { version = "1", default-features = false }
 tracing = "0.1"
 tracing-indicatif = "0.3"
