@@ -18,7 +18,7 @@ use cranelift_codegen::{
 	CodegenError,
 	cfg_printer::CFGPrinter,
 	control::ControlPlane,
-	ir::{AbiParam, Block, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
+	ir::{AbiParam, FuncRef, Function, InstBuilder as _, MemFlags, TrapCode, Type, Value, types},
 	isa, settings,
 };
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
@@ -77,12 +77,26 @@ impl AssembledModule {
 			&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:38}] ({eta})")
 				.unwrap(),
 		);
-		span.pb_set_length(4);
+		span.pb_set_length(5);
 
 		span.in_scope(|| {
 			info!("writing unoptimized cranelift-IR");
 			span.pb_inc(1);
 			fs::write(output_path.join("unoptimized.clif"), ctx.func.to_string())
+		})?;
+
+		span.in_scope(|| {
+			info!("writing unoptimized CFG dot graph");
+
+			let mut out = String::new();
+
+			let printer = CFGPrinter::new(&ctx.func);
+
+			printer.write(&mut out)?;
+			span.pb_inc(1);
+			fs::write(output_path.join("unoptimized.dot"), out)?;
+
+			Ok::<(), AssemblyError>(())
 		})?;
 
 		info!("running cranelift optimizations");
@@ -106,7 +120,7 @@ impl AssembledModule {
 		})?;
 
 		span.in_scope(|| {
-			info!("writing CFG dot graph");
+			info!("writing optimized CFG dot graph");
 
 			let mut out = String::new();
 
@@ -114,7 +128,7 @@ impl AssembledModule {
 
 			printer.write(&mut out)?;
 			span.pb_inc(1);
-			fs::write(output_path.join("program.dot"), out)?;
+			fs::write(output_path.join("optimized.dot"), out)?;
 
 			Ok::<(), AssemblyError>(())
 		})?;
@@ -176,7 +190,6 @@ struct Assembler<'a> {
 	builder: FunctionBuilder<'a>,
 	read: FuncRef,
 	write: FuncRef,
-	exit_block: Block,
 	memory_address: Value,
 }
 
@@ -234,7 +247,6 @@ impl<'a> Assembler<'a> {
 			builder,
 			read,
 			write,
-			exit_block,
 			memory_address,
 		})
 	}
@@ -243,23 +255,11 @@ impl<'a> Assembler<'a> {
 	fn assemble(mut self, compiler: Compiler) -> Result<(), AssemblyError> {
 		self.ops(&compiler)?;
 
-		let Self {
-			ptr_type,
-			exit_block,
-			..
-		} = self;
+		let Self { ptr_type, .. } = self;
 
 		let zero = self.ins().iconst(ptr_type, 0);
 
 		self.ins().return_(&[zero]);
-
-		self.switch_to_block(exit_block);
-		self.seal_block(exit_block);
-
-		let result = self.block_params(exit_block)[0];
-
-		self.set_cold_block(exit_block);
-		self.ins().return_(&[result]);
 
 		self.seal_all_blocks();
 
@@ -295,13 +295,17 @@ impl<'a> Assembler<'a> {
 	fn load(&mut self, offset: i32) -> Value {
 		let memory_address = self.memory_address;
 		self.ins()
-			.load(types::I8, MemFlags::new(), memory_address, offset)
+			.load(types::I8, Self::memflags(), memory_address, offset)
 	}
 
 	fn store(&mut self, value: Value, offset: i32) {
 		let memory_address = self.memory_address;
 		self.ins()
-			.store(MemFlags::new(), value, memory_address, offset);
+			.store(Self::memflags(), value, memory_address, offset);
+	}
+
+	const fn memflags() -> MemFlags {
+		MemFlags::trusted()
 	}
 
 	fn const_u8(&mut self, value: u8) -> Value {
@@ -395,36 +399,22 @@ impl<'a> Assembler<'a> {
 
 	fn put_output(&mut self) {
 		let write = self.write;
-		let exit_block = self.exit_block;
 
 		let value = self.load(0);
 		let inst = self.ins().call(write, &[value]);
 		let result = self.inst_results(inst)[0];
 
-		let after_block = self.create_block();
-
-		self.ins()
-			.brif(result, exit_block, &[result.into()], after_block, &[]);
-
-		self.switch_to_block(after_block);
-		self.seal_block(after_block);
+		self.ins().trapnz(result, TrapCode::unwrap_user(6));
 	}
 
 	fn get_input(&mut self) {
 		let read = self.read;
 		let memory_address = self.memory_address;
-		let exit_block = self.exit_block;
 
 		let inst = self.ins().call(read, &[memory_address]);
 		let result = self.inst_results(inst)[0];
 
-		let after_block = self.create_block();
-
-		self.ins()
-			.brif(result, exit_block, &[result.into()], after_block, &[]);
-
-		self.switch_to_block(after_block);
-		self.seal_block(after_block);
+		self.ins().trapnz(result, TrapCode::unwrap_user(5));
 	}
 }
 
