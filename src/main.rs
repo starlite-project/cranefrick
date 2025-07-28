@@ -18,6 +18,7 @@ use tracing_subscriber::{
 	fmt::{self, format::FmtSpan},
 	prelude::*,
 };
+use tracing_tree::HierarchicalLayer;
 
 #[cfg(target_os = "windows")]
 #[global_allocator]
@@ -86,6 +87,13 @@ fn install_tracing(folder_path: &Path) {
 		.open(folder_path.join("output.json"))
 		.expect("failed to create json log file");
 
+	let tree_log_file = fs::OpenOptions::new()
+		.create(true)
+		.truncate(true)
+		.write(true)
+		.open(folder_path.join("output.tree"))
+		.expect("failed to create tree log file");
+
 	let indicatif_layer = IndicatifLayer::new().with_progress_style(
 		tracing_indicatif::style::ProgressStyle::with_template(
 			"{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}]",
@@ -107,11 +115,18 @@ fn install_tracing(folder_path: &Path) {
 		.flatten_event(true)
 		.with_span_events(FmtSpan::FULL)
 		.with_writer(json_log_file);
+
+	let tree_file_layer = HierarchicalLayer::new(2)
+		.with_ansi(false)
+		.with_bracketed_fields(true)
+		.with_writer(tree_log_file);
+
 	tracing_subscriber::registry()
 		.with(json_file_layer)
 		.with(file_layer)
 		.with(fmt_layer)
 		.with(indicatif_layer)
+		.with(tree_file_layer)
 		.with(ErrorLayer::default())
 		.init();
 }
