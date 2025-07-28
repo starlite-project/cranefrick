@@ -9,4 +9,4 @@ probestack_strategy = "inline"
 regalloc_checker = true
 stack_switch_model = "update_windows_tib"
 unwind_info = true
-use_colocated_libcalls = true
+use_colocated_libcalls = false
