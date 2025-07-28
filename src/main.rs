@@ -96,11 +96,10 @@ fn install_tracing(folder_path: &Path) {
 
 	let file_layer = fmt::layer().with_ansi(false).with_writer(log_file);
 
-	let filter_layer = EnvFilter::new("info,cranelift_jit=warn");
 	let fmt_layer = fmt::layer()
 		.with_target(false)
 		.with_writer(indicatif_layer.get_stderr_writer())
-		.with_filter(filter_layer);
+		.with_filter(env_filter());
 
 	let json_file_layer = fmt::layer()
 		.with_ansi(false)
@@ -108,7 +107,6 @@ fn install_tracing(folder_path: &Path) {
 		.flatten_event(true)
 		.with_span_events(FmtSpan::FULL)
 		.with_writer(json_log_file);
-
 	tracing_subscriber::registry()
 		.with(json_file_layer)
 		.with(file_layer)
@@ -116,6 +114,10 @@ fn install_tracing(folder_path: &Path) {
 		.with(indicatif_layer)
 		.with(ErrorLayer::default())
 		.init();
+}
+
+fn env_filter() -> EnvFilter {
+	EnvFilter::new("info,cranelift_jit=warn")
 }
 
 fn serialize_compiler(comp: &Compiler, folder_path: &Path, file_name: &str) -> Result<()> {
@@ -128,7 +130,6 @@ fn serialize_compiler(comp: &Compiler, folder_path: &Path, file_name: &str) -> R
 
 	comp.serialize(&mut serializer)?;
 
-	// fs::write(format!("./out/{file_name}.ron"), output)?;
 	fs::write(folder_path.join(format!("{file_name}.ron")), output)?;
 
 	Ok(())
