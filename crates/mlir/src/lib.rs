@@ -30,7 +30,11 @@ pub enum BrainMlir {
 	GetInput,
 	PutOutput,
 	ScaleAndMoveValue(u8, i32),
+	ScaleAndTakeValue(u8, i32),
+	ScaleAndFetchValue(u8, i32),
 	MoveValue(i32),
+	TakeValue(i32),
+	FetchValue(i32),
 	DynamicLoop(Vec<Self>),
 	IfNz(Vec<Self>),
 }
