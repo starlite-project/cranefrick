@@ -1,3 +1,6 @@
-mod const_fold;
+#![allow(clippy::unused_self)]
 
-pub use self::const_fold::*;
+mod const_fold;
+mod dce;
+
+pub use self::{const_fold::*, dce::*};

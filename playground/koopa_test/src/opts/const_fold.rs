@@ -5,7 +5,6 @@ use koopa::{
 
 pub struct ConstantFolding;
 
-#[allow(clippy::unused_self)]
 impl ConstantFolding {
 	#[must_use]
 	pub const fn new() -> Self {

@@ -6,7 +6,7 @@ use koopa::{
 	back::KoopaGenerator,
 	opt::{Pass, PassManager},
 };
-use koopa_test::{ConstantFolding, build_program};
+use koopa_test::{ConstantFolding, DeadCodeElimination, build_program};
 
 fn main() -> Result<()> {
 	let args = match Args::try_parse() {
@@ -36,6 +36,7 @@ fn main() -> Result<()> {
 	let mut pass_manager = PassManager::new();
 
 	pass_manager.register(Pass::Function(Box::new(ConstantFolding::new())));
+	pass_manager.register(Pass::Function(Box::new(DeadCodeElimination::new())));
 
 	pass_manager.run_passes(&mut program);
 
