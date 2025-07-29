@@ -1,6 +1,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
 mod flags;
+mod internal;
 
 use std::{
 	error::Error as StdError,
@@ -18,10 +19,10 @@ use cranelift_codegen::{
 	CodegenError,
 	cfg_printer::CFGPrinter,
 	control::ControlPlane,
-	ir::{AbiParam, FuncRef, Function, InstBuilder as _, MemFlags, TrapCode, Type, Value, types},
+	ir::{AbiParam, Block, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
 	isa, settings,
 };
-use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
+use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext, Switch};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
 use target_lexicon::Triple;
@@ -29,6 +30,7 @@ use tracing::{Span, info, info_span};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
 
 pub use self::flags::*;
+use self::internal::FunctionStencilExt as _;
 
 pub struct AssembledModule {
 	module: Option<JITModule>,
@@ -45,7 +47,7 @@ impl AssembledModule {
 		let assemble_span = Span::current();
 		assemble_span
 			.pb_set_style(
-				&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:38}] ({eta})")
+				&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:14}] ({eta})")
 					.unwrap()
 					.progress_chars("#>-"),
 			);
@@ -95,9 +97,11 @@ impl AssembledModule {
 		let writing_files_span = info_span!("writing files");
 
 		writing_files_span.pb_set_style(
-			&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:38}] ({eta})")
-				.unwrap()
-				.progress_chars("#>-"),
+			&ProgressStyle::with_template(
+				"{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:5}] ({eta})",
+			)
+			.unwrap()
+			.progress_chars("#>-"),
 		);
 		writing_files_span.pb_set_length(5);
 
@@ -201,12 +205,12 @@ impl AssembledModule {
 
 		let code = module.get_finalized_function(self.main);
 
-		let exec = unsafe { std::mem::transmute::<*const u8, fn() -> *mut ()>(code) };
+		let exec = unsafe { std::mem::transmute::<*const u8, fn() -> *mut IoError>(code) };
 
 		let ptr = exec();
 
 		if !ptr.is_null() {
-			let err = unsafe { Box::<IoError>::from_raw(ptr.cast::<IoError>()) };
+			let err = unsafe { Box::<IoError>::from_raw(ptr) };
 
 			return Err((*err).into());
 		}
@@ -231,6 +235,7 @@ struct Assembler<'a> {
 	read: FuncRef,
 	write: FuncRef,
 	memory_address: Value,
+	exit_block: Block,
 }
 
 impl<'a> Assembler<'a> {
@@ -263,7 +268,8 @@ impl<'a> Assembler<'a> {
 		let memory_address = builder.ins().global_value(ptr_type, tape_ptr);
 
 		let exit_block = builder.create_block();
-		builder.append_block_param(exit_block, ptr_type);
+
+		builder.set_cold_block(exit_block);
 
 		let write = {
 			let mut write_sig = module.make_signature();
@@ -288,6 +294,7 @@ impl<'a> Assembler<'a> {
 			read,
 			write,
 			memory_address,
+			exit_block,
 		})
 	}
 
@@ -295,11 +302,20 @@ impl<'a> Assembler<'a> {
 	fn assemble(mut self, compiler: Compiler) -> Result<(), AssemblyError> {
 		self.ops(&compiler)?;
 
-		let Self { ptr_type, .. } = self;
+		let Self {
+			ptr_type,
+			exit_block,
+			..
+		} = self;
 
 		let zero = self.ins().iconst(ptr_type, 0);
 
 		self.ins().return_(&[zero]);
+
+		self.switch_to_block(exit_block);
+
+		let result = self.ins().get_pinned_reg(ptr_type);
+		self.ins().return_(&[result]);
 
 		self.seal_all_blocks();
 
@@ -330,6 +346,11 @@ impl<'a> Assembler<'a> {
 		}
 
 		Ok(())
+	}
+
+	#[inline]
+	fn ins<'short>(&'short mut self) -> FuncInstBuilder<'short, 'a> {
+		self.builder.ins()
 	}
 
 	fn load(&mut self, offset: i32) -> Value {
@@ -439,22 +460,46 @@ impl<'a> Assembler<'a> {
 
 	fn put_output(&mut self) {
 		let write = self.write;
+		let exit_block = self.exit_block;
 
 		let value = self.load(0);
 		let inst = self.ins().call(write, &[value]);
-		let result = self.inst_results(inst)[0];
+		let result = self.first_result(inst);
 
-		self.ins().trapnz(result, TrapCode::unwrap_user(6));
+		self.ins().set_pinned_reg(result);
+
+		let after_block = self.create_block();
+
+		let mut switch = Switch::new();
+
+		switch.set_entry(0, after_block);
+
+		switch.emit(&mut self.builder, result, exit_block);
+
+		self.switch_to_block(after_block);
+		self.seal_block(after_block);
 	}
 
 	fn get_input(&mut self) {
 		let read = self.read;
+		let exit_block = self.exit_block;
 		let memory_address = self.memory_address;
 
 		let inst = self.ins().call(read, &[memory_address]);
-		let result = self.inst_results(inst)[0];
+		let result = self.first_result(inst);
 
-		self.ins().trapnz(result, TrapCode::unwrap_user(5));
+		self.ins().set_pinned_reg(result);
+
+		let after_block = self.create_block();
+
+		let mut switch = Switch::new();
+
+		switch.set_entry(0, after_block);
+
+		switch.emit(&mut self.builder, result, exit_block);
+
+		self.switch_to_block(after_block);
+		self.seal_block(after_block);
 	}
 }
 
