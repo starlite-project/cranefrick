@@ -32,7 +32,7 @@ members = [
     "crates/utils",
     "playground/cranelift_test",
     "playground/egg_test",
-    "playground/indicatif_test",
+    "playground/indicatif_test", "playground/koopa_test",
     "playground/logos_test"
 ]
 resolver = "3"
