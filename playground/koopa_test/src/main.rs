@@ -2,8 +2,11 @@ use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 use clap::Parser;
-use koopa::back::KoopaGenerator;
-use koopa_test::build_program;
+use koopa::{
+	back::KoopaGenerator,
+	opt::{Pass, PassManager},
+};
+use koopa_test::{ConstantFolding, build_program};
 
 fn main() -> Result<()> {
 	let args = match Args::try_parse() {
@@ -16,11 +19,10 @@ fn main() -> Result<()> {
 
 	let raw_source = fs::read_to_string(args.file_path)?;
 
-	// let out_file = args.output_path.join("output.koopa_ir");
-	let program = build_program(&raw_source)?;
+	let mut program = build_program(&raw_source)?;
 
-	let out_file = {
-		let path = args.output_path.join("output.koopa_ir");
+	let unoptimized_out_file = {
+		let path = args.output_path.join("unoptimized.koopa_ir");
 
 		fs::OpenOptions::new()
 			.create(true)
@@ -29,7 +31,25 @@ fn main() -> Result<()> {
 			.open(path)?
 	};
 
-	KoopaGenerator::new(out_file).generate_on(&program)?;
+	KoopaGenerator::new(unoptimized_out_file).generate_on(&program)?;
+
+	let mut pass_manager = PassManager::new();
+
+	pass_manager.register(Pass::Function(Box::new(ConstantFolding::new())));
+
+	pass_manager.run_passes(&mut program);
+
+	let optimized_out_file = {
+		let path = args.output_path.join("optimized.koopa_ir");
+
+		fs::OpenOptions::new()
+			.create(true)
+			.write(true)
+			.truncate(true)
+			.open(path)?
+	};
+
+	KoopaGenerator::new(optimized_out_file).generate_on(&program)?;
 
 	Ok(())
 }
