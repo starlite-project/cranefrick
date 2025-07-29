@@ -48,7 +48,7 @@ impl Compiler {
 			progress = self.optimization_pass(iteration);
 		}
 
-		info!(iterations = iteration, "finished optimizing mlir");
+		info!(iterations = iteration, "finished optimize mlir");
 	}
 
 	#[tracing::instrument("run passes", skip(self))]
@@ -70,13 +70,13 @@ impl Compiler {
 		self.pass_info("fixing beginning instructions");
 		*progress |= passes::fix_beginning_instructions(self);
 
-		self.pass_info("optimizing clear-cell instructions");
+		self.pass_info("optimize clear-cell instructions");
 		*progress |= run_loop_pass(self, passes::clear_cell);
 
-		self.pass_info("optimizing set-based instructions");
+		self.pass_info("optimize set-based instructions");
 		*progress |= run_peephole_pass(self, passes::optimize_sets);
 
-		self.pass_info("optimizing find-zere instructions");
+		self.pass_info("optimize find-zere instructions");
 		*progress |= run_loop_pass(self, passes::optimize_find_zero);
 
 		self.pass_info("removing no-op instructions");

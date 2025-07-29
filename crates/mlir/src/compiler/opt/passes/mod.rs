@@ -38,9 +38,13 @@ pub fn optimize_sets(ops: &[BrainMlir; 2]) -> Option<Change> {
 			)))
 		}
 		[
-			l @ BrainMlir::DynamicLoop(..),
+			l @ (BrainMlir::DynamicLoop(..) | BrainMlir::IfNz(..)),
 			BrainMlir::ChangeCell(i1, None),
 		] => Some(Change::swap([l.clone(), BrainMlir::set_cell(*i1 as u8)])),
+		[BrainMlir::FindZero(offset), BrainMlir::ChangeCell(i, None)] => Some(Change::swap([
+			BrainMlir::find_zero(*offset),
+			BrainMlir::set_cell(*i as u8),
+		])),
 		_ => None,
 	}
 }
@@ -122,7 +126,9 @@ pub const fn optimize_move_value(ops: &[BrainMlir; 1]) -> Option<Change> {
 
 pub const fn optimize_find_zero(ops: &[BrainMlir]) -> Option<Change> {
 	match ops {
-		[BrainMlir::MovePointer(offset)] => Some(Change::replace(BrainMlir::find_zero(*offset))),
+		[BrainMlir::MovePointer(offset) | BrainMlir::FindZero(offset)] => {
+			Some(Change::replace(BrainMlir::find_zero(*offset)))
+		}
 		_ => None,
 	}
 }
