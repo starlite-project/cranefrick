@@ -15,6 +15,7 @@ use std::{
 };
 
 use cranefrick_mlir::{BrainMlir, Compiler};
+use cranefrick_utils::PointerExt as _;
 use cranelift_codegen::{
 	CodegenError,
 	cfg_printer::CFGPrinter,
@@ -209,13 +210,11 @@ impl AssembledModule {
 
 		let ptr = exec();
 
-		if !ptr.is_null() {
-			let err = unsafe { Box::<IoError>::from_raw(ptr) };
-
-			return Err((*err).into());
+		if let Some(error) = unsafe { ptr.into_boxed() } {
+			Err((*error).into())
+		} else {
+			Ok(())
 		}
-
-		Ok(())
 	}
 }
 
@@ -341,6 +340,7 @@ impl<'a> Assembler<'a> {
 					self.scale_and_move_value(*factor, *offset);
 				}
 				BrainMlir::MoveValue(offset) => self.move_value(*offset),
+				BrainMlir::IfNz(ops) => self.if_nz(ops)?,
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}
@@ -409,6 +409,41 @@ impl<'a> Assembler<'a> {
 		let heap_value = self.load(offset);
 		let changed = self.ins().iadd_imm(heap_value, i64::from(value));
 		self.store(changed, offset);
+	}
+
+	fn if_nz(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
+		let ptr_type = self.ptr_type;
+		let memory_address = self.memory_address;
+
+		let body_block = self.create_block();
+		let next_block = self.create_block();
+
+		self.append_block_param(body_block, ptr_type);
+		self.append_block_param(next_block, ptr_type);
+
+		let value = self.load(0);
+
+		self.ins().brif(
+			value,
+			body_block,
+			&[memory_address.into()],
+			next_block,
+			&[memory_address.into()],
+		);
+
+		self.switch_to_block(body_block);
+		self.ops(ops)?;
+
+		let memory_address = self.memory_address;
+		self.ins().jump(next_block, &[memory_address.into()]);
+
+		self.switch_to_block(next_block);
+		self.seal_block(next_block);
+		self.memory_address = self.block_params(next_block)[0];
+
+		self.set_cell(0, 0);
+
+		Ok(())
 	}
 
 	fn dynamic_loop(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {

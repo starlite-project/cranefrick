@@ -111,3 +111,12 @@ pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainMlir; 2]) -> Option<Chang
 		_ => None,
 	}
 }
+
+pub fn optimize_if_nz(ops: &[BrainMlir]) -> Option<Change> {
+	match ops {
+		[rest @ .., BrainMlir::SetCell(0, None)] => {
+			Some(Change::replace(BrainMlir::if_nz(rest.iter().cloned())))
+		}
+		_ => None,
+	}
+}

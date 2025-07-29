@@ -9,6 +9,7 @@ version.workspace = true
 
 [dependencies]
 cranefrick_mlir = { path = "../mlir" }
+cranefrick_utils = { workspace = true, features = ["alloc", "ptr"] }
 cranelift-codegen.workspace = true
 cranelift-frontend.workspace = true
 cranelift-jit.workspace = true

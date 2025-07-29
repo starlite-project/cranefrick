@@ -28,9 +28,10 @@ pub enum BrainMlir {
 	),
 	GetInput,
 	PutOutput,
-	DynamicLoop(Vec<Self>),
 	ScaleAndMoveValue(u8, i32),
 	MoveValue(i32),
+	DynamicLoop(Vec<Self>),
+	IfNz(Vec<Self>),
 }
 
 impl BrainMlir {
@@ -93,14 +94,14 @@ impl BrainMlir {
 	#[must_use]
 	pub const fn child_ops(&self) -> Option<&Vec<Self>> {
 		match self {
-			Self::DynamicLoop(ops) => Some(ops),
+			Self::DynamicLoop(ops) | Self::IfNz(ops) => Some(ops),
 			_ => None,
 		}
 	}
 
 	pub const fn child_ops_mut(&mut self) -> Option<&mut Vec<Self>> {
 		match self {
-			Self::DynamicLoop(ops) => Some(ops),
+			Self::DynamicLoop(ops) | Self::IfNz(ops) => Some(ops),
 			_ => None,
 		}
 	}
@@ -108,5 +109,10 @@ impl BrainMlir {
 	#[must_use]
 	pub fn dynamic_loop(instrs: impl IntoIterator<Item = Self>) -> Self {
 		Self::DynamicLoop(instrs.collect_to())
+	}
+
+	#[must_use]
+	pub fn if_nz(instrs: impl IntoIterator<Item = Self>) -> Self {
+		Self::IfNz(instrs.collect_to())
 	}
 }
