@@ -119,3 +119,10 @@ pub const fn optimize_move_value(ops: &[BrainMlir; 1]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub const fn optimize_find_zero(ops: &[BrainMlir]) -> Option<Change> {
+	match ops {
+		[BrainMlir::MovePointer(offset)] => Some(Change::replace(BrainMlir::find_zero(*offset))),
+		_ => None,
+	}
+}

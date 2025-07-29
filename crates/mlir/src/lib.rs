@@ -26,6 +26,7 @@ pub enum BrainMlir {
 		u8,
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI32>,
 	),
+	FindZero(i32),
 	GetInput,
 	PutOutput,
 	ScaleAndMoveValue(u8, i32),
@@ -78,6 +79,11 @@ impl BrainMlir {
 	#[must_use]
 	pub const fn scale_and_move_value(value: u8, offset: i32) -> Self {
 		Self::ScaleAndMoveValue(value, offset)
+	}
+
+	#[must_use]
+	pub const fn find_zero(offset: i32) -> Self {
+		Self::FindZero(offset)
 	}
 
 	#[must_use]

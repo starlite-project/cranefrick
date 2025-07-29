@@ -341,6 +341,7 @@ impl<'a> Assembler<'a> {
 				}
 				BrainMlir::MoveValue(offset) => self.move_value(*offset),
 				BrainMlir::IfNz(ops) => self.if_nz(ops)?,
+				BrainMlir::FindZero(offset) => self.find_zero(*offset),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}
@@ -486,6 +487,46 @@ impl<'a> Assembler<'a> {
 		self.set_cell(0, 0);
 
 		Ok(())
+	}
+
+	fn find_zero(&mut self, offset: i32) {
+		let ptr_type = self.ptr_type;
+		let memory_address = self.memory_address;
+
+		let head_block = self.create_block();
+		let body_block = self.create_block();
+		let next_block = self.create_block();
+
+		self.append_block_param(head_block, ptr_type);
+		self.append_block_param(body_block, ptr_type);
+		self.append_block_param(next_block, ptr_type);
+
+		self.ins().jump(head_block, &[memory_address.into()]);
+
+		self.switch_to_block(head_block);
+		let memory_address = self.block_params(head_block)[0];
+		self.memory_address = memory_address;
+
+		let value = self.load(0);
+
+		self.ins().brif(
+			value,
+			body_block,
+			&[memory_address.into()],
+			next_block,
+			&[memory_address.into()],
+		);
+
+		self.switch_to_block(body_block);
+		self.memory_address = self.block_params(body_block)[0];
+
+		self.move_pointer(offset);
+		let memory_address = self.memory_address;
+
+		self.ins().jump(head_block, &[memory_address.into()]);
+
+		self.switch_to_block(next_block);
+		self.memory_address = self.block_params(next_block)[0];
 	}
 
 	fn set_cell(&mut self, value: u8, offset: i32) {
