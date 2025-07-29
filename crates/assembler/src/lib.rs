@@ -25,7 +25,7 @@ use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
 use target_lexicon::Triple;
-use tracing::{info, info_span};
+use tracing::{Span, info, info_span};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
 
 pub use self::flags::*;
@@ -42,10 +42,23 @@ impl AssembledModule {
 		flags: AssemblerFlags,
 		output_path: &Path,
 	) -> Result<Self, AssemblyError> {
+		let assemble_span = Span::current();
+		assemble_span
+			.pb_set_style(
+				&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:38}] ({eta})")
+					.unwrap()
+					.progress_chars("#>-"),
+			);
+		assemble_span.pb_set_length(14);
+
+		info!("looking up ISA");
+
 		let triple = Triple::host();
 
 		let isa = isa::lookup(triple)?.finish(flags.try_into()?)?;
-		info!("lowering to cranelift IR");
+
+		assemble_span.pb_inc(1);
+		info!("creating JIT module");
 
 		let mut jit_builder =
 			JITBuilder::with_isa(isa.clone(), cranelift_module::default_libcall_names());
@@ -54,6 +67,10 @@ impl AssembledModule {
 		jit_builder.symbol("read", read as *const u8);
 
 		let mut module = JITModule::new(jit_builder);
+
+		assemble_span.pb_inc(1);
+		info!("declaring main function");
+
 		let ptr_type = module.target_config().pointer_type();
 
 		let mut ctx = module.make_context();
@@ -69,23 +86,31 @@ impl AssembledModule {
 
 		ctx.func.signature = sig;
 
+		assemble_span.pb_inc(1);
+		info!("lowering into cranelift IR");
+
 		Assembler::new(&mut ctx.func, &mut func_ctx, &mut module, ptr_type)?.assemble(compiler)?;
 
-		let span = info_span!("writing files");
+		assemble_span.pb_inc(1);
+		let writing_files_span = info_span!("writing files");
 
-		span.pb_set_style(
+		writing_files_span.pb_set_style(
 			&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:38}] ({eta})")
-				.unwrap(),
+				.unwrap()
+				.progress_chars("#>-"),
 		);
-		span.pb_set_length(5);
+		writing_files_span.pb_set_length(5);
 
-		span.in_scope(|| {
+		writing_files_span.in_scope(|| {
 			info!("writing unoptimized cranelift-IR");
-			span.pb_inc(1);
-			fs::write(output_path.join("unoptimized.clif"), ctx.func.to_string())
+			fs::write(output_path.join("unoptimized.clif"), ctx.func.to_string())?;
+			writing_files_span.pb_inc(1);
+			assemble_span.pb_inc(1);
+
+			Ok::<(), IoError>(())
 		})?;
 
-		span.in_scope(|| {
+		writing_files_span.in_scope(|| {
 			info!("writing unoptimized CFG dot graph");
 
 			let mut out = String::new();
@@ -93,8 +118,10 @@ impl AssembledModule {
 			let printer = CFGPrinter::new(&ctx.func);
 
 			printer.write(&mut out)?;
-			span.pb_inc(1);
 			fs::write(output_path.join("unoptimized.dot"), out)?;
+
+			writing_files_span.pb_inc(1);
+			assemble_span.pb_inc(1);
 
 			Ok::<(), AssemblyError>(())
 		})?;
@@ -103,23 +130,31 @@ impl AssembledModule {
 		ctx.verify(&*isa).unwrap();
 		ctx.optimize(&*isa, &mut ControlPlane::default())?;
 		ctx.verify(&*isa).unwrap();
+		assemble_span.pb_inc(1);
 
-		span.in_scope(|| {
+		writing_files_span.in_scope(|| {
 			info!("writing optimized cranelift-IR");
-			span.pb_inc(1);
-			fs::write(output_path.join("optimized.clif"), ctx.func.to_string())
+			fs::write(output_path.join("optimized.clif"), ctx.func.to_string())?;
+			writing_files_span.pb_inc(1);
+			assemble_span.pb_inc(1);
+
+			Ok::<(), IoError>(())
 		})?;
 
 		info!("compiling binary");
 		let compiled_func = ctx.compile(&*isa, &mut ControlPlane::default()).unwrap();
+		assemble_span.pb_inc(1);
 
-		span.in_scope(|| {
+		writing_files_span.in_scope(|| {
 			info!("writing compiled binary");
-			span.pb_inc(1);
-			fs::write(output_path.join("program.bin"), compiled_func.code_buffer())
+			fs::write(output_path.join("program.bin"), compiled_func.code_buffer())?;
+			writing_files_span.pb_inc(1);
+			assemble_span.pb_inc(1);
+
+			Ok::<(), IoError>(())
 		})?;
 
-		span.in_scope(|| {
+		writing_files_span.in_scope(|| {
 			info!("writing optimized CFG dot graph");
 
 			let mut out = String::new();
@@ -127,13 +162,14 @@ impl AssembledModule {
 			let printer = CFGPrinter::new(&ctx.func);
 
 			printer.write(&mut out)?;
-			span.pb_inc(1);
 			fs::write(output_path.join("optimized.dot"), out)?;
+			writing_files_span.pb_inc(1);
+			assemble_span.pb_inc(1);
 
 			Ok::<(), AssemblyError>(())
 		})?;
 
-		drop(span);
+		drop(writing_files_span);
 
 		info_span!("loop analysis").in_scope(|| {
 			info!("performing loop analysis");
@@ -143,12 +179,16 @@ impl AssembledModule {
 			loop_analyzer.compute(&ctx.func, &ctx.cfg, &ctx.domtree);
 		});
 
+		assemble_span.pb_inc(1);
 		info!("finishing up module definitions");
 		module.define_function(func, &mut ctx)?;
 		module.clear_context(&mut ctx);
 
+		assemble_span.pb_inc(1);
 		info!(target = %isa.triple(), "lowering to native assembly");
 		module.finalize_definitions()?;
+
+		assemble_span.pb_inc(1);
 
 		Ok(Self {
 			module: Some(module),
