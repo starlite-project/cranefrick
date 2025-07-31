@@ -27,8 +27,9 @@ pub enum BrainMlir {
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI32>,
 	),
 	FindZero(i32),
-	GetInput,
-	PutOutput,
+	InputIntoCell,
+	OutputCurrentCell,
+	OutputChar(char),
 	MoveValue(u8, i32),
 	TakeValue(u8, i32),
 	FetchValue(u8, i32),
@@ -63,13 +64,18 @@ impl BrainMlir {
 	}
 
 	#[must_use]
-	pub const fn get_input() -> Self {
-		Self::GetInput
+	pub const fn input_cell() -> Self {
+		Self::InputIntoCell
 	}
 
 	#[must_use]
-	pub const fn put_output() -> Self {
-		Self::PutOutput
+	pub const fn output_current_cell() -> Self {
+		Self::OutputCurrentCell
+	}
+
+	#[must_use]
+	pub const fn output_char(c: char) -> Self {
+		Self::OutputChar(c)
 	}
 
 	#[must_use]

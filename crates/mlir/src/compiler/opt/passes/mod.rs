@@ -141,3 +141,13 @@ pub const fn optimize_find_zero(ops: &[BrainMlir]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub const fn optimize_writes(ops: &[BrainMlir; 2]) -> Option<Change> {
+	match ops {
+		[
+			BrainMlir::SetCell(value, None),
+			BrainMlir::OutputCurrentCell,
+		] => Some(Change::replace(BrainMlir::output_char(*value as char))),
+		_ => None,
+	}
+}

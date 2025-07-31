@@ -107,6 +107,9 @@ impl Compiler {
 
 		self.pass_info("optimize if nz");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);
+
+		self.pass_info("optimize write calls");
+		*progress |= run_peephole_pass(self, passes::optimize_writes);
 	}
 
 	fn pass_info(&self, pass: &str) {
@@ -247,8 +250,8 @@ fn fix_loops(program: &[BrainHlir]) -> Vec<BrainMlir> {
 				BrainHlir::DecrementCell => Some(BrainMlir::change_cell(-1)),
 				BrainHlir::MovePtrLeft => Some(BrainMlir::move_pointer(-1)),
 				BrainHlir::MovePtrRight => Some(BrainMlir::move_pointer(1)),
-				BrainHlir::GetInput => Some(BrainMlir::get_input()),
-				BrainHlir::PutOutput => Some(BrainMlir::put_output()),
+				BrainHlir::GetInput => Some(BrainMlir::input_cell()),
+				BrainHlir::PutOutput => Some(BrainMlir::output_current_cell()),
 			} {
 				current_stack.push(instr);
 			}

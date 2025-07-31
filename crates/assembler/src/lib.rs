@@ -314,8 +314,9 @@ impl<'a> Assembler<'a> {
 				}
 				BrainMlir::MovePointer(offset) => self.move_pointer(*offset),
 				BrainMlir::DynamicLoop(ops) => self.dynamic_loop(ops)?,
-				BrainMlir::PutOutput => self.put_output(),
-				BrainMlir::GetInput => self.get_input(),
+				BrainMlir::OutputCurrentCell => self.output_current_cell(),
+				BrainMlir::OutputChar(c) => self.output_char(*c),
+				BrainMlir::InputIntoCell => self.input_into_cell(),
 				BrainMlir::SetCell(value, offset) => {
 					self.set_cell(*value, offset.map_or(0, NonZero::get));
 				}
@@ -533,7 +534,31 @@ impl<'a> Assembler<'a> {
 		self.store(value, offset);
 	}
 
-	fn put_output(&mut self) {
+	fn output_char(&mut self, c: char) {
+		let write = self.write;
+		let exit_block = self.exit_block;
+
+		let value = self.ins().iconst(types::I8, i64::from(c as u8));
+		let inst = self.ins().call(write, &[value]);
+		let result = self.first_result(inst);
+
+		self.ins().set_pinned_reg(result);
+
+		let after_block = self.create_block();
+
+		let mut switch = Switch::new();
+
+		switch.set_entry(0, after_block);
+
+		switch.emit(&mut self.builder, result, exit_block);
+
+		self.switch_to_block(after_block);
+		self.seal_block(after_block);
+
+		self.store(value, 0);
+	}
+
+	fn output_current_cell(&mut self) {
 		let write = self.write;
 		let exit_block = self.exit_block;
 
@@ -555,7 +580,7 @@ impl<'a> Assembler<'a> {
 		self.seal_block(after_block);
 	}
 
-	fn get_input(&mut self) {
+	fn input_into_cell(&mut self) {
 		let read = self.read;
 		let exit_block = self.exit_block;
 		let memory_address = self.memory_address;

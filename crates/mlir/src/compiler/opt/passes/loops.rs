@@ -24,7 +24,7 @@ pub const fn remove_infinite_loops(ops: &[BrainMlir]) -> Option<Change> {
 	match ops {
 		[
 			..,
-			BrainMlir::SetCell(1..=u8::MAX, None) | BrainMlir::GetInput,
+			BrainMlir::SetCell(1..=u8::MAX, None) | BrainMlir::InputIntoCell,
 		] => Some(Change::remove()),
 		_ => None,
 	}
