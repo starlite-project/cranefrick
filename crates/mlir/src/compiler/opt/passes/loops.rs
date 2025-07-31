@@ -8,14 +8,12 @@ pub const fn remove_unreachable_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
 		[
 			BrainMlir::SetCell(0, None)
 			| BrainMlir::DynamicLoop(..)
-			| BrainMlir::ScaleAndMoveValue(..)
 			| BrainMlir::MoveValue(..)
 			| BrainMlir::FindZero(..)
 			| BrainMlir::IfNz(..),
 			BrainMlir::DynamicLoop(..)
 			| BrainMlir::FindZero(..)
 			| BrainMlir::MoveValue(..)
-			| BrainMlir::ScaleAndMoveValue(..)
 			| BrainMlir::IfNz(..),
 		] => Some(Change::remove_offset(1)),
 		_ => None,

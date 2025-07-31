@@ -29,12 +29,9 @@ pub enum BrainMlir {
 	FindZero(i32),
 	GetInput,
 	PutOutput,
-	ScaleAndMoveValue(u8, i32),
-	ScaleAndTakeValue(u8, i32),
-	ScaleAndFetchValue(u8, i32),
-	MoveValue(i32),
-	TakeValue(i32),
-	FetchValue(i32),
+	MoveValue(u8, i32),
+	TakeValue(u8, i32),
+	FetchValue(u8, i32),
 	DynamicLoop(Vec<Self>),
 	IfNz(Vec<Self>),
 }
@@ -76,13 +73,18 @@ impl BrainMlir {
 	}
 
 	#[must_use]
-	pub const fn move_value(offset: i32) -> Self {
-		Self::MoveValue(offset)
+	pub const fn fetch_value(value: u8, offset: i32) -> Self {
+		Self::FetchValue(value, offset)
 	}
 
 	#[must_use]
-	pub const fn scale_and_move_value(value: u8, offset: i32) -> Self {
-		Self::ScaleAndMoveValue(value, offset)
+	pub const fn take_value(value: u8, offset: i32) -> Self {
+		Self::TakeValue(value, offset)
+	}
+
+	#[must_use]
+	pub const fn move_value(value: u8, offset: i32) -> Self {
+		Self::MoveValue(value, offset)
 	}
 
 	#[must_use]

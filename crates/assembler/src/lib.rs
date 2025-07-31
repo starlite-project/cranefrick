@@ -46,12 +46,13 @@ impl AssembledModule {
 		output_path: &Path,
 	) -> Result<Self, AssemblyError> {
 		let assemble_span = Span::current();
-		assemble_span
-			.pb_set_style(
-				&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:14}]")
-					.unwrap()
-					.progress_chars("#>-"),
-			);
+		assemble_span.pb_set_style(
+			&ProgressStyle::with_template(
+				"{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:14}]",
+			)
+			.unwrap()
+			.progress_chars("#>-"),
+		);
 		assemble_span.pb_set_length(14);
 
 		info!("looking up ISA");
@@ -336,10 +337,9 @@ impl<'a> Assembler<'a> {
 				BrainMlir::SetCell(value, offset) => {
 					self.set_cell(*value, offset.map_or(0, NonZero::get));
 				}
-				BrainMlir::ScaleAndMoveValue(factor, offset) => {
-					self.scale_and_move_value(*factor, *offset);
-				}
-				BrainMlir::MoveValue(offset) => self.move_value(*offset),
+				BrainMlir::MoveValue(factor, offset) => self.move_value(*factor, *offset),
+				BrainMlir::TakeValue(factor, offset) => self.take_value(*factor, *offset),
+				BrainMlir::FetchValue(factor, offset) => self.fetch_value(*factor, *offset),
 				BrainMlir::IfNz(ops) => self.if_nz(ops)?,
 				BrainMlir::FindZero(offset) => self.find_zero(*offset),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
@@ -382,18 +382,7 @@ impl<'a> Assembler<'a> {
 		self.memory_address = self.ins().iadd(memory_address, value);
 	}
 
-	fn move_value(&mut self, offset: i32) {
-		let current_value = self.load(0);
-		self.set_cell(0, 0);
-
-		let other_cell = self.load(offset);
-
-		let added = self.ins().iadd(current_value, other_cell);
-
-		self.store(added, offset);
-	}
-
-	fn scale_and_move_value(&mut self, factor: u8, offset: i32) {
+	fn move_value(&mut self, factor: u8, offset: i32) {
 		let current_value = self.load(0);
 		self.set_cell(0, 0);
 
@@ -404,6 +393,34 @@ impl<'a> Assembler<'a> {
 		let added = self.ins().iadd(other_cell, value_to_add);
 
 		self.store(added, offset);
+	}
+
+	fn take_value(&mut self, factor: u8, offset: i32) {
+		let current_value = self.load(0);
+		self.set_cell(0, 0);
+
+		self.move_pointer(offset);
+
+		let other_cell = self.load(0);
+
+		let value_to_add = self.ins().imul_imm(current_value, i64::from(factor));
+
+		let added = self.ins().iadd(other_cell, value_to_add);
+
+		self.store(added, 0);
+	}
+
+	fn fetch_value(&mut self, factor: u8, offset: i32) {
+		let other_cell = self.load(offset);
+		self.set_cell(0, offset);
+
+		let current_cell = self.load(0);
+
+		let value_to_add = self.ins().imul_imm(other_cell, i64::from(factor));
+
+		let added = self.ins().iadd(current_cell, value_to_add);
+
+		self.store(added, 0);
 	}
 
 	fn change_cell(&mut self, value: i8, offset: i32) {

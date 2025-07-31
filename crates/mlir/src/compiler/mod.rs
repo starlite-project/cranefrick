@@ -100,9 +100,10 @@ impl Compiler {
 		self.pass_info("sorting cell changes");
 		*progress |= run_peephole_pass(self, passes::sort_changes);
 
-		self.pass_info("optimize scale and move value instructions and move value instructions");
+		self.pass_info("optimize scale and shift value instructions");
 		*progress |= run_loop_pass(self, passes::optimize_scale_and_move_value);
-		*progress |= run_peephole_pass(self, passes::optimize_move_value);
+		*progress |= run_peephole_pass(self, passes::optimize_scale_and_take_value);
+		*progress |= run_peephole_pass(self, passes::optimize_scale_and_fetch_value);
 
 		self.pass_info("optimize if nz");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);
