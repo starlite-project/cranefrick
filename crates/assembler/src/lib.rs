@@ -20,7 +20,9 @@ use cranelift_codegen::{
 	CodegenError,
 	cfg_printer::CFGPrinter,
 	control::ControlPlane,
-	ir::{AbiParam, Block, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
+	ir::{
+		AbiParam, Block, FuncRef, Function, Inst, InstBuilder as _, MemFlags, Type, Value, types,
+	},
 	isa, settings,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext};
@@ -537,44 +539,34 @@ impl<'a> Assembler<'a> {
 
 	fn output_char(&mut self, c: u8) {
 		let write = self.write;
-		let exit_block = self.exit_block;
 
 		let value = self.ins().iconst(types::I8, i64::from(c));
 		let inst = self.ins().call(write, &[value]);
-		let result = self.first_result(inst);
 
-		let after_block = self.create_block();
-
-		self.ins()
-			.brif(result, exit_block, &[result.into()], after_block, &[]);
-
-		self.switch_to_block(after_block);
-		self.seal_block(after_block);
+		self.handle_extern_call(inst);
 	}
 
 	fn output_current_cell(&mut self) {
 		let write = self.write;
-		let exit_block = self.exit_block;
 
 		let value = self.load(0);
 		let inst = self.ins().call(write, &[value]);
-		let result = self.first_result(inst);
 
-		let after_block = self.create_block();
-
-		self.ins()
-			.brif(result, exit_block, &[result.into()], after_block, &[]);
-
-		self.switch_to_block(after_block);
-		self.seal_block(after_block);
+		self.handle_extern_call(inst);
 	}
 
 	fn input_into_cell(&mut self) {
 		let read = self.read;
-		let exit_block = self.exit_block;
 		let memory_address = self.memory_address;
 
 		let inst = self.ins().call(read, &[memory_address]);
+
+		self.handle_extern_call(inst);
+	}
+
+	fn handle_extern_call(&mut self, inst: Inst) {
+		let exit_block = self.exit_block;
+
 		let result = self.first_result(inst);
 
 		let after_block = self.create_block();
