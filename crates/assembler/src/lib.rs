@@ -535,11 +535,11 @@ impl<'a> Assembler<'a> {
 		self.store(value, offset);
 	}
 
-	fn output_char(&mut self, c: char) {
+	fn output_char(&mut self, c: u8) {
 		let write = self.write;
 		let exit_block = self.exit_block;
 
-		let value = self.ins().iconst(types::I8, i64::from(c as u8));
+		let value = self.ins().iconst(types::I8, i64::from(c));
 		let inst = self.ins().call(write, &[value]);
 		let result = self.first_result(inst);
 

@@ -29,7 +29,7 @@ pub enum BrainMlir {
 	FindZero(i32),
 	InputIntoCell,
 	OutputCurrentCell,
-	OutputChar(char),
+	OutputChar(u8),
 	MoveValue(u8, i32),
 	TakeValue(u8, i32),
 	FetchValue(u8, i32),
@@ -74,7 +74,7 @@ impl BrainMlir {
 	}
 
 	#[must_use]
-	pub const fn output_char(c: char) -> Self {
+	pub const fn output_char(c: u8) -> Self {
 		Self::OutputChar(c)
 	}
 

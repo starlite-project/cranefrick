@@ -147,7 +147,7 @@ pub const fn optimize_writes(ops: &[BrainMlir; 2]) -> Option<Change> {
 		[
 			BrainMlir::SetCell(value, None),
 			BrainMlir::OutputCurrentCell,
-		] => Some(Change::replace(BrainMlir::output_char(*value as char))),
+		] => Some(Change::replace(BrainMlir::output_char(*value))),
 		_ => None,
 	}
 }
