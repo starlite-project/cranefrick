@@ -110,6 +110,9 @@ impl Compiler {
 
 		self.pass_info("optimize write calls");
 		*progress |= run_peephole_pass(self, passes::optimize_writes);
+
+		self.pass_info("optimize no-op loop");
+		*progress |= run_loop_pass(self, passes::unroll_noop_loop);
 	}
 
 	fn pass_info(&self, pass: &str) {

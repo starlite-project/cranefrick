@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use core::num::NonZero;
 
 use super::{BrainMlir, Change};
 use crate::compiler::opt::utils::calculate_ptr_movement;
@@ -121,6 +122,19 @@ pub fn optimize_if_nz(ops: &[BrainMlir]) -> Option<Change> {
 		[rest @ .., BrainMlir::SetCell(0, None)] => {
 			Some(Change::replace(BrainMlir::if_nz(rest.iter().cloned())))
 		}
+		_ => None,
+	}
+}
+
+pub fn unroll_noop_loop(ops: &[BrainMlir]) -> Option<Change> {
+	match ops {
+		[
+			BrainMlir::ChangeCell(-1, None),
+			BrainMlir::SetCell(x, offset),
+		] => Some(Change::swap([
+			BrainMlir::set_cell(0),
+			BrainMlir::set_cell_at(*x, offset.map_or(0, NonZero::get)),
+		])),
 		_ => None,
 	}
 }

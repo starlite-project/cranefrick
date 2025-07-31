@@ -411,7 +411,13 @@ impl<'a> Assembler<'a> {
 
 	fn change_cell(&mut self, value: i8, offset: i32) {
 		let heap_value = self.load(offset);
-		let changed = self.ins().iadd_imm(heap_value, i64::from(value));
+		let changed = if value.is_negative() {
+			let sub_value = self.ins().iconst(types::I8, i64::from(value.abs()));
+			self.ins().isub(heap_value, sub_value)
+		} else {
+			self.ins().iadd_imm(heap_value, i64::from(value))
+		};
+
 		self.store(changed, offset);
 	}
 
