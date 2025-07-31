@@ -17,11 +17,12 @@ use std::{
 use cranefrick_mlir::{BrainMlir, Compiler};
 use cranefrick_utils::PointerExt;
 use cranelift_codegen::{
-	CodegenError,
+	CodegenError, CompileError,
 	cfg_printer::CFGPrinter,
 	control::ControlPlane,
 	ir::{
-		AbiParam, Block, FuncRef, Function, Inst, InstBuilder as _, MemFlags, Type, Value, types,
+		AbiParam, Block, Fact, FuncRef, Function, Inst, InstBuilder as _, MemFlags, Type, Value,
+		types,
 	},
 	isa, settings,
 };
@@ -156,7 +157,7 @@ impl AssembledModule {
 		})?;
 
 		info!("compiling binary");
-		let compiled_func = ctx.compile(&*isa, &mut ControlPlane::default()).unwrap();
+		let compiled_func = ctx.compile(&*isa, &mut ControlPlane::default())?;
 		assemble_span.pb_inc(1);
 
 		writing_files_span.in_scope(|| {
@@ -250,6 +251,21 @@ impl<'a> Assembler<'a> {
 		builder.append_block_params_for_function_params(block);
 
 		let memory_address = builder.ins().global_value(ptr_type, tape_ptr);
+
+		{
+			let memory_type = builder
+				.func
+				.create_memory_type(cranelift_codegen::ir::MemoryTypeData::Memory { size: 30_000 });
+
+			let memory_type_fact = Fact::Mem {
+				ty: memory_type,
+				min_offset: 0,
+				max_offset: 30_000,
+				nullable: false,
+			};
+
+			builder.func.global_value_facts[tape_ptr] = Some(memory_type_fact);
+		}
 
 		let exit_block = builder.create_block();
 		builder.append_block_param(exit_block, ptr_type);
@@ -661,6 +677,12 @@ impl From<settings::SetError> for AssemblyError {
 impl From<CodegenError> for AssemblyError {
 	fn from(value: CodegenError) -> Self {
 		Self::Codegen(value)
+	}
+}
+
+impl<'a> From<CompileError<'a>> for AssemblyError {
+	fn from(value: CompileError<'a>) -> Self {
+		Self::from(value.inner)
 	}
 }
 
