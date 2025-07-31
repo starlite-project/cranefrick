@@ -23,7 +23,7 @@ use cranelift_codegen::{
 	ir::{AbiParam, Block, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
 	isa, settings,
 };
-use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext, Switch};
+use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
 use target_lexicon::Triple;
