@@ -362,11 +362,13 @@ impl<'a> Assembler<'a> {
 			.ins()
 			.load(types::I8, Self::memflags(), memory_address, offset);
 
-		self.func.dfg.facts[value] = Some(Fact::Range {
-			bit_width: types::I8.bits() as u16,
-			min: 0,
-			max: u64::from(u8::MAX),
-		});
+		if self.func.dfg.facts.get(value).is_none() {
+			self.func.dfg.facts[value] = Some(Fact::Range {
+				bit_width: types::I8.bits() as u16,
+				min: 0,
+				max: u8::MAX.into(),
+			});
+		}
 
 		value
 	}
