@@ -27,7 +27,7 @@ mimalloc = "0.1"
 [workspace]
 members = [
     "crates/assembler",
-    "crates/hlir", "crates/internals",
+    "crates/hlir",
     "crates/mlir",
     "crates/utils",
     "playground/cranelift_test",
@@ -43,11 +43,13 @@ anyhow = "1"
 clap = "4"
 color-eyre = "0.6"
 cranefrick_utils = { path = "crates/utils" }
-cranelift-codegen = "0.122.0"
-cranelift-frontend = "0.122.0"
-cranelift-jit = "0.122.0"
-cranelift-module = "0.122.0"
-cranelift-native = "0.122.0"
+cranelift-codegen = "0.122"
+cranelift-control = "0.122"
+cranelift-entity = "0.122"
+cranelift-frontend = "0.122"
+cranelift-jit = "0.122"
+cranelift-module = "0.122"
+cranelift-native = "0.122"
 logos = { version = "0.15", default-features = false, features = [
     "debug",
     "export_derive",

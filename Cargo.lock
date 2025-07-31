@@ -323,10 +323,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cranefrick_internals"
-version = "0.1.0"
-
-[[package]]
 name = "cranefrick_mlir"
 version = "0.1.0"
 dependencies = [
