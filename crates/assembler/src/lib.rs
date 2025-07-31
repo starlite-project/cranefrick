@@ -48,7 +48,7 @@ impl AssembledModule {
 		let assemble_span = Span::current();
 		assemble_span
 			.pb_set_style(
-				&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:14}] ({eta})")
+				&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:14}]")
 					.unwrap()
 					.progress_chars("#>-"),
 			);
@@ -99,7 +99,7 @@ impl AssembledModule {
 
 		writing_files_span.pb_set_style(
 			&ProgressStyle::with_template(
-				"{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:5}] ({eta})",
+				"{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:5}]",
 			)
 			.unwrap()
 			.progress_chars("#>-"),
