@@ -15,7 +15,7 @@ use std::{
 };
 
 use cranefrick_mlir::{BrainMlir, Compiler};
-use cranefrick_utils::PointerExt as _;
+use cranefrick_utils::PointerExt;
 use cranelift_codegen::{
 	CodegenError,
 	cfg_printer::CFGPrinter,
@@ -195,7 +195,7 @@ impl AssembledModule {
 
 		let ptr = exec();
 
-		if let Some(error) = unsafe { ptr.into_boxed() } {
+		if let Some(error) = unsafe { <*mut IoError as PointerExt<IoError>>::into_boxed(ptr) } {
 			Err((*error).into())
 		} else {
 			Ok(())

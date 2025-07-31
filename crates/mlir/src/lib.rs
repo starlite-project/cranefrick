@@ -4,6 +4,7 @@
 extern crate alloc;
 
 mod compiler;
+mod dfg;
 
 use alloc::vec::Vec;
 use core::num::NonZeroI32;
