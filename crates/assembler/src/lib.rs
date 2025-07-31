@@ -431,7 +431,16 @@ impl<'a> Assembler<'a> {
 			let sub_value = self.ins().iconst(types::I8, i64::from(value.abs()));
 			self.ins().isub(heap_value, sub_value)
 		} else {
-			self.ins().iadd_imm(heap_value, i64::from(value))
+			let new_value = self.ins().iadd_imm(heap_value, i64::from(value));
+
+			self.func.dfg.facts[new_value] = Some(Fact::Range {
+				bit_width: types::I8.bits() as u16,
+				min: 0,
+				max: value as u64,
+			});
+
+			new_value
+			// self.ins().iadd_imm(heap_value, i64::from(value))
 		};
 
 		self.store(changed, offset);
