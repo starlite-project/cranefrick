@@ -27,7 +27,7 @@ mimalloc = "0.1"
 [workspace]
 members = [
     "crates/assembler",
-    "crates/hlir",
+    "crates/hlir", "crates/internals",
     "crates/mlir",
     "crates/utils",
     "playground/cranelift_test",

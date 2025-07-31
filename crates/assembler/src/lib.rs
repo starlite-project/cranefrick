@@ -135,6 +135,8 @@ impl AssembledModule {
 		ctx.verify(&*isa).unwrap();
 		assemble_span.pb_inc(1);
 
+		tracing::info!("{:?}", ctx.func.stencil.global_values);
+
 		writing_files_span.in_scope(|| {
 			info!("writing optimized cranelift-IR");
 			fs::write(output_path.join("optimized.clif"), ctx.func.to_string())?;
