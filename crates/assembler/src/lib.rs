@@ -550,8 +550,6 @@ impl<'a> Assembler<'a> {
 
 		self.switch_to_block(after_block);
 		self.seal_block(after_block);
-
-		self.store(value, 0);
 	}
 
 	fn output_current_cell(&mut self) {
