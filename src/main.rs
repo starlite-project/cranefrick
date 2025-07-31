@@ -9,7 +9,7 @@ use cranefrick_assembler::{AssembledModule, AssemblerFlags};
 use cranefrick_hlir::Parser as BrainParser;
 use cranefrick_mlir::Compiler;
 use ron::ser::PrettyConfig;
-use serde::Serialize as _;
+use serde::Serialize;
 use tracing::{info, warn};
 use tracing_error::ErrorLayer;
 use tracing_indicatif::IndicatifLayer;
@@ -41,11 +41,11 @@ fn main() -> Result<()> {
 
 	let mut compiler = Compiler::from_iter(parsed.clone());
 
-	serialize_compiler(&compiler, &args.output_path, "unoptimized")?;
+	serialize(&compiler, &args.output_path, "unoptimized")?;
 
 	compiler.optimize();
 
-	serialize_compiler(&compiler, &args.output_path, "optimized")?;
+	serialize(&compiler, &args.output_path, "optimized")?;
 
 	let flags = get_flags(args.flags_path.as_deref());
 
@@ -135,7 +135,7 @@ fn env_filter() -> EnvFilter {
 	EnvFilter::new("info,cranelift_jit=warn")
 }
 
-fn serialize_compiler(comp: &Compiler, folder_path: &Path, file_name: &str) -> Result<()> {
+fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
 	let mut output = String::new();
 	let mut serializer = ron::Serializer::with_options(
 		&mut output,
@@ -143,7 +143,7 @@ fn serialize_compiler(comp: &Compiler, folder_path: &Path, file_name: &str) -> R
 		&ron::Options::default(),
 	)?;
 
-	comp.serialize(&mut serializer)?;
+	value.serialize(&mut serializer)?;
 
 	fs::write(folder_path.join(format!("{file_name}.ron")), output)?;
 
