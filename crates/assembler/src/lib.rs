@@ -358,8 +358,17 @@ impl<'a> Assembler<'a> {
 
 	fn load(&mut self, offset: i32) -> Value {
 		let memory_address = self.memory_address;
-		self.ins()
-			.load(types::I8, Self::memflags(), memory_address, offset)
+		let value = self
+			.ins()
+			.load(types::I8, Self::memflags(), memory_address, offset);
+
+		self.func.dfg.facts[value] = Some(Fact::Range {
+			bit_width: types::I8.bits() as u16,
+			min: 0,
+			max: u64::from(u8::MAX),
+		});
+
+		value
 	}
 
 	fn store(&mut self, value: Value, offset: i32) {
@@ -431,16 +440,7 @@ impl<'a> Assembler<'a> {
 			let sub_value = self.ins().iconst(types::I8, i64::from(value.abs()));
 			self.ins().isub(heap_value, sub_value)
 		} else {
-			let new_value = self.ins().iadd_imm(heap_value, i64::from(value));
-
-			self.func.dfg.facts[new_value] = Some(Fact::Range {
-				bit_width: types::I8.bits() as u16,
-				min: 0,
-				max: value as u64,
-			});
-
-			new_value
-			// self.ins().iadd_imm(heap_value, i64::from(value))
+			self.ins().iadd_imm(heap_value, i64::from(value))
 		};
 
 		self.store(changed, offset);
