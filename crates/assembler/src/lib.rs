@@ -48,12 +48,12 @@ impl AssembledModule {
 		let assemble_span = Span::current();
 		assemble_span.pb_set_style(
 			&ProgressStyle::with_template(
-				"{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:14}]",
+				"{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:13}]",
 			)
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		assemble_span.pb_set_length(14);
+		assemble_span.pb_set_length(13);
 
 		info!("looking up ISA");
 
@@ -113,12 +113,7 @@ impl AssembledModule {
 			writing_files_span.pb_inc(1);
 			assemble_span.pb_inc(1);
 
-			Ok::<(), IoError>(())
-		})?;
-
-		writing_files_span.in_scope(|| {
 			info!("writing unoptimized CFG dot graph");
-
 			let mut out = String::new();
 
 			let printer = CFGPrinter::new(&ctx.func);
@@ -144,7 +139,18 @@ impl AssembledModule {
 			writing_files_span.pb_inc(1);
 			assemble_span.pb_inc(1);
 
-			Ok::<(), IoError>(())
+			info!("writing optimized CFG dot graph");
+			let mut out = String::new();
+
+			let printer = CFGPrinter::new(&ctx.func);
+
+			printer.write(&mut out)?;
+			fs::write(output_path.join("optimized.dot"), out)?;
+
+			writing_files_span.pb_inc(1);
+			assemble_span.pb_inc(1);
+
+			Ok::<(), AssemblyError>(())
 		})?;
 
 		info!("compiling binary");
@@ -160,32 +166,8 @@ impl AssembledModule {
 			Ok::<(), IoError>(())
 		})?;
 
-		writing_files_span.in_scope(|| {
-			info!("writing optimized CFG dot graph");
-
-			let mut out = String::new();
-
-			let printer = CFGPrinter::new(&ctx.func);
-
-			printer.write(&mut out)?;
-			fs::write(output_path.join("optimized.dot"), out)?;
-			writing_files_span.pb_inc(1);
-			assemble_span.pb_inc(1);
-
-			Ok::<(), AssemblyError>(())
-		})?;
-
 		drop(writing_files_span);
 
-		info_span!("loop analysis").in_scope(|| {
-			info!("performing loop analysis");
-
-			let mut loop_analyzer = cranelift_codegen::loop_analysis::LoopAnalysis::new();
-
-			loop_analyzer.compute(&ctx.func, &ctx.cfg, &ctx.domtree);
-		});
-
-		assemble_span.pb_inc(1);
 		info!("finishing up module definitions");
 		module.define_function(func, &mut ctx)?;
 		module.clear_context(&mut ctx);
