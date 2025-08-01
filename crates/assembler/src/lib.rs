@@ -239,7 +239,7 @@ impl<'a> Assembler<'a> {
 		builder.switch_to_block(block);
 		builder.append_block_params_for_function_params(block);
 
-		let memory_address = builder.ins().global_value(ptr_type, tape_ptr);
+		let memory_address = builder.ins().symbol_value(ptr_type, tape_ptr);
 
 		{
 			let memory_type = builder
