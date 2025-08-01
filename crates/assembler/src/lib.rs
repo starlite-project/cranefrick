@@ -211,6 +211,7 @@ struct Assembler<'a> {
 	read: FuncRef,
 	write: FuncRef,
 	memory_address: Value,
+	last_value: Option<(i32, Value)>,
 }
 
 impl<'a> Assembler<'a> {
@@ -280,6 +281,7 @@ impl<'a> Assembler<'a> {
 			read,
 			write,
 			memory_address,
+			last_value: None,
 		})
 	}
 
@@ -332,6 +334,12 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn load(&mut self, offset: i32) -> Value {
+		if let Some((last_offset, value)) = self.last_value
+			&& last_offset == offset
+		{
+			return value;
+		}
+
 		let memory_address = self.memory_address;
 		let value = self
 			.ins()
@@ -339,10 +347,14 @@ impl<'a> Assembler<'a> {
 
 		self.ensure_hint(value);
 
+		self.last_value = Some((offset, value));
+
 		value
 	}
 
 	fn store(&mut self, value: Value, offset: i32) {
+		self.invalidate_load();
+
 		let memory_address = self.memory_address;
 		self.ensure_hint(value);
 
@@ -355,7 +367,7 @@ impl<'a> Assembler<'a> {
 			self.func.dfg.facts[value] = Some(Fact::Range {
 				bit_width: types::I8.bits() as u16,
 				min: 0,
-				max: u8::MAX.into()
+				max: u8::MAX.into(),
 			});
 		}
 	}
@@ -364,11 +376,17 @@ impl<'a> Assembler<'a> {
 		MemFlags::trusted()
 	}
 
+	const fn invalidate_load(&mut self) {
+		self.last_value = None;
+	}
+
 	fn const_u8(&mut self, value: u8) -> Value {
 		self.ins().iconst(types::I8, i64::from(value))
 	}
 
 	fn move_pointer(&mut self, offset: i32) {
+		self.invalidate_load();
+
 		let ptr_type = self.ptr_type;
 		let memory_address = self.memory_address;
 
@@ -377,6 +395,8 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn move_value(&mut self, factor: u8, offset: i32) {
+		self.invalidate_load();
+
 		let current_value = self.load(0);
 		self.set_cell(0, 0);
 
@@ -390,6 +410,8 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn take_value(&mut self, factor: u8, offset: i32) {
+		self.invalidate_load();
+
 		let current_value = self.load(0);
 		self.set_cell(0, 0);
 
@@ -405,6 +427,8 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn fetch_value(&mut self, factor: u8, offset: i32) {
+		self.invalidate_load();
+
 		let other_cell = self.load(offset);
 		self.set_cell(0, offset);
 
@@ -418,6 +442,8 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn change_cell(&mut self, value: i8, offset: i32) {
+		self.invalidate_load();
+
 		let heap_value = self.load(offset);
 		let changed = if value.is_negative() {
 			let sub_value = self.ins().iconst(types::I8, i64::from(value.abs()));
@@ -430,6 +456,8 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn if_nz(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
+		self.invalidate_load();
+
 		let ptr_type = self.ptr_type;
 		let memory_address = self.memory_address;
 
@@ -465,6 +493,8 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn dynamic_loop(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
+		self.invalidate_load();
+
 		let ptr_type = self.ptr_type;
 		let memory_address = self.memory_address;
 
@@ -507,6 +537,8 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn find_zero(&mut self, offset: i32) {
+		self.invalidate_load();
+
 		let ptr_type = self.ptr_type;
 		let memory_address = self.memory_address;
 
@@ -547,6 +579,8 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn set_cell(&mut self, value: u8, offset: i32) {
+		self.invalidate_load();
+
 		let value = self.const_u8(value);
 		self.store(value, offset);
 	}
@@ -566,6 +600,8 @@ impl<'a> Assembler<'a> {
 	}
 
 	fn input_into_cell(&mut self) {
+		self.invalidate_load();
+
 		let read = self.read;
 		let memory_address = self.memory_address;
 
