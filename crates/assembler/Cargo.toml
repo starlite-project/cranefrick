@@ -9,9 +9,13 @@ version.workspace = true
 
 [dependencies]
 cranefrick_mlir = { path = "../mlir" }
-cranelift-codegen.workspace = true
+cranelift-codegen = { workspace = true, features = [
+    "all-arch",
+    "isle-errors",
+    "unwind"
+] }
 cranelift-frontend.workspace = true
-cranelift-jit.workspace = true
+cranelift-jit = { workspace = true, features = ["wasmtime-unwinder"] }
 cranelift-module.workspace = true
 cranelift-native.workspace = true
 serde = { workspace = true, features = ["derive", "std"] }

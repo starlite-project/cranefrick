@@ -44,7 +44,9 @@ arbitrary = "1"
 clap = "4"
 color-eyre = "0.6"
 cranefrick_utils = { path = "crates/utils" }
-cranelift-codegen = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "0a074afce9fff4fe82e45069e1e493e7f13d33ba" }
+cranelift-codegen = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "0a074afce9fff4fe82e45069e1e493e7f13d33ba", features = [
+    "enable-serde"
+] }
 cranelift-control = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "0a074afce9fff4fe82e45069e1e493e7f13d33ba" }
 cranelift-entity = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "0a074afce9fff4fe82e45069e1e493e7f13d33ba" }
 cranelift-frontend = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "0a074afce9fff4fe82e45069e1e493e7f13d33ba" }
