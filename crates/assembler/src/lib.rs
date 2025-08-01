@@ -261,14 +261,12 @@ impl<'a> Assembler<'a> {
 		let write = {
 			let mut write_sig = module.make_signature();
 			write_sig.params.push(AbiParam::new(types::I8));
-			write_sig.returns.push(AbiParam::new(ptr_type));
 			module.declare_function("write", Linkage::Import, &write_sig)?
 		};
 
 		let read = {
 			let mut read_sig = module.make_signature();
 			read_sig.params.push(AbiParam::new(ptr_type));
-			read_sig.returns.push(AbiParam::new(ptr_type));
 			module.declare_function("read", Linkage::Import, &read_sig)?
 		};
 

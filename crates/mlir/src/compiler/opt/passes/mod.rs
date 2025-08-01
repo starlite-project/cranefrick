@@ -102,7 +102,7 @@ pub fn add_offsets(ops: &[BrainMlir; 3]) -> Option<Change> {
 	}
 }
 
-pub const fn optimize_scale_and_move_value(ops: &[BrainMlir]) -> Option<Change> {
+pub const fn optimize_move_value(ops: &[BrainMlir]) -> Option<Change> {
 	match ops {
 		[
 			BrainMlir::ChangeCell(-1, None),
@@ -115,7 +115,7 @@ pub const fn optimize_scale_and_move_value(ops: &[BrainMlir]) -> Option<Change> 
 	}
 }
 
-pub const fn optimize_scale_and_take_value(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub const fn optimize_take_value(ops: &[BrainMlir; 2]) -> Option<Change> {
 	match ops {
 		[BrainMlir::MoveValue(factor, x), BrainMlir::MovePointer(y)] if *x == *y => {
 			Some(Change::replace(BrainMlir::take_value(*factor, *x)))
@@ -124,7 +124,7 @@ pub const fn optimize_scale_and_take_value(ops: &[BrainMlir; 2]) -> Option<Chang
 	}
 }
 
-pub fn optimize_scale_and_fetch_value(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn optimize_fetch_value(ops: &[BrainMlir; 2]) -> Option<Change> {
 	match ops {
 		[BrainMlir::MovePointer(x), BrainMlir::TakeValue(factor, y)] if *x == -y => {
 			Some(Change::replace(BrainMlir::fetch_value(*factor, *x)))
