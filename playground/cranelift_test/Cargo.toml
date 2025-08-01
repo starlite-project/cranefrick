@@ -9,5 +9,5 @@ version.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-cranelift = "0.122"
+cranelift = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "0a074afce9fff4fe82e45069e1e493e7f13d33ba" }
 target-lexicon = "0.13"
