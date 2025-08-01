@@ -1,7 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
 mod flags;
-mod internal;
 
 use std::{
 	error::Error as StdError,
@@ -11,30 +10,26 @@ use std::{
 	num::NonZero,
 	ops::{Deref, DerefMut},
 	path::Path,
-	ptr, slice,
+	process::exit,
+	slice,
 };
 
 use cranefrick_mlir::{BrainMlir, Compiler};
-use cranefrick_utils::PointerExt;
 use cranelift_codegen::{
 	CodegenError, CompileError,
 	cfg_printer::CFGPrinter,
 	control::ControlPlane,
-	ir::{
-		AbiParam, Block, Fact, FuncRef, Function, Inst, InstBuilder as _, MemFlags, Type, Value,
-		types,
-	},
+	ir::{AbiParam, Fact, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
 	isa, settings,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
 use target_lexicon::Triple;
-use tracing::{Span, info, info_span};
+use tracing::{Span, error, info, info_span};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
 
 pub use self::flags::*;
-use self::internal::FunctionStencilExt as _;
 
 pub struct AssembledModule {
 	module: Option<JITModule>,
@@ -192,15 +187,11 @@ impl AssembledModule {
 
 		let code = module.get_finalized_function(self.main);
 
-		let exec = unsafe { std::mem::transmute::<*const u8, fn() -> *mut IoError>(code) };
+		let exec = unsafe { std::mem::transmute::<*const u8, fn()>(code) };
 
-		let ptr = exec();
+		exec();
 
-		if let Some(error) = unsafe { <*mut IoError as PointerExt<IoError>>::into_boxed(ptr) } {
-			Err((*error).into())
-		} else {
-			Ok(())
-		}
+		Ok(())
 	}
 }
 
@@ -220,7 +211,6 @@ struct Assembler<'a> {
 	read: FuncRef,
 	write: FuncRef,
 	memory_address: Value,
-	exit_block: Block,
 }
 
 impl<'a> Assembler<'a> {
@@ -267,11 +257,6 @@ impl<'a> Assembler<'a> {
 			builder.func.global_value_facts[tape_ptr] = Some(memory_type_fact);
 		}
 
-		let exit_block = builder.create_block();
-		builder.append_block_param(exit_block, ptr_type);
-
-		builder.set_cold_block(exit_block);
-
 		let write = {
 			let mut write_sig = module.make_signature();
 			write_sig.params.push(AbiParam::new(types::I8));
@@ -295,7 +280,6 @@ impl<'a> Assembler<'a> {
 			read,
 			write,
 			memory_address,
-			exit_block,
 		})
 	}
 
@@ -303,20 +287,11 @@ impl<'a> Assembler<'a> {
 	fn assemble(mut self, compiler: Compiler) -> Result<(), AssemblyError> {
 		self.ops(&compiler)?;
 
-		let Self {
-			ptr_type,
-			exit_block,
-			..
-		} = self;
+		let Self { ptr_type, .. } = self;
 
 		let zero = self.ins().iconst(ptr_type, 0);
 
 		self.ins().return_(&[zero]);
-
-		self.switch_to_block(exit_block);
-
-		let result = self.block_params(exit_block)[0];
-		self.ins().return_(&[result]);
 
 		self.seal_all_blocks();
 
@@ -362,29 +337,27 @@ impl<'a> Assembler<'a> {
 			.ins()
 			.load(types::I8, Self::memflags(), memory_address, offset);
 
-		if self.func.dfg.facts.get(value).is_none() {
-			self.func.dfg.facts[value] = Some(Fact::Range {
-				bit_width: types::I8.bits() as u16,
-				min: 0,
-				max: u8::MAX.into(),
-			});
-		}
+		self.ensure_hint(value);
 
 		value
 	}
 
 	fn store(&mut self, value: Value, offset: i32) {
 		let memory_address = self.memory_address;
+		self.ensure_hint(value);
+
+		self.ins()
+			.store(Self::memflags(), value, memory_address, offset);
+	}
+
+	fn ensure_hint(&mut self, value: Value) {
 		if self.func.dfg.facts.get(value).is_none() {
 			self.func.dfg.facts[value] = Some(Fact::Range {
 				bit_width: types::I8.bits() as u16,
 				min: 0,
-				max: u8::MAX.into(),
+				max: u8::MAX.into()
 			});
 		}
-
-		self.ins()
-			.store(Self::memflags(), value, memory_address, offset);
 	}
 
 	const fn memflags() -> MemFlags {
@@ -582,41 +555,21 @@ impl<'a> Assembler<'a> {
 		let write = self.write;
 
 		let value = self.ins().iconst(types::I8, i64::from(c));
-		let inst = self.ins().call(write, &[value]);
-
-		self.handle_extern_call(inst);
+		self.ins().call(write, &[value]);
 	}
 
 	fn output_current_cell(&mut self) {
 		let write = self.write;
 
 		let value = self.load(0);
-		let inst = self.ins().call(write, &[value]);
-
-		self.handle_extern_call(inst);
+		self.ins().call(write, &[value]);
 	}
 
 	fn input_into_cell(&mut self) {
 		let read = self.read;
 		let memory_address = self.memory_address;
 
-		let inst = self.ins().call(read, &[memory_address]);
-
-		self.handle_extern_call(inst);
-	}
-
-	fn handle_extern_call(&mut self, inst: Inst) {
-		let exit_block = self.exit_block;
-
-		let result = self.first_result(inst);
-
-		let after_block = self.create_block();
-
-		self.ins()
-			.brif(result, exit_block, &[result.into()], after_block, &[]);
-
-		self.switch_to_block(after_block);
-		self.seal_block(after_block);
+		self.ins().call(read, &[memory_address]);
 	}
 }
 
@@ -723,22 +676,22 @@ impl From<isa::LookupError> for AssemblyError {
 	}
 }
 
-unsafe extern "C" fn write(value: u8) -> *mut IoError {
+unsafe extern "C" fn write(value: u8) {
 	if cfg!(target_os = "windows") && value >= 128 {
-		return ptr::null_mut();
+		return;
 	}
 
 	let mut stdout = io::stdout().lock();
 
 	let result = stdout.write_all(&[value]).and_then(|()| stdout.flush());
 
-	match result {
-		Ok(()) => ptr::null_mut(),
-		Err(e) => Box::into_raw(Box::new(e)),
+	if let Err(e) = result {
+		error!("error occurred during write: {e}");
+		exit(1);
 	}
 }
 
-unsafe extern "C" fn read(buf: *mut u8) -> *mut IoError {
+unsafe extern "C" fn read(buf: *mut u8) {
 	let mut stdin = io::stdin().lock();
 	loop {
 		let mut value = 0;
@@ -746,7 +699,9 @@ unsafe extern "C" fn read(buf: *mut u8) -> *mut IoError {
 
 		if let Err(e) = err {
 			if !matches!(e.kind(), io::ErrorKind::UnexpectedEof) {
-				return Box::into_raw(Box::new(e));
+				// return Box::into_raw(Box::new(e));
+				error!("error occurred during read: {e}");
+				exit(1);
 			}
 
 			value = 0;
@@ -758,6 +713,6 @@ unsafe extern "C" fn read(buf: *mut u8) -> *mut IoError {
 
 		unsafe { *buf = value };
 
-		break ptr::null_mut();
+		break;
 	}
 }

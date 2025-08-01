@@ -300,7 +300,6 @@ name = "cranefrick_assembler"
 version = "0.1.0"
 dependencies = [
  "cranefrick_mlir",
- "cranefrick_utils",
  "cranelift-codegen",
  "cranelift-frontend",
  "cranelift-jit",
