@@ -113,6 +113,12 @@ impl Compiler {
 
 		self.pass_info("optimize no-op loop");
 		*progress |= run_loop_pass(self, passes::unroll_noop_loop);
+
+		self.pass_info("remove redundant take instructions");
+		*progress |= run_peephole_pass(self, passes::remove_redundant_takes);
+
+		self.pass_info("optimize constant shifts");
+		*progress |= run_peephole_pass(self, passes::optimize_constant_shifts);
 	}
 
 	fn pass_info(&self, pass: &str) {

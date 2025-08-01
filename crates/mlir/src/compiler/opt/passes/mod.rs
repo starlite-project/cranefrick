@@ -129,6 +129,12 @@ pub fn optimize_scale_and_fetch_value(ops: &[BrainMlir; 2]) -> Option<Change> {
 		[BrainMlir::MovePointer(x), BrainMlir::TakeValue(factor, y)] if *x == -y => {
 			Some(Change::replace(BrainMlir::fetch_value(*factor, *x)))
 		}
+		[BrainMlir::MovePointer(x), BrainMlir::MoveValue(factor, y)] if *x == -y => {
+			Some(Change::swap([
+				BrainMlir::fetch_value(*factor, *x),
+				BrainMlir::move_pointer(*x),
+			]))
+		}
 		_ => None,
 	}
 }
@@ -149,6 +155,33 @@ pub fn optimize_writes(ops: &[BrainMlir; 2]) -> Option<Change> {
 			BrainMlir::OutputCurrentCell,
 		] => Some(Change::swap([
 			BrainMlir::output_char(*value),
+			BrainMlir::set_cell(*value),
+		])),
+		_ => None,
+	}
+}
+
+pub fn optimize_constant_shifts(ops: &[BrainMlir; 2]) -> Option<Change> {
+	match ops {
+		[BrainMlir::SetCell(a, x), BrainMlir::FetchValue(factor, y)]
+			if x.map_or(0, NonZero::get) == *y =>
+		{
+			Some(Change::swap([
+				BrainMlir::set_cell_at(0, x.map_or(0, NonZero::get)),
+				BrainMlir::set_cell(a.wrapping_mul(*factor)),
+			]))
+		}
+		_ => None,
+	}
+}
+
+pub fn remove_redundant_takes(ops: &[BrainMlir; 2]) -> Option<Change> {
+	match ops {
+		[
+			BrainMlir::TakeValue(.., offset),
+			BrainMlir::SetCell(value, None),
+		] => Some(Change::swap([
+			BrainMlir::move_pointer(*offset),
 			BrainMlir::set_cell(*value),
 		])),
 		_ => None,
