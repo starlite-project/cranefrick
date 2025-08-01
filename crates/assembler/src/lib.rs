@@ -80,9 +80,7 @@ impl AssembledModule {
 
 		let mut func_ctx = FunctionBuilderContext::new();
 
-		let mut sig = module.make_signature();
-
-		sig.returns.push(AbiParam::new(ptr_type));
+		let sig = module.make_signature();
 
 		let func = module.declare_function("main", Linkage::Local, &sig)?;
 
@@ -287,11 +285,7 @@ impl<'a> Assembler<'a> {
 	fn assemble(mut self, compiler: Compiler) -> Result<(), AssemblyError> {
 		self.ops(&compiler)?;
 
-		let Self { ptr_type, .. } = self;
-
-		let zero = self.ins().iconst(ptr_type, 0);
-
-		self.ins().return_(&[zero]);
+		self.ins().return_(&[]);
 
 		self.seal_all_blocks();
 
