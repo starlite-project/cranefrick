@@ -19,7 +19,7 @@ use cranelift_codegen::{
 	CodegenError, CompileError,
 	cfg_printer::CFGPrinter,
 	control::ControlPlane,
-	ir::{AbiParam, Expr, Fact, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
+	ir::{AbiParam, Fact, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
 	isa, settings,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext};
