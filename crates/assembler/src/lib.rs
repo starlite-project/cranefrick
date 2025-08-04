@@ -80,7 +80,8 @@ impl AssembledModule {
 
 		let mut func_ctx = FunctionBuilderContext::new();
 
-		let sig = module.make_signature();
+		let mut sig = module.make_signature();
+		sig.params.push(AbiParam::new(ptr_type));
 
 		let func = module.declare_function("main", Linkage::Local, &sig)?;
 
