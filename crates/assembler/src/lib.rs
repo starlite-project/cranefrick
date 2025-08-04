@@ -19,12 +19,12 @@ use cranelift_codegen::{
 	CodegenError, CompileError,
 	cfg_printer::CFGPrinter,
 	control::ControlPlane,
-	ir::{AbiParam, Fact, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
+	ir::{AbiParam, Expr, Fact, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types},
 	isa, settings,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
-use cranelift_module::{DataDescription, FuncId, Linkage, Module as _, ModuleError};
+use cranelift_module::{FuncId, Linkage, Module as _, ModuleError};
 use target_lexicon::Triple;
 use tracing::{Span, error, info, info_span};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
@@ -186,9 +186,11 @@ impl AssembledModule {
 
 		let code = module.get_finalized_function(self.main);
 
-		let exec = unsafe { std::mem::transmute::<*const u8, fn()>(code) };
+		let exec = unsafe { std::mem::transmute::<*const u8, fn(*mut u8)>(code) };
 
-		exec();
+		let mut tape = [0u8; 30_000];
+
+		exec(tape.as_mut_ptr());
 
 		Ok(())
 	}
@@ -220,19 +222,6 @@ impl<'a> Assembler<'a> {
 		module: &mut JITModule,
 		ptr_type: Type,
 	) -> Result<Self, AssemblyError> {
-		let data_id = module.declare_anonymous_data(true, false)?;
-
-		let tape_ptr = module.declare_data_in_func(data_id, func);
-
-		{
-			let mut data = DataDescription::new();
-
-			data.define_zeroinit(30_000);
-			data.set_used(true);
-
-			module.define_data(data_id, &data)?;
-		}
-
 		let mut builder = FunctionBuilder::new(func, fn_ctx);
 
 		let block = builder.create_block();
@@ -240,21 +229,22 @@ impl<'a> Assembler<'a> {
 		builder.switch_to_block(block);
 		builder.append_block_params_for_function_params(block);
 
-		let memory_address = builder.ins().symbol_value(ptr_type, tape_ptr);
+		let memory_address = builder.block_params(block)[0];
 
 		{
 			let memory_type = builder
 				.func
+				.stencil
 				.create_memory_type(cranelift_codegen::ir::MemoryTypeData::Memory { size: 30_000 });
 
-			let memory_type_fact = Fact::Mem {
+			let fact = Fact::Mem {
 				ty: memory_type,
 				min_offset: 0,
 				max_offset: 30_000,
 				nullable: false,
 			};
 
-			builder.func.global_value_facts[tape_ptr] = Some(memory_type_fact);
+			builder.func.dfg.facts[memory_address] = Some(fact);
 		}
 
 		let write = {
