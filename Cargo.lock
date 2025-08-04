@@ -524,6 +524,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "cranium_bitset"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "cranefrick_utils",
+ "serde",
+]
+
+[[package]]
+name = "cranium_entity"
+version = "0.1.0"
+dependencies = [
+ "cranium_bitset",
+ "serde",
+]
+
+[[package]]
 name = "crossbeam-deque"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -4,11 +4,15 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "convert")]
+mod convert;
 #[cfg(feature = "insert_or_push")]
 mod insert_or_push;
 #[cfg(feature = "iter")]
 mod iter;
 
+#[cfg(feature = "convert")]
+pub use self::convert::*;
 #[cfg(feature = "insert_or_push")]
 pub use self::insert_or_push::*;
 #[cfg(feature = "iter")]

@@ -1,0 +1,16 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "cranium_entity"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+cranium_bitset = { path = "../bitset" }
+serde = { workspace = true, default-features = false, features = ["derive"] }
+
+[features]
+alloc = ["cranium_bitset/alloc", "serde/alloc"]
+default = ["alloc"]
