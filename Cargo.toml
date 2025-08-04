@@ -25,7 +25,10 @@ tracing-tree = "0.4"
 mimalloc = "0.1"
 
 [workspace]
-members = [ "cranium/bitset", "cranium/entity",
+members = [
+    "cranium/bitset",
+    "cranium/entity",
+    "cranium/isle/isle",
     "crates/assembler",
     "crates/hlir",
     "crates/mlir",
@@ -66,6 +69,7 @@ tracing-subscriber = "0.3"
 
 [workspace.lints.rust]
 elided_lifetimes_in_paths = "warn"
+missing_copy_implementations = "warn"
 
 [workspace.lints.clippy]
 borrow_as_ptr = "deny"

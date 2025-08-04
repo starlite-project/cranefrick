@@ -1,0 +1,18 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "cranium_isle"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+codespan-reporting = "0.12"
+tracing = { workspace = true, features = ["attributes"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[features]
+default = []
