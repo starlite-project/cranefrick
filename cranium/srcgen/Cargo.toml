@@ -1,0 +1,8 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "cranium_srcgen"
+rust-version.workspace = true
+version.workspace = true
