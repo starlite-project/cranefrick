@@ -10,6 +10,7 @@ use codespan_reporting::{
 	files::SimpleFiles,
 	term::{Config, termcolor},
 };
+use cranefrick_utils::IntoIteratorExt as _;
 
 use super::{files::Files, lexer::Pos};
 
@@ -32,6 +33,12 @@ impl Span {
 	}
 }
 
+impl From<Pos> for Span {
+	fn from(value: Pos) -> Self {
+		Self::from_single(value)
+	}
+}
+
 impl From<&Span> for std::ops::Range<usize> {
 	fn from(value: &Span) -> Self {
 		value.from.offset..value.to.offset
@@ -44,6 +51,23 @@ pub struct Errors {
 }
 
 impl Errors {
+	pub fn new(errors: impl IntoIterator<Item = Error>, files: Arc<Files>) -> Self {
+		Self {
+			errors: errors.collect_to(),
+			files,
+		}
+	}
+
+	pub fn from_io(error: IoError, context: impl Into<String>) -> Self {
+		Self::new(
+			[Error::Io {
+				source: error,
+				context: context.into(),
+			}],
+			Arc::new(Files::default()),
+		)
+	}
+
 	fn emit(&self, f: &mut Formatter<'_>, diagnostics: Vec<Diagnostic<usize>>) -> FmtResult {
 		let w = termcolor::BufferWriter::stderr(termcolor::ColorChoice::Auto);
 		let mut b = w.buffer();

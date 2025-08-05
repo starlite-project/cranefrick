@@ -130,7 +130,7 @@ pub enum Def {
 	Converter(Converter),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Pragma {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]

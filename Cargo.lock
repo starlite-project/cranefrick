@@ -555,7 +555,10 @@ dependencies = [
 name = "cranium_isle"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "autocfg",
  "codespan-reporting 0.12.0",
+ "cranefrick_utils",
  "tempfile",
  "tracing",
 ]

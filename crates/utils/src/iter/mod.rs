@@ -3,6 +3,7 @@ mod adapters;
 #[cfg(feature = "alloc")]
 use core::cmp::Ordering;
 
+#[cfg(feature = "alloc")]
 pub use self::adapters::*;
 
 pub trait IteratorExt: Iterator {

@@ -17,10 +17,10 @@ pub struct Files {
 }
 
 impl Files {
-	pub fn from_paths<P>(
+	pub fn try_from_paths<P>(
 		paths: impl IntoIterator<Item = P>,
 		prefixes: &[Prefix],
-	) -> Result<Self, FromFilesError>
+	) -> Result<Self, TryFromFilesError>
 	where
 		P: AsRef<Path>,
 	{
@@ -41,7 +41,7 @@ impl Files {
 		for path in paths {
 			let path = path.as_ref();
 			let contents = std::fs::read_to_string(path)
-				.map_err(|e| FromFilesError::new(path.to_owned(), e))?;
+				.map_err(|e| TryFromFilesError::new(path.to_owned(), e))?;
 			let name = replace_prefixes(prefixes, path.display().to_string());
 
 			line_maps.push(LineMap::from_str(&contents));
@@ -89,22 +89,22 @@ impl Files {
 }
 
 #[derive(Debug)]
-pub struct FromFilesError(pub PathBuf, pub IoError);
+pub struct TryFromFilesError(pub PathBuf, pub IoError);
 
-impl FromFilesError {
+impl TryFromFilesError {
 	const fn new(path: PathBuf, source: IoError) -> Self {
 		Self(path, source)
 	}
 }
 
-impl Display for FromFilesError {
+impl Display for TryFromFilesError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.write_str("failed to read the file at path ")?;
 		Display::fmt(&self.0.display(), f)
 	}
 }
 
-impl Error for FromFilesError {
+impl Error for TryFromFilesError {
 	fn source(&self) -> Option<&(dyn Error + 'static)> {
 		Some(&self.1)
 	}

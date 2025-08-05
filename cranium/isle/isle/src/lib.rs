@@ -2,11 +2,20 @@
 
 pub mod ast;
 pub mod codegen;
+pub mod compile;
+mod disjoint_sets;
 pub mod error;
 pub mod files;
 pub mod lexer;
+pub mod overlap;
+pub mod parser;
+pub mod printer;
 pub mod sema;
-pub mod stable_mapset;
+pub mod serialize;
+mod stable_mapset;
+pub mod trie_again;
+
+pub use self::{disjoint_sets::*, stable_mapset::*};
 
 macro_rules! declare_id {
     (
