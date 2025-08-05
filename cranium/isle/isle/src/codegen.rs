@@ -326,7 +326,7 @@ impl<L: Length, C> Length for ContextIterWrapper<L, C> {{
 			Type::Builtin(t) => t.to_string(),
 			Type::Primitive(_, sym, _) => self.type_env.syms[sym.index()].clone(),
 			Type::Enum { name, .. } => {
-				let r = if by_ref { '&' } else { '*' };
+				let r = if by_ref { "&" } else { "" };
 				format!("{r}{}", self.type_env.syms[name.index()])
 			}
 		}
@@ -359,7 +359,7 @@ impl<L: Length, C> Length for ContextIterWrapper<L, C> {{
 			writeln!(ctx.out, "{}    ctx: &mut C,", &ctx.indent)?;
 			for (i, &ty) in sig.param_tys.iter().enumerate() {
 				let (is_ref, ty) = self.ty(ty);
-				write!(ctx.out, "{}    arg{i}", &ctx.indent)?;
+				write!(ctx.out, "{}    arg{i}: ", &ctx.indent)?;
 				write!(ctx.out, "{}{ty}", if is_ref { "&" } else { "" })?;
 				if let Some(binding) = ctx.ruleset.find_binding(&Binding::Argument {
 					index: i.try_into().unwrap(),

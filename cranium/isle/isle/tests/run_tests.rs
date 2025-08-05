@@ -47,8 +47,6 @@ fn build_and_link_isle(isle_filename: &str) -> (tempfile::TempDir, PathBuf) {
 	let rust_filename_base = Path::new(&rust_filename).file_name().unwrap();
 	let rust_driver = tempdir.path().to_path_buf().join(rust_filename_base);
 	eprintln!("copying {rust_filename} to {}", rust_driver.display());
-	fs::create_dir_all(&rust_driver).unwrap();
-
 	fs::copy(&rust_filename, &rust_driver).unwrap();
 
 	let output = tempdir.path().to_path_buf().join("out");
@@ -69,7 +67,7 @@ pub fn run_link(isle_filename: &str) {
 }
 
 pub fn run_run(isle_filename: &str) {
-	let (.., exe) = build_and_link_isle(isle_filename);
+	let (_dir, exe) = build_and_link_isle(isle_filename);
 
 	assert!(
 		std::process::Command::new(exe)
