@@ -28,7 +28,10 @@ mimalloc = "0.1"
 members = [
     "cranium/bitset",
     "cranium/entity",
-    "cranium/isle/isle", "cranium/isle/islec",
+    "cranium/isle/isle",
+    "cranium/isle/islec",
+    "cranium/isle/veri/engine",
+    "cranium/isle/veri/ir",
     "crates/assembler",
     "crates/hlir",
     "crates/mlir",
@@ -57,6 +60,7 @@ cranelift-frontend = { git = "https://github.com/bytecodealliance/wasmtime.git",
 cranelift-jit = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
 cranelift-module = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
 cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
+cranium_isle = { path = "cranium/isle/isle" }
 logos = { version = "0.15", default-features = false, features = [
     "debug",
     "export_derive",

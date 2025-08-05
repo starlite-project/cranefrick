@@ -3,12 +3,9 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "islec"
+name = "cranium_veri_engine"
 rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { workspace = true, features = ["derive"] }
-color-eyre.workspace = true
 cranium_isle.workspace = true
-tracing-subscriber = { workspace = true, features = ["env-filter"] }

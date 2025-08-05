@@ -564,6 +564,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cranium_veri_engine"
+version = "0.1.0"
+dependencies = [
+ "cranium_isle",
+]
+
+[[package]]
+name = "cranium_veri_ir"
+version = "0.1.0"
+
+[[package]]
 name = "crossbeam-deque"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
