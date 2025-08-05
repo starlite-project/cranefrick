@@ -1,0 +1,14 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "islec"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+clap = { workspace = true, features = ["derive"] }
+color-eyre.workspace = true
+cranium_isle = { path = "../isle" }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }

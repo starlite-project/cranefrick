@@ -96,6 +96,7 @@ pub fn run_print(isle_filename: &str) {
 
 	// Round trip.
 	let lexer = lexer::Lexer::new(0, &isle_source).unwrap();
+	_ = parser::parse(lexer.clone()).unwrap();
 	let round_trip = parser::parse_without_pos(lexer).unwrap();
 
 	// Ensure equal.

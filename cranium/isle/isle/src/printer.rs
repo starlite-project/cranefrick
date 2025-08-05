@@ -287,7 +287,7 @@ impl ToSExpr for Spec {
 		}
 
 		if !requires.is_empty() {
-			parts.push(SExpr::tagged("requires", requires));
+			parts.push(SExpr::tagged("require", requires));
 		}
 
 		SExpr::List(parts)

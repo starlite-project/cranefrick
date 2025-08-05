@@ -28,7 +28,7 @@ mimalloc = "0.1"
 members = [
     "cranium/bitset",
     "cranium/entity",
-    "cranium/isle/isle",
+    "cranium/isle/isle", "cranium/isle/islec",
     "crates/assembler",
     "crates/hlir",
     "crates/mlir",
