@@ -29,7 +29,7 @@ members = [
     "crates/assembler",
     "crates/hlir",
     "crates/mlir",
-    "crates/utils",
+    "crates/utils", "playground/befunge_test",
     "playground/cranelift_test",
     "playground/egg_test",
     "playground/indicatif_test",
