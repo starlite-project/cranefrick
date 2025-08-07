@@ -44,16 +44,16 @@ arbitrary = "1"
 clap = "4"
 color-eyre = "0.6"
 cranefrick_utils = { path = "crates/utils" }
-cranelift = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
-cranelift-codegen = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81", features = [
+cranelift = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "66b4bf326193721df2e12c58135f5621a039c3f5" }
+cranelift-codegen = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "66b4bf326193721df2e12c58135f5621a039c3f5", features = [
     "enable-serde"
 ] }
-cranelift-control = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
-cranelift-entity = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
-cranelift-frontend = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
-cranelift-jit = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
-cranelift-module = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
-cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f7a5aa34d9b1f1e74ccf5d39740221400f12bb81" }
+cranelift-control = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "66b4bf326193721df2e12c58135f5621a039c3f5" }
+cranelift-entity = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "66b4bf326193721df2e12c58135f5621a039c3f5" }
+cranelift-frontend = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "66b4bf326193721df2e12c58135f5621a039c3f5" }
+cranelift-jit = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "66b4bf326193721df2e12c58135f5621a039c3f5" }
+cranelift-module = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "66b4bf326193721df2e12c58135f5621a039c3f5" }
+cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "66b4bf326193721df2e12c58135f5621a039c3f5" }
 cranium_isle = { path = "cranium/isle/isle" }
 cranium_srcgen = { path = "cranium/srcgen" }
 logos = { version = "0.15", default-features = false, features = [
