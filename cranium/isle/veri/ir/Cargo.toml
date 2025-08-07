@@ -1,8 +1,0 @@
-lints.workspace = true
-
-[package]
-edition.workspace = true
-license.workspace = true
-name = "cranium_veri_ir"
-rust-version.workspace = true
-version.workspace = true

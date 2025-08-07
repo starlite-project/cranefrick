@@ -26,17 +26,6 @@ mimalloc = "0.1"
 
 [workspace]
 members = [
-    "cranium/assembler_x64/base",
-    "cranium/assembler_x64/meta",
-    "cranium/bitset",
-    "cranium/codegen/base",
-    "cranium/codegen/shared",
-    "cranium/entity",
-    "cranium/isle/isle",
-    "cranium/isle/islec",
-    "cranium/isle/veri/engine",
-    "cranium/isle/veri/ir",
-    "cranium/srcgen",
     "crates/assembler",
     "crates/hlir",
     "crates/mlir",
