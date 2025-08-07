@@ -32,6 +32,7 @@ define_language! {
 	}
 }
 
+#[derive(Clone, Copy)]
 pub struct MathCostFn;
 
 impl CostFunction<Math> for MathCostFn {
@@ -50,7 +51,7 @@ impl CostFunction<Math> for MathCostFn {
 	}
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct ConstantFold;
 
 impl Analysis<Math> for ConstantFold {

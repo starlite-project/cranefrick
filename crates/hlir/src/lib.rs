@@ -119,7 +119,7 @@ impl Display for BrainHlir {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct ParseError(usize);
 
 impl Display for ParseError {
