@@ -2,7 +2,10 @@ use std::{fs, mem};
 
 use color_eyre::{Result, eyre::ContextCompat};
 use cranelift::prelude::*;
-use cranelift_codegen::{control::ControlPlane, ir::{Fact, Inst}};
+use cranelift_codegen::{
+	control::ControlPlane,
+	ir::{Fact, Inst},
+};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module, default_libcall_names};
 use fxhash::FxHashMap;
@@ -62,10 +65,12 @@ pub fn execute(
 
 	ctx.func.signature.returns.push(AbiParam::new(types::I32));
 
+	ctx.func.collect_debug_info();
+
 	{
 		let mut builder = FunctionBuilder::new(&mut ctx.func, &mut func_ctx);
 
-		let aligned = MemFlags::new().with_aligned();
+		let mem_flags = MemFlags::trusted();
 
 		let mut put_sig = module.make_signature();
 		put_sig.params.push(AbiParam::new(CELL_TYPE));
@@ -137,7 +142,7 @@ pub fn execute(
 			let stidx = builder.use_var(vsidx);
 			let new_st_idx = builder.ins().iadd_imm(stidx, CELL_SIZE);
 			let slot_ptr = builder.ins().iadd(vstack, new_st_idx);
-			builder.ins().store(aligned, value, slot_ptr, 0);
+			builder.ins().store(mem_flags, value, slot_ptr, 0);
 			builder.def_var(vsidx, new_st_idx);
 		};
 
@@ -149,6 +154,7 @@ pub fn execute(
 			if matches!(dep, 0) {
 				let bbpop = builder.create_block();
 				let icmp = builder.ins().icmp(IntCC::SignedLessThan, st_idx, null);
+				builder.func.dfg.facts[icmp] = Some(cmp_fact());
 				builder.ins().brif(icmp, bb, &[zero.into()], bbpop, &[]);
 				builder.switch_to_block(bbpop);
 				let new_st_idx = builder.ins().iadd_imm(st_idx, -CELL_SIZE);
@@ -156,7 +162,7 @@ pub fn execute(
 				builder.def_var(vsidx, new_st_idx);
 				let load_res = builder
 					.ins()
-					.load(CELL_TYPE, aligned, slot_ptr, CELL_SIZE as i32);
+					.load(CELL_TYPE, mem_flags, slot_ptr, CELL_SIZE as i32);
 				builder.ins().jump(bb, &[load_res.into()]);
 				builder.switch_to_block(bb);
 				builder.block_params(bb)[0]
@@ -166,7 +172,7 @@ pub fn execute(
 				builder.def_var(vsidx, new_st_idx);
 				builder
 					.ins()
-					.load(CELL_TYPE, aligned, slot_ptr, CELL_SIZE as i32)
+					.load(CELL_TYPE, mem_flags, slot_ptr, CELL_SIZE as i32)
 			}
 		};
 
@@ -282,7 +288,11 @@ pub fn execute(
 							builder.switch_to_block(bb);
 							builder.block_params(bb)[0]
 						}
-						BinaryOp::Cmp => builder.ins().icmp(IntCC::SignedGreaterThan, a, b),
+						BinaryOp::Cmp => {
+							let v = builder.ins().icmp(IntCC::SignedGreaterThan, a, b);
+							builder.func.dfg.facts[v] = Some(cmp_fact());
+							v
+						}
 					};
 					push!(0, num);
 				}
@@ -299,6 +309,7 @@ pub fn execute(
 							let stidx = builder.use_var(vsidx);
 							let new_st_idx = builder.ins().iadd_imm(stidx, -CELL_SIZE);
 							let cmp = builder.ins().icmp(IntCC::SignedLessThan, stidx, null);
+							builder.func.dfg.facts[cmp] = Some(cmp_fact());
 							builder
 								.ins()
 								.brif(cmp, bb, &[stidx.into()], bb, &[new_st_idx.into()]);
@@ -354,6 +365,7 @@ pub fn execute(
 						builder
 							.ins()
 							.icmp(IntCC::UnsignedLessThan, ab, two_five_six_zero_i32);
+						builder.func.dfg.facts[cmp] = Some(cmp_fact());
 					builder.ins().brif(cmp, idx_bb, &[], bb, &[zero.into()]);
 					builder.switch_to_block(idx_bb);
 					let ab = if ptr_type.bits() > 32 {
@@ -364,16 +376,17 @@ pub fn execute(
 
 					let ab = builder.ins().imul_imm(ab, CELL_SIZE);
 					let vcodeab = builder.ins().iadd(vcode, ab);
-					let result = builder.ins().load(CELL_TYPE, aligned, vcodeab, 0);
+					let result = builder.ins().load(CELL_TYPE, mem_flags, vcodeab, 0);
 					builder.ins().jump(bb, &[result.into()]);
 					builder.switch_to_block(bb);
 					let val = builder.block_params(bb)[0];
 					push!(0, val);
 				}
 				Op::Rem(Some(off)) => {
-					let result = builder
-						.ins()
-						.load(CELL_TYPE, aligned, vcode, i32::from(off) * 4);
+					let result =
+						builder
+							.ins()
+							.load(CELL_TYPE, mem_flags, vcode, i32::from(off) * 4);
 					push!(0, result);
 				}
 				Op::Wem(xydir, None) => {
@@ -398,10 +411,10 @@ pub fn execute(
 
 					let ab4 = builder.ins().imul_imm(ab, CELL_SIZE);
 					let vcodeab = builder.ins().iadd(vcode, ab4);
-					builder.ins().store(aligned, c, vcodeab, 0);
+					builder.ins().store(mem_flags, c, vcodeab, 0);
 					let ab3 = builder.ins().ushr_imm(ab, 3);
 					let vprogbitsab3 = builder.ins().iadd(vprogbits, ab3);
-					let progbitsread = builder.ins().load(types::I8, aligned, vprogbitsab3, 0);
+					let progbitsread = builder.ins().load(types::I8, mem_flags, vprogbitsab3, 0);
 					let ab7 = builder.ins().band_imm(ab, 7);
 					let ab7 = builder.ins().ireduce(types::I8, ab7);
 					let bit = builder.ins().ishl(one_i8, ab7);
@@ -410,18 +423,18 @@ pub fn execute(
 					builder.switch_to_block(bbexit);
 					let stidx = builder.use_var(vsidx);
 					let stidx = builder.ins().sdiv_imm(stidx, CELL_SIZE);
-					builder.ins().store(aligned, stidx, stack_idx_const, 0);
+					builder.ins().store(mem_flags, stidx, stack_idx_const, 0);
 					let rstate = builder.ins().iconst(types::I32, i64::from(xydir));
 					builder.ins().return_(&[rstate]);
 					builder.switch_to_block(bb);
 				}
 				Op::Wem(xydir, Some(off)) => {
 					let c = pop!(0);
-					builder.ins().store(aligned, c, vcode, i32::from(off) * 4);
+					builder.ins().store(mem_flags, c, vcode, i32::from(off) * 4);
 					if !matches!(progbits[off as usize >> 3] & 1 << (off & 7), 0) {
 						let stidx = builder.use_var(vsidx);
 						let stidx = builder.ins().sdiv_imm(stidx, CELL_SIZE);
-						builder.ins().store(aligned, stidx, stack_idx_const, 0);
+						builder.ins().store(mem_flags, stidx, stack_idx_const, 0);
 						let rstate = builder.ins().iconst(types::I32, i64::from(xydir));
 						builder.ins().return_(&[rstate]);
 						block_filled = true;
@@ -432,20 +445,24 @@ pub fn execute(
 					let [r0, r1, r2] = **rs;
 					let inst = builder.ins().call(rand, &[]);
 					let a = builder.inst_results(inst)[0];
-					builder.func.dfg.facts[a] = Some(Fact::max_range_for_width(types::I8.bits() as u16));
+					builder.func.dfg.facts[a] =
+						Some(Fact::max_range_for_width(types::I8.bits() as u16));
 					let cmp = builder.ins().icmp(IntCC::Equal, a, zero_i8);
+					builder.func.dfg.facts[cmp] = Some(cmp_fact());
 					let bb = builder.create_block();
 					let j = builder.ins().brif(cmp, Block::from_u32(0), &[], bb, &[]);
 					jumpmap.push(JumpEntry::J1(j, r0));
 					comp_stack.push(r0);
 					builder.switch_to_block(bb);
 					let cmp = builder.ins().icmp(IntCC::Equal, a, one_i8);
+					builder.func.dfg.facts[cmp] = Some(cmp_fact());
 					let bb = builder.create_block();
 					let j = builder.ins().brif(cmp, Block::from_u32(0), &[], bb, &[]);
 					jumpmap.push(JumpEntry::J1(j, r1));
 					comp_stack.push(r1);
 					builder.switch_to_block(bb);
 					let cmp = builder.ins().icmp(IntCC::Equal, a, two_i8);
+					builder.func.dfg.facts[cmp] = Some(cmp_fact());
 					let j =
 						builder
 							.ins()
@@ -539,4 +556,12 @@ pub fn execute(
 enum JumpEntry {
 	J1(Inst, u32),
 	J2(Inst, u32, u32),
+}
+
+fn cmp_fact() -> Fact {
+	Fact::Range {
+		bit_width: types::I8.bits() as u16,
+		min: 0,
+		max: 1,
+	}
 }
