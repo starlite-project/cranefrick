@@ -365,7 +365,7 @@ pub fn execute(
 						builder
 							.ins()
 							.icmp(IntCC::UnsignedLessThan, ab, two_five_six_zero_i32);
-						builder.func.dfg.facts[cmp] = Some(cmp_fact());
+					builder.func.dfg.facts[cmp] = Some(cmp_fact());
 					builder.ins().brif(cmp, idx_bb, &[], bb, &[zero.into()]);
 					builder.switch_to_block(idx_bb);
 					let ab = if ptr_type.bits() > 32 {
