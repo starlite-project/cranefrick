@@ -29,13 +29,14 @@ members = [
     "crates/assembler",
     "crates/hlir",
     "crates/mlir",
-    "crates/utils", "playground/befunge_test",
+    "crates/utils",
+    "playground/befunge_test",
     "playground/cranelift_test",
     "playground/egg_test",
     "playground/indicatif_test",
     "playground/koopa_test",
     "playground/logos_test"
-, "playground/math_test"]
+]
 resolver = "3"
 
 [workspace.dependencies]
