@@ -2,7 +2,7 @@ use std::{fs, mem};
 
 use color_eyre::{Result, eyre::ContextCompat};
 use cranelift::prelude::*;
-use cranelift_codegen::{control::ControlPlane, ir::Inst};
+use cranelift_codegen::{control::ControlPlane, ir::{Fact, Inst}};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module, default_libcall_names};
 use fxhash::FxHashMap;
@@ -237,7 +237,7 @@ pub fn execute(
 
 			debug_assert!(!block_filled);
 
-			if cfg!(debug_assertions) {
+			if cfg!(feature = "debug") {
 				let stidx = builder.use_var(vsidx);
 				let stidx = builder.ins().sdiv_imm(stidx, CELL_SIZE);
 				builder.ins().call(ps, &[vstack, stidx]);
@@ -432,6 +432,7 @@ pub fn execute(
 					let [r0, r1, r2] = **rs;
 					let inst = builder.ins().call(rand, &[]);
 					let a = builder.inst_results(inst)[0];
+					builder.func.dfg.facts[a] = Some(Fact::max_range_for_width(types::I8.bits() as u16));
 					let cmp = builder.ins().icmp(IntCC::Equal, a, zero_i8);
 					let bb = builder.create_block();
 					let j = builder.ins().brif(cmp, Block::from_u32(0), &[], bb, &[]);
