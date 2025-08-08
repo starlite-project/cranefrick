@@ -28,8 +28,19 @@ pub fn execute(
 	let mut flag_builder = settings::builder();
 	flag_builder.set("use_colocated_libcalls", "false")?;
 	flag_builder.set("is_pic", "false")?;
+	flag_builder.set("opt_level", "speed")?;
+	flag_builder.set("stack_switch_model", "update_windows_tib")?;
+	flag_builder.set("probestack_strategy", "inline")?;
+	flag_builder.enable("regalloc_checker")?;
 	flag_builder.enable("enable_pcc")?;
-	flag_builder.set("opt_level", "speed_and_size")?;
+	flag_builder.enable("enable_alias_analysis")?;
+	flag_builder.enable("enable_jump_tables")?;
+	flag_builder.enable("enable_llvm_abi_extensions")?;
+	flag_builder.enable("enable_probestack")?;
+	flag_builder.enable("machine_code_cfg_info")?;
+	flag_builder.enable("preserve_frame_pointers")?;
+	flag_builder.enable("unwind_info")?;
+	flag_builder.enable("enable_safepoints")?;
 
 	let isa = {
 		let builder = isa::lookup(Triple::host())?;
@@ -226,7 +237,7 @@ pub fn execute(
 
 			debug_assert!(!block_filled);
 
-			{
+			if cfg!(debug_assertions) {
 				let stidx = builder.use_var(vsidx);
 				let stidx = builder.ins().sdiv_imm(stidx, CELL_SIZE);
 				builder.ins().call(ps, &[vstack, stidx]);
