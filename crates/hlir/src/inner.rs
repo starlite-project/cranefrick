@@ -19,4 +19,6 @@ pub enum InnerOpCode {
 	StartLoop,
 	#[token("]")]
 	EndLoop,
+	#[token("[-]")]
+	Clear,
 }

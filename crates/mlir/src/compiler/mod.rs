@@ -261,6 +261,7 @@ fn fix_loops(program: &[BrainHlir]) -> Vec<BrainMlir> {
 				BrainHlir::MovePtrRight => Some(BrainMlir::move_pointer(1)),
 				BrainHlir::GetInput => Some(BrainMlir::input_cell()),
 				BrainHlir::PutOutput => Some(BrainMlir::output_current_cell()),
+				BrainHlir::ClearCell => Some(BrainMlir::set_cell(0)),
 			} {
 				current_stack.push(instr);
 			}

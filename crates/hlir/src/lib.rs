@@ -58,6 +58,7 @@ impl<'source> Parser<'source> {
 
 		for (i, op) in self.inner.filter_map(Result::ok).enumerate() {
 			let repr = match op {
+				InnerOpCode::Clear => BrainHlir::ClearCell,
 				InnerOpCode::MoveLeft => BrainHlir::MovePtrLeft,
 				InnerOpCode::MoveRight => BrainHlir::MovePtrRight,
 				InnerOpCode::Increment => BrainHlir::IncrementCell,
@@ -102,20 +103,23 @@ pub enum BrainHlir {
 	StartLoop,
 	/// End of a loop (]).
 	EndLoop,
+	/// Clear current cell ([-]).
+	ClearCell,
 }
 
 impl Display for BrainHlir {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		f.write_char(match *self {
-			Self::MovePtrLeft => '<',
-			Self::MovePtrRight => '>',
-			Self::IncrementCell => '+',
-			Self::DecrementCell => '-',
-			Self::GetInput => ',',
-			Self::PutOutput => '.',
-			Self::StartLoop => '[',
-			Self::EndLoop => ']',
-		})
+		match *self {
+			Self::MovePtrLeft => f.write_char('<'),
+			Self::MovePtrRight => f.write_char('>'),
+			Self::IncrementCell => f.write_char('+'),
+			Self::DecrementCell => f.write_char('-'),
+			Self::GetInput => f.write_char(','),
+			Self::PutOutput => f.write_char('.'),
+			Self::StartLoop => f.write_char('['),
+			Self::EndLoop => f.write_char(']'),
+			Self::ClearCell => f.write_str("[-]"),
+		}
 	}
 }
 
