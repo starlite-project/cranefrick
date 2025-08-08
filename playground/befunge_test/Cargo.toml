@@ -8,7 +8,8 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-anyhow.workspace = true
+clap = { workspace = true, features = ["derive"] }
+color-eyre.workspace = true
 cranelift.workspace = true
 cranelift-codegen.workspace = true
 cranelift-jit.workspace = true
