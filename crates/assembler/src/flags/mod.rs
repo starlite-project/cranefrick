@@ -127,7 +127,7 @@ impl TryFrom<AssemblerFlags> for Flags {
 	fn try_from(flags: AssemblerFlags) -> Result<Self, Self::Error> {
 		let mut flag_builder = cranelift_codegen::settings::builder();
 
-		flag_builder.enable("enable_pcc")?;
+		// flag_builder.enable("enable_pcc")?;
 		flag_builder.enable("enable_pinned_reg")?;
 		flag_builder.set("is_pic", "false")?;
 

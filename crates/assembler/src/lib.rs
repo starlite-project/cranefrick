@@ -196,6 +196,12 @@ impl AssembledModule {
 	}
 }
 
+impl Debug for AssembledModule {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("AssembledModule").finish_non_exhaustive()
+	}
+}
+
 impl Drop for AssembledModule {
 	fn drop(&mut self) {
 		if let Some(module) = self.module.take() {
