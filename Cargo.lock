@@ -345,13 +345,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cranefrick_egraph"
-version = "0.1.0"
-dependencies = [
- "cranelift-codegen",
-]
-
-[[package]]
 name = "cranefrick_hlir"
 version = "0.1.0"
 dependencies = [

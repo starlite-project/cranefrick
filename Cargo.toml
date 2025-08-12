@@ -28,7 +28,6 @@ mimalloc = "0.1"
 [workspace]
 members = [
     "crates/assembler",
-    "crates/egraph",
     "crates/hlir",
     "crates/mlir",
     "crates/utils",
@@ -49,7 +48,8 @@ color-eyre = "0.6"
 cranefrick_utils = { path = "crates/utils" }
 cranelift = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "cf88a7c6010e845b50e3332aea8a146d4d8a3bb4" }
 cranelift-codegen = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "cf88a7c6010e845b50e3332aea8a146d4d8a3bb4", features = [
-    "enable-serde"
+    "enable-serde",
+    "trace-log"
 ] }
 cranelift-control = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "cf88a7c6010e845b50e3332aea8a146d4d8a3bb4" }
 cranelift-entity = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "cf88a7c6010e845b50e3332aea8a146d4d8a3bb4" }
@@ -71,8 +71,6 @@ tracing-subscriber = "0.3"
 
 [workspace.lints.rust]
 elided_lifetimes_in_paths = "warn"
-missing_copy_implementations = "warn"
-missing_debug_implementations = "warn"
 
 [workspace.lints.clippy]
 borrow_as_ptr = "deny"
