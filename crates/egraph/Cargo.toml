@@ -1,0 +1,11 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "cranefrick_egraph"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+cranelift-codegen.workspace = true
