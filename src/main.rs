@@ -136,6 +136,12 @@ fn env_filter() -> EnvFilter {
 }
 
 fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
+	serialize_as_ron(value, folder_path, file_name)?;
+
+	serialize_as_s_expr(value, folder_path, file_name)
+}
+
+fn serialize_as_ron<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
 	let mut output = String::new();
 	let mut serializer = ron::Serializer::with_options(
 		&mut output,
@@ -145,7 +151,23 @@ fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Re
 
 	value.serialize(&mut serializer)?;
 
+	drop(serializer);
+
 	fs::write(folder_path.join(format!("{file_name}.ron")), output)?;
+
+	Ok(())
+}
+
+fn serialize_as_s_expr<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
+	let file = fs::OpenOptions::new()
+		.create(true)
+		.truncate(true)
+		.write(true)
+		.open(folder_path.join(format!("{file_name}.s-expr")))?;
+
+	let options = serde_lexpr::print::Options::elisp();
+
+	serde_lexpr::to_writer_custom(file, value, options)?;
 
 	Ok(())
 }
