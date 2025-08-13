@@ -44,7 +44,7 @@ impl<'source> Parser<'source> {
 		{
 			let span = Span::current();
 
-			span.pb_set_style(&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:38}] ({eta})").unwrap());
+			span.pb_set_style(&ProgressStyle::with_template("{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}] [{bar:38}] ({eta})").unwrap().progress_chars("#>-"));
 			span.pb_set_length(len as u64);
 		}
 
