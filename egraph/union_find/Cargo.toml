@@ -1,0 +1,19 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "cranefrick_egraph_union_find"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+cranefrick_egraph_concurrency = { path = "../concurrency" }
+cranefrick_egraph_numeric_id = { path = "../numeric_id" }
+crossbeam = "0.8"
+
+
+[dev-dependencies]
+divan = "0.1"
+rand = "0.9"
+rayon = "1"
