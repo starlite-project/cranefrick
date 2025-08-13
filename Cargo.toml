@@ -30,7 +30,7 @@ members = [
     "crates/assembler",
     "crates/hlir",
     "crates/mlir",
-    "crates/utils",
+    "crates/utils", "egraph/concurrency", "egraph/numeric_id",
     "playground/befunge_test",
     "playground/cranelift_test",
     "playground/egg_test",
