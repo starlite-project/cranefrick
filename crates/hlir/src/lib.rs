@@ -14,7 +14,7 @@ use core::{
 
 use logos::Lexer;
 use serde::{Deserialize, Serialize};
-use tracing::{Span, debug, info};
+use tracing::{Span, debug, info, trace};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
 
 use self::inner::InnerOpCode;
@@ -39,8 +39,6 @@ impl<'source> Parser<'source> {
 	where
 		I: Default + Extend<BrainHlir>,
 	{
-		extern crate std;
-
 		let len = self.inner.source().len();
 
 		{
@@ -57,6 +55,8 @@ impl<'source> Parser<'source> {
 		let mut bracket_stack = Vec::new();
 
 		for (i, op) in self.inner.filter_map(Result::ok).enumerate() {
+			trace!(op = %op);
+
 			let repr = match op {
 				InnerOpCode::Clear => BrainHlir::ClearCell,
 				InnerOpCode::MoveLeft => BrainHlir::MovePtrLeft,
