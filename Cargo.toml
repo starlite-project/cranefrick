@@ -36,7 +36,8 @@ members = [
     "playground/egg_test",
     "playground/indicatif_test",
     "playground/koopa_test",
-    "playground/logos_test"
+    "playground/logos_test",
+    "playground/lua_test"
 ]
 resolver = "3"
 
