@@ -98,6 +98,22 @@ pub fn add_offsets(ops: &[BrainMlir; 3]) -> Option<Change> {
 			BrainMlir::set_cell_at(*i, *x),
 			BrainMlir::move_pointer(x.wrapping_add(*y)),
 		])),
+		[
+			BrainMlir::MovePointer(x),
+			BrainMlir::ChangeCell(i, Some(y)),
+			BrainMlir::MovePointer(z),
+		] => Some(Change::swap([
+			BrainMlir::change_cell_at(*i, x.wrapping_add(y.get())),
+			BrainMlir::move_pointer(x.wrapping_add(*z)),
+		])),
+		[
+			BrainMlir::MovePointer(x),
+			BrainMlir::SetCell(i, Some(y)),
+			BrainMlir::MovePointer(z),
+		] => Some(Change::swap([
+			BrainMlir::set_cell_at(*i, x.wrapping_add(y.get())),
+			BrainMlir::move_pointer(x.wrapping_add(*z)),
+		])),
 		_ => None,
 	}
 }

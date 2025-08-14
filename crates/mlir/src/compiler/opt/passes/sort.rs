@@ -17,20 +17,16 @@ pub fn sort_changes(ops: &[BrainMlir; 2]) -> Option<Change> {
 	Some(Change::swap(ops.iter().cloned().sorted_by_key(sorter_key)))
 }
 
-const fn sorter_key(i: &BrainMlir) -> (i32, Option<i16>) {
+const fn sorter_key(i: &BrainMlir) -> (u8, i32) {
 	(
+		match i {
+			BrainMlir::SetCell(..) => 2,
+			BrainMlir::ChangeCell(..) => 1,
+			_ => 0,
+		},
 		match i.offset() {
 			Some(offset) => offset,
 			None => 0,
 		},
-		get_value(i),
 	)
-}
-
-const fn get_value(i: &BrainMlir) -> Option<i16> {
-	match i {
-		BrainMlir::SetCell(i, ..) => Some(*i as i16),
-		BrainMlir::ChangeCell(i, ..) => Some(*i as i16),
-		_ => None,
-	}
 }
