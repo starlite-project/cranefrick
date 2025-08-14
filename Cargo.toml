@@ -58,6 +58,7 @@ cranelift-frontend = { git = "https://github.com/bytecodealliance/wasmtime.git",
 cranelift-jit = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "73b3075e9b77ba4b0beae0806fc4c1fca20fd5e0" }
 cranelift-module = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "73b3075e9b77ba4b0beae0806fc4c1fca20fd5e0" }
 cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "73b3075e9b77ba4b0beae0806fc4c1fca20fd5e0" }
+cranelift-object = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "73b3075e9b77ba4b0beae0806fc4c1fca20fd5e0" }
 cranium_isle = { path = "cranium/isle/isle" }
 cranium_srcgen = { path = "cranium/srcgen" }
 logos = { version = "0.15", default-features = false, features = [
