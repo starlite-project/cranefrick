@@ -14,9 +14,15 @@ fn main() -> Result<()> {
 		}
 	};
 
-	let input = args.input.chars().filter(|c| is_brainfuck(*c)).collect::<String>();
+	let input = args
+		.input
+		.chars()
+		.filter(|c| is_brainfuck(*c))
+		.collect::<String>();
 
-	let files = fs::read_dir(&args.folder_path)?.into_iter().collect::<Result<Vec<_>, _>>()?;
+	let files = fs::read_dir(&args.folder_path)?
+		.into_iter()
+		.collect::<Result<Vec<_>, _>>()?;
 
 	println!("searching for {input} in {} files", files.len());
 
@@ -50,6 +56,6 @@ struct Args {
 	input: String,
 }
 
-fn is_brainfuck(c: char) -> bool {
+const fn is_brainfuck(c: char) -> bool {
 	matches!(c, '[' | ']' | '+' | '-' | '.' | ',' | '>' | '<')
 }
