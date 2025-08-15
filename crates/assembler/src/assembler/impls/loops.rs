@@ -33,6 +33,7 @@ impl Assembler<'_> {
 
 		self.switch_to_block(body_block);
 		self.ops(ops)?;
+		self.add_srcflag(srclocs::IF_NZ);
 
 		let memory_address = self.memory_address;
 		self.ins().jump(next_block, &[memory_address.into()]);
@@ -83,6 +84,7 @@ impl Assembler<'_> {
 		self.switch_to_block(body_block);
 		self.ops(ops)?;
 
+		self.add_srcflag(srclocs::DYNAMIC_LOOP);
 		let memory_address = self.memory_address;
 		self.ins().jump(head_block, &[memory_address.into()]);
 
