@@ -21,6 +21,7 @@ impl Assembler<'_> {
 		let write = self.write;
 
 		let value = self.load(0);
+
 		self.ins().call(write, &[value]);
 
 		self.remove_srcflag(srclocs::OUTPUT_CURRENT_CELL);

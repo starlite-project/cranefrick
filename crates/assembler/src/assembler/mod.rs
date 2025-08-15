@@ -100,6 +100,10 @@ impl<'a> Assembler<'a> {
 
 	fn ops(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
 		for op in ops {
+			let mem = &self.loads;
+
+			tracing::trace!(op = ?op, loads = ?mem);
+
 			match op {
 				BrainMlir::ChangeCell(i, offset) => {
 					self.change_cell(*i, offset.map_or(0, NonZero::get));

@@ -40,6 +40,10 @@ impl Assembler<'_> {
 		self.loads.clear();
 	}
 
+	pub fn invalidate_load_at(&mut self, offset: i32) {
+		self.loads.remove(&offset);
+	}
+
 	pub fn ensure_hint(&mut self, value: Value, range: Option<Range<u8>>) {
 		let range = range.map_or(0..(u8::MAX).into(), |r| r.start.into()..r.end.into());
 
