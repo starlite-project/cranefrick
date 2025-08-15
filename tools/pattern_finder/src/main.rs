@@ -14,9 +14,11 @@ fn main() -> Result<()> {
 		}
 	};
 
+	let input = args.input.chars().filter(|c| is_brainfuck(*c)).collect::<String>();
+
 	let files = fs::read_dir(&args.folder_path)?.into_iter().collect::<Result<Vec<_>, _>>()?;
 
-	println!("searching for {} in {} files", args.input, files.len());
+	println!("searching for {input} in {} files", files.len());
 
 	for dir_entry in files {
 		let Ok(file_contents) = fs::read_to_string(dir_entry.path()) else {
@@ -25,14 +27,16 @@ fn main() -> Result<()> {
 
 		let file_contents = file_contents
 			.chars()
-			.filter(|c| matches!(c, '[' | ']' | '+' | '-' | '.' | ',' | '>' | '<'))
+			.filter(|c| is_brainfuck(*c))
 			.collect::<String>();
 
-		if file_contents.match_indices(&args.input).next().is_some() {
+		let indices = file_contents.match_indices(&input).collect::<Vec<_>>();
+
+		if !indices.is_empty() {
 			println!(
-				"found pattern {} in file {}",
-				args.input,
-				dir_entry.path().display()
+				"found pattern {input} in file {} {} times",
+				dir_entry.path().display(),
+				indices.len()
 			);
 		}
 	}
@@ -44,4 +48,8 @@ fn main() -> Result<()> {
 struct Args {
 	folder_path: PathBuf,
 	input: String,
+}
+
+fn is_brainfuck(c: char) -> bool {
+	matches!(c, '[' | ']' | '+' | '-' | '.' | ',' | '>' | '<')
 }
