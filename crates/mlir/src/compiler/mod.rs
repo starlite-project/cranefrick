@@ -105,9 +105,6 @@ impl Compiler {
 		*progress |= run_peephole_pass(self, passes::optimize_take_value);
 		*progress |= run_peephole_pass(self, passes::optimize_fetch_value);
 
-		self.pass_info("optimize scale value instructions");
-		*progress |= run_peephole_pass(self, passes::optimize_scale_value);
-
 		self.pass_info("optimize if nz");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);
 

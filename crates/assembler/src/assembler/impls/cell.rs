@@ -14,13 +14,13 @@ impl Assembler<'_> {
             self.ins().iadd_imm(heap_value, i64::from(value))
         };
 
-        self.store(changed, offset);
+        self.store(changed, offset, None);
     }
 
     pub fn set_cell(&mut self, value: u8, offset: i32) {
         self.invalidate_load();
 
-        let value = self.const_u8(value);
-        self.store(value, offset);
+        let new_value = self.const_u8(value);
+        self.store(new_value, offset, Some(value..value));
     }
 }

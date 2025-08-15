@@ -15,7 +15,7 @@ impl Assembler<'_> {
 
 		let added = self.ins().iadd(other_cell, value_to_add);
 
-		self.store(added, offset);
+		self.store(added, offset, None);
 	}
 
 	pub fn take_value(&mut self, factor: u8, offset: i32) {
@@ -32,12 +32,10 @@ impl Assembler<'_> {
 
 		let added = self.ins().iadd(other_cell, value_to_add);
 
-		self.store(added, 0);
+		self.store(added, 0, None);
 	}
 
     pub fn fetch_value(&mut self, factor: u8, offset: i32) {
-        self.invalidate_load();
-
         let other_cell = self.load(offset);
         self.set_cell(0, offset);
 
@@ -47,6 +45,6 @@ impl Assembler<'_> {
 
         let added = self.ins().iadd(current_cell, value_to_add);
 
-        self.store(added, 0);
+        self.store(added, 0, None);
     }
 }
