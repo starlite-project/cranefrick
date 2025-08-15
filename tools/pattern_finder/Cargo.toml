@@ -1,0 +1,12 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "pattern_finder"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+clap = { workspace = true, features = ["derive"] }
+color-eyre.workspace = true

@@ -1251,6 +1251,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pattern_finder"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "color-eyre",
+]
+
+[[package]]
 name = "piccolo"
 version = "0.3.3"
 source = "git+https://github.com/kyren/piccolo.git#ce709eb1dae5c543cbc78e7e12bb80249d88c55f"
