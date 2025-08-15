@@ -26,6 +26,8 @@ fn main() -> Result<()> {
 
 	println!("searching for {input} in {} files", files.len());
 
+	let mut count = 0;
+
 	for dir_entry in files {
 		let Ok(file_contents) = fs::read_to_string(dir_entry.path()) else {
 			continue;
@@ -44,8 +46,12 @@ fn main() -> Result<()> {
 				dir_entry.path().display(),
 				indices.len()
 			);
+
+			count += indices.len();
 		}
 	}
+
+	println!("found {input} a total of {count} times");
 
 	Ok(())
 }
