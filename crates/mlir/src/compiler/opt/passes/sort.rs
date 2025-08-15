@@ -19,7 +19,7 @@ pub fn sort_changes(ops: &[BrainMlir; 2]) -> Option<Change> {
 
 const fn sorter_key(i: &BrainMlir) -> i32 {
 	match i.offset() {
-		Some(offset) => offset,
+		Some(offset) => offset.abs(),
 		None => 0,
 	}
 }
