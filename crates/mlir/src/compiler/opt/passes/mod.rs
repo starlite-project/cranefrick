@@ -203,3 +203,12 @@ pub fn remove_redundant_takes(ops: &[BrainMlir; 2]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_scale_value(ops: &[BrainMlir; 2]) -> Option<Change> {
+	match ops {
+		[BrainMlir::TakeValue(a, x), BrainMlir::TakeValue(b, y)] if *x == -y => {
+			Some(Change::replace(BrainMlir::scale_value(a.wrapping_add(*b))))
+		}
+		_ => None,
+	}
+}
