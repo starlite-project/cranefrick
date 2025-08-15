@@ -435,7 +435,7 @@ impl<'a> Assembler<'a> {
 
 		let heap_value = self.load(offset);
 		let changed = if value.is_negative() {
-			let sub_value = self.ins().iconst(types::I8, i64::from(value.abs()));
+			let sub_value = self.ins().iconst(types::I8, i64::from(value.unsigned_abs()));
 			self.ins().isub(heap_value, sub_value)
 		} else {
 			self.ins().iadd_imm(heap_value, i64::from(value))
