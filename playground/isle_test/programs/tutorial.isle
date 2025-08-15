@@ -1,4 +1,0 @@
-(type BrainMlir
-    (enum (ChangeCell (a i32))
-        (MovePtr (a i32))
-        (Loop (i BrainMlir))))
