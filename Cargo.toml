@@ -32,13 +32,15 @@ members = [
     "crates/mlir",
     "crates/utils",
     "playground/befunge_test",
+    "playground/copyless_test",
     "playground/cranelift_test",
     "playground/egg_test",
     "playground/indicatif_test",
     "playground/koopa_test",
     "playground/logos_test",
-    "playground/lua_test"
-, "playground/placing_test"]
+    "playground/lua_test",
+    "playground/placing_test"
+]
 resolver = "3"
 
 [workspace.dependencies]
