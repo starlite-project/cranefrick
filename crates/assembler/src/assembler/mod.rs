@@ -7,7 +7,7 @@ use std::{
 
 use cranefrick_mlir::{BrainMlir, Compiler};
 use cranelift_codegen::ir::{
-	AbiParam, Fact, FuncRef, Function, InstBuilder as _, MemFlags, Type, Value, types,
+	AbiParam, Fact, FuncRef, Function, InstBuilder as _, Type, Value, types,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::JITModule;
