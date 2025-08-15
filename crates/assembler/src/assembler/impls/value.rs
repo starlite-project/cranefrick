@@ -1,10 +1,12 @@
 use cranelift_codegen::ir::InstBuilder as _;
 
-use crate::assembler::Assembler;
+use crate::assembler::{Assembler, srclocs};
 
 impl Assembler<'_> {
 	pub fn move_value(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads();
+
+		self.add_srcflag(srclocs::MOVE_VALUE);
 
 		let current_value = self.load(0);
 		self.set_cell(0, 0);
@@ -16,10 +18,14 @@ impl Assembler<'_> {
 		let added = self.ins().iadd(other_cell, value_to_add);
 
 		self.store(added, offset, None);
+
+		self.remove_srcflag(srclocs::MOVE_VALUE);
 	}
 
 	pub fn take_value(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads();
+
+		self.add_srcflag(srclocs::TAKE_VALUE);
 
 		let current_value = self.load(0);
 		self.set_cell(0, 0);
@@ -33,18 +39,27 @@ impl Assembler<'_> {
 		let added = self.ins().iadd(other_cell, value_to_add);
 
 		self.store(added, 0, None);
+
+		self.remove_srcflag(srclocs::TAKE_VALUE);
 	}
 
-    pub fn fetch_value(&mut self, factor: u8, offset: i32) {
-        let other_cell = self.load(offset);
-        self.set_cell(0, offset);
+	pub fn fetch_value(&mut self, factor: u8, offset: i32) {
+		self.invalidate_loads();
 
-        let current_cell = self.load(0);
+		self.add_srcflag(srclocs::FETCH_VALUE);
 
-        let value_to_add = self.ins().imul_imm(other_cell, i64::from(factor));
+		let other_cell = self.load(offset);
 
-        let added = self.ins().iadd(current_cell, value_to_add);
+		self.set_cell(0, offset);
 
-        self.store(added, 0, None);
-    }
+		let current_cell = self.load(0);
+
+		let value_to_add = self.ins().imul_imm(other_cell, i64::from(factor));
+
+		let added = self.ins().iadd(current_cell, value_to_add);
+
+		self.store(added, 0, None);
+
+		self.remove_srcflag(srclocs::FETCH_VALUE);
+	}
 }

@@ -6,7 +6,6 @@ use crate::assembler::Assembler;
 
 impl Assembler<'_> {
 	pub fn load(&mut self, offset: i32) -> Value {
-
 		if let Some(value) = self.loads.get(&offset) {
 			return *value;
 		}

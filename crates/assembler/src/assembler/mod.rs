@@ -1,12 +1,15 @@
 mod impls;
+mod srclocs;
 
 use std::{
-	collections::HashMap, num::NonZero, ops::{Deref, DerefMut}
+	collections::HashMap,
+	num::NonZero,
+	ops::{Deref, DerefMut},
 };
 
 use cranefrick_mlir::{BrainMlir, Compiler};
 use cranelift_codegen::ir::{
-	AbiParam, Fact, FuncRef, Function, InstBuilder as _, Type, Value, types,
+	AbiParam, Fact, FuncRef, Function, InstBuilder as _, SourceLoc, Type, Value, types,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::JITModule;
@@ -21,6 +24,7 @@ pub struct Assembler<'a> {
 	write: FuncRef,
 	memory_address: Value,
 	loads: HashMap<i32, Value>,
+	current_srcloc: u32,
 }
 
 impl<'a> Assembler<'a> {
@@ -71,6 +75,7 @@ impl<'a> Assembler<'a> {
 		let read = module.declare_func_in_func(read, builder.func);
 
 		Ok(Self {
+			current_srcloc: 0,
 			ptr_type,
 			builder,
 			read,
@@ -126,6 +131,22 @@ impl<'a> Assembler<'a> {
 
 	fn const_u8(&mut self, value: u8) -> Value {
 		self.ins().iconst(types::I8, i64::from(value))
+	}
+
+	fn add_srcflag(&mut self, flag: u32) {
+		self.current_srcloc |= flag;
+
+		let srcloc = self.current_srcloc;
+
+		self.set_srcloc(SourceLoc::new(srcloc));
+	}
+
+	fn remove_srcflag(&mut self, flag: u32) {
+		self.current_srcloc &= !flag;
+
+		let srcloc = self.current_srcloc;
+
+		self.set_srcloc(SourceLoc::new(srcloc));
 	}
 }
 
