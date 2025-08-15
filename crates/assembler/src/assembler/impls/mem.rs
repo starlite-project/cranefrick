@@ -6,10 +6,9 @@ use crate::assembler::Assembler;
 
 impl Assembler<'_> {
 	pub fn load(&mut self, offset: i32) -> Value {
-		if let Some((last_offset, value)) = self.last_value
-			&& last_offset == offset
-		{
-			return value;
+
+		if let Some(value) = self.loads.get(&offset) {
+			return *value;
 		}
 
 		let memory_address = self.memory_address;
@@ -19,13 +18,13 @@ impl Assembler<'_> {
 
 		self.ensure_hint(value, None);
 
-		self.last_value = Some((offset, value));
+		self.loads.insert(offset, value);
 
 		value
 	}
 
 	pub fn store(&mut self, value: Value, offset: i32, range: Option<Range<u8>>) {
-		self.invalidate_load();
+		self.invalidate_loads();
 
 		let memory_address = self.memory_address;
 		self.ensure_hint(value, range);
@@ -38,8 +37,8 @@ impl Assembler<'_> {
 		MemFlags::trusted()
 	}
 
-	pub const fn invalidate_load(&mut self) {
-		self.last_value = None;
+	pub fn invalidate_loads(&mut self) {
+		self.loads.clear();
 	}
 
 	pub fn ensure_hint(&mut self, value: Value, range: Option<Range<u8>>) {

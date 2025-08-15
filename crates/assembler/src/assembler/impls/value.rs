@@ -4,7 +4,7 @@ use crate::assembler::Assembler;
 
 impl Assembler<'_> {
 	pub fn move_value(&mut self, factor: u8, offset: i32) {
-		self.invalidate_load();
+		self.invalidate_loads();
 
 		let current_value = self.load(0);
 		self.set_cell(0, 0);
@@ -19,7 +19,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn take_value(&mut self, factor: u8, offset: i32) {
-		self.invalidate_load();
+		self.invalidate_loads();
 
 		let current_value = self.load(0);
 		self.set_cell(0, 0);

@@ -5,7 +5,7 @@ use crate::{AssemblyError, assembler::Assembler};
 
 impl Assembler<'_> {
 	pub fn if_nz(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
-		self.invalidate_load();
+		self.invalidate_loads();
 
 		let ptr_type = self.ptr_type;
 		let memory_address = self.memory_address;
@@ -42,7 +42,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn dynamic_loop(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
-		self.invalidate_load();
+		self.invalidate_loads();
 
 		let ptr_type = self.ptr_type;
 		let memory_address = self.memory_address;
@@ -86,7 +86,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn find_zero(&mut self, offset: i32) {
-		self.invalidate_load();
+		self.invalidate_loads();
 
 		let ptr_type = self.ptr_type;
 		let memory_address = self.memory_address;

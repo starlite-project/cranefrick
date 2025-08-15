@@ -4,7 +4,7 @@ use crate::assembler::Assembler;
 
 impl Assembler<'_> {
     pub fn change_cell(&mut self, value: i8, offset: i32) {
-        self.invalidate_load();
+        self.invalidate_loads();
 
         let heap_value = self.load(offset);
         let changed = if value.is_negative() {
@@ -18,7 +18,7 @@ impl Assembler<'_> {
     }
 
     pub fn set_cell(&mut self, value: u8, offset: i32) {
-        self.invalidate_load();
+        self.invalidate_loads();
 
         let new_value = self.const_u8(value);
         self.store(new_value, offset, Some(value..value));

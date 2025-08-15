@@ -19,7 +19,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn input_into_cell(&mut self) {
-		self.invalidate_load();
+		self.invalidate_loads();
 
 		let read = self.read;
 		let memory_address = self.memory_address;

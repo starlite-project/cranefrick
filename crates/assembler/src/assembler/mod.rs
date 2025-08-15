@@ -1,8 +1,7 @@
 mod impls;
 
 use std::{
-	num::NonZero,
-	ops::{Deref, DerefMut},
+	collections::HashMap, num::NonZero, ops::{Deref, DerefMut}
 };
 
 use cranefrick_mlir::{BrainMlir, Compiler};
@@ -21,7 +20,7 @@ pub struct Assembler<'a> {
 	read: FuncRef,
 	write: FuncRef,
 	memory_address: Value,
-	last_value: Option<(i32, Value)>,
+	loads: HashMap<i32, Value>,
 }
 
 impl<'a> Assembler<'a> {
@@ -77,7 +76,7 @@ impl<'a> Assembler<'a> {
 			read,
 			write,
 			memory_address,
-			last_value: None,
+			loads: HashMap::new(),
 		})
 	}
 
