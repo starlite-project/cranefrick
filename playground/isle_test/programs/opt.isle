@@ -62,8 +62,12 @@
 (decl pure convert_to_unsigned (i8) u8)
 (extern constructor convert_to_unsigned convert_to_unsigned)
 
+(decl pure neg_offset (i32) i32)
+(extern constructor neg_offset neg_offset)
+
 (rule (simplify_three (Mlir.StartBlock) (Mlir.ChangeCell -1 0) (Mlir.EndBlock))
       (Mlir.SetCell 0 0))
 
 (rule (simplify_four (Mlir.StartBlock) (Mlir.ChangeCell -1 0) (Mlir.ChangeCell i offset) (Mlir.EndBlock))
       (Mlir.MoveValue (convert_to_unsigned i) offset))
+
