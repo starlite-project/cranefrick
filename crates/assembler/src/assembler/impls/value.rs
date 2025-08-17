@@ -4,8 +4,6 @@ use crate::assembler::{Assembler, srclocs};
 
 impl Assembler<'_> {
 	pub fn move_value(&mut self, factor: u8, offset: i32) {
-		self.invalidate_loads();
-
 		self.add_srcflag(srclocs::MOVE_VALUE);
 
 		let current_value = self.load(0);
@@ -17,14 +15,12 @@ impl Assembler<'_> {
 
 		let added = self.ins().iadd(other_cell, value_to_add);
 
-		self.store(added, offset, None);
+		self.store(added, offset);
 
 		self.remove_srcflag(srclocs::MOVE_VALUE);
 	}
 
 	pub fn take_value(&mut self, factor: u8, offset: i32) {
-		self.invalidate_loads();
-
 		self.add_srcflag(srclocs::TAKE_VALUE);
 
 		let current_value = self.load(0);
@@ -38,14 +34,12 @@ impl Assembler<'_> {
 
 		let added = self.ins().iadd(other_cell, value_to_add);
 
-		self.store(added, 0, None);
+		self.store(added, 0);
 
 		self.remove_srcflag(srclocs::TAKE_VALUE);
 	}
 
 	pub fn fetch_value(&mut self, factor: u8, offset: i32) {
-		self.invalidate_loads();
-
 		self.add_srcflag(srclocs::FETCH_VALUE);
 
 		let other_cell = self.load(offset);
@@ -58,7 +52,7 @@ impl Assembler<'_> {
 
 		let added = self.ins().iadd(current_cell, value_to_add);
 
-		self.store(added, 0, None);
+		self.store(added, 0);
 
 		self.remove_srcflag(srclocs::FETCH_VALUE);
 	}

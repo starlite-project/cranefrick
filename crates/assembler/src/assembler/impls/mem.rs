@@ -6,27 +6,16 @@ use crate::assembler::Assembler;
 
 impl Assembler<'_> {
 	pub fn load(&mut self, offset: i32) -> Value {
-		if let Some(value) = self.loads.get(&offset) {
-			return *value;
-		}
-
 		let memory_address = self.memory_address;
 		let value = self
 			.ins()
 			.load(types::I8, Self::memflags(), memory_address, offset);
 
-		self.ensure_hint(value, None);
-
-		self.loads.insert(offset, value);
-
 		value
 	}
 
-	pub fn store(&mut self, value: Value, offset: i32, range: Option<Range<u8>>) {
-		self.invalidate_loads();
-
+	pub fn store(&mut self, value: Value, offset: i32) {
 		let memory_address = self.memory_address;
-		self.ensure_hint(value, range);
 
 		self.ins()
 			.store(Self::memflags(), value, memory_address, offset);
@@ -34,25 +23,5 @@ impl Assembler<'_> {
 
 	const fn memflags() -> MemFlags {
 		MemFlags::trusted()
-	}
-
-	pub fn invalidate_loads(&mut self) {
-		self.loads.clear();
-	}
-
-	pub fn invalidate_load_at(&mut self, offset: i32) {
-		self.loads.remove(&offset);
-	}
-
-	pub fn ensure_hint(&mut self, value: Value, range: Option<Range<u8>>) {
-		let range = range.map_or(0..(u8::MAX).into(), |r| r.start.into()..r.end.into());
-
-		if self.func.dfg.facts.get(value).is_none() {
-			self.func.dfg.facts[value] = Some(Fact::Range {
-				bit_width: types::I8.bits() as u16,
-				min: range.start,
-				max: range.end,
-			});
-		}
 	}
 }

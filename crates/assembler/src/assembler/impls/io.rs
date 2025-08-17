@@ -28,8 +28,6 @@ impl Assembler<'_> {
 	}
 
 	pub fn input_into_cell(&mut self) {
-		self.invalidate_loads();
-
 		self.add_srcflag(srclocs::INPUT_INTO_CELL);
 
 		let read = self.read;
