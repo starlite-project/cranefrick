@@ -25,6 +25,7 @@ pub struct Assembler<'a> {
 	memory_address: Value,
 	current_srcloc: u32,
 	tape: Vec<Value>,
+	tape_idx: usize,
 }
 
 impl<'a> Assembler<'a> {
@@ -88,6 +89,7 @@ impl<'a> Assembler<'a> {
 			write,
 			memory_address,
 			tape,
+			tape_idx: 0,
 		})
 	}
 
@@ -106,6 +108,9 @@ impl<'a> Assembler<'a> {
 
 	fn ops(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
 		for op in ops {
+			let idx = self.tape_idx;
+			tracing::trace!(idx = idx);
+
 			match op {
 				BrainMlir::ChangeCell(i, offset) => {
 					self.change_cell(*i, offset.map_or(0, NonZero::get));

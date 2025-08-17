@@ -12,6 +12,16 @@ impl Assembler<'_> {
 		let value = self.ins().iconst(ptr_type, i64::from(offset));
 		self.memory_address = self.ins().iadd(memory_address, value);
 
+		// self.tape_idx = (self.tape_idx.wrapping_add_signed(offset as isize)) % 30_000;
+
+		let old_tape_idx = self.tape_idx;
+
+		if offset.is_positive() {
+			self.tape_idx = (old_tape_idx + offset as usize) % 30_000;
+		} else {
+			self.tape_idx = ((self.tape_idx + 30_000).wrapping_sub(offset as usize)) % 30_000;
+		}
+
 		self.remove_srcflag(srclocs::MOVE_POINTER);
 	}
 }
