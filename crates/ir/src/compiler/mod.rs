@@ -6,7 +6,7 @@ use core::{
 	slice,
 };
 
-use cranefrick_hlir::BrainHlir;
+use cranefrick_ast::BrainHlir;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 

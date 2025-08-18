@@ -1,4 +1,4 @@
-use cranefrick_mlir::BrainMlir;
+use cranefrick_ir::BrainMlir;
 use cranelift_codegen::ir::InstBuilder as _;
 
 use crate::{

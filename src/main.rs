@@ -6,8 +6,8 @@ use std::{
 use clap::Parser;
 use color_eyre::Result;
 use cranefrick_assembler::{AssembledModule, AssemblerFlags};
-use cranefrick_hlir::Parser as BrainParser;
-use cranefrick_mlir::Compiler;
+use cranefrick_ast::Parser as BrainParser;
+use cranefrick_ir::Compiler;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing::{info, warn};

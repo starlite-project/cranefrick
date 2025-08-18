@@ -3,18 +3,19 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "cranefrick_hlir"
+name = "cranefrick_ir"
 rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-logos = { workspace = true, default-features = false, features = [
-    "export_derive",
-    "logos-derive"
+cranefrick_ast.workspace = true
+cranefrick_utils = { workspace = true, features = [
+    "alloc",
+    "insert_or_push",
+    "iter"
 ] }
 serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"
 ] }
-tracing.workspace = true
-tracing-indicatif.workspace = true
+tracing = { workspace = true, features = ["attributes"] }

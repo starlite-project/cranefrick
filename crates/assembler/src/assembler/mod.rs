@@ -7,7 +7,7 @@ use std::{
 	ops::{Deref, DerefMut},
 };
 
-use cranefrick_mlir::{BrainMlir, Compiler};
+use cranefrick_ir::{BrainMlir, Compiler};
 use cranelift_codegen::ir::{
 	AbiParam, Fact, FuncRef, Function, InstBuilder as _, SourceLoc, Type, Value, types,
 };

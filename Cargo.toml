@@ -9,8 +9,8 @@ version.workspace = true
 clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
 cranefrick_assembler = { path = "crates/assembler" }
-cranefrick_hlir = { path = "crates/hlir" }
-cranefrick_mlir = { path = "crates/mlir" }
+cranefrick_ast.workspace = true
+cranefrick_ir.workspace = true
 indicatif = "0.18"
 ron = "0.10"
 serde.workspace = true
@@ -28,8 +28,8 @@ mimalloc = "0.1"
 [workspace]
 members = [
     "crates/assembler",
-    "crates/hlir",
-    "crates/mlir",
+    "crates/ast",
+    "crates/ir",
     "crates/utils",
     "playground/befunge_test",
     "playground/chumsky_test",
@@ -42,6 +42,8 @@ anyhow = "1"
 arbitrary = "1"
 clap = "4"
 color-eyre = "0.6"
+cranefrick_ast = { path = "crates/ast" }
+cranefrick_ir = { path = "crates/ir" }
 cranefrick_utils = { path = "crates/utils" }
 cranelift = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87" }
 cranelift-codegen = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87", features = [

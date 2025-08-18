@@ -13,7 +13,7 @@ use std::{
 	slice,
 };
 
-use cranefrick_mlir::{BrainMlir, Compiler};
+use cranefrick_ir::{BrainMlir, Compiler};
 use cranelift_codegen::{
 	CodegenError, CompileError, cfg_printer::CFGPrinter, control::ControlPlane, ir::AbiParam, isa,
 	settings,

@@ -324,8 +324,8 @@ dependencies = [
  "clap",
  "color-eyre",
  "cranefrick_assembler",
- "cranefrick_hlir",
- "cranefrick_mlir",
+ "cranefrick_ast",
+ "cranefrick_ir",
  "indicatif",
  "mimalloc",
  "ron",
@@ -343,7 +343,7 @@ dependencies = [
 name = "cranefrick_assembler"
 version = "0.1.0"
 dependencies = [
- "cranefrick_mlir",
+ "cranefrick_ir",
  "cranelift-codegen",
  "cranelift-frontend",
  "cranelift-jit",
@@ -356,7 +356,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cranefrick_hlir"
+name = "cranefrick_ast"
 version = "0.1.0"
 dependencies = [
  "logos",
@@ -366,10 +366,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "cranefrick_mlir"
+name = "cranefrick_ir"
 version = "0.1.0"
 dependencies = [
- "cranefrick_hlir",
+ "cranefrick_ast",
  "cranefrick_utils",
  "serde",
  "tracing",
