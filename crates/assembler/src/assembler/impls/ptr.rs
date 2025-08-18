@@ -4,6 +4,8 @@ use crate::assembler::{Assembler, srclocs};
 
 impl Assembler<'_> {
 	pub fn move_pointer(&mut self, offset: i32) {
+		self.shift_load_offsets(offset);
+
 		self.add_srcflag(srclocs::MOVE_POINTER);
 
 		let ptr_type = self.ptr_type;
@@ -13,5 +15,15 @@ impl Assembler<'_> {
 		self.memory_address = self.ins().iadd(memory_address, value);
 
 		self.remove_srcflag(srclocs::MOVE_POINTER);
+	}
+
+	fn shift_load_offsets(&mut self, offset: i32) {
+		let loads = self.loads.clone();
+
+		self.invalidate_loads();
+
+		for (key, value) in loads {
+			self.loads.insert(key.wrapping_add(offset), value);
+		}
 	}
 }

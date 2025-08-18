@@ -23,8 +23,8 @@ pub struct Assembler<'a> {
 	read: FuncRef,
 	write: FuncRef,
 	memory_address: Value,
+	loads: HashMap<i32, Value>,
 	current_srcloc: u32,
-	tape: Vec<Value>,
 }
 
 impl<'a> Assembler<'a> {
@@ -74,12 +74,6 @@ impl<'a> Assembler<'a> {
 		let write = module.declare_func_in_func(write, builder.func);
 		let read = module.declare_func_in_func(read, builder.func);
 
-		let mut tape = Vec::with_capacity(30_000);
-
-		for _ in 0..30_000 {
-			tape.push(builder.ins().iconst(types::I8, 0));
-		}
-
 		Ok(Self {
 			current_srcloc: 0,
 			ptr_type,
@@ -87,7 +81,7 @@ impl<'a> Assembler<'a> {
 			read,
 			write,
 			memory_address,
-			tape,
+			loads: HashMap::new(),
 		})
 	}
 
@@ -106,6 +100,10 @@ impl<'a> Assembler<'a> {
 
 	fn ops(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
 		for op in ops {
+			let mem = &self.loads;
+
+			tracing::trace!(op = ?op, loads = ?mem);
+
 			match op {
 				BrainMlir::ChangeCell(i, offset) => {
 					self.change_cell(*i, offset.map_or(0, NonZero::get));

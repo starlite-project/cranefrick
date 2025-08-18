@@ -39,9 +39,8 @@ members = [
     "playground/koopa_test",
     "playground/logos_test",
     "playground/lua_test",
-    "playground/placing_test",
-    "tools/pattern_finder"
-]
+    "playground/placing_test"
+, "tools/pattern_finder"]
 resolver = "3"
 
 [workspace.dependencies]
