@@ -5,30 +5,7 @@ use chumsky::{
 	input::{Stream, ValueInput},
 	prelude::*,
 };
-use logos::Logos;
+use cranefrick_ast::BrainAst;
+use cranefrick_ir::BrainIr;
 
 fn main() {}
-
-enum BrainMlir {}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Logos)]
-enum BrainHlir {
-	#[token("<")]
-	MoveLeft,
-	#[token(">")]
-	MoveRight,
-	#[token("+")]
-	Increment,
-	#[token("-")]
-	Decrement,
-	#[token(",")]
-	Input,
-	#[token(".")]
-	Output,
-	#[token("[")]
-	StartLoop,
-	#[token("]")]
-	EndLoop,
-	#[token("[-]")]
-	Clear,
-}
