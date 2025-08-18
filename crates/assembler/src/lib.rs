@@ -212,7 +212,6 @@ impl Drop for AssembledModule {
 #[derive(Debug)]
 pub enum AssemblyError {
 	NoModuleFound,
-	Set(settings::SetError),
 	Io(IoError),
 	Codegen(CodegenError),
 	Module(Box<ModuleError>),
@@ -231,7 +230,6 @@ impl Display for AssemblyError {
 				Debug::fmt(&i, f)?;
 				f.write_str(" is not yet implemented")
 			}
-			Self::Set(..) => f.write_str("could not set flag value"),
 			Self::Io(_) => f.write_str("an IO error occurred"),
 			Self::Codegen(_) => f.write_str("a codegen error occurred"),
 			Self::Module(..) => f.write_str("a module error occurred"),
@@ -246,7 +244,6 @@ impl StdError for AssemblyError {
 	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			Self::Io(e) => Some(e),
-			Self::Set(e) => Some(e),
 			Self::Codegen(e) => Some(e),
 			Self::Module(e) => Some(e),
 			Self::Fmt(e) => Some(e),
@@ -264,7 +261,7 @@ impl From<IoError> for AssemblyError {
 
 impl From<settings::SetError> for AssemblyError {
 	fn from(value: settings::SetError) -> Self {
-		Self::Set(value)
+		Self::Module(Box::new(value.into()))
 	}
 }
 

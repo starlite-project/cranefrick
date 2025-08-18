@@ -3,11 +3,14 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "lua_test"
+name = "chumsky_test"
 rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { workspace = true, features = ["cargo"] }
-color-eyre.workspace = true
-piccolo = { git = "https://github.com/kyren/piccolo.git" }
+ariadne = "0.5"
+chumsky = "0.10"
+logos.workspace = true
+
+[features]
+debug = ["logos/debug"]
