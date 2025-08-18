@@ -7,7 +7,7 @@ use std::{
 	ops::{Deref, DerefMut},
 };
 
-use cranefrick_ir::{BrainMlir, Compiler};
+use cranefrick_ir::{BrainIr, Compiler};
 use cranelift_codegen::ir::{
 	AbiParam, Fact, FuncRef, Function, InstBuilder as _, SourceLoc, Type, Value, types,
 };
@@ -98,29 +98,29 @@ impl<'a> Assembler<'a> {
 		Ok(())
 	}
 
-	fn ops(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
+	fn ops(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError> {
 		for op in ops {
 			let mem = &self.loads;
 
 			tracing::trace!(op = ?op, loads = ?mem);
 
 			match op {
-				BrainMlir::ChangeCell(i, offset) => {
+				BrainIr::ChangeCell(i, offset) => {
 					self.change_cell(*i, offset.map_or(0, NonZero::get));
 				}
-				BrainMlir::MovePointer(offset) => self.move_pointer(*offset),
-				BrainMlir::DynamicLoop(ops) => self.dynamic_loop(ops)?,
-				BrainMlir::OutputCurrentCell => self.output_current_cell(),
-				BrainMlir::OutputChar(c) => self.output_char(*c),
-				BrainMlir::InputIntoCell => self.input_into_cell(),
-				BrainMlir::SetCell(value, offset) => {
+				BrainIr::MovePointer(offset) => self.move_pointer(*offset),
+				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
+				BrainIr::OutputCurrentCell => self.output_current_cell(),
+				BrainIr::OutputChar(c) => self.output_char(*c),
+				BrainIr::InputIntoCell => self.input_into_cell(),
+				BrainIr::SetCell(value, offset) => {
 					self.set_cell(*value, offset.map_or(0, NonZero::get));
 				}
-				BrainMlir::MoveValue(factor, offset) => self.move_value(*factor, *offset),
-				BrainMlir::TakeValue(factor, offset) => self.take_value(*factor, *offset),
-				BrainMlir::FetchValue(factor, offset) => self.fetch_value(*factor, *offset),
-				BrainMlir::IfNz(ops) => self.if_nz(ops)?,
-				BrainMlir::FindZero(offset) => self.find_zero(*offset),
+				BrainIr::MoveValue(factor, offset) => self.move_value(*factor, *offset),
+				BrainIr::TakeValue(factor, offset) => self.take_value(*factor, *offset),
+				BrainIr::FetchValue(factor, offset) => self.fetch_value(*factor, *offset),
+				BrainIr::IfNz(ops) => self.if_nz(ops)?,
+				BrainIr::FindZero(offset) => self.find_zero(*offset),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

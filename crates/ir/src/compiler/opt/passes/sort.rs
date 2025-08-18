@@ -1,11 +1,11 @@
 use cranefrick_utils::IteratorExt as _;
 
-use super::{BrainMlir, Change};
+use super::{BrainIr, Change};
 
-pub fn sort_changes(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn sort_changes(ops: &[BrainIr; 2]) -> Option<Change> {
 	if !ops
 		.iter()
-		.all(|i| matches!(i, BrainMlir::SetCell(..) | BrainMlir::ChangeCell(..)))
+		.all(|i| matches!(i, BrainIr::SetCell(..) | BrainIr::ChangeCell(..)))
 	{
 		return None;
 	}
@@ -17,7 +17,7 @@ pub fn sort_changes(ops: &[BrainMlir; 2]) -> Option<Change> {
 	Some(Change::swap(ops.iter().cloned().sorted_by_key(sorter_key)))
 }
 
-const fn sorter_key(i: &BrainMlir) -> i32 {
+const fn sorter_key(i: &BrainIr) -> i32 {
 	match i.offset() {
 		Some(offset) => offset.abs(),
 		None => 0,

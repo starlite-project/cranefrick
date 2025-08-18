@@ -8,50 +8,47 @@ use core::num::NonZero;
 
 pub use self::{loops::*, sort::*};
 use super::Change;
-use crate::BrainMlir;
+use crate::BrainIr;
 
-pub fn optimize_consecutive_instructions(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn optimize_consecutive_instructions(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainMlir::ChangeCell(a, x), BrainMlir::ChangeCell(b, y)] if *x == *y => {
-			Some(Change::replace(BrainMlir::change_cell_at(
+		[BrainIr::ChangeCell(a, x), BrainIr::ChangeCell(b, y)] if *x == *y => {
+			Some(Change::replace(BrainIr::change_cell_at(
 				a.wrapping_add(*b),
 				x.map_or(0, NonZero::get),
 			)))
 		}
-		[BrainMlir::MovePointer(a), BrainMlir::MovePointer(b)] => {
-			Some(Change::replace(BrainMlir::move_pointer(a.wrapping_add(*b))))
+		[BrainIr::MovePointer(a), BrainIr::MovePointer(b)] => {
+			Some(Change::replace(BrainIr::move_pointer(a.wrapping_add(*b))))
 		}
 		_ => None,
 	}
 }
 
-pub fn optimize_sets(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainMlir::SetCell(.., a) | BrainMlir::ChangeCell(.., a),
-			BrainMlir::SetCell(.., b),
+			BrainIr::SetCell(.., a) | BrainIr::ChangeCell(.., a),
+			BrainIr::SetCell(.., b),
 		] if *a == *b => Some(Change::remove_offset(0)),
-		[BrainMlir::SetCell(i1, x), BrainMlir::ChangeCell(i2, y)] if *x == *y => {
-			Some(Change::replace(BrainMlir::set_cell_at(
-				i1.wrapping_add_signed(*i2),
-				x.map_or(0, NonZero::get),
-			)))
-		}
+		[BrainIr::SetCell(i1, x), BrainIr::ChangeCell(i2, y)] if *x == *y => Some(Change::replace(
+			BrainIr::set_cell_at(i1.wrapping_add_signed(*i2), x.map_or(0, NonZero::get)),
+		)),
 		[
-			l @ (BrainMlir::DynamicLoop(..) | BrainMlir::IfNz(..)),
-			BrainMlir::ChangeCell(i1, None),
-		] => Some(Change::swap([l.clone(), BrainMlir::set_cell(*i1 as u8)])),
-		[BrainMlir::FindZero(offset), BrainMlir::ChangeCell(i, None)] => Some(Change::swap([
-			BrainMlir::find_zero(*offset),
-			BrainMlir::set_cell(*i as u8),
+			l @ (BrainIr::DynamicLoop(..) | BrainIr::IfNz(..)),
+			BrainIr::ChangeCell(i1, None),
+		] => Some(Change::swap([l.clone(), BrainIr::set_cell(*i1 as u8)])),
+		[BrainIr::FindZero(offset), BrainIr::ChangeCell(i, None)] => Some(Change::swap([
+			BrainIr::find_zero(*offset),
+			BrainIr::set_cell(*i as u8),
 		])),
 		_ => None,
 	}
 }
 
-pub fn clear_cell(ops: &[BrainMlir]) -> Option<Change> {
+pub fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[BrainMlir::ChangeCell(.., offset)] => Some(Change::replace(BrainMlir::set_cell_at(
+		[BrainIr::ChangeCell(.., offset)] => Some(Change::replace(BrainIr::set_cell_at(
 			0,
 			offset.map_or(0, NonZero::get),
 		))),
@@ -59,71 +56,71 @@ pub fn clear_cell(ops: &[BrainMlir]) -> Option<Change> {
 	}
 }
 
-pub const fn remove_noop_instructions(ops: &[BrainMlir; 1]) -> Option<Change> {
+pub const fn remove_noop_instructions(ops: &[BrainIr; 1]) -> Option<Change> {
 	match ops {
-		[BrainMlir::ChangeCell(0, ..) | BrainMlir::MovePointer(0)] => Some(Change::remove()),
+		[BrainIr::ChangeCell(0, ..) | BrainIr::MovePointer(0)] => Some(Change::remove()),
 		_ => None,
 	}
 }
 
-pub fn fix_beginning_instructions(ops: &mut Vec<BrainMlir>) -> bool {
+pub fn fix_beginning_instructions(ops: &mut Vec<BrainIr>) -> bool {
 	match ops.first_mut() {
-		Some(BrainMlir::DynamicLoop(..)) => {
+		Some(BrainIr::DynamicLoop(..)) => {
 			ops.remove(0);
 			true
 		}
-		Some(instr @ &mut BrainMlir::ChangeCell(i, x)) => {
-			*instr = BrainMlir::set_cell_at(i as u8, x.map_or(0, NonZero::get));
+		Some(instr @ &mut BrainIr::ChangeCell(i, x)) => {
+			*instr = BrainIr::set_cell_at(i as u8, x.map_or(0, NonZero::get));
 			true
 		}
 		_ => false,
 	}
 }
 
-pub fn add_offsets(ops: &[BrainMlir; 3]) -> Option<Change> {
+pub fn add_offsets(ops: &[BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
-			BrainMlir::MovePointer(x),
-			BrainMlir::ChangeCell(i, None),
-			BrainMlir::MovePointer(y),
+			BrainIr::MovePointer(x),
+			BrainIr::ChangeCell(i, None),
+			BrainIr::MovePointer(y),
 		] => Some(Change::swap([
-			BrainMlir::change_cell_at(*i, *x),
-			BrainMlir::move_pointer(x.wrapping_add(*y)),
+			BrainIr::change_cell_at(*i, *x),
+			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
 		[
-			BrainMlir::MovePointer(x),
-			BrainMlir::SetCell(i, None),
-			BrainMlir::MovePointer(y),
+			BrainIr::MovePointer(x),
+			BrainIr::SetCell(i, None),
+			BrainIr::MovePointer(y),
 		] => Some(Change::swap([
-			BrainMlir::set_cell_at(*i, *x),
-			BrainMlir::move_pointer(x.wrapping_add(*y)),
+			BrainIr::set_cell_at(*i, *x),
+			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
 		[
-			BrainMlir::MovePointer(x),
-			BrainMlir::ChangeCell(i, Some(y)),
-			BrainMlir::MovePointer(z),
+			BrainIr::MovePointer(x),
+			BrainIr::ChangeCell(i, Some(y)),
+			BrainIr::MovePointer(z),
 		] => Some(Change::swap([
-			BrainMlir::change_cell_at(*i, x.wrapping_add(y.get())),
-			BrainMlir::move_pointer(x.wrapping_add(*z)),
+			BrainIr::change_cell_at(*i, x.wrapping_add(y.get())),
+			BrainIr::move_pointer(x.wrapping_add(*z)),
 		])),
 		[
-			BrainMlir::MovePointer(x),
-			BrainMlir::SetCell(i, Some(y)),
-			BrainMlir::MovePointer(z),
+			BrainIr::MovePointer(x),
+			BrainIr::SetCell(i, Some(y)),
+			BrainIr::MovePointer(z),
 		] => Some(Change::swap([
-			BrainMlir::set_cell_at(*i, x.wrapping_add(y.get())),
-			BrainMlir::move_pointer(x.wrapping_add(*z)),
+			BrainIr::set_cell_at(*i, x.wrapping_add(y.get())),
+			BrainIr::move_pointer(x.wrapping_add(*z)),
 		])),
 		_ => None,
 	}
 }
 
-pub const fn optimize_move_value(ops: &[BrainMlir]) -> Option<Change> {
+pub const fn optimize_move_value(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
-			BrainMlir::ChangeCell(-1, None),
-			BrainMlir::ChangeCell(i, Some(offset)),
-		] if i.is_positive() => Some(Change::replace(BrainMlir::move_value(
+			BrainIr::ChangeCell(-1, None),
+			BrainIr::ChangeCell(i, Some(offset)),
+		] if i.is_positive() => Some(Change::replace(BrainIr::move_value(
 			i.unsigned_abs(),
 			offset.get(),
 		))),
@@ -131,74 +128,71 @@ pub const fn optimize_move_value(ops: &[BrainMlir]) -> Option<Change> {
 	}
 }
 
-pub const fn optimize_take_value(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub const fn optimize_take_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainMlir::MoveValue(factor, x), BrainMlir::MovePointer(y)] if *x == *y => {
-			Some(Change::replace(BrainMlir::take_value(*factor, *x)))
+		[BrainIr::MoveValue(factor, x), BrainIr::MovePointer(y)] if *x == *y => {
+			Some(Change::replace(BrainIr::take_value(*factor, *x)))
 		}
 		_ => None,
 	}
 }
 
-pub fn optimize_fetch_value(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn optimize_fetch_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainMlir::MovePointer(x), BrainMlir::TakeValue(factor, y)] if *x == -y => {
-			Some(Change::replace(BrainMlir::fetch_value(*factor, *x)))
+		[BrainIr::MovePointer(x), BrainIr::TakeValue(factor, y)] if *x == -y => {
+			Some(Change::replace(BrainIr::fetch_value(*factor, *x)))
 		}
-		[BrainMlir::MovePointer(x), BrainMlir::MoveValue(factor, y)] if *x == -y => {
+		[BrainIr::MovePointer(x), BrainIr::MoveValue(factor, y)] if *x == -y => {
 			Some(Change::swap([
-				BrainMlir::fetch_value(*factor, *x),
-				BrainMlir::move_pointer(*x),
+				BrainIr::fetch_value(*factor, *x),
+				BrainIr::move_pointer(*x),
 			]))
 		}
 		_ => None,
 	}
 }
 
-pub const fn optimize_find_zero(ops: &[BrainMlir]) -> Option<Change> {
+pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[BrainMlir::MovePointer(offset) | BrainMlir::FindZero(offset)] => {
-			Some(Change::replace(BrainMlir::find_zero(*offset)))
+		[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {
+			Some(Change::replace(BrainIr::find_zero(*offset)))
 		}
 		_ => None,
 	}
 }
 
-pub fn optimize_writes(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[
-			BrainMlir::SetCell(value, None),
-			BrainMlir::OutputCurrentCell,
-		] => Some(Change::swap([
-			BrainMlir::output_char(*value),
-			BrainMlir::set_cell(*value),
+		[BrainIr::SetCell(value, None), BrainIr::OutputCurrentCell] => Some(Change::swap([
+			BrainIr::output_char(*value),
+			BrainIr::set_cell(*value),
 		])),
 		_ => None,
 	}
 }
 
-pub fn optimize_constant_shifts(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn optimize_constant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainMlir::SetCell(a, x), BrainMlir::FetchValue(factor, y)]
+		[BrainIr::SetCell(a, x), BrainIr::FetchValue(factor, y)]
 			if x.map_or(0, NonZero::get) == *y =>
 		{
 			Some(Change::swap([
-				BrainMlir::set_cell_at(0, x.map_or(0, NonZero::get)),
-				BrainMlir::set_cell(a.wrapping_mul(*factor)),
+				BrainIr::set_cell_at(0, x.map_or(0, NonZero::get)),
+				BrainIr::set_cell(a.wrapping_mul(*factor)),
 			]))
 		}
 		_ => None,
 	}
 }
 
-pub fn remove_redundant_takes(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn remove_redundant_takes(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainMlir::TakeValue(.., offset),
-			BrainMlir::SetCell(value, None),
+			BrainIr::TakeValue(.., offset),
+			BrainIr::SetCell(value, None),
 		] => Some(Change::swap([
-			BrainMlir::move_pointer(*offset),
-			BrainMlir::set_cell(*value),
+			BrainIr::move_pointer(*offset),
+			BrainIr::set_cell(*value),
 		])),
 		_ => None,
 	}

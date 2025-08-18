@@ -3,14 +3,14 @@ use alloc::vec::Vec;
 use cranefrick_utils::{InsertOrPush as _, IntoIteratorExt as _};
 use tracing::trace;
 
-use crate::BrainMlir;
+use crate::BrainIr;
 
 #[derive(Debug, Clone)]
 pub enum Change {
 	Remove,
 	RemoveOffset(isize),
-	Swap(Vec<BrainMlir>),
-	Replace(BrainMlir),
+	Swap(Vec<BrainIr>),
+	Replace(BrainIr),
 }
 
 impl Change {
@@ -22,16 +22,16 @@ impl Change {
 		Self::RemoveOffset(offset)
 	}
 
-	pub fn swap(instrs: impl IntoIterator<Item = BrainMlir>) -> Self {
+	pub fn swap(instrs: impl IntoIterator<Item = BrainIr>) -> Self {
 		Self::Swap(instrs.collect_to())
 	}
 
-	pub const fn replace(i: BrainMlir) -> Self {
+	pub const fn replace(i: BrainIr) -> Self {
 		Self::Replace(i)
 	}
 
 	#[tracing::instrument(skip(self, ops, size))]
-	pub fn apply(self, ops: &mut Vec<BrainMlir>, i: usize, size: usize) {
+	pub fn apply(self, ops: &mut Vec<BrainIr>, i: usize, size: usize) {
 		match self {
 			Self::Remove => {
 				let removed = ops.drain(i..(i + size)).collect::<Vec<_>>();

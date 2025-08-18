@@ -6,18 +6,18 @@ use core::{
 	slice,
 };
 
-use cranefrick_ast::BrainHlir;
+use cranefrick_ast::BrainAst;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
 use self::opt::{passes, run_loop_pass, run_peephole_pass};
-use super::BrainMlir;
+use super::BrainIr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(transparent)]
 #[serde(transparent)]
 pub struct Compiler {
-	inner: Vec<BrainMlir>,
+	inner: Vec<BrainIr>,
 }
 
 impl Compiler {
@@ -33,7 +33,7 @@ impl Compiler {
 		}
 	}
 
-	pub fn push(&mut self, i: BrainMlir) {
+	pub fn push(&mut self, i: BrainIr) {
 		self.inner.push(i);
 	}
 
@@ -131,14 +131,14 @@ impl Compiler {
 	}
 
 	#[expect(clippy::single_match)]
-	fn stats_of(ops: &[BrainMlir]) -> (usize, usize) {
+	fn stats_of(ops: &[BrainIr]) -> (usize, usize) {
 		let mut op_count = 0;
 		let mut dloop_count = 0;
 
 		for op in ops {
 			op_count += 1;
 			match op {
-				BrainMlir::DynamicLoop(l) => {
+				BrainIr::DynamicLoop(l) => {
 					let (ops, dloops) = Self::stats_of(l);
 
 					op_count += ops;
@@ -160,7 +160,7 @@ impl Default for Compiler {
 }
 
 impl Deref for Compiler {
-	type Target = Vec<BrainMlir>;
+	type Target = Vec<BrainIr>;
 
 	fn deref(&self) -> &Self::Target {
 		&self.inner
@@ -173,19 +173,19 @@ impl DerefMut for Compiler {
 	}
 }
 
-impl Extend<BrainMlir> for Compiler {
+impl Extend<BrainIr> for Compiler {
 	fn extend<T>(&mut self, iter: T)
 	where
-		T: IntoIterator<Item = BrainMlir>,
+		T: IntoIterator<Item = BrainIr>,
 	{
 		self.inner.extend(iter);
 	}
 }
 
-impl Extend<BrainHlir> for Compiler {
+impl Extend<BrainAst> for Compiler {
 	fn extend<T>(&mut self, iter: T)
 	where
-		T: IntoIterator<Item = BrainHlir>,
+		T: IntoIterator<Item = BrainAst>,
 	{
 		let old = iter.into_iter().collect::<Vec<_>>();
 
@@ -193,10 +193,10 @@ impl Extend<BrainHlir> for Compiler {
 	}
 }
 
-impl FromIterator<BrainMlir> for Compiler {
+impl FromIterator<BrainIr> for Compiler {
 	fn from_iter<T>(iter: T) -> Self
 	where
-		T: IntoIterator<Item = BrainMlir>,
+		T: IntoIterator<Item = BrainIr>,
 	{
 		Self {
 			inner: Vec::from_iter(iter),
@@ -204,8 +204,8 @@ impl FromIterator<BrainMlir> for Compiler {
 	}
 }
 
-impl FromIterator<BrainHlir> for Compiler {
-	fn from_iter<T: IntoIterator<Item = BrainHlir>>(iter: T) -> Self {
+impl FromIterator<BrainAst> for Compiler {
+	fn from_iter<T: IntoIterator<Item = BrainAst>>(iter: T) -> Self {
 		let old = iter.into_iter().collect::<Vec<_>>();
 
 		Self {
@@ -215,8 +215,8 @@ impl FromIterator<BrainHlir> for Compiler {
 }
 
 impl<'a> IntoIterator for &'a Compiler {
-	type IntoIter = slice::Iter<'a, BrainMlir>;
-	type Item = &'a BrainMlir;
+	type IntoIter = slice::Iter<'a, BrainIr>;
+	type Item = &'a BrainIr;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.inner.iter()
@@ -224,8 +224,8 @@ impl<'a> IntoIterator for &'a Compiler {
 }
 
 impl<'a> IntoIterator for &'a mut Compiler {
-	type IntoIter = slice::IterMut<'a, BrainMlir>;
-	type Item = &'a mut BrainMlir;
+	type IntoIter = slice::IterMut<'a, BrainIr>;
+	type Item = &'a mut BrainIr;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.inner.iter_mut()
@@ -233,15 +233,15 @@ impl<'a> IntoIterator for &'a mut Compiler {
 }
 
 impl IntoIterator for Compiler {
-	type IntoIter = alloc::vec::IntoIter<BrainMlir>;
-	type Item = BrainMlir;
+	type IntoIter = alloc::vec::IntoIter<BrainIr>;
+	type Item = BrainIr;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.inner.into_iter()
 	}
 }
 
-fn fix_loops(program: &[BrainHlir]) -> Vec<BrainMlir> {
+fn fix_loops(program: &[BrainAst]) -> Vec<BrainIr> {
 	let mut current_stack = Vec::new();
 	let mut loop_stack = 0usize;
 	let mut loop_start = 0usize;
@@ -249,29 +249,29 @@ fn fix_loops(program: &[BrainHlir]) -> Vec<BrainMlir> {
 	for (i, op) in program.iter().enumerate() {
 		if matches!(loop_stack, 0) {
 			if let Some(instr) = match op {
-				BrainHlir::EndLoop => unreachable!(),
-				BrainHlir::StartLoop => {
+				BrainAst::EndLoop => unreachable!(),
+				BrainAst::StartLoop => {
 					loop_start = i;
 					loop_stack += 1;
 					None
 				}
-				BrainHlir::IncrementCell => Some(BrainMlir::change_cell(1)),
-				BrainHlir::DecrementCell => Some(BrainMlir::change_cell(-1)),
-				BrainHlir::MovePtrLeft => Some(BrainMlir::move_pointer(-1)),
-				BrainHlir::MovePtrRight => Some(BrainMlir::move_pointer(1)),
-				BrainHlir::GetInput => Some(BrainMlir::input_cell()),
-				BrainHlir::PutOutput => Some(BrainMlir::output_current_cell()),
-				BrainHlir::ClearCell => Some(BrainMlir::set_cell(0)),
+				BrainAst::IncrementCell => Some(BrainIr::change_cell(1)),
+				BrainAst::DecrementCell => Some(BrainIr::change_cell(-1)),
+				BrainAst::MovePtrLeft => Some(BrainIr::move_pointer(-1)),
+				BrainAst::MovePtrRight => Some(BrainIr::move_pointer(1)),
+				BrainAst::GetInput => Some(BrainIr::input_cell()),
+				BrainAst::PutOutput => Some(BrainIr::output_current_cell()),
+				BrainAst::ClearCell => Some(BrainIr::set_cell(0)),
 			} {
 				current_stack.push(instr);
 			}
 		} else {
 			match op {
-				BrainHlir::StartLoop => loop_stack += 1,
-				BrainHlir::EndLoop => {
+				BrainAst::StartLoop => loop_stack += 1,
+				BrainAst::EndLoop => {
 					loop_stack -= 1;
 					if matches!(loop_stack, 0) {
-						current_stack.push(BrainMlir::dynamic_loop({
+						current_stack.push(BrainIr::dynamic_loop({
 							let s = &program[loop_start + 1..i];
 							fix_loops(s)
 						}));

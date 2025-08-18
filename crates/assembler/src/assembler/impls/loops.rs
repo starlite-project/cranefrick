@@ -1,4 +1,4 @@
-use cranefrick_ir::BrainMlir;
+use cranefrick_ir::BrainIr;
 use cranelift_codegen::ir::InstBuilder as _;
 
 use crate::{
@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl Assembler<'_> {
-	pub fn if_nz(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
+	pub fn if_nz(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError> {
 		self.invalidate_load_at(0);
 
 		self.add_srcflag(srclocs::IF_NZ);
@@ -49,7 +49,7 @@ impl Assembler<'_> {
 		Ok(())
 	}
 
-	pub fn dynamic_loop(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
+	pub fn dynamic_loop(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError> {
 		self.invalidate_load_at(0);
 
 		self.add_srcflag(srclocs::DYNAMIC_LOOP);

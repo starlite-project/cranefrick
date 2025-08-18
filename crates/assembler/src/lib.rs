@@ -13,7 +13,7 @@ use std::{
 	slice,
 };
 
-use cranefrick_ir::{BrainMlir, Compiler};
+use cranefrick_ir::{BrainIr, Compiler};
 use cranelift_codegen::{
 	CodegenError, CompileError, cfg_printer::CFGPrinter, control::ControlPlane, ir::AbiParam, isa,
 	settings,
@@ -216,7 +216,7 @@ pub enum AssemblyError {
 	Codegen(CodegenError),
 	Module(Box<ModuleError>),
 	Custom(&'static str),
-	NotImplemented(BrainMlir),
+	NotImplemented(BrainIr),
 	Fmt(FmtError),
 	Lookup(isa::LookupError),
 }

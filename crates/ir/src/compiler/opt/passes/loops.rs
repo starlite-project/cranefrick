@@ -1,48 +1,48 @@
 use alloc::vec::Vec;
 use core::num::NonZero;
 
-use super::{BrainMlir, Change};
+use super::{BrainIr, Change};
 use crate::compiler::opt::utils::calculate_ptr_movement;
 
-pub const fn remove_unreachable_loops(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub const fn remove_unreachable_loops(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainMlir::SetCell(0, None)
-			| BrainMlir::DynamicLoop(..)
-			| BrainMlir::MoveValue(..)
-			| BrainMlir::FindZero(..)
-			| BrainMlir::IfNz(..),
-			BrainMlir::DynamicLoop(..)
-			| BrainMlir::FindZero(..)
-			| BrainMlir::MoveValue(..)
-			| BrainMlir::IfNz(..),
+			BrainIr::SetCell(0, None)
+			| BrainIr::DynamicLoop(..)
+			| BrainIr::MoveValue(..)
+			| BrainIr::FindZero(..)
+			| BrainIr::IfNz(..),
+			BrainIr::DynamicLoop(..)
+			| BrainIr::FindZero(..)
+			| BrainIr::MoveValue(..)
+			| BrainIr::IfNz(..),
 		] => Some(Change::remove_offset(1)),
 		_ => None,
 	}
 }
 
-pub const fn remove_infinite_loops(ops: &[BrainMlir]) -> Option<Change> {
+pub const fn remove_infinite_loops(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
 			..,
-			BrainMlir::SetCell(1..=u8::MAX, None) | BrainMlir::InputIntoCell,
+			BrainIr::SetCell(1..=u8::MAX, None) | BrainIr::InputIntoCell,
 		] => Some(Change::remove()),
 		_ => None,
 	}
 }
 
-pub fn remove_empty_loops(ops: &[BrainMlir]) -> Option<Change> {
+pub fn remove_empty_loops(ops: &[BrainIr]) -> Option<Change> {
 	ops.is_empty().then_some(Change::remove())
 }
 
-pub fn unroll_basic_dynamic_loop(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainMlir::SetCell(v, None), BrainMlir::DynamicLoop(l)]
+		[BrainIr::SetCell(v, None), BrainIr::DynamicLoop(l)]
 			if *v >= 1
 				&& matches!(calculate_ptr_movement(l)?, 0)
-				&& matches!(l.as_slice(), [.., BrainMlir::ChangeCell(-1, None)]) =>
+				&& matches!(l.as_slice(), [.., BrainIr::ChangeCell(-1, None)]) =>
 		{
-			if l.iter().any(|op| matches!(op, BrainMlir::DynamicLoop(..))) {
+			if l.iter().any(|op| matches!(op, BrainIr::DynamicLoop(..))) {
 				return None;
 			}
 
@@ -60,12 +60,12 @@ pub fn unroll_basic_dynamic_loop(ops: &[BrainMlir; 2]) -> Option<Change> {
 
 			Some(Change::swap(out))
 		}
-		[BrainMlir::SetCell(v, None), BrainMlir::DynamicLoop(l)]
+		[BrainIr::SetCell(v, None), BrainIr::DynamicLoop(l)]
 			if *v >= 1
 				&& matches!(calculate_ptr_movement(l)?, 0)
-				&& matches!(l.as_slice(), [BrainMlir::ChangeCell(-1, None), ..]) =>
+				&& matches!(l.as_slice(), [BrainIr::ChangeCell(-1, None), ..]) =>
 		{
-			if l.iter().any(|op| matches!(op, BrainMlir::DynamicLoop(..))) {
+			if l.iter().any(|op| matches!(op, BrainIr::DynamicLoop(..))) {
 				return None;
 			}
 
@@ -87,17 +87,17 @@ pub fn unroll_basic_dynamic_loop(ops: &[BrainMlir; 2]) -> Option<Change> {
 	}
 }
 
-pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainMlir; 2]) -> Option<Change> {
+pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainMlir::ChangeCell(v, None), BrainMlir::DynamicLoop(l)]
+		[BrainIr::ChangeCell(v, None), BrainIr::DynamicLoop(l)]
 			if *v >= 1
 				&& matches!(calculate_ptr_movement(l)?, 0)
 				&& matches!(
 					l.as_slice(),
-					[.., BrainMlir::ChangeCell(-1, None)] | [BrainMlir::ChangeCell(-1, None), ..]
+					[.., BrainIr::ChangeCell(-1, None)] | [BrainIr::ChangeCell(-1, None), ..]
 				) =>
 		{
-			if l.iter().any(|op| matches!(op, BrainMlir::DynamicLoop(..))) {
+			if l.iter().any(|op| matches!(op, BrainIr::DynamicLoop(..))) {
 				return None;
 			}
 
@@ -107,9 +107,9 @@ pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainMlir; 2]) -> Option<Chang
 				out.extend_from_slice(l);
 			}
 
-			out.insert(0, BrainMlir::change_cell(*v));
+			out.insert(0, BrainIr::change_cell(*v));
 
-			out.push(BrainMlir::dynamic_loop(l.iter().cloned()));
+			out.push(BrainIr::dynamic_loop(l.iter().cloned()));
 
 			Some(Change::swap(out))
 		}
@@ -117,23 +117,20 @@ pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainMlir; 2]) -> Option<Chang
 	}
 }
 
-pub fn optimize_if_nz(ops: &[BrainMlir]) -> Option<Change> {
+pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[rest @ .., BrainMlir::SetCell(0, None)] => {
-			Some(Change::replace(BrainMlir::if_nz(rest.iter().cloned())))
+		[rest @ .., BrainIr::SetCell(0, None)] => {
+			Some(Change::replace(BrainIr::if_nz(rest.iter().cloned())))
 		}
 		_ => None,
 	}
 }
 
-pub fn unroll_noop_loop(ops: &[BrainMlir]) -> Option<Change> {
+pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[
-			BrainMlir::ChangeCell(-1, None),
-			BrainMlir::SetCell(x, offset),
-		] => Some(Change::swap([
-			BrainMlir::set_cell(0),
-			BrainMlir::set_cell_at(*x, offset.map_or(0, NonZero::get)),
+		[BrainIr::ChangeCell(-1, None), BrainIr::SetCell(x, offset)] => Some(Change::swap([
+			BrainIr::set_cell(0),
+			BrainIr::set_cell_at(*x, offset.map_or(0, NonZero::get)),
 		])),
 		_ => None,
 	}

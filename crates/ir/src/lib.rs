@@ -16,7 +16,7 @@ pub use self::compiler::*;
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
-pub enum BrainMlir {
+pub enum BrainIr {
 	ChangeCell(
 		i8,
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI32>,
@@ -37,7 +37,7 @@ pub enum BrainMlir {
 	IfNz(Vec<Self>),
 }
 
-impl BrainMlir {
+impl BrainIr {
 	#[must_use]
 	pub const fn change_cell(value: i8) -> Self {
 		Self::change_cell_at(value, 0)

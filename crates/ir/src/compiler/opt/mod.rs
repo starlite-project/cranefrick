@@ -5,21 +5,21 @@ mod utils;
 use alloc::vec::Vec;
 
 pub use self::change::*;
-use crate::BrainMlir;
+use crate::BrainIr;
 
-pub fn run_loop_pass<F>(v: &mut Vec<BrainMlir>, pass: F) -> bool
+pub fn run_loop_pass<F>(v: &mut Vec<BrainIr>, pass: F) -> bool
 where
-	F: Fn(&[BrainMlir]) -> Option<Change> + Copy,
+	F: Fn(&[BrainIr]) -> Option<Change> + Copy,
 {
-	run_peephole_pass(v, |ops: &[BrainMlir; 1]| match &ops[0] {
-		BrainMlir::DynamicLoop(i) => pass(i),
+	run_peephole_pass(v, |ops: &[BrainIr; 1]| match &ops[0] {
+		BrainIr::DynamicLoop(i) => pass(i),
 		_ => None,
 	})
 }
 
-pub fn run_peephole_pass<F, const N: usize>(v: &mut Vec<BrainMlir>, pass: F) -> bool
+pub fn run_peephole_pass<F, const N: usize>(v: &mut Vec<BrainIr>, pass: F) -> bool
 where
-	F: Fn(&[BrainMlir; N]) -> Option<Change> + Copy,
+	F: Fn(&[BrainIr; N]) -> Option<Change> + Copy,
 {
 	let mut i = 0;
 
@@ -45,7 +45,7 @@ where
 	}
 
 	v.iter_mut()
-		.filter_map(BrainMlir::child_ops_mut)
+		.filter_map(BrainIr::child_ops_mut)
 		.for_each(|ops| {
 			progress |= run_peephole_pass::<_, N>(ops, pass);
 		});
