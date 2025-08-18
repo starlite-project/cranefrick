@@ -4,7 +4,7 @@ use crate::assembler::{Assembler, srclocs};
 
 impl Assembler<'_> {
 	pub fn move_value(&mut self, factor: u8, offset: i32) {
-		self.invalidate_loads();
+		self.invalidate_loads_at([0, offset]);
 
 		self.add_srcflag(srclocs::MOVE_VALUE);
 
@@ -23,7 +23,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn take_value(&mut self, factor: u8, offset: i32) {
-		self.invalidate_loads();
+		self.invalidate_loads_at([0, offset]);
 
 		self.add_srcflag(srclocs::TAKE_VALUE);
 
@@ -44,7 +44,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn fetch_value(&mut self, factor: u8, offset: i32) {
-		self.invalidate_loads();
+		self.invalidate_loads_at([0, offset]);
 
 		self.add_srcflag(srclocs::FETCH_VALUE);
 

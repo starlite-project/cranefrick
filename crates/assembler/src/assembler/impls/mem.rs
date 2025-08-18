@@ -19,7 +19,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn store(&mut self, value: Value, offset: i32) {
-		self.invalidate_loads();
+		self.invalidate_load_at(offset);
 
 		let memory_address = self.memory_address;
 
@@ -37,5 +37,11 @@ impl Assembler<'_> {
 
 	pub fn invalidate_load_at(&mut self, offset: i32) {
 		self.loads.remove(&offset);
+	}
+
+	pub fn invalidate_loads_at(&mut self, offsets: impl IntoIterator<Item = i32>) {
+		for offset in offsets {
+			self.invalidate_load_at(offset);
+		}
 	}
 }

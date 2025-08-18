@@ -28,7 +28,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn input_into_cell(&mut self) {
-		self.invalidate_loads();
+		self.invalidate_load_at(0);
 
 		self.add_srcflag(srclocs::INPUT_INTO_CELL);
 
