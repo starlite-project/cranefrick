@@ -39,8 +39,9 @@ members = [
     "playground/koopa_test",
     "playground/logos_test",
     "playground/lua_test",
-    "playground/placing_test"
-, "tools/pattern_finder"]
+    "playground/placing_test",
+    "tools/pattern_finder"
+]
 resolver = "3"
 
 [workspace.dependencies]
@@ -49,18 +50,18 @@ arbitrary = "1"
 clap = "4"
 color-eyre = "0.6"
 cranefrick_utils = { path = "crates/utils" }
-cranelift = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87" }
-cranelift-codegen = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87", features = [
+cranelift = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9" }
+cranelift-codegen = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9", features = [
     "enable-serde",
     "trace-log"
 ] }
-cranelift-control = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87" }
-cranelift-entity = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87" }
-cranelift-frontend = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87" }
-cranelift-jit = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87" }
-cranelift-module = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87" }
-cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87" }
-cranelift-object = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "f206a3ecc6f1245f94e8ce522f424f654e45fd87" }
+cranelift-control = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9" }
+cranelift-entity = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9" }
+cranelift-frontend = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9" }
+cranelift-jit = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9" }
+cranelift-module = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9" }
+cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9" }
+cranelift-object = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9" }
 cranium_isle = { path = "cranium/isle/isle" }
 cranium_srcgen = { path = "cranium/srcgen" }
 logos = { version = "0.15", default-features = false, features = [
@@ -69,9 +70,12 @@ logos = { version = "0.15", default-features = false, features = [
     "logos-derive"
 ] }
 serde = { version = "1", default-features = false }
+target-lexicon = "0.13"
 tracing = "0.1"
 tracing-indicatif = "0.3"
 tracing-subscriber = "0.3"
+wasmtime-jit-icache-coherence = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9", package = "wasmtime-internal-jit-icache-coherence" }
+wasmtime-unwinder = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1292237f809c20d7587bf6471e51fd5edf913ca9", package = "wasmtime-internal-unwinder" }
 
 [workspace.lints.rust]
 elided_lifetimes_in_paths = "warn"
@@ -103,6 +107,7 @@ pedantic = { level = "warn", priority = -1 }
 range_plus_one = "allow"
 redundant_pub_crate = "allow"
 redundant_type_annotations = "warn"
+result_large_err = "allow"
 significant_drop_tightening = "allow"
 similar_names = "allow"
 str_to_string = "deny"

@@ -8,7 +8,7 @@ use crate::{
 
 impl Assembler<'_> {
 	pub fn if_nz(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
-		self.invalidate_loads();
+		self.invalidate_load_at(0);
 
 		self.add_srcflag(srclocs::IF_NZ);
 
@@ -50,7 +50,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn dynamic_loop(&mut self, ops: &[BrainMlir]) -> Result<(), AssemblyError> {
-		self.invalidate_loads();
+		self.invalidate_load_at(0);
 
 		self.add_srcflag(srclocs::DYNAMIC_LOOP);
 
@@ -99,7 +99,7 @@ impl Assembler<'_> {
 	}
 
 	pub fn find_zero(&mut self, offset: i32) {
-		self.invalidate_loads();
+		self.invalidate_load_at(0);
 
 		self.add_srcflag(srclocs::FIND_ZERO);
 
