@@ -18,7 +18,7 @@ impl Assembler<'_> {
 			self.ins().iadd_imm(heap_value, i64::from(value))
 		};
 
-		self.store(changed, offset, None);
+		self.store(changed, offset);
 
 		self.remove_srcflag(srclocs::CHANGE_CELL);
 	}
@@ -29,7 +29,7 @@ impl Assembler<'_> {
 		self.add_srcflag(srclocs::SET_CELL);
 
 		let new_value = self.const_u8(value);
-		self.store(new_value, offset, Some(value..value));
+		self.store(new_value, offset);
 
 		self.remove_srcflag(srclocs::SET_CELL);
 	}

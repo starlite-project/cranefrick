@@ -23,7 +23,7 @@ impl Assembler<'_> {
 		self.invalidate_loads();
 
 		for (key, value) in loads {
-			self.loads.insert(key.wrapping_add(offset), value);
+			self.loads.insert(key.wrapping_sub(offset), value);
 		}
 	}
 }

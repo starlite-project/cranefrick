@@ -17,7 +17,7 @@ impl Assembler<'_> {
 
 		let added = self.ins().iadd(other_cell, value_to_add);
 
-		self.store(added, offset, None);
+		self.store(added, offset);
 
 		self.remove_srcflag(srclocs::MOVE_VALUE);
 	}
@@ -38,7 +38,7 @@ impl Assembler<'_> {
 
 		let added = self.ins().iadd(other_cell, value_to_add);
 
-		self.store(added, 0, None);
+		self.store(added, 0);
 
 		self.remove_srcflag(srclocs::TAKE_VALUE);
 	}
@@ -58,7 +58,7 @@ impl Assembler<'_> {
 
 		let added = self.ins().iadd(current_cell, value_to_add);
 
-		self.store(added, 0, None);
+		self.store(added, 0);
 
 		self.remove_srcflag(srclocs::FETCH_VALUE);
 	}
