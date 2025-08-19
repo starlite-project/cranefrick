@@ -44,9 +44,6 @@
             "*.unsafe.rust": "#eb5046"
         }
     },
-    "files.exclude": {
-        "target/**": true
-    },
     "rust-analyzer.hover.actions.references.enable": true,
     "rust-analyzer.cargo.noDefaultFeatures": true,
     "rust-analyzer.check.invocationLocation": "root",
