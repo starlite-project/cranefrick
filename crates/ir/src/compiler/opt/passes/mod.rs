@@ -110,6 +110,18 @@ pub fn add_offsets(ops: &[BrainIr; 3]) -> Option<Change> {
 	}
 }
 
+pub fn remove_offsets(ops: &[BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[BrainIr::SetCell(a, x), BrainIr::MovePointer(y)] if x.map_or(0, NonZero::get) == *y => {
+			Some(Change::swap([
+				BrainIr::move_pointer(*y),
+				BrainIr::set_cell(*a),
+			]))
+		}
+		_ => None,
+	}
+}
+
 pub const fn optimize_move_value(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[

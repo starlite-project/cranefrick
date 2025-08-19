@@ -39,21 +39,26 @@ pub fn unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change> {
 		[BrainIr::SetCell(v, None), BrainIr::DynamicLoop(l)]
 			if *v >= 1
 				&& matches!(calculate_ptr_movement(l)?, 0)
-				&& matches!(l.as_slice(), [.., BrainIr::ChangeCell(-1, None)]) =>
+				&& matches!(l.as_slice(), [.., BrainIr::ChangeCell(i8::MIN..=-1, None)]) =>
 		{
 			if l.iter().any(|op| matches!(op, BrainIr::DynamicLoop(..))) {
 				return None;
 			}
 
-			let without_decrement = {
+			let (without_decrement, decrement) = {
 				let mut owned = l.clone();
-				owned.pop();
-				owned
+				// owned.pop();
+				let decrement = owned.pop()?;
+
+				let BrainIr::ChangeCell(x, None) = decrement else {
+					return None;
+				};
+				(owned, x)
 			};
 
 			let mut out = Vec::with_capacity(without_decrement.len() * *v as usize);
 
-			for _ in 0..*v {
+			for _ in (0..*v).step_by(decrement.unsigned_abs() as usize) {
 				out.extend_from_slice(&without_decrement);
 			}
 
@@ -62,21 +67,26 @@ pub fn unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change> {
 		[BrainIr::SetCell(v, None), BrainIr::DynamicLoop(l)]
 			if *v >= 1
 				&& matches!(calculate_ptr_movement(l)?, 0)
-				&& matches!(l.as_slice(), [BrainIr::ChangeCell(-1, None), ..]) =>
+				&& matches!(l.as_slice(), [BrainIr::ChangeCell(i8::MIN..=-1, None), ..]) =>
 		{
 			if l.iter().any(|op| matches!(op, BrainIr::DynamicLoop(..))) {
 				return None;
 			}
 
-			let without_decrement = {
+			let (without_decrement, decrement) = {
 				let mut owned = l.clone();
-				owned.remove(0);
-				owned
+				let decrement =owned.remove(0);
+
+				let BrainIr::ChangeCell(x, None) = decrement else {
+					return None;
+				};
+
+				(owned, x)
 			};
 
 			let mut out = Vec::with_capacity(without_decrement.len() * *v as usize);
 
-			for _ in 0..*v {
+			for _ in (0..*v).step_by(decrement.unsigned_abs() as usize) {
 				out.extend_from_slice(&without_decrement);
 			}
 
