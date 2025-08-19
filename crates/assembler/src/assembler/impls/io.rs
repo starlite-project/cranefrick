@@ -1,4 +1,4 @@
-use cranelift_codegen::ir::{InstBuilder as _, types};
+use cranelift_codegen::ir::InstBuilder as _;
 
 use crate::assembler::{Assembler, srclocs};
 
