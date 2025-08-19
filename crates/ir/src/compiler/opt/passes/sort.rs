@@ -18,5 +18,7 @@ pub fn sort_changes(ops: &[BrainIr; 2]) -> Option<Change> {
 }
 
 fn sorter_key(i: &BrainIr) -> (i32, i32) {
-	i.offset().map(|offset| (offset.abs(), offset)).unwrap_or_default()
+	i.offset()
+		.map(|offset| (offset.abs(), offset))
+		.unwrap_or_default()
 }

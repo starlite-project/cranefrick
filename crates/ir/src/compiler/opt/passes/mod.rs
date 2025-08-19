@@ -3,7 +3,7 @@
 mod loops;
 mod sort;
 
-use std::num::NonZero;
+use std::{iter, num::NonZero};
 
 pub use self::{loops::*, sort::*};
 use super::Change;
@@ -184,6 +184,12 @@ pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 			BrainIr::output_char(*value),
 			BrainIr::set_cell(*value),
 		])),
+		[BrainIr::OutputChar(x), BrainIr::OutputChar(y)] => {
+			Some(Change::replace(BrainIr::output_chars([*x, *y])))
+		}
+		[BrainIr::OutputChars(chars), BrainIr::OutputChar(c)] => Some(Change::replace(
+			BrainIr::output_chars(chars.iter().copied().chain(iter::once(*c))),
+		)),
 		_ => None,
 	}
 }

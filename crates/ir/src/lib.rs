@@ -26,6 +26,7 @@ pub enum BrainIr {
 	InputIntoCell,
 	OutputCurrentCell,
 	OutputChar(u8),
+	OutputChars(Vec<u8>),
 	MoveValue(u8, i32),
 	TakeValue(u8, i32),
 	FetchValue(u8, i32),
@@ -83,6 +84,11 @@ impl BrainIr {
 	#[must_use]
 	pub const fn output_char(c: u8) -> Self {
 		Self::OutputChar(c)
+	}
+
+	#[must_use]
+	pub fn output_chars(c: impl IntoIterator<Item = u8>) -> Self {
+		Self::OutputChars(c.collect_to())
 	}
 
 	#[must_use]

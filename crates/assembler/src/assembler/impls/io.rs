@@ -8,11 +8,25 @@ impl Assembler<'_> {
 
 		let write = self.write;
 
-		let value = self.ins().iconst(types::I8, i64::from(c));
+		let value = self.const_u8(c);
 
 		self.ins().call(write, &[value]);
 
 		self.remove_srcflag(srclocs::OUTPUT_CHAR);
+	}
+
+	pub fn output_chars(&mut self, chars: &[u8]) {
+		self.add_srcflag(srclocs::OUTPUT_CHARS);
+
+		let write = self.write;
+
+		for c in chars.iter().copied() {
+			let value = self.const_u8(c);
+
+			self.ins().call(write, &[value]);
+		}
+
+		self.remove_srcflag(srclocs::OUTPUT_CHARS);
 	}
 
 	pub fn output_current_cell(&mut self) {
