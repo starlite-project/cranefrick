@@ -137,9 +137,16 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 
 pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[BrainIr::ChangeCell(-1, None), BrainIr::SetCell(x, offset)] => Some(Change::swap([
+		[
+			BrainIr::ChangeCell(-1, None),
+			BrainIr::SetCell(x, Some(offset)),
+		]
+		| [
+			BrainIr::SetCell(x, Some(offset)),
+			BrainIr::ChangeCell(-1, None),
+		] => Some(Change::swap([
 			BrainIr::set_cell(0),
-			BrainIr::set_cell_at(*x, offset.map_or(0, NonZero::get)),
+			BrainIr::set_cell_at(*x, offset.get()),
 		])),
 		_ => None,
 	}
