@@ -128,7 +128,7 @@ pub fn remove_offsets(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub const fn optimize_move_value(ops: &[BrainIr]) -> Option<Change> {
+pub fn optimize_move_value(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::ChangeCell(-1, None),
@@ -137,6 +137,10 @@ pub const fn optimize_move_value(ops: &[BrainIr]) -> Option<Change> {
 			i.unsigned_abs(),
 			offset.get(),
 		))),
+		[BrainIr::TakeValue(factor, x), BrainIr::MovePointer(y)] => Some(Change::swap([
+			BrainIr::move_value(*factor, *x),
+			BrainIr::move_pointer(x.wrapping_add(*y)),
+		])),
 		_ => None,
 	}
 }
