@@ -62,6 +62,18 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub const fn is_zeroing_cell(&self) -> bool {
+		matches!(
+			self,
+			Self::SetCell(0, None)
+				| Self::DynamicLoop(..)
+				| Self::MoveValue(..)
+				| Self::FindZero(..)
+				| Self::IfNz(..)
+		)
+	}
+
+	#[must_use]
 	pub const fn clear_cell() -> Self {
 		Self::clear_cell_at(0)
 	}
