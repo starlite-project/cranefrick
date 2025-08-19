@@ -11,4 +11,8 @@ version.workspace = true
 ariadne = "0.5"
 chumsky = "0.10"
 clap = { workspace = true, features = ["derive"] }
-color-eyre.workspace = true
+cranefrick_ir.workspace = true
+logos.workspace = true
+
+[features]
+debug = ["logos/debug"]

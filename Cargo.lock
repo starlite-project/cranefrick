@@ -219,7 +219,8 @@ dependencies = [
  "ariadne",
  "chumsky",
  "clap",
- "color-eyre",
+ "cranefrick_ir",
+ "logos",
 ]
 
 [[package]]

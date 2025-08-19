@@ -1,98 +1,116 @@
-use std::{fs, path::PathBuf};
+use std::{
+	fmt::{Display, Formatter, Result as FmtResult},
+	fs,
+	path::PathBuf,
+};
 
-use ariadne::{Color, Label, Report, ReportKind, sources};
-use chumsky::{Parser as _, error::Rich, input::Input as _};
-use chumsky_test::{eval_expr, funcs_parser, lexer};
-use clap::Parser;
-use color_eyre::Result;
+use ariadne::{Color, Label, Report, ReportKind, Source};
+use chumsky::{
+	input::{Stream, ValueInput},
+	prelude::*,
+};
+use clap::Parser as ClapParser;
+use cranefrick_ir::BrainIr;
+use logos::Logos;
 
-fn main() -> Result<()> {
-	color_eyre::install()?;
+fn main() {
+	let args = Args::parse();
 
-	let args = match Args::try_parse() {
-		Ok(a) => a,
-		Err(e) => {
-			eprintln!("{e}");
-			return Ok(());
-		}
-	};
+	let file_data = fs::read_to_string(&args.file_path).expect("failed to read file");
 
-	let src = fs::read_to_string(&args.file_path)?;
+	let token_iter = BrainAst::lexer(&file_data)
+		.spanned()
+		.filter_map(|(tok, span)| Some((tok.ok()?, span.into())));
 
-	let (tokens, mut errs) = lexer().parse(src.as_str()).into_output_errors();
+	let token_stream =
+		Stream::from_iter(token_iter).map((0..file_data.len()).into(), |(t, s): (_, _)| (t, s));
 
-	let parse_errs = if let Some(tokens) = &tokens {
-		let (ast, parse_errs) = funcs_parser()
-			.map_with(|ast, e| (ast, e.span()))
-			.parse(
-				tokens
-					.as_slice()
-					.map((src.len()..src.len()).into(), |(t, s)| (t, s)),
-			)
-			.into_output_errors();
-
-		if let Some((funcs, file_span)) = ast.filter(|_| errs.len() + parse_errs.len() == 0) {
-			if let Some(main) = funcs.get("main") {
-				if main.args.is_empty() {
-					match eval_expr(&main.body, &funcs, &mut Vec::new()) {
-						Ok(val) => println!("Return value: {val}"),
-						Err(e) => errs.push(Rich::custom(e.span, e.message)),
-					}
-				} else {
-					errs.push(Rich::custom(
-						main.span,
-						"The main function cannot have arguments".to_owned(),
-					));
-				}
-			} else {
-				errs.push(Rich::custom(
-					file_span,
-					"Programs need a main function but none was found".to_owned(),
-				));
+	match parser().parse(token_stream).into_result() {
+		Ok(e) => println!("{e:?}"),
+		Err(errs) => {
+			for err in errs {
+				Report::build(ReportKind::Error, ((), err.span().into_range()))
+					.with_config(ariadne::Config::new().with_index_type(ariadne::IndexType::Byte))
+					.with_code(3)
+					.with_message(err.to_string())
+					.with_label(
+						Label::new(((), err.span().into_range()))
+							.with_message(err.reason().to_string())
+							.with_color(Color::Red),
+					)
+					.finish()
+					.eprint(Source::from(&file_data))
+					.unwrap();
 			}
 		}
-
-		parse_errs
-	} else {
-		Vec::new()
-	};
-
-	errs.into_iter()
-		.map(|e| e.map_token(|c| c.to_string()))
-		.chain(
-			parse_errs
-				.into_iter()
-				.map(|e| e.map_token(|tok| tok.to_string())),
-		)
-		.for_each(|e| {
-			Report::build(
-				ReportKind::Error,
-				(args.file_path.display().to_string(), e.span().into_range()),
-			)
-			.with_config(ariadne::Config::new().with_index_type(ariadne::IndexType::Byte))
-			.with_message(e.to_string())
-			.with_label(
-				Label::new((args.file_path.display().to_string(), e.span().into_range()))
-					.with_message(e.reason().to_string())
-					.with_color(Color::Red),
-			)
-			.with_labels(e.contexts().map(|(label, span)| {
-				Label::new((args.file_path.display().to_string(), span.into_range()))
-					.with_message(format!("while parsing this {label}"))
-					.with_color(Color::Yellow)
-			}))
-			.finish()
-			.print(sources([(
-				args.file_path.display().to_string(),
-				src.clone(),
-			)]))
-			.unwrap();
-		});
-
-	Ok(())
+	}
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Logos)]
+enum BrainAst {
+	#[token("<")]
+	MoveLeft,
+	#[token(">")]
+	MoveRight,
+	#[token("+")]
+	Increment,
+	#[token("-")]
+	Decrement,
+	#[token(",")]
+	Input,
+	#[token(".")]
+	Output,
+	#[token("[")]
+	StartLoop,
+	#[token("]")]
+	EndLoop,
+	#[token("[-]")]
+	Clear,
+}
+
+impl Display for BrainAst {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.write_str(match *self {
+			Self::Clear => "[-]",
+			Self::MoveLeft => "<",
+			Self::MoveRight => ">",
+			Self::Increment => "+",
+			Self::Decrement => "-",
+			Self::Input => ",",
+			Self::Output => ".",
+			Self::StartLoop => "[",
+			Self::EndLoop => "]",
+		})
+	}
+}
+
+#[derive(Debug, ClapParser)]
 struct Args {
 	file_path: PathBuf,
+}
+
+fn parser<'tokens, 'src: 'tokens, I>()
+-> impl Parser<'tokens, I, Vec<BrainIr>, extra::Err<Rich<'tokens, BrainAst>>>
+where
+	I: ValueInput<'tokens, Token = BrainAst, Span = SimpleSpan>,
+{
+	#[allow(clippy::enum_glob_use)]
+	use BrainAst::*;
+
+	recursive(|bf| {
+		choice((
+			just(MoveLeft).to(BrainIr::change_cell(-1)),
+			just(MoveRight).to(BrainIr::change_cell(1)),
+            just(Increment).to(BrainIr::change_cell(1)),
+            just(Decrement).to(BrainIr::change_cell(-1)),
+            just(Input).to(BrainIr::input_cell()),
+            just(Output).to(BrainIr::output_current_cell()),
+            just(Clear).to(BrainIr::set_cell(0)),
+		))
+		.or(bf
+			.delimited_by(just(StartLoop), just(EndLoop))
+			.map(BrainIr::DynamicLoop))
+		.repeated()
+		.collect()
+	})
 }
