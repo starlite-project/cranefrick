@@ -67,6 +67,7 @@ where
 			just(BrainAst::DecrementCell).to(BrainIr::change_cell(-1)),
 			just(BrainAst::GetInput).to(BrainIr::input_cell()),
 			just(BrainAst::PutOutput).to(BrainIr::output_current_cell()),
+			just(BrainAst::ClearCell).to(BrainIr::clear_cell()),
 		))
 		.or(bf
 			.delimited_by(just(BrainAst::StartLoop), just(BrainAst::EndLoop))

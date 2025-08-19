@@ -60,6 +60,16 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub const fn clear_cell() -> Self {
+		Self::clear_cell_at(0)
+	}
+
+	#[must_use]
+	pub const fn clear_cell_at(offset: i32) -> Self {
+		Self::set_cell_at(0, offset)
+	}
+
+	#[must_use]
 	pub const fn input_cell() -> Self {
 		Self::InputIntoCell
 	}
