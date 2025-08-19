@@ -24,8 +24,6 @@ impl Assembler<'_> {
 	}
 
 	pub fn set_cell(&mut self, value: u8, offset: i32) {
-		self.invalidate_load_at(offset);
-
 		self.add_srcflag(srclocs::SET_CELL);
 
 		let new_value = self.const_u8(value);
