@@ -2,6 +2,7 @@ use std::{fs, path::PathBuf};
 
 use clap::Parser;
 use color_eyre::Result;
+use walkdir::WalkDir;
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
@@ -20,7 +21,7 @@ fn main() -> Result<()> {
 		.filter(|c| is_brainfuck(*c))
 		.collect::<String>();
 
-	let files = fs::read_dir(&args.folder_path)?
+	let files = WalkDir::new(&args.folder_path)
 		.into_iter()
 		.collect::<Result<Vec<_>, _>>()?;
 
