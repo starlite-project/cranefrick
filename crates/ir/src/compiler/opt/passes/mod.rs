@@ -112,10 +112,16 @@ pub fn add_offsets(ops: &[BrainIr; 3]) -> Option<Change> {
 
 pub fn remove_offsets(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::SetCell(a, x), BrainIr::MovePointer(y)] if x.map_or(0, NonZero::get) == *y => {
+		[BrainIr::SetCell(a, Some(x)), BrainIr::MovePointer(y)] if x.get() == *y => {
 			Some(Change::swap([
 				BrainIr::move_pointer(*y),
 				BrainIr::set_cell(*a),
+			]))
+		}
+		[BrainIr::ChangeCell(a, Some(x)), BrainIr::MovePointer(y)] if x.get() == *y => {
+			Some(Change::swap([
+				BrainIr::move_pointer(*y),
+				BrainIr::change_cell(*a),
 			]))
 		}
 		_ => None,

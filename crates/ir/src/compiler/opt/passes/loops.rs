@@ -1,5 +1,3 @@
-use std::num::NonZero;
-
 use super::{BrainIr, Change};
 use crate::compiler::opt::utils::calculate_ptr_movement;
 
