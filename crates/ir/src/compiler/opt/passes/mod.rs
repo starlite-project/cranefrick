@@ -34,13 +34,9 @@ pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 			BrainIr::set_cell_at(i1.wrapping_add_signed(*i2), x.map_or(0, NonZero::get)),
 		)),
 		[
-			l @ (BrainIr::DynamicLoop(..) | BrainIr::IfNz(..)),
+			l @ (BrainIr::DynamicLoop(..) | BrainIr::IfNz(..) | BrainIr::FindZero(..)),
 			BrainIr::ChangeCell(i1, None),
 		] => Some(Change::swap([l.clone(), BrainIr::set_cell(*i1 as u8)])),
-		[BrainIr::FindZero(offset), BrainIr::ChangeCell(i, None)] => Some(Change::swap([
-			BrainIr::find_zero(*offset),
-			BrainIr::set_cell(*i as u8),
-		])),
 		_ => None,
 	}
 }

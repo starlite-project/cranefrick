@@ -17,7 +17,7 @@ fn setup(source: &str) -> AstParser {
 fn bench_basic(c: &mut Criterion) {
 	c.bench_function("hello_world parse", |b| {
 		b.iter(|| {
-            assert!(setup(black_box(BASIC)).parse().is_ok());
+			assert!(setup(black_box(BASIC)).parse().is_ok());
 		});
 	});
 }
