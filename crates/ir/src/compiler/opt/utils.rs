@@ -8,12 +8,7 @@ pub fn calculate_ptr_movement(ops: &[BrainIr]) -> Option<i32> {
 			BrainIr::MovePointer(offset) | BrainIr::TakeValue(.., offset) => {
 				sum = sum.wrapping_add(*offset);
 			}
-			BrainIr::DynamicLoop(l) => {
-				let loop_sum = calculate_ptr_movement(l)?;
-
-				sum = sum.wrapping_add(loop_sum);
-			}
-			BrainIr::IfNz(l) => {
+			BrainIr::DynamicLoop(l) | BrainIr::IfNz(l) => {
 				let loop_sum = calculate_ptr_movement(l)?;
 
 				sum = sum.wrapping_add(loop_sum);
