@@ -1,42 +1,26 @@
-use std::{
-	io,
-	path::{Path, PathBuf},
-};
+use std::io;
 
 use ariadne::{Color, Label, Report, ReportKind, Source};
-use chumsky::{
-	input::{Stream, ValueInput},
-	prelude::*,
-};
+use chumsky::{input::ValueInput, prelude::*};
 use tracing::{info, trace};
 
 use crate::BrainIr;
 
 #[derive(Debug, Clone)]
-pub struct AstParser<'a> {
+pub struct AstParser {
 	file_data: String,
-	file_path: &'a Path,
 }
 
-impl<'a> AstParser<'a> {
+impl AstParser {
 	#[must_use]
-	pub const fn new(file_data: String, path: &'a Path) -> Self {
-		Self {
-			file_data,
-			file_path: path,
-		}
+	pub const fn new(file_data: String) -> Self {
+		Self { file_data }
 	}
 
 	pub fn parse(self) -> io::Result<Vec<BrainIr>> {
 		info!("got input of {} chars", self.file_data.len());
 
-		let source = Stream::from_iter(
-			self.file_data
-				.chars()
-				.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.')),
-		);
-
-		match parser().parse(source).into_result() {
+		match parser().parse(self.file_data.as_str()).into_result() {
 			Ok(e) => Ok(e),
 			Err(errs) => {
 				for err in errs {
@@ -68,12 +52,12 @@ where
 	recursive(|bf| {
 		choice((
 			just('<').to(BrainIr::move_pointer(-1)),
-			// just('>').to(BrainIr::move_pointer(1)),
-			// just('+').to(BrainIr::change_cell(1)),
-			// just('-').to(BrainIr::change_cell(-1)),
-			// just(',').to(BrainIr::input_cell()),
-			// just('.').to(BrainIr::output_current_cell()),
-			// just("[-]").to(BrainIr::clear_cell()),
+			just('>').to(BrainIr::move_pointer(1)),
+			just('+').to(BrainIr::change_cell(1)),
+			just('-').to(BrainIr::change_cell(-1)),
+			just(',').to(BrainIr::input_cell()),
+			just('.').to(BrainIr::output_current_cell()),
+			just("[-]").to(BrainIr::clear_cell()),
 		))
 		.or(bf
 			.delimited_by(just('['), just(']'))

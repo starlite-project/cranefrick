@@ -5,7 +5,7 @@ use criterion::{Criterion, criterion_group, criterion_main};
 
 const BASIC: &str = include_str!("../../../programs/hello_world.bf");
 
-fn setup(source: &str) -> AstParser {
+fn setup(source: &str) -> AstParser<'_> {
 	AstParser::new(source.to_owned())
 }
 
