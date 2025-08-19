@@ -203,6 +203,7 @@ pub fn remove_redundant_takes(ops: &[BrainIr; 2]) -> Option<Change> {
 			BrainIr::TakeValue(.., offset),
 			BrainIr::SetCell(value, None),
 		] => Some(Change::swap([
+			BrainIr::clear_cell(),
 			BrainIr::move_pointer(*offset),
 			BrainIr::set_cell(*value),
 		])),
