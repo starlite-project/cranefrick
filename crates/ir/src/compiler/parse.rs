@@ -2,7 +2,7 @@ use std::io;
 
 use ariadne::{Color, Label, Report, ReportKind, Source};
 use chumsky::prelude::*;
-use tracing::trace;
+use tracing::{info, trace};
 
 use crate::BrainIr;
 
@@ -18,6 +18,8 @@ impl AstParser {
 	}
 
 	pub fn parse(self) -> io::Result<Vec<BrainIr>> {
+		info!("got input of {} chars", self.file_data.len());
+
 		match parser().parse(&self.file_data).into_result() {
 			Ok(e) => Ok(e),
 			Err(errs) => {
