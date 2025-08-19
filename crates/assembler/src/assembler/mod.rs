@@ -121,6 +121,7 @@ impl<'a> Assembler<'a> {
 				BrainIr::FetchValue(factor, offset) => self.fetch_value(*factor, *offset),
 				BrainIr::IfNz(ops) => self.if_nz(ops)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset),
+				BrainIr::ReplaceValue(factor, offset) => self.replace_value(*factor, *offset),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

@@ -62,4 +62,21 @@ impl Assembler<'_> {
 
 		self.remove_srcflag(srclocs::FETCH_VALUE);
 	}
+
+	pub fn replace_value(&mut self, factor: u8, offset: i32) {
+		self.invalidate_loads_at([0, offset]);
+
+		self.add_srcflag(srclocs::REPLACE_VALUE);
+
+		let other_cell = self.load(offset);
+
+		self.set_cell(0, offset);
+		self.set_cell(0, 0);
+
+		let value_to_store = self.ins().imul_imm(other_cell, i64::from(factor));
+
+		self.store(value_to_store, 0);
+
+		self.remove_srcflag(srclocs::REPLACE_VALUE);
+	}
 }

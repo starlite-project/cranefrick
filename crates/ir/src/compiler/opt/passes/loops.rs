@@ -75,7 +75,7 @@ pub fn unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			let (without_decrement, decrement) = {
 				let mut owned = l.clone();
-				let decrement =owned.remove(0);
+				let decrement = owned.remove(0);
 
 				let BrainIr::ChangeCell(x, None) = decrement else {
 					return None;

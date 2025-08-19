@@ -159,6 +159,16 @@ pub fn optimize_fetch_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
+pub const fn optimize_replace_value(ops: &[BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::SetCell(0, None),
+			BrainIr::FetchValue(factor, offset),
+		] => Some(Change::replace(BrainIr::replace_value(*factor, *offset))),
+		_ => None,
+	}
+}
+
 pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {

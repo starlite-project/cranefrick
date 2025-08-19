@@ -10,3 +10,4 @@ pub const TAKE_VALUE: u32 = 1 << 8;
 pub const FETCH_VALUE: u32 = 1 << 9;
 pub const DYNAMIC_LOOP: u32 = 1 << 10;
 pub const IF_NZ: u32 = 1 << 11;
+pub const REPLACE_VALUE: u32 = 1 << 12;

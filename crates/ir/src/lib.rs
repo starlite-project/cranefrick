@@ -29,6 +29,7 @@ pub enum BrainIr {
 	MoveValue(u8, i32),
 	TakeValue(u8, i32),
 	FetchValue(u8, i32),
+	ReplaceValue(u8, i32),
 	DynamicLoop(Vec<Self>),
 	IfNz(Vec<Self>),
 }
@@ -87,6 +88,11 @@ impl BrainIr {
 	#[must_use]
 	pub const fn fetch_value(value: u8, offset: i32) -> Self {
 		Self::FetchValue(value, offset)
+	}
+
+	#[must_use]
+	pub const fn replace_value(value: u8, offset: i32) -> Self {
+		Self::ReplaceValue(value, offset)
 	}
 
 	#[must_use]
