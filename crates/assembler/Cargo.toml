@@ -10,7 +10,7 @@ version.workspace = true
 [dependencies]
 cranefrick_ir.workspace = true
 cranelift-codegen = { workspace = true, features = [
-    "all-arch",
+    "host-arch",
     "isle-errors",
     "unwind"
 ] }

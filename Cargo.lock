@@ -489,7 +489,6 @@ dependencies = [
  "gimli 0.32.0",
  "hashbrown",
  "log",
- "pulley-interpreter",
  "regalloc2",
  "rustc-hash",
  "serde",
@@ -508,7 +507,6 @@ dependencies = [
  "cranelift-codegen-shared",
  "cranelift-srcgen",
  "heck",
- "pulley-interpreter",
 ]
 
 [[package]]
@@ -1114,26 +1112,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e944464ec8536cd1beb0bbfd96987eb5e3b72f2ecdafdc5c769a37f1fa2ae1f"
 dependencies = [
  "cc",
-]
-
-[[package]]
-name = "pulley-interpreter"
-version = "37.0.0"
-source = "git+https://github.com/bytecodealliance/wasmtime.git?rev=f206a3ecc6f1245f94e8ce522f424f654e45fd87#f206a3ecc6f1245f94e8ce522f424f654e45fd87"
-dependencies = [
- "cranelift-bitset",
- "log",
- "pulley-macros",
-]
-
-[[package]]
-name = "pulley-macros"
-version = "37.0.0"
-source = "git+https://github.com/bytecodealliance/wasmtime.git?rev=f206a3ecc6f1245f94e8ce522f424f654e45fd87#f206a3ecc6f1245f94e8ce522f424f654e45fd87"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
