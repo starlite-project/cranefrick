@@ -6,7 +6,6 @@ use std::{
 use clap::Parser;
 use color_eyre::Result;
 use cranefrick_assembler::{AssembledModule, AssemblerFlags};
-use cranefrick_ast::{BrainAst, Logos};
 use cranefrick_ir::{AstParser as BrainParser, Compiler};
 use ron::ser::PrettyConfig;
 use serde::Serialize;
@@ -35,15 +34,20 @@ fn main() -> Result<()> {
 	install_tracing(&args.output_path);
 	color_eyre::install()?;
 
-	let raw_data = fs::read_to_string(args.file_path)?;
+	let raw_data = fs::read_to_string(args.file_path)?
+		.chars()
+		.filter(|c| matches!(c, '[' | ']' | '+' | '-' | '>' | '<' | ',' | '.'))
+		.collect::<String>();
 
-	let parser = {
-		let parser = BrainAst::lexer(&raw_data)
-			.spanned()
-			.filter_map(|(tok, span)| Some((tok.ok()?, span.into())));
+	// let parser = {
+	// 	let parser = BrainAst::lexer(&raw_data)
+	// 		.spanned()
+	// 		.filter_map(|(tok, span)| Some((tok.ok()?, span.into())));
 
-		BrainParser::new(parser, raw_data.clone())
-	};
+	// 	BrainParser::new(parser, raw_data.clone())
+	// };
+
+	let parser = BrainParser::new(raw_data.clone());
 
 	let parsed = parser.parse()?;
 

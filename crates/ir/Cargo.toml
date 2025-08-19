@@ -13,7 +13,6 @@ chumsky = { workspace = true, default-features = false, features = [
     "stacker",
     "std"
 ] }
-cranefrick_ast.workspace = true
 cranefrick_utils = { workspace = true, features = [
     "alloc",
     "insert_or_push",

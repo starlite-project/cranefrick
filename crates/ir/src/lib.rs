@@ -33,6 +33,7 @@ pub enum BrainIr {
 	ReplaceValue(u8, i32),
 	DynamicLoop(Vec<Self>),
 	IfNz(Vec<Self>),
+	Nop,
 }
 
 impl BrainIr {
