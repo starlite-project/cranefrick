@@ -9,7 +9,11 @@ version.workspace = true
 
 [dependencies]
 ariadne = "0.5"
-chumsky = { version = "0.10", default-features = false }
+chumsky = { workspace = true, default-features = false, features = [
+    "memoization",
+    "stacker",
+    "std"
+] }
 cranefrick_ast.workspace = true
 cranefrick_utils = { workspace = true, features = [
     "alloc",
