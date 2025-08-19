@@ -218,8 +218,8 @@ version = "0.1.0"
 dependencies = [
  "ariadne",
  "chumsky",
- "cranefrick_ast",
- "cranefrick_ir",
+ "clap",
+ "color-eyre",
 ]
 
 [[package]]
