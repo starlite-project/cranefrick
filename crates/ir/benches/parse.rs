@@ -5,8 +5,13 @@ use criterion::{Criterion, criterion_group, criterion_main};
 
 const BASIC: &str = include_str!("../../../programs/hello_world.bf");
 
-fn setup(source: &str) -> AstParser<'_> {
-	AstParser::new(source.to_owned())
+fn setup(source: &str) -> AstParser {
+	AstParser::new(
+		source
+			.chars()
+			.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | '.' | ','))
+			.collect(),
+	)
 }
 
 fn bench_basic(c: &mut Criterion) {
