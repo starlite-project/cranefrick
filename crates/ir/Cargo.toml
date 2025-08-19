@@ -10,7 +10,6 @@ version.workspace = true
 [dependencies]
 ariadne = "0.5"
 chumsky = { workspace = true, default-features = false, features = [
-    "memoization",
     "stacker",
     "std"
 ] }
