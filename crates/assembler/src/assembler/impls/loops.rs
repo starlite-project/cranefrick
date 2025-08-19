@@ -1,3 +1,5 @@
+use std::slice;
+
 use cranefrick_ir::BrainIr;
 use cranelift_codegen::ir::InstBuilder as _;
 
@@ -33,8 +35,11 @@ impl Assembler<'_> {
 		);
 
 		self.switch_to_block(body_block);
-		self.ops(ops)?;
-		self.add_srcflag(srclocs::IF_NZ);
+		for op in ops {
+			self.invalidate_loads();
+			self.ops(slice::from_ref(op))?;
+			self.add_srcflag(srclocs::IF_NZ);
+		}
 
 		let memory_address = self.memory_address;
 		self.ins().jump(next_block, &[memory_address.into()]);
@@ -81,9 +86,13 @@ impl Assembler<'_> {
 		);
 
 		self.switch_to_block(body_block);
-		self.ops(ops)?;
 
-		self.add_srcflag(srclocs::DYNAMIC_LOOP);
+		for op in ops {
+			self.invalidate_loads();
+			self.ops(slice::from_ref(op))?;
+			self.add_srcflag(srclocs::DYNAMIC_LOOP);
+		}
+
 		let memory_address = self.memory_address;
 		self.ins().jump(head_block, &[memory_address.into()]);
 
