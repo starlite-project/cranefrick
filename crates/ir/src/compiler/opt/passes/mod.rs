@@ -34,7 +34,10 @@ pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 			BrainIr::set_cell_at(i1.wrapping_add_signed(*i2), x.map_or(0, NonZero::get)),
 		)),
 		[
-			l @ (BrainIr::DynamicLoop(..) | BrainIr::IfNz(..) | BrainIr::FindZero(..) | BrainIr::MoveValue(..)),
+			l @ (BrainIr::DynamicLoop(..)
+			| BrainIr::IfNz(..)
+			| BrainIr::FindZero(..)
+			| BrainIr::MoveValue(..)),
 			BrainIr::ChangeCell(i1, None),
 		] => Some(Change::swap([l.clone(), BrainIr::set_cell(*i1 as u8)])),
 		_ => None,
@@ -156,13 +159,15 @@ pub const fn optimize_take_value(ops: &[BrainIr; 2]) -> Option<Change> {
 
 pub fn optimize_fetch_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::MovePointer(x), BrainIr::TakeValue(factor, y)] if *x == -y => {
-			Some(Change::replace(BrainIr::fetch_value(*factor, *x)))
-		}
+		[BrainIr::MovePointer(x), BrainIr::TakeValue(factor, y)] => Some(Change::swap([
+			BrainIr::move_pointer(x.wrapping_add(*y)),
+			BrainIr::fetch_value(*factor, -y),
+		])),
 		[BrainIr::MovePointer(x), BrainIr::MoveValue(factor, y)] if *x == -y => {
 			Some(Change::swap([
 				BrainIr::fetch_value(*factor, *x),
 				BrainIr::move_pointer(*x),
+				BrainIr::clear_cell(),
 			]))
 		}
 		_ => None,
