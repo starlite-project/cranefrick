@@ -43,15 +43,12 @@ impl Assembler<'_> {
 		self.seal_block(next_block);
 		self.memory_address = self.block_params(next_block)[0];
 
-		self.set_cell(0, 0);
-
 		self.remove_srcflag(srclocs::IF_NZ);
 
 		Ok(())
 	}
 
 	pub fn dynamic_loop(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError> {
-		// self.invalidate_load_at(0);
 		self.invalidate_loads();
 
 		self.add_srcflag(srclocs::DYNAMIC_LOOP);
@@ -93,15 +90,12 @@ impl Assembler<'_> {
 		self.switch_to_block(next_block);
 		self.memory_address = self.block_params(next_block)[0];
 
-		self.set_cell(0, 0);
-
 		self.remove_srcflag(srclocs::DYNAMIC_LOOP);
 
 		Ok(())
 	}
 
 	pub fn find_zero(&mut self, offset: i32) {
-		// self.invalidate_load_at(0);
 		self.invalidate_loads();
 
 		self.add_srcflag(srclocs::FIND_ZERO);
