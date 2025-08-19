@@ -18,17 +18,5 @@ pub fn sort_changes(ops: &[BrainIr; 2]) -> Option<Change> {
 }
 
 fn sorter_key(i: &BrainIr) -> (i32, i32) {
-	// (match i.offset() {
-	// 	Some(offset) => offset.abs(),
-	// 	None => 0,
-	// }, match i.off)
-
-	// let offset = i.offset();
-
-	// match offset {
-	// 	None => (0, 0),
-	// 	Some(offset) => (offset.abs(), offset)
-	// }
-
 	i.offset().map(|offset| (offset.abs(), offset)).unwrap_or_default()
 }
