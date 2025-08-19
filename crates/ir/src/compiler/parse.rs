@@ -1,7 +1,10 @@
 use std::io;
 
 use ariadne::{Color, Label, Report, ReportKind, Source};
-use chumsky::prelude::*;
+use chumsky::{
+	input::{Stream, ValueInput},
+	prelude::*,
+};
 use tracing::{info, trace};
 
 use crate::BrainIr;
@@ -20,7 +23,13 @@ impl AstParser {
 	pub fn parse(self) -> io::Result<Vec<BrainIr>> {
 		info!("got input of {} chars", self.file_data.len());
 
-		match parser().parse(&self.file_data).into_result() {
+		let source = Stream::from_iter(
+			self.file_data
+				.chars()
+				.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.')),
+		);
+
+		match parser().parse(source).into_result() {
 			Ok(e) => Ok(e),
 			Err(errs) => {
 				for err in errs {
@@ -43,7 +52,10 @@ impl AstParser {
 	}
 }
 
-fn parser<'src>() -> impl Parser<'src, &'src str, Vec<BrainIr>, extra::Err<Rich<'src, char>>> {
+fn parser<'src, I>() -> impl Parser<'src, I, Vec<BrainIr>, extra::Err<Rich<'src, char>>>
+where
+	I: ValueInput<'src, Token = char, Span = SimpleSpan>,
+{
 	trace!("creating parser-combinator");
 
 	recursive(|bf| {

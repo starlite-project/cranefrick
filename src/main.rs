@@ -34,18 +34,7 @@ fn main() -> Result<()> {
 	install_tracing(&args.output_path);
 	color_eyre::install()?;
 
-	let raw_data = fs::read_to_string(args.file_path)?
-		.chars()
-		.filter(|c| matches!(c, '[' | ']' | '+' | '-' | '>' | '<' | ',' | '.'))
-		.collect::<String>();
-
-	// let parser = {
-	// 	let parser = BrainAst::lexer(&raw_data)
-	// 		.spanned()
-	// 		.filter_map(|(tok, span)| Some((tok.ok()?, span.into())));
-
-	// 	BrainParser::new(parser, raw_data.clone())
-	// };
+	let raw_data = fs::read_to_string(args.file_path)?;
 
 	let parser = BrainParser::new(raw_data.clone());
 
