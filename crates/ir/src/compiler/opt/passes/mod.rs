@@ -167,7 +167,6 @@ pub fn optimize_fetch_value(ops: &[BrainIr; 2]) -> Option<Change> {
 			Some(Change::swap([
 				BrainIr::fetch_value(*factor, *x),
 				BrainIr::move_pointer(*x),
-				BrainIr::clear_cell(),
 			]))
 		}
 		_ => None,
