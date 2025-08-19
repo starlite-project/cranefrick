@@ -1,4 +1,7 @@
-use std::io;
+use std::{
+	io,
+	path::{Path, PathBuf},
+};
 
 use ariadne::{Color, Label, Report, ReportKind, Source};
 use chumsky::{
@@ -10,14 +13,18 @@ use tracing::{info, trace};
 use crate::BrainIr;
 
 #[derive(Debug, Clone)]
-pub struct AstParser {
+pub struct AstParser<'a> {
 	file_data: String,
+	file_path: &'a Path,
 }
 
-impl AstParser {
+impl<'a> AstParser<'a> {
 	#[must_use]
-	pub const fn new(file_data: String) -> Self {
-		Self { file_data }
+	pub const fn new(file_data: String, path: &'a Path) -> Self {
+		Self {
+			file_data,
+			file_path: path,
+		}
 	}
 
 	pub fn parse(self) -> io::Result<Vec<BrainIr>> {
@@ -61,12 +68,12 @@ where
 	recursive(|bf| {
 		choice((
 			just('<').to(BrainIr::move_pointer(-1)),
-			just('>').to(BrainIr::move_pointer(1)),
-			just('+').to(BrainIr::change_cell(1)),
-			just('-').to(BrainIr::change_cell(-1)),
-			just(',').to(BrainIr::input_cell()),
-			just('.').to(BrainIr::output_current_cell()),
-			just("[-]").to(BrainIr::clear_cell()),
+			// just('>').to(BrainIr::move_pointer(1)),
+			// just('+').to(BrainIr::change_cell(1)),
+			// just('-').to(BrainIr::change_cell(-1)),
+			// just(',').to(BrainIr::input_cell()),
+			// just('.').to(BrainIr::output_current_cell()),
+			// just("[-]").to(BrainIr::clear_cell()),
 		))
 		.or(bf
 			.delimited_by(just('['), just(']'))

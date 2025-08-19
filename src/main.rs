@@ -34,9 +34,9 @@ fn main() -> Result<()> {
 	install_tracing(&args.output_path);
 	color_eyre::install()?;
 
-	let raw_data = fs::read_to_string(args.file_path)?;
+	let raw_data = fs::read_to_string(&args.file_path)?;
 
-	let parser = BrainParser::new(raw_data.clone());
+	let parser = BrainParser::new(raw_data.clone(), &args.file_path);
 
 	let parsed = parser.parse()?;
 
