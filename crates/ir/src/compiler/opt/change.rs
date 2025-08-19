@@ -1,5 +1,3 @@
-use alloc::vec::Vec;
-
 use cranefrick_utils::{InsertOrPush as _, IntoIteratorExt as _};
 use tracing::trace;
 

@@ -6,8 +6,8 @@ use std::{
 use clap::Parser;
 use color_eyre::Result;
 use cranefrick_assembler::{AssembledModule, AssemblerFlags};
-use cranefrick_ast::Parser as BrainParser;
-use cranefrick_ir::Compiler;
+use cranefrick_ast::{BrainAst, Logos};
+use cranefrick_ir::{AstParser as BrainParser, Compiler};
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing::{info, warn};
@@ -37,9 +37,21 @@ fn main() -> Result<()> {
 
 	let raw_data = fs::read_to_string(args.file_path)?;
 
-	let parsed = BrainParser::new(&raw_data).parse::<Vec<_>>()?;
+	let parser = {
+		let parser = BrainAst::lexer(&raw_data)
+			.spanned()
+			.filter_map(|(tok, span)| Some((tok.ok()?, span.into())));
 
-	let mut compiler = Compiler::from_iter(parsed.clone());
+		BrainParser::new(parser, raw_data.clone())
+	};
+
+	let parsed = parser.parse()?;
+
+	if parsed.is_empty() {
+		return Ok(());
+	}
+
+	let mut compiler = Compiler::from_iter(parsed);
 
 	serialize(&compiler, &args.output_path, "unoptimized")?;
 

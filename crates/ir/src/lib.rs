@@ -1,12 +1,8 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
-#![no_std]
-
-extern crate alloc;
 
 mod compiler;
 
-use alloc::vec::Vec;
-use core::num::NonZeroI32;
+use std::num::NonZeroI32;
 
 use cranefrick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};

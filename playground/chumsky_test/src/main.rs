@@ -101,11 +101,11 @@ where
 		choice((
 			just(MoveLeft).to(BrainIr::change_cell(-1)),
 			just(MoveRight).to(BrainIr::change_cell(1)),
-            just(Increment).to(BrainIr::change_cell(1)),
-            just(Decrement).to(BrainIr::change_cell(-1)),
-            just(Input).to(BrainIr::input_cell()),
-            just(Output).to(BrainIr::output_current_cell()),
-            just(Clear).to(BrainIr::set_cell(0)),
+			just(Increment).to(BrainIr::change_cell(1)),
+			just(Decrement).to(BrainIr::change_cell(-1)),
+			just(Input).to(BrainIr::input_cell()),
+			just(Output).to(BrainIr::output_current_cell()),
+			just(Clear).to(BrainIr::set_cell(0)),
 		))
 		.or(bf
 			.delimited_by(just(StartLoop), just(EndLoop))

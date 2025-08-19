@@ -3,8 +3,7 @@
 mod loops;
 mod sort;
 
-use alloc::vec::Vec;
-use core::num::NonZero;
+use std::num::NonZero;
 
 pub use self::{loops::*, sort::*};
 use super::Change;

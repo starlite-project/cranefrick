@@ -2,8 +2,6 @@ mod change;
 pub mod passes;
 mod utils;
 
-use alloc::vec::Vec;
-
 pub use self::change::*;
 use crate::BrainIr;
 
