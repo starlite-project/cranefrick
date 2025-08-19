@@ -126,35 +126,12 @@ pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change>
 }
 
 pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
-	// match ops {
-	// 	[rest @ .., BrainIr::SetCell(0, None)] => {
-	// 		Some(Change::replace(BrainIr::if_nz(rest.iter().cloned())))
-	// 	}
-	// 	_ => None,
-	// }
-
-	if let [rest @ .., BrainIr::SetCell(0, None)] = ops {
-		return Some(Change::replace(BrainIr::if_nz(rest.iter().cloned())));
+	match ops {
+		[rest @ .., BrainIr::SetCell(0, None)] => {
+			Some(Change::replace(BrainIr::if_nz(rest.iter().cloned())))
+		}
+		_ => None,
 	}
-
-	let set_count = ops
-		.iter()
-		.filter(|op| matches!(op, BrainIr::SetCell(0, None)))
-		.count();
-
-	if !matches!(set_count, 1) {
-		return None;
-	}
-
-	if !matches!(calculate_ptr_movement(ops), Some(0)) {
-		return None;
-	}
-
-	Some(Change::replace(BrainIr::if_nz(
-		ops.iter()
-			.filter(|op| !matches!(op, BrainIr::SetCell(0, None)))
-			.cloned(),
-	)))
 }
 
 pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
