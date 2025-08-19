@@ -23,7 +23,8 @@ fn main() -> Result<()> {
 
 	let files = WalkDir::new(&args.folder_path)
 		.into_iter()
-		.collect::<Result<Vec<_>, _>>()?;
+		.filter_map(Result::ok)
+		.collect::<Vec<_>>();
 
 	println!("searching for {input} in {} files", files.len());
 
