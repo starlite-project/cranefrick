@@ -25,3 +25,10 @@ serde = { workspace = true, default-features = false, features = [
     "derive"
 ] }
 tracing = { workspace = true, features = ["attributes"] }
+
+[dev-dependencies]
+criterion = "0.7"
+
+[[bench]]
+harness = false
+name = "basic"
