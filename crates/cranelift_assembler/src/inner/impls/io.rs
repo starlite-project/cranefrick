@@ -1,10 +1,10 @@
 use cranelift_codegen::ir::InstBuilder as _;
 
-use crate::assembler::{Assembler, srclocs};
+use crate::inner::{InnerAssembler, SrcLoc};
 
-impl Assembler<'_> {
+impl InnerAssembler<'_> {
 	pub fn output_char(&mut self, c: u8) {
-		self.add_srcflag(srclocs::OUTPUT_CHAR);
+		self.add_srcflag(SrcLoc::OUTPUT_CHAR);
 
 		let write = self.write;
 
@@ -12,11 +12,11 @@ impl Assembler<'_> {
 
 		self.ins().call(write, &[value]);
 
-		self.remove_srcflag(srclocs::OUTPUT_CHAR);
+		self.remove_srcflag(SrcLoc::OUTPUT_CHAR);
 	}
 
 	pub fn output_chars(&mut self, chars: &[u8]) {
-		self.add_srcflag(srclocs::OUTPUT_CHARS);
+		self.add_srcflag(SrcLoc::OUTPUT_CHARS);
 
 		let write = self.write;
 
@@ -26,11 +26,11 @@ impl Assembler<'_> {
 			self.ins().call(write, &[value]);
 		}
 
-		self.remove_srcflag(srclocs::OUTPUT_CHARS);
+		self.remove_srcflag(SrcLoc::OUTPUT_CHARS);
 	}
 
 	pub fn output_current_cell(&mut self) {
-		self.add_srcflag(srclocs::OUTPUT_CURRENT_CELL);
+		self.add_srcflag(SrcLoc::OUTPUT_CURRENT_CELL);
 
 		let write = self.write;
 
@@ -38,19 +38,19 @@ impl Assembler<'_> {
 
 		self.ins().call(write, &[value]);
 
-		self.remove_srcflag(srclocs::OUTPUT_CURRENT_CELL);
+		self.remove_srcflag(SrcLoc::OUTPUT_CURRENT_CELL);
 	}
 
 	pub fn input_into_cell(&mut self) {
 		self.invalidate_load_at(0);
 
-		self.add_srcflag(srclocs::INPUT_INTO_CELL);
+		self.add_srcflag(SrcLoc::INPUT_INTO_CELL);
 
 		let read = self.read;
-		let memory_address = self.memory_address;
+		let ptr_value = self.ptr_value();
 
-		self.ins().call(read, &[memory_address]);
+		self.ins().call(read, &[ptr_value]);
 
-		self.remove_srcflag(srclocs::INPUT_INTO_CELL);
+		self.remove_srcflag(SrcLoc::INPUT_INTO_CELL);
 	}
 }

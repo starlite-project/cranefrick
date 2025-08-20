@@ -8,6 +8,7 @@ version.workspace = true
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
+frick_assembler.workspace = true
 frick_cranelift_assembler = { path = "crates/cranelift_assembler" }
 frick_ir.workspace = true
 frick_llvm_assembler = { path = "crates/llvm_assembler", optional = true }

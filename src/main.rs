@@ -4,11 +4,12 @@ use std::{fs, path::Path};
 
 use clap::Parser as _;
 use color_eyre::Result;
-use frick_cranelift_assembler::{AssembledModule, AssemblerFlags};
+use frick_assembler::{AssembledModule as _, Assembler as _};
+use frick_cranelift_assembler::{AssemblerFlags, CraneliftAssembler};
 use frick_ir::{AstParser as BrainParser, Compiler};
 use ron::ser::PrettyConfig;
 use serde::Serialize;
-use tracing::{info, warn};
+use tracing::warn;
 use tracing_error::ErrorLayer;
 use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{
@@ -18,7 +19,7 @@ use tracing_subscriber::{
 };
 use tracing_tree::HierarchicalLayer;
 
-use self::args::Args;
+use self::args::{Args, Assembler as AssemblerType};
 
 #[cfg(target_os = "windows")]
 #[global_allocator]
@@ -56,13 +57,21 @@ fn main() -> Result<()> {
 
 	serialize(&compiler, &args.output_path, "optimized")?;
 
-	let flags = get_flags(args.flags_path.as_deref());
+	match args.assembler {
+		AssemblerType::Cranelift => {
+			let flags = get_cranelift_assembler(args.flags_path.as_deref());
 
-	let module = AssembledModule::assemble(compiler, flags, &args.output_path)?;
+			let assembler = CraneliftAssembler::with_flags(flags);
 
-	info!("running code");
+			let module = assembler.assemble(compiler.as_slice(), &args.output_path)?;
 
-	module.execute()?;
+			module.execute()?;
+		}
+		#[cfg(feature = "llvm")]
+		AssemblerType::Llvm => {
+			todo!()
+		}
+	}
 
 	Ok(())
 }
@@ -171,7 +180,7 @@ fn serialize_as_s_expr<T: Serialize>(value: &T, folder_path: &Path, file_name: &
 	Ok(())
 }
 
-fn get_flags(path: Option<&Path>) -> AssemblerFlags {
+fn get_cranelift_assembler(path: Option<&Path>) -> AssemblerFlags {
 	if let Some(path) = path {
 		let data = match fs::read(path) {
 			Ok(data) => data,

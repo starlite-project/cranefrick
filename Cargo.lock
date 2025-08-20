@@ -624,6 +624,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "color-eyre",
+ "frick_assembler",
  "frick_cranelift_assembler",
  "frick_ir",
  "frick_llvm_assembler",
@@ -652,6 +653,7 @@ dependencies = [
 name = "frick_cranelift_assembler"
 version = "0.1.0"
 dependencies = [
+ "bitflags 2.9.1",
  "cranelift-codegen",
  "cranelift-frontend",
  "cranelift-jit",

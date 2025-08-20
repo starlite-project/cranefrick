@@ -1,12 +1,12 @@
 use cranelift_codegen::ir::InstBuilder as _;
 
-use crate::assembler::{Assembler, srclocs};
+use crate::inner::{InnerAssembler, SrcLoc};
 
-impl Assembler<'_> {
+impl InnerAssembler<'_> {
 	pub fn move_value(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads_at([0, offset]);
 
-		self.add_srcflag(srclocs::MOVE_VALUE);
+		self.add_srcflag(SrcLoc::MOVE_VALUE);
 
 		let current_value = self.load(0);
 		self.set_cell(0, 0);
@@ -19,13 +19,13 @@ impl Assembler<'_> {
 
 		self.store(added, offset);
 
-		self.remove_srcflag(srclocs::MOVE_VALUE);
+		self.remove_srcflag(SrcLoc::MOVE_VALUE);
 	}
 
 	pub fn take_value(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads_at([0, offset]);
 
-		self.add_srcflag(srclocs::TAKE_VALUE);
+		self.add_srcflag(SrcLoc::TAKE_VALUE);
 
 		let current_value = self.load(0);
 		self.set_cell(0, 0);
@@ -40,13 +40,13 @@ impl Assembler<'_> {
 
 		self.store(added, 0);
 
-		self.remove_srcflag(srclocs::TAKE_VALUE);
+		self.remove_srcflag(SrcLoc::TAKE_VALUE);
 	}
 
 	pub fn fetch_value(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads_at([0, offset]);
 
-		self.add_srcflag(srclocs::FETCH_VALUE);
+		self.add_srcflag(SrcLoc::FETCH_VALUE);
 
 		let other_cell = self.load(offset);
 
@@ -60,23 +60,21 @@ impl Assembler<'_> {
 
 		self.store(added, 0);
 
-		self.remove_srcflag(srclocs::FETCH_VALUE);
+		self.remove_srcflag(SrcLoc::FETCH_VALUE);
 	}
 
 	pub fn replace_value(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads_at([0, offset]);
 
-		self.add_srcflag(srclocs::REPLACE_VALUE);
+		self.add_srcflag(SrcLoc::REPLACE_VALUE);
 
 		let other_cell = self.load(offset);
-
 		self.set_cell(0, offset);
-		self.set_cell(0, 0);
 
 		let value_to_store = self.ins().imul_imm(other_cell, i64::from(factor));
 
 		self.store(value_to_store, 0);
 
-		self.remove_srcflag(srclocs::REPLACE_VALUE);
+		self.remove_srcflag(SrcLoc::REPLACE_VALUE);
 	}
 }

@@ -21,6 +21,12 @@ pub enum AssemblyError<E> {
 	Io(IoError),
 }
 
+impl<E> AssemblyError<E> {
+	pub fn backend(e: impl Into<E>) -> Self {
+		Self::Backend(e.into())
+	}
+}
+
 impl<E> Display for AssemblyError<E> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match self {
@@ -65,16 +71,23 @@ impl<E> From<IoError> for AssemblyError<E> {
 
 pub trait Assembler {
 	type Error: StdError + 'static;
-	type Ok;
+	type Module: AssembledModule;
 
 	fn assemble(
+		&self,
 		ops: &[BrainIr],
 		output_path: &Path,
-	) -> Result<Self::Ok, AssemblyError<Self::Error>>;
+	) -> Result<Self::Module, AssemblyError<Self::Error>>;
+}
+
+pub trait AssembledModule {
+	type Error: StdError + 'static;
+
+	fn execute(&self) -> Result<(), Self::Error>;
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn write(value: u8) {
+pub unsafe extern "C" fn frick_assembler_write(value: u8) {
 	if cfg!(target_os = "windows") && value >= 128 {
 		return;
 	}
@@ -90,7 +103,7 @@ pub unsafe extern "C" fn write(value: u8) {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn read(buf: *mut u8) {
+pub unsafe extern "C" fn frick_assembler_read(buf: *mut u8) {
 	let mut stdin = io::stdin().lock();
 	loop {
 		let mut value = 0;
