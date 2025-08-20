@@ -26,19 +26,36 @@ impl<'ctx> Compiler<'ctx> {
 		let mut while_blocks = VecDeque::new();
 		let functions = self.init_functions();
 
-		{
+		let data = {
 			let i8_type = self.context.i8_type();
-			let i8_array_type =i8_type.array_type(30_000);
+			let i8_array_type = i8_type.array_type(30_000);
 
-			let glob = self.module.add_global(i8_array_type, Some(AddressSpace::default()), "data");
+			let glob = self
+				.module
+				.add_global(i8_array_type, Some(AddressSpace::default()), "data");
 
 			let i8_array = i8_array_type.const_zero();
 
 			glob.set_initializer(&i8_array);
-		}
 
-		let (data, ptr) = self.build_main(functions)?;
-		self.init_pointers(functions, data, ptr)?;
+			glob.as_pointer_value()
+		};
+
+		let ptr = {
+			let i64_type = self.context.i64_type();
+
+			let glob = self
+				.module
+				.add_global(i64_type, Some(AddressSpace::default()), "index");
+
+			let i64_zero = i64_type.const_zero();
+
+			glob.set_initializer(&i64_zero);
+
+			glob.as_pointer_value()
+		};
+
+		self.build_main(functions);
 
 		let iter = program.chars();
 
@@ -68,13 +85,6 @@ impl<'ctx> Compiler<'ctx> {
 
 	fn init_functions(&self) -> Functions<'ctx> {
 		let i32_type = self.context.i32_type();
-		let i64_type = self.context.i64_type();
-		let ptr_type = self.context.ptr_type(AddressSpace::default());
-
-		let calloc_fn_type = ptr_type.fn_type(&[i64_type.into(), i64_type.into()], false);
-		let calloc = self
-			.module
-			.add_function("calloc", calloc_fn_type, Some(Linkage::External));
 
 		let getchar_fn_type = i32_type.fn_type(&[], false);
 		let getchar = self
@@ -92,52 +102,15 @@ impl<'ctx> Compiler<'ctx> {
 			.add_function("main", main_fn_type, Some(Linkage::External));
 
 		Functions {
-			calloc,
 			getchar,
 			putchar,
 			main,
 		}
 	}
 
-	fn build_main(
-		&self,
-		functions: Functions<'ctx>,
-	) -> BuilderResult<(PointerValue<'ctx>, PointerValue<'ctx>)> {
+	fn build_main(&self, functions: Functions<'ctx>) {
 		let basic_block = self.context.append_basic_block(functions.main, "entry");
 		self.builder.position_at_end(basic_block);
-
-		let ptr_type = self.ptr_type();
-
-		let data = self.builder.build_alloca(ptr_type, "data")?;
-		let ptr = self.builder.build_alloca(ptr_type, "data")?;
-
-		Ok((data, ptr))
-	}
-
-	fn init_pointers(
-		&self,
-		functions: Functions<'ctx>,
-		data: PointerValue<'ctx>,
-		ptr: PointerValue<'ctx>,
-	) -> BuilderResult {
-		let i64_type = self.context.i64_type();
-		let i64_memory_size = i64_type.const_int(30_000, false);
-		let i64_element_size = i64_type.const_int(1, false);
-
-		let data_ptr = self.builder.build_call(
-			functions.calloc,
-			&[i64_memory_size.into(), i64_element_size.into()],
-			"calloc_call",
-		)?;
-
-		let data_ptr_result: Result<_, _> = data_ptr.try_as_basic_value().flip().into();
-
-		let data_ptr_basic_val = data_ptr_result.unwrap();
-
-		self.builder.build_store(data, data_ptr_basic_val)?;
-		self.builder.build_store(ptr, data_ptr_basic_val)?;
-
-		Ok(())
 	}
 
 	fn build_add_ptr(&self, left: bool, ptr: PointerValue<'ctx>) -> BuilderResult {
@@ -311,7 +284,6 @@ impl<'ctx> Compiler<'ctx> {
 
 #[derive(Clone, Copy)]
 struct Functions<'ctx> {
-	calloc: FunctionValue<'ctx>,
 	getchar: FunctionValue<'ctx>,
 	putchar: FunctionValue<'ctx>,
 	main: FunctionValue<'ctx>,

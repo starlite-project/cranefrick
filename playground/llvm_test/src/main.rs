@@ -13,7 +13,7 @@ use inkwell::{
 
 use self::compiler::Compiler;
 
-const PASSES: &str = "default<O3>,aa-eval,instcount,lint,adce,break-crit-edges,dse,instcombine,internalize,jump-threading,lcssa,loop-deletion,loop-rotate,loop-simplify,loop-unroll,mem2reg,memcpyopt,reassociate,simplifycfg,sink,simple-loop-unswitch,strip,tailcallelim,transform-warning";
+const PASSES: &str = "default<O3>,aa-eval,instcount,lint,adce,break-crit-edges,dse,instcombine,jump-threading,lcssa,loop-deletion,loop-rotate,loop-simplify,loop-unroll,mem2reg,memcpyopt,reassociate,simplifycfg,sink,simple-loop-unswitch,strip,tailcallelim,transform-warning";
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
