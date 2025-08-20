@@ -4,8 +4,6 @@ use crate::inner::{InnerAssembler, SrcLoc};
 
 impl InnerAssembler<'_> {
 	pub fn change_cell(&mut self, value: i8, offset: i32) {
-		self.invalidate_load_at(offset);
-
 		self.add_srcflag(SrcLoc::CHANGE_CELL);
 
 		let heap_value = self.load(offset);
@@ -33,8 +31,6 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn sub_cell(&mut self, offset: i32) {
-		self.invalidate_loads_at([0, offset]);
-
 		self.add_srcflag(SrcLoc::SUB_CELL);
 
 		let subtractor = self.load(0);

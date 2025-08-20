@@ -24,9 +24,9 @@ pub struct InnerAssembler<'a> {
 	builder: FunctionBuilder<'a>,
 	read: FuncRef,
 	write: FuncRef,
-	ptr_variable: Variable,
-	loads: HashMap<i32, Value>,
 	current_srcloc: SrcLoc,
+	cells: HashMap<i32, Variable>,
+	ptr_value: i32,
 }
 
 impl<'a> InnerAssembler<'a> {
@@ -36,27 +36,11 @@ impl<'a> InnerAssembler<'a> {
 		module: &mut JITModule,
 		ptr_type: Type,
 	) -> Result<Self, CraneliftAssemblyError> {
-		let tape_id = module.declare_data("blob", Linkage::Local, true, false)?;
-
-		let mut tape_description = DataDescription::new();
-
-		tape_description.define_zeroinit(30_000);
-
-		module.define_data(tape_id, &tape_description)?;
-
-		let tape_global_value = module.declare_data_in_func(tape_id, func);
-
 		let mut builder = FunctionBuilder::new(func, fn_ctx);
 
 		let block = builder.create_block();
 
 		builder.switch_to_block(block);
-
-		let ptr_value = builder.declare_var(ptr_type);
-
-		let tape_value = builder.ins().symbol_value(ptr_type, tape_global_value);
-
-		builder.def_var(ptr_value, tape_value);
 
 		let write = {
 			let mut write_sig = module.make_signature();
@@ -75,14 +59,26 @@ impl<'a> InnerAssembler<'a> {
 		let write = module.declare_func_in_func(write, builder.func);
 		let read = module.declare_func_in_func(read, builder.func);
 
+		let mut cells = HashMap::new();
+
+		let zero = builder.ins().iconst(types::I8, 0);
+
+		for i in 0..30_000 {
+			let var = builder.declare_var(types::I8);
+
+			builder.def_var(var, zero);
+
+			cells.insert(i, var);
+		}
+
 		Ok(Self {
 			current_srcloc: SrcLoc::empty(),
 			ptr_type,
 			builder,
 			read,
 			write,
-			ptr_variable: ptr_value,
-			loads: HashMap::new(),
+			cells,
+			ptr_value: 0,
 		})
 	}
 
@@ -114,6 +110,7 @@ impl<'a> InnerAssembler<'a> {
 				BrainIr::SubCell(offset) => self.sub_cell(*offset),
 				BrainIr::OutputCurrentCell => self.output_current_cell(),
 				BrainIr::OutputChar(c) => self.output_char(*c),
+				BrainIr::OutputChars(c) => self.output_chars(c),
 				BrainIr::InputIntoCell => self.input_into_cell(),
 				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
 				BrainIr::IfNz(ops) => self.if_nz(ops)?,
@@ -127,12 +124,6 @@ impl<'a> InnerAssembler<'a> {
 		}
 
 		Ok(())
-	}
-
-	fn ptr_value(&mut self) -> Value {
-		let ptr_var = self.ptr_variable;
-
-		self.use_var(ptr_var)
 	}
 
 	fn ins<'short>(&'short mut self) -> FuncInstBuilder<'short, 'a> {

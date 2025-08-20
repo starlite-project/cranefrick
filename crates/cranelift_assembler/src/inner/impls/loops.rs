@@ -11,8 +11,6 @@ use crate::{
 
 impl InnerAssembler<'_> {
 	pub fn if_nz(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
-		self.invalidate_loads();
-
 		self.add_srcflag(SrcLoc::IF_NZ);
 
 		let body_block = self.create_block();
@@ -25,7 +23,6 @@ impl InnerAssembler<'_> {
 		self.switch_to_block(body_block);
 
 		for op in ops {
-			self.invalidate_loads();
 			self.ops(slice::from_ref(op))?;
 			self.add_srcflag(SrcLoc::IF_NZ);
 		}
@@ -44,8 +41,6 @@ impl InnerAssembler<'_> {
 		&mut self,
 		ops: &[BrainIr],
 	) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
-		self.invalidate_loads();
-
 		self.add_srcflag(SrcLoc::DYNAMIC_LOOP);
 
 		let head_block = self.create_block();
@@ -63,7 +58,6 @@ impl InnerAssembler<'_> {
 		self.switch_to_block(body_block);
 
 		for op in ops {
-			self.invalidate_loads();
 			self.ops(slice::from_ref(op))?;
 			self.add_srcflag(SrcLoc::DYNAMIC_LOOP);
 		}
@@ -78,8 +72,6 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn find_zero(&mut self, offset: i32) {
-		self.invalidate_loads();
-
 		self.add_srcflag(SrcLoc::FIND_ZERO);
 
 		let head_block = self.create_block();
