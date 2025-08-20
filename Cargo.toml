@@ -30,6 +30,7 @@ members = [
     "crates/ir",
     "crates/utils",
     "playground/befunge_test",
+    "playground/llvm_test",
     "tools/pattern_finder"
 ]
 resolver = "3"
