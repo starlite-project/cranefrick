@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
-use cranefrick_ir::AstParser;
 use criterion::{Criterion, criterion_group, criterion_main};
+use frick_ir::AstParser;
 
 const HELLO_WORLD: &str = include_str!("../../../programs/hello_world.bf");
 

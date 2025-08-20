@@ -7,13 +7,13 @@ use std::{
 	ops::{Deref, DerefMut},
 };
 
-use cranefrick_ir::{BrainIr, Compiler};
 use cranelift_codegen::ir::{
 	AbiParam, Fact, FuncRef, Function, InstBuilder as _, SourceLoc, Type, Value, types,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::JITModule;
 use cranelift_module::{Linkage, Module as _};
+use frick_ir::{BrainIr, Compiler};
 
 use crate::AssemblyError;
 

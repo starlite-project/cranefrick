@@ -4,7 +4,7 @@ mod compiler;
 
 use std::num::NonZeroI32;
 
-use cranefrick_utils::IntoIteratorExt as _;
+use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
 pub use self::compiler::*;

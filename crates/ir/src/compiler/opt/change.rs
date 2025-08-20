@@ -1,4 +1,4 @@
-use cranefrick_utils::{InsertOrPush as _, IntoIteratorExt as _};
+use frick_utils::{InsertOrPush as _, IntoIteratorExt as _};
 use tracing::trace;
 
 use crate::BrainIr;

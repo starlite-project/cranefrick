@@ -1,7 +1,7 @@
 use std::slice;
 
-use cranefrick_ir::BrainIr;
 use cranelift_codegen::ir::InstBuilder as _;
+use frick_ir::BrainIr;
 
 use crate::{
 	AssemblyError,

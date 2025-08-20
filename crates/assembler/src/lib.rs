@@ -13,7 +13,6 @@ use std::{
 	slice,
 };
 
-use cranefrick_ir::{BrainIr, Compiler};
 use cranelift_codegen::{
 	CodegenError, CompileError, cfg_printer::CFGPrinter, control::ControlPlane, ir::AbiParam, isa,
 	settings,
@@ -21,6 +20,7 @@ use cranelift_codegen::{
 use cranelift_frontend::FunctionBuilderContext;
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{FuncId, Linkage, Module as _, ModuleError};
+use frick_ir::{BrainIr, Compiler};
 use target_lexicon::Triple;
 use tracing::{Span, error, info, info_span};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};

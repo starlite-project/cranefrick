@@ -1,4 +1,4 @@
-use cranefrick_utils::IteratorExt as _;
+use frick_utils::IteratorExt as _;
 
 use super::{BrainIr, Change};
 
