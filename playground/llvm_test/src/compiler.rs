@@ -25,6 +25,18 @@ impl<'ctx> Compiler<'ctx> {
 	pub fn compile(&self, program: &str) -> BuilderResult {
 		let mut while_blocks = VecDeque::new();
 		let functions = self.init_functions();
+
+		{
+			let i8_type = self.context.i8_type();
+			let i8_array_type =i8_type.array_type(30_000);
+
+			let glob = self.module.add_global(i8_array_type, Some(AddressSpace::default()), "data");
+
+			let i8_array = i8_array_type.const_zero();
+
+			glob.set_initializer(&i8_array);
+		}
+
 		let (data, ptr) = self.build_main(functions)?;
 		self.init_pointers(functions, data, ptr)?;
 

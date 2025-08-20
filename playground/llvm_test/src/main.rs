@@ -70,8 +70,6 @@ fn main() -> Result<()> {
 	let pass_options = PassBuilderOptions::create();
 
 	pass_options.set_verify_each(true);
-	pass_options.set_debug_logging(true);
-	pass_options.set_call_graph_profile(true);
 
 	module
 		.run_passes(PASSES, &target_machine, pass_options)
