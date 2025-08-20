@@ -51,13 +51,34 @@ where
 
 	recursive(|bf| {
 		choice((
-			just('<').to(BrainIr::move_pointer(-1)),
-			just('>').to(BrainIr::move_pointer(1)),
-			just('+').to(BrainIr::change_cell(1)),
-			just('-').to(BrainIr::change_cell(-1)),
-			just(',').to(BrainIr::input_cell()),
-			just('.').to(BrainIr::output_current_cell()),
+			// noop patterns
+			just("><").or(just("<>")).to(BrainIr::move_pointer(0)),
+			just("+-").to(BrainIr::change_cell(0)),
+			// common patterns
 			just("[-]").to(BrainIr::clear_cell()),
+			// basics
+			just('+').repeated().at_least(1).map_with(|(), e| {
+				let span: SimpleSpan = e.span();
+
+				BrainIr::change_cell(span.into_iter().len() as i8)
+			}),
+			just('-').repeated().at_least(1).map_with(|(), e| {
+				let span: SimpleSpan = e.span();
+
+				BrainIr::change_cell(-(span.into_iter().len() as i8))
+			}),
+			just('>').repeated().at_least(1).map_with(|(), e| {
+				let span: SimpleSpan = e.span();
+
+				BrainIr::move_pointer(span.into_iter().len() as i32)
+			}),
+			just('<').repeated().at_least(1).map_with(|(), e| {
+				let span: SimpleSpan = e.span();
+
+				BrainIr::move_pointer(-(span.into_iter().len() as i32))
+			}),
+			just(',').repeated().at_least(1).to(BrainIr::input_cell()),
+			just('.').to(BrainIr::output_current_cell()),
 		))
 		.or(bf
 			.delimited_by(just('['), just(']'))
