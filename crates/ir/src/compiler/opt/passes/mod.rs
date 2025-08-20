@@ -36,6 +36,8 @@ pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 		[l, BrainIr::ChangeCell(i1, None)] if l.is_zeroing_cell() => {
 			Some(Change::swap([l.clone(), BrainIr::set_cell(*i1 as u8)]))
 		}
+		[BrainIr::SetCell(.., None), BrainIr::InputIntoCell] => Some(Change::remove_offset(0)),
+		[l, BrainIr::SetCell(0, None)] if l.is_zeroing_cell() => Some(Change::remove_offset(1)),
 		_ => None,
 	}
 }
