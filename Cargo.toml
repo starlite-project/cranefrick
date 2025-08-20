@@ -8,8 +8,9 @@ version.workspace = true
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
-cranefrick_assembler = { path = "crates/cranelift_assembler" }
+frick_cranelift_assembler = { path = "crates/cranelift_assembler" }
 frick_ir.workspace = true
+frick_llvm_assembler = { path = "crates/llvm_assembler", optional = true }
 indicatif = "0.18"
 ron = "0.10"
 serde.workspace = true
@@ -28,9 +29,10 @@ mimalloc = "0.1"
 llvm = []
 
 [workspace]
-members = [
+members = ["crates/assembler",
     "crates/cranelift_assembler",
     "crates/ir",
+    "crates/llvm_assembler",
     "crates/utils",
     "playground/befunge_test",
     "playground/llvm_test",

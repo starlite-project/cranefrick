@@ -3,7 +3,7 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "cranefrick_assembler"
+name = "frick_cranelift_assembler"
 rust-version.workspace = true
 version.workspace = true
 

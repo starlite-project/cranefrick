@@ -4,7 +4,7 @@ use std::{fs, path::Path};
 
 use clap::Parser as _;
 use color_eyre::Result;
-use cranefrick_assembler::{AssembledModule, AssemblerFlags};
+use frick_cranelift_assembler::{AssembledModule, AssemblerFlags};
 use frick_ir::{AstParser as BrainParser, Compiler};
 use ron::ser::PrettyConfig;
 use serde::Serialize;
