@@ -657,6 +657,7 @@ dependencies = [
  "cranelift-jit",
  "cranelift-module",
  "cranelift-native",
+ "frick_assembler",
  "frick_ir",
  "serde",
  "target-lexicon",

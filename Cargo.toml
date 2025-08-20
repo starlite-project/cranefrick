@@ -29,7 +29,8 @@ mimalloc = "0.1"
 llvm = []
 
 [workspace]
-members = ["crates/assembler",
+members = [
+    "crates/assembler",
     "crates/cranelift_assembler",
     "crates/ir",
     "crates/llvm_assembler",
@@ -60,6 +61,7 @@ cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", r
 cranelift-object = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1a88c70a6ec088ee213658488549306f8951405d" }
 cranium_isle = { path = "cranium/isle/isle" }
 cranium_srcgen = { path = "cranium/srcgen" }
+frick_assembler = { path = "crates/assembler" }
 frick_ir = { path = "crates/ir" }
 frick_utils = { path = "crates/utils" }
 serde = { version = "1", default-features = false }
