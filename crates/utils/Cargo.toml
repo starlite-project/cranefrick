@@ -3,7 +3,7 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "cranefrick_utils"
+name = "frick_utils"
 rust-version.workspace = true
 version.workspace = true
 

@@ -3,7 +3,7 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "cranefrick_ir"
+name = "frick_ir"
 rust-version.workspace = true
 version.workspace = true
 
@@ -13,7 +13,7 @@ chumsky = { workspace = true, default-features = false, features = [
     "stacker",
     "std"
 ] }
-cranefrick_utils = { workspace = true, features = [
+frick_utils = { workspace = true, features = [
     "alloc",
     "insert_or_push",
     "iter"

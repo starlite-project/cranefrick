@@ -1,7 +1,7 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "cranefrick"
+name = "frick"
 rust-version.workspace = true
 version.workspace = true
 
@@ -9,7 +9,7 @@ version.workspace = true
 clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
 cranefrick_assembler = { path = "crates/assembler" }
-cranefrick_ir.workspace = true
+frick_ir.workspace = true
 indicatif = "0.18"
 ron = "0.10"
 serde.workspace = true
@@ -41,8 +41,6 @@ arbitrary = "1"
 chumsky = { version = "0.10", default-features = false }
 clap = "4"
 color-eyre = "0.6"
-cranefrick_ir = { path = "crates/ir" }
-cranefrick_utils = { path = "crates/utils" }
 cranelift = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1a88c70a6ec088ee213658488549306f8951405d" }
 cranelift-codegen = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1a88c70a6ec088ee213658488549306f8951405d", features = [
     "enable-serde",
@@ -57,6 +55,8 @@ cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", r
 cranelift-object = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "1a88c70a6ec088ee213658488549306f8951405d" }
 cranium_isle = { path = "cranium/isle/isle" }
 cranium_srcgen = { path = "cranium/srcgen" }
+frick_ir = { path = "crates/ir" }
+frick_utils = { path = "crates/utils" }
 serde = { version = "1", default-features = false }
 target-lexicon = "0.13"
 tracing = "0.1"
