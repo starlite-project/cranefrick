@@ -53,7 +53,7 @@ where
 		choice((
 			// noop patterns
 			just("><").or(just("<>")).to(BrainIr::move_pointer(0)),
-			just("+-").to(BrainIr::change_cell(0)),
+			just("+-").or(just("-+")).to(BrainIr::change_cell(0)),
 			// common patterns
 			just("[-]").to(BrainIr::clear_cell()),
 			// basics
