@@ -123,6 +123,7 @@ impl<'a> Assembler<'a> {
 				BrainIr::FindZero(offset) => self.find_zero(*offset),
 				BrainIr::ReplaceValue(factor, offset) => self.replace_value(*factor, *offset),
 				BrainIr::OutputChars(c) => self.output_chars(c),
+				BrainIr::SubCell(offset) => self.sub_cell(*offset),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

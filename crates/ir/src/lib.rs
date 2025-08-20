@@ -22,6 +22,7 @@ pub enum BrainIr {
 		u8,
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI32>,
 	),
+	SubCell(i32),
 	FindZero(i32),
 	InputIntoCell,
 	OutputCurrentCell,
@@ -62,6 +63,11 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub const fn sub_cell(offset: i32) -> Self {
+		Self::SubCell(offset)
+	}
+
+	#[must_use]
 	pub const fn is_zeroing_cell(&self) -> bool {
 		matches!(
 			self,
@@ -70,6 +76,7 @@ impl BrainIr {
 				| Self::MoveValue(..)
 				| Self::FindZero(..)
 				| Self::IfNz(..)
+				| Self::SubCell(..)
 		)
 	}
 

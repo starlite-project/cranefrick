@@ -12,3 +12,4 @@ pub const DYNAMIC_LOOP: u32 = 1 << 10;
 pub const IF_NZ: u32 = 1 << 11;
 pub const REPLACE_VALUE: u32 = 1 << 12;
 pub const OUTPUT_CHARS: u32 = 1 << 13;
+pub const SUB_CELL: u32 = 1 << 14;

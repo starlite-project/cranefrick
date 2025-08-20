@@ -123,6 +123,9 @@ impl Compiler {
 
 		self.pass_info("remove unnecessary offsets");
 		*progress |= run_peephole_pass(self, passes::remove_offsets);
+
+		self.pass_info("optimize sub cell");
+		*progress |= run_loop_pass(self, passes::optimize_sub_cell);
 	}
 
 	fn pass_info(&self, pass: &str) {

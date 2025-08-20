@@ -240,3 +240,17 @@ pub fn remove_redundant_takes(ops: &[BrainIr; 2]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub const fn optimize_sub_cell(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::ChangeCell(-1, None),
+			BrainIr::ChangeCell(-1, Some(offset)),
+		]
+		| [
+			BrainIr::ChangeCell(-1, Some(offset)),
+			BrainIr::ChangeCell(-1, None),
+		] => Some(Change::replace(BrainIr::sub_cell(offset.get()))),
+		_ => None,
+	}
+}
