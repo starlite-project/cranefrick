@@ -3,12 +3,17 @@ mod compiler;
 use std::{fs, path::PathBuf};
 
 use clap::Parser;
-use color_eyre::{eyre::{ContextCompat, Error}, Report, Result};
+use color_eyre::{Report, Result, eyre::ContextCompat};
 use inkwell::{
-	context::Context, module::Module, passes::{PassBuilderOptions, PassManager}, targets::{CodeModel, RelocMode, Target, TargetMachine}, values::FunctionValue, OptimizationLevel
+	OptimizationLevel,
+	context::Context,
+	passes::PassBuilderOptions,
+	targets::{CodeModel, RelocMode, Target, TargetMachine},
 };
 
 use self::compiler::Compiler;
+
+const PASSES: &str = "default<O3>,aa-eval,instcount,lint,adce,break-crit-edges,dse,instcombine,internalize,jump-threading,lcssa,loop-deletion,loop-rotate,loop-simplify,loop-unroll,mem2reg,memcpyopt,reassociate,simplifycfg,sink,simple-loop-unswitch,strip,tailcallelim,transform-warning";
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
@@ -51,20 +56,27 @@ fn main() -> Result<()> {
 
 	let target = Target::from_triple(&target_triple).map_err(|e| Report::msg(e.to_string()))?;
 
-	let target_machine = target.create_target_machine(
-		&target_triple,
-		&cpu,
-		&features,
-		OptimizationLevel::Aggressive,
-		RelocMode::Default,
-		CodeModel::Default,
-	).context("Unable to create target machine")?;
+	let target_machine = target
+		.create_target_machine(
+			&target_triple,
+			&cpu,
+			&features,
+			OptimizationLevel::Aggressive,
+			RelocMode::Default,
+			CodeModel::Default,
+		)
+		.context("Unable to create target machine")?;
 
 	let pass_options = PassBuilderOptions::create();
 
-	module.run_passes("default<O3>", &target_machine, pass_options).map_err(|e| Report::msg(e.to_string()))?;
+	pass_options.set_verify_each(true);
+	pass_options.set_debug_logging(true);
 
-		{
+	module
+		.run_passes(PASSES, &target_machine, pass_options)
+		.map_err(|e| Report::msg(e.to_string()))?;
+
+	{
 		fs::write(
 			"../../out/optimized.ir",
 			module.print_to_string().to_string(),

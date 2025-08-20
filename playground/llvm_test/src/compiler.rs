@@ -2,12 +2,12 @@ use std::collections::VecDeque;
 
 use color_eyre::Result;
 use inkwell::{
-	AddressSpace, IntPredicate, OptimizationLevel,
+	AddressSpace, IntPredicate,
 	basic_block::BasicBlock,
 	builder::{Builder, BuilderError},
 	context::Context,
 	module::{Linkage, Module},
-	targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
+	targets::{InitializationConfig, Target},
 	types::PointerType,
 	values::{FunctionValue, PointerValue},
 };
@@ -48,6 +48,7 @@ impl<'ctx> Compiler<'ctx> {
 			}
 		}
 
+		self.build_free(data)?;
 		self.return_zero()?;
 
 		Ok(())
