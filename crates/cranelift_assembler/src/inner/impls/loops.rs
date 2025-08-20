@@ -41,6 +41,8 @@ impl InnerAssembler<'_> {
 		&mut self,
 		ops: &[BrainIr],
 	) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
+		println!("{}", ops.len());
+
 		self.add_srcflag(SrcLoc::DYNAMIC_LOOP);
 
 		let head_block = self.create_block();

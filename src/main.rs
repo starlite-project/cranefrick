@@ -65,6 +65,8 @@ fn main() -> Result<()> {
 
 			let module = assembler.assemble(compiler.as_slice(), &args.output_path)?;
 
+			tracing::info!("finished assembling with cranelift");
+
 			module.execute()?;
 		}
 		#[cfg(feature = "llvm")]
