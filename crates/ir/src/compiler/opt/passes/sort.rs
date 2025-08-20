@@ -18,10 +18,6 @@ pub fn sort_changes(ops: &[BrainIr; 2]) -> Option<Change> {
 }
 
 const fn sorter_key(i: &BrainIr) -> (i32, i32) {
-	// i.offset()
-	// 	.map(|offset| (offset.abs(), offset))
-	// 	.unwrap_or_default()
-
 	match i.offset() {
 		None => (0, 0),
 		Some(offset) => (offset.abs(), offset),
