@@ -1,9 +1,8 @@
-use std::{
-	fs,
-	path::{Path, PathBuf},
-};
+mod args;
 
-use clap::Parser;
+use std::{fs, path::Path};
+
+use clap::Parser as _;
 use color_eyre::Result;
 use cranefrick_assembler::{AssembledModule, AssemblerFlags};
 use frick_ir::{AstParser as BrainParser, Compiler};
@@ -18,6 +17,8 @@ use tracing_subscriber::{
 	prelude::*,
 };
 use tracing_tree::HierarchicalLayer;
+
+use self::args::Args;
 
 #[cfg(target_os = "windows")]
 #[global_allocator]
@@ -64,16 +65,6 @@ fn main() -> Result<()> {
 	module.execute()?;
 
 	Ok(())
-}
-
-#[derive(Debug, Parser)]
-#[command(version, about, long_about = None)]
-struct Args {
-	pub file_path: PathBuf,
-	#[arg(short, long)]
-	pub output_path: PathBuf,
-	#[arg(short, long)]
-	pub flags_path: Option<PathBuf>,
 }
 
 fn install_tracing(folder_path: &Path) {

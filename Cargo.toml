@@ -8,7 +8,7 @@ version.workspace = true
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
-cranefrick_assembler = { path = "crates/assembler" }
+cranefrick_assembler = { path = "crates/cranelift_assembler" }
 frick_ir.workspace = true
 indicatif = "0.18"
 ron = "0.10"
@@ -24,9 +24,12 @@ tracing-tree = "0.4"
 [target.'cfg(target_os = "windows")'.dependencies]
 mimalloc = "0.1"
 
+[features]
+llvm = []
+
 [workspace]
 members = [
-    "crates/assembler",
+    "crates/cranelift_assembler",
     "crates/ir",
     "crates/utils",
     "playground/befunge_test",
