@@ -15,7 +15,13 @@ use frick_assembler::{
 	Assembler, AssemblyError, InnerAssemblyError, frick_assembler_read, frick_assembler_write,
 };
 use frick_ir::BrainIr;
-use inkwell::{context::Context, support::LLVMString};
+use inkwell::{
+	OptimizationLevel,
+	context::Context,
+	passes::PassBuilderOptions,
+	support::LLVMString,
+	targets::{CodeModel, InitializationConfig, RelocMode, Target, TargetMachine},
+};
 use inner::Functions;
 
 pub(crate) use self::ext::ContextExt;
@@ -35,15 +41,47 @@ impl Assembler for LlvmAssembler {
 		ops: &[BrainIr],
 		output_path: &Path,
 	) -> Result<Self::Module<'ctx>, AssemblyError<Self::Error>> {
+		Target::initialize_native(&InitializationConfig::default())
+			.map_err(LlvmAssemblyError::Llvm)?;
+
 		let context = &self.context;
 
 		let assembler = InnerAssembler::new(&self.context);
 
-		let (module, builder, Functions { getchar, putchar }) = assembler.into_parts();
+		let (module, Functions { getchar, putchar }) = assembler.into_parts();
 
 		module
 			.print_to_file(output_path.join("unoptimized.ir"))
 			.map_err(AssemblyError::backend)?;
+
+		{
+			let target_triple = TargetMachine::get_default_triple();
+			let cpu = TargetMachine::get_host_cpu_name().to_string();
+			let features = TargetMachine::get_host_cpu_features().to_string();
+
+			let target = Target::from_triple(&target_triple).map_err(AssemblyError::backend)?;
+
+			let target_machine = target
+				.create_target_machine(
+					&target_triple,
+					&cpu,
+					&features,
+					OptimizationLevel::Aggressive,
+					RelocMode::Default,
+					CodeModel::Default,
+				)
+				.ok_or(LlvmAssemblyError::NoTargetMachine)?;
+
+			let pass_options = PassBuilderOptions::create();
+
+			pass_options.set_verify_each(true);
+
+			module
+				.run_passes("", &target_machine, pass_options)
+				.map_err(AssemblyError::backend)?;
+		}
+
+		module.print_to_file(output_path.join("optimized.ir")).map_err(AssemblyError::backend)?;
 
 		let execution_engine = module
 			.create_execution_engine()
@@ -71,6 +109,7 @@ impl Default for LlvmAssembler {
 #[derive(Debug)]
 pub enum LlvmAssemblyError {
 	Llvm(String),
+	NoTargetMachine,
 }
 
 impl Display for LlvmAssemblyError {
@@ -80,6 +119,7 @@ impl Display for LlvmAssemblyError {
 				f.write_str("an error occurred from LLVM: ")?;
 				f.write_str(l)
 			}
+			Self::NoTargetMachine => f.write_str("unable to get target machine"),
 		}
 	}
 }

@@ -27,8 +27,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		}
 	}
 
-	pub fn into_parts(self) -> (Module<'ctx>, Builder<'ctx>, Functions<'ctx>) {
-		(self.module, self.builder, self.functions)
+	pub fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>) {
+		(self.module, self.functions)
 	}
 }
 
