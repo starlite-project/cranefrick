@@ -1,3 +1,7 @@
+mod impls;
+
+use std::num::NonZero;
+
 use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
 use inkwell::{
@@ -5,7 +9,7 @@ use inkwell::{
 	builder::Builder,
 	context::Context,
 	module::{Linkage, Module},
-	values::{FunctionValue, PointerValue},
+	values::{FunctionValue, IntValue, PointerValue},
 };
 
 use super::ContextExt;
@@ -69,28 +73,32 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.append_basic_block(self.functions.main, "entry");
 		self.builder.position_at_end(basic_block);
 
-		let ptr_value = self
-			.builder
-			.build_load(self.context.i64_type(), self.ptr, "load ptr")
-			.map_err(AssemblyError::backend)?
-			.into_int_value();
-
-		let tape_value = self
-			.builder
-			.build_load(
-				self.context.i8_type().array_type(30_000),
-				self.tape,
-				"load tape",
-			)
-			.map_err(AssemblyError::backend)?;
-
-		dbg!(ptr_value);
-		dbg!(tape_value);
+		self.ops(ops)?;
 
 		self.builder
 			.build_return(None)
 			.map_err(AssemblyError::backend)?;
 		Ok(self.into_parts())
+	}
+
+	fn ops(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+		for op in ops {
+			match op {
+				BrainIr::SetCell(value, offset) => {
+					self.set_value(*value, offset.map_or(0, NonZero::get))?;
+				}
+				BrainIr::ChangeCell(value, offset) => {
+					self.change_value(*value, offset.map_or(0, NonZero::get))?;
+				}
+				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
+				BrainIr::OutputCurrentCell => self.output_current_cell()?,
+				BrainIr::OutputChar(c) => self.output_char(*c)?,
+				BrainIr::OutputChars(c) => self.output_chars(c)?,
+				_ => return Err(AssemblyError::NotImplemented(op.clone())),
+			}
+		}
+
+		Ok(())
 	}
 
 	fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>) {
