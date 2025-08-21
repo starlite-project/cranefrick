@@ -57,6 +57,12 @@ where
 	}
 }
 
+impl<E: InnerAssemblyError> From<E> for AssemblyError<E> {
+	fn from(value: E) -> Self {
+		Self::Backend(value)
+	}
+}
+
 impl<E> From<FmtError> for AssemblyError<E> {
 	fn from(value: FmtError) -> Self {
 		Self::Fmt(value)
@@ -71,13 +77,15 @@ impl<E> From<IoError> for AssemblyError<E> {
 
 pub trait Assembler {
 	type Error: StdError + 'static;
-	type Module: AssembledModule;
+	type Module<'ctx>: AssembledModule
+	where
+		Self: 'ctx;
 
-	fn assemble(
-		&self,
+	fn assemble<'ctx>(
+		&'ctx self,
 		ops: &[BrainIr],
 		output_path: &Path,
-	) -> Result<Self::Module, AssemblyError<Self::Error>>;
+	) -> Result<Self::Module<'ctx>, AssemblyError<Self::Error>>;
 }
 
 pub trait AssembledModule {
@@ -85,6 +93,8 @@ pub trait AssembledModule {
 
 	fn execute(&self) -> Result<(), Self::Error>;
 }
+
+pub trait InnerAssemblyError {}
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn frick_assembler_write(value: u8) {

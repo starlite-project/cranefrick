@@ -1,43 +1,70 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
+mod ext;
 mod inner;
 mod module;
 
 use std::{
 	error::Error as StdError,
 	fmt::{Display, Formatter, Result as FmtResult},
+	marker::PhantomData,
 	path::Path,
 };
 
-use frick_assembler::{Assembler, AssemblyError};
+use frick_assembler::{
+	Assembler, AssemblyError, InnerAssemblyError, frick_assembler_read, frick_assembler_write,
+};
 use frick_ir::BrainIr;
 use inkwell::{context::Context, support::LLVMString};
+use inner::Functions;
 
+pub(crate) use self::ext::ContextExt;
 use self::inner::InnerAssembler;
 pub use self::module::LlvmAssembledModule;
 
-pub struct LlvmAssembler;
+pub struct LlvmAssembler {
+	context: Context,
+}
 
 impl Assembler for LlvmAssembler {
 	type Error = LlvmAssemblyError;
-	type Module = LlvmAssembledModule;
+	type Module<'ctx> = LlvmAssembledModule<'ctx>;
 
-	fn assemble(
-		&self,
+	fn assemble<'ctx>(
+		&'ctx self,
 		ops: &[BrainIr],
 		output_path: &Path,
-	) -> Result<Self::Module, AssemblyError<Self::Error>> {
-		let context = Context::create();
+	) -> Result<Self::Module<'ctx>, AssemblyError<Self::Error>> {
+		let context = &self.context;
 
-		let assembler = InnerAssembler::new(&context)?;
+		let assembler = InnerAssembler::new(&self.context);
 
-		todo!()
+		let (module, builder, Functions { getchar, putchar }) = assembler.into_parts();
+
+		module
+			.print_to_file(output_path.join("unoptimized.ir"))
+			.map_err(AssemblyError::backend)?;
+
+		let execution_engine = module
+			.create_execution_engine()
+			.map_err(AssemblyError::backend)?;
+
+		execution_engine.add_global_mapping(&getchar, frick_assembler_read as usize);
+		execution_engine.add_global_mapping(&putchar, frick_assembler_write as usize);
+
+		Ok(LlvmAssembledModule {
+			context,
+			module,
+			execution_engine,
+		})
 	}
 }
 
 impl Default for LlvmAssembler {
 	fn default() -> Self {
-		Self
+		Self {
+			context: Context::create(),
+		}
 	}
 }
 
@@ -65,8 +92,4 @@ impl From<LLVMString> for LlvmAssemblyError {
 	}
 }
 
-impl From<LlvmAssemblyError> for AssemblyError<LlvmAssemblyError> {
-	fn from(value: LlvmAssemblyError) -> Self {
-		Self::Backend(value)
-	}
-}
+impl InnerAssemblyError for LlvmAssemblyError {}

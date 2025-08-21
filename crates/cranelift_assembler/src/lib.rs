@@ -8,6 +8,7 @@ use std::{
 	error::Error as StdError,
 	fmt::{Display, Formatter, Result as FmtResult},
 	fs,
+	marker::PhantomData,
 	path::Path,
 };
 
@@ -17,7 +18,9 @@ use cranelift_codegen::{
 use cranelift_frontend::FunctionBuilderContext;
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module as _, ModuleError};
-use frick_assembler::{Assembler, AssemblyError, frick_assembler_read, frick_assembler_write};
+use frick_assembler::{
+	Assembler, AssemblyError, InnerAssemblyError, frick_assembler_read, frick_assembler_write,
+};
 use frick_ir::BrainIr;
 use inner::InnerAssembler;
 use target_lexicon::Triple;
@@ -48,14 +51,14 @@ impl CraneliftAssembler {
 
 impl Assembler for CraneliftAssembler {
 	type Error = CraneliftAssemblyError;
-	type Module = CraneliftAssembledModule;
+	type Module<'ctx> = CraneliftAssembledModule<'ctx>;
 
 	#[tracing::instrument(skip_all)]
-	fn assemble(
-		&self,
+	fn assemble<'ctx>(
+		&'ctx self,
 		ops: &[BrainIr],
 		output_path: &Path,
-	) -> Result<Self::Module, AssemblyError<Self::Error>> {
+	) -> Result<Self::Module<'ctx>, AssemblyError<Self::Error>> {
 		let triple = Triple::host();
 
 		info!("looking up ISA");
@@ -161,6 +164,7 @@ impl Assembler for CraneliftAssembler {
 		Ok(CraneliftAssembledModule {
 			module: Some(module),
 			main: func,
+			marker: PhantomData,
 		})
 	}
 }
@@ -231,8 +235,4 @@ impl From<isa::LookupError> for CraneliftAssemblyError {
 	}
 }
 
-impl From<CraneliftAssemblyError> for AssemblyError<CraneliftAssemblyError> {
-	fn from(value: CraneliftAssemblyError) -> Self {
-		Self::Backend(value)
-	}
-}
+impl InnerAssemblyError for CraneliftAssemblyError {}
