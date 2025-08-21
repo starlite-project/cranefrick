@@ -8,9 +8,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = self.context.i8_type();
 
 		let offset = {
-			let i32_type = self.context.i32_type();
+			let i64_type = self.context.i64_type();
 
-			i32_type.const_int(offset as u64, false)
+			i64_type.const_int(offset as u64, false)
 		};
 
 		let result_ptr = unsafe {
@@ -27,9 +27,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let ptr_type = self.context.default_ptr_type();
 
 		let offset = {
-			let i32_type = self.context.i32_type();
+			let i64_type = self.context.i64_type();
 
-			i32_type.const_int(offset as u64, false)
+			i64_type.const_int(offset as u64, false)
 		};
 
 		let result_ptr = unsafe {

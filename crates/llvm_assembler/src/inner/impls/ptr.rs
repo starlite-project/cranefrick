@@ -1,12 +1,10 @@
-use inkwell::values::{IntValue, PointerValue};
-
 use crate::{ContextExt, LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	pub fn move_pointer(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let i32_type = self.context.i32_type();
+		let i64_type = self.context.i64_type();
 		let ptr_type = self.context.default_ptr_type();
-		let offset = i32_type.const_int(offset as u64, false);
+		let offset = i64_type.const_int(offset as u64, false);
 
 		let ptr_load = self
 			.builder
@@ -15,7 +13,7 @@ impl InnerAssembler<'_> {
 
 		let result = unsafe {
 			self.builder
-				.build_gep(ptr_type, ptr_load, &[offset], "offset pointer")?
+				.build_in_bounds_gep(ptr_type, ptr_load, &[offset], "offset pointer")?
 		};
 
 		self.builder.build_store(self.ptr, result)?;

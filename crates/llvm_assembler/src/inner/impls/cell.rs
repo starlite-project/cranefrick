@@ -1,25 +1,32 @@
-use crate::{LlvmAssemblyError, inner::InnerAssembler};
+use crate::{ContextExt, LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	pub fn set_cell(&self, value: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let i8_type = self.context.i8_type();
+		// let ptr_type = self.context.default_ptr_type();
 
-		let value = i8_type.const_int(value.into(), false);
+		// let i8_type = self.context.i8_type();
+		// let i8_amount = i8_type.const_int(value as u64, false);
 
-		self.store(value, offset)
+		// let ptr_load = self.builder.build_load(ptr_type, self.ptr, "load ptr")?.into_pointer_value();
+
+		// self.builder.build_store(ptr_load, i8_amount)?;
+
+		let value = self.context.i8_type().const_int(u64::from(value), false);
+
+		self.store(value, offset)?;
+
+		Ok(())
 	}
 
 	pub fn change_cell(&self, value: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let i8_type = self.context.i8_type();
+		let current_cell_value = self.load(offset)?;
 
-		let value = i8_type.const_int(value as u64, false);
+		let value_to_add = self.context.i8_type().const_int(value as u64, false);
 
-		let current_value_in_cell = self.load(offset)?;
+		let added_together = self.builder.build_int_add(current_cell_value, value_to_add, "add to value")?;
 
-		let added_values =
-			self.builder
-				.build_int_add(current_value_in_cell, value, "add to cell")?;
+		self.store(added_together, offset)?;
 
-		self.store(added_values, offset)
+		Ok(())
 	}
 }

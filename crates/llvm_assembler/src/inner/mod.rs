@@ -33,12 +33,29 @@ impl<'ctx> InnerAssembler<'ctx> {
 		builder.position_at_end(basic_block);
 
 		let (tape, ptr) = {
-			let ptr_type = context.default_ptr_type();
+			// let ptr_type = context.default_ptr_type();
+			// let memory_size = context.i64_type().const_int(30_000, false);
 
-			let tape = builder.build_alloca(ptr_type, "tape").unwrap();
-			let ptr = builder.build_alloca(ptr_type, "ptr").unwrap();
+			// let tape = builder.build_alloca(ptr_type, "tape").unwrap();
+			// // let tape = builder.build_array_alloca(context.i8_type(), memory_size, "tape").unwrap();
 
-			(tape, ptr)
+			// let ptr = builder.build_alloca(ptr_type, "ptr").unwrap();
+
+			// (tape, ptr)
+
+			let ptr_type =context.default_ptr_type();
+			let i8_type = context.i8_type();
+			let i8_array_type = i8_type.array_type(30_000);
+
+			let tape_global_value = module.add_global(i8_array_type, None, "tape");
+
+			let zero_array = i8_array_type.const_zero();
+
+			tape_global_value.set_initializer(&zero_array);
+
+			let tape = tape_global_value.as_pointer_value();
+
+			(tape, tape)
 		};
 
 		Self {
@@ -59,14 +76,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.ops(ops)?;
 
-		self.builder
-			.build_free(
-				self.builder
-					.build_load(self.context.default_ptr_type(), self.tape, "load")
-					.map_err(AssemblyError::backend)?
-					.into_pointer_value(),
-			)
-			.map_err(AssemblyError::backend)?;
+		// self.builder
+		// 	.build_free(
+		// 		self.builder
+		// 			.build_load(self.context.default_ptr_type(), self.tape, "load")
+		// 			.map_err(AssemblyError::backend)?
+		// 			.into_pointer_value(),
+		// 	)
+		// 	.map_err(AssemblyError::backend)?;
 
 		self.builder
 			.build_return(None)
@@ -80,7 +97,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let data_ptr = self
 			.builder
-			.build_array_malloc(i8_type, memory_size, "alloc tape")?;
+			.build_malloc(i8_type.array_type(30_000), "alloc tape")?;
+			// .build_array_malloc(i8_type, memory_size, "alloc tape")?;
 
 		self.builder.build_store(self.tape, data_ptr)?;
 		self.builder.build_store(self.ptr, data_ptr)?;
