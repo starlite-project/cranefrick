@@ -75,7 +75,7 @@ fn main() -> Result<()> {
 		Args::Llvm { passes, .. } => {
 			let assembler = match passes {
 				Some(passes) => LlvmAssembler::new(passes.clone()),
-				None => LlvmAssembler::default()
+				None => LlvmAssembler::default(),
 			};
 
 			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;

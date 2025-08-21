@@ -9,7 +9,7 @@ use super::CraneliftAssemblyError;
 pub struct CraneliftAssembledModule<'ctx> {
 	pub(crate) module: Option<JITModule>,
 	pub(crate) main: FuncId,
-	pub(crate) marker: PhantomData<&'ctx ()>
+	pub(crate) marker: PhantomData<&'ctx ()>,
 }
 
 impl<'ctx> AssembledModule for CraneliftAssembledModule<'ctx> {

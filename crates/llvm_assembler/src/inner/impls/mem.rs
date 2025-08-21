@@ -38,7 +38,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let tape_ptr = self.tape.const_to_int(i64_type);
 
-			let tape_offset_ptr = self.builder.build_int_add(tape_ptr, ptr, "offset tape ptr")?;
+			let tape_offset_ptr = self
+				.builder
+				.build_int_add(tape_ptr, ptr, "offset tape ptr")?;
 
 			self.builder
 				.build_int_to_ptr(tape_offset_ptr, ptr_type, "cast int to ptr")?

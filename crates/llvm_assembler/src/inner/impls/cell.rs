@@ -30,7 +30,9 @@ impl InnerAssembler<'_> {
 
 		let other_value = self.load(offset)?;
 
-		let value_to_store = self.builder.build_int_sub(other_value, current_cell, "sub cells")?;
+		let value_to_store = self
+			.builder
+			.build_int_sub(other_value, current_cell, "sub cells")?;
 
 		self.store(value_to_store, offset)
 	}

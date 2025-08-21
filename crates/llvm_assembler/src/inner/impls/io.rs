@@ -1,7 +1,7 @@
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	pub fn output_char(&self, c: u8) -> Result<(), LlvmAssemblyError>{
+	pub fn output_char(&self, c: u8) -> Result<(), LlvmAssemblyError> {
 		let write = self.functions.putchar;
 
 		let value = {
@@ -10,7 +10,11 @@ impl InnerAssembler<'_> {
 			i8_type.const_int(c.into(), false)
 		};
 
-		self.builder.build_call(write, &[value.into()], &format!("output char {}", c as char))?;
+		self.builder.build_call(
+			write,
+			&[value.into()],
+			&format!("output char {}", c as char),
+		)?;
 
 		Ok(())
 	}
