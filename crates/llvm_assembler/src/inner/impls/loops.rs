@@ -5,7 +5,7 @@ use inkwell::IntPredicate;
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	pub fn if_nz(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+	pub fn if_nz(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let body_block = self
 			.context
 			.append_basic_block(self.functions.main, "if_nz body");
@@ -43,7 +43,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn dynamic_loop(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+	pub fn dynamic_loop(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let head_block = self
 			.context
 			.append_basic_block(self.functions.main, "dynamic_loop head");
@@ -90,7 +90,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn find_zero(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
+	pub fn find_zero(&mut self, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let head_block = self
 			.context
 			.append_basic_block(self.functions.main, "find_zero head");

@@ -9,7 +9,7 @@ use inkwell::{
 	builder::Builder,
 	context::Context,
 	module::{Linkage, Module},
-	values::{FunctionValue, PointerValue},
+	values::{FunctionValue, IntValue, PointerValue},
 };
 
 use super::ContextExt;
@@ -28,36 +28,25 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn new(context: &'ctx Context) -> Self {
 		let module = context.create_module("frick");
 		let functions = Functions::new(context, &module);
+		let builder = context.create_builder();
 
-		let tape = {
-			let i8_type = context.i8_type();
-			let i8_array_type = i8_type.array_type(30_000);
+		let basic_block = context.append_basic_block(functions.main, "entry");
+		builder.position_at_end(basic_block);
 
-			let glob = module.add_global(i8_array_type, Some(AddressSpace::default()), "tape");
+		let (tape, ptr) = {
+			let ptr_type = context.default_ptr_type();
+			let memory_size = context.i64_type().const_int(30_000, false);
 
-			let i8_array = i8_array_type.const_zero();
+			let tape = builder.build_alloca(ptr_type, "tape").unwrap();
+			let ptr = builder.build_alloca(ptr_type, "ptr").unwrap();
 
-			glob.set_initializer(&i8_array);
-
-			glob.as_pointer_value()
-		};
-
-		let ptr = {
-			let i64_type = context.i64_type();
-
-			let glob = module.add_global(i64_type, Some(AddressSpace::default()), "ptr");
-
-			let i64_zero = i64_type.const_zero();
-
-			glob.set_initializer(&i64_zero);
-
-			glob.as_pointer_value()
+			(tape, ptr)
 		};
 
 		Self {
 			context,
 			module,
-			builder: context.create_builder(),
+			builder,
 			functions,
 			tape,
 			ptr,
@@ -65,13 +54,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn assemble(
-		self,
+		mut self,
 		ops: &[BrainIr],
 	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
-		let basic_block = self
-			.context
-			.append_basic_block(self.functions.main, "entry");
-		self.builder.position_at_end(basic_block);
+		self.init_pointers()?;
 
 		self.ops(ops)?;
 
@@ -81,7 +67,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(self.into_parts())
 	}
 
-	fn ops(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+	fn init_pointers(&self) -> Result<(), LlvmAssemblyError> {
+		let i8_type = self.context.i8_type();
+		let memory_size = self.context.i64_type().const_int(30_000, false);
+
+		let data_ptr = self
+			.builder
+			.build_array_malloc(i8_type, memory_size, "alloc tape")?;
+
+		self.builder.build_store(self.tape, data_ptr)?;
+		self.builder.build_store(self.ptr, data_ptr)?;
+
+		Ok(())
+	}
+
+	fn ops(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		for op in ops {
 			match op {
 				BrainIr::SetCell(value, offset) => {
@@ -124,8 +124,8 @@ pub struct Functions<'ctx> {
 
 impl<'ctx> Functions<'ctx> {
 	fn new(context: &'ctx Context, module: &Module<'ctx>) -> Self {
-		let ptr_type = context.default_ptr_type();
 		let i8_type = context.i8_type();
+		let ptr_type = context.default_ptr_type();
 		let void_type = context.void_type();
 
 		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);

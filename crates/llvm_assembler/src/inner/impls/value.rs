@@ -25,7 +25,7 @@ impl InnerAssembler<'_> {
 		self.store(added, offset)
 	}
 
-	pub fn take_value(&self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
+	pub fn take_value(&mut self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let current_value = self.load(0)?;
 
 		self.set_cell(0, 0)?;

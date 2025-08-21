@@ -1,38 +1,25 @@
-use inkwell::values::IntValue;
+use inkwell::values::{IntValue, PointerValue};
 
-use crate::{LlvmAssemblyError, inner::InnerAssembler};
+use crate::{ContextExt, LlvmAssemblyError, inner::InnerAssembler};
 
-impl<'ctx> InnerAssembler<'ctx> {
-	pub fn move_pointer(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let ptr = self.load_ptr(0)?;
+impl InnerAssembler<'_> {
+	pub fn move_pointer(&mut self, offset: i32) -> Result<(), LlvmAssemblyError> {
+		let i32_type = self.context.i32_type();
+		let ptr_type = self.context.default_ptr_type();
+		let offset = i32_type.const_int(offset as u64, false);
 
-		let offset = {
-			let i64_type = self.context.i64_type();
+		let ptr_load = self
+			.builder
+			.build_load(ptr_type, self.ptr, "load ptr")?
+			.into_pointer_value();
 
-			i64_type.const_int(offset as u64, false)
+		let result = unsafe {
+			self.builder
+				.build_gep(ptr_type, ptr_load, &[offset], "add to pointer")?
 		};
 
-		let ptr = self.builder.build_int_add(ptr, offset, "offset ptr")?;
-
-		self.builder.build_store(self.ptr, ptr)?;
+		self.builder.build_store(self.ptr, result)?;
 
 		Ok(())
-	}
-
-	pub fn load_ptr(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
-		let load = self
-			.builder
-			.build_load(self.context.i64_type(), self.ptr, "load ptr")?
-			.into_int_value();
-
-		let offset = {
-			let i64_type = self.context.i64_type();
-
-			i64_type.const_int(offset as u64, false)
-		};
-
-		let ptr = self.builder.build_int_add(load, offset, "offset ptr")?;
-
-		Ok(ptr)
 	}
 }
