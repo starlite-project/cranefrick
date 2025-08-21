@@ -58,14 +58,7 @@ impl Assembler for LlvmAssembler {
 
 		let assembler = InnerAssembler::new(&self.context);
 
-		let (
-			module,
-			Functions {
-				getchar,
-				putchar,
-				main,
-			},
-		) = assembler.assemble(ops)?;
+		let (module, Functions { main, .. }) = assembler.assemble(ops)?;
 
 		module
 			.print_to_file(output_path.join("unoptimized.ir"))
@@ -106,11 +99,15 @@ impl Assembler for LlvmAssembler {
 			.create_execution_engine()
 			.map_err(AssemblyError::backend)?;
 
-		execution_engine.add_global_mapping(&getchar, frick_assembler_read as usize);
-		execution_engine.add_global_mapping(&putchar, frick_assembler_write as usize);
+		if let Some(getchar) = module.get_function("getchar") {
+			execution_engine.add_global_mapping(&getchar, frick_assembler_read as usize);
+		}
+
+		if let Some(putchar) = module.get_function("putchar") {
+			execution_engine.add_global_mapping(&putchar, frick_assembler_write as usize);
+		}
 
 		Ok(LlvmAssembledModule {
-			module,
 			execution_engine,
 			main,
 		})

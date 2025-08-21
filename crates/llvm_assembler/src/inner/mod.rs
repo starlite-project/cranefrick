@@ -61,10 +61,10 @@ impl<'ctx> Functions<'ctx> {
 		let void_type = context.void_type();
 
 		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);
-		let getchar = module.add_function("frick_assembler_read", getchar_ty, Some(Linkage::External));
+		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
 
 		let putchar_ty = void_type.fn_type(&[i8_type.into()], false);
-		let putchar = module.add_function("frick_assembler_write", putchar_ty, Some(Linkage::External));
+		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, Some(Linkage::External));

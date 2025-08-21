@@ -6,7 +6,6 @@ use inkwell::{
 use super::LlvmAssemblyError;
 
 pub struct LlvmAssembledModule<'ctx> {
-	pub(crate) module: Module<'ctx>,
 	pub(crate) execution_engine: ExecutionEngine<'ctx>,
 	pub(crate) main: FunctionValue<'ctx>,
 }
