@@ -97,7 +97,7 @@ impl Assembler for LlvmAssembler {
 		module.verify().map_err(AssemblyError::backend)?;
 
 		let execution_engine = module
-			.create_execution_engine()
+			.create_jit_execution_engine(OptimizationLevel::None)
 			.map_err(AssemblyError::backend)?;
 
 		if let Some(getchar) = module.get_function("getchar") {

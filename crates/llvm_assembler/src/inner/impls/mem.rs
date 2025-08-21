@@ -15,7 +15,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let result_ptr = unsafe {
 			self.builder
-				.build_gep(ptr_type, self.ptr, &[offset], "offset ptr")?
+				.build_in_bounds_gep(ptr_type, self.ptr, &[offset], "offset ptr")?
 		};
 
 		let load = self.builder.build_load(i8_type, result_ptr, "load ptr")?;
@@ -34,7 +34,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let result_ptr = unsafe {
 			self.builder
-				.build_gep(ptr_type, self.ptr, &[offset], "offset ptr")?
+				.build_in_bounds_gep(ptr_type, self.ptr, &[offset], "offset ptr")?
 		};
 
 		self.builder.build_store(result_ptr, value)?;

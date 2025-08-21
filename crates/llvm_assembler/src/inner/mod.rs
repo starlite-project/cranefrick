@@ -5,11 +5,10 @@ use std::num::NonZero;
 use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
 use inkwell::{
-	AddressSpace,
 	builder::Builder,
 	context::Context,
 	module::{Linkage, Module},
-	values::{FunctionValue, IntValue, PointerValue},
+	values::{FunctionValue, PointerValue},
 };
 
 use super::ContextExt;
@@ -35,7 +34,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (tape, ptr) = {
 			let ptr_type = context.default_ptr_type();
-			let memory_size = context.i64_type().const_int(30_000, false);
 
 			let tape = builder.build_alloca(ptr_type, "tape").unwrap();
 			let ptr = builder.build_alloca(ptr_type, "ptr").unwrap();
@@ -54,12 +52,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn assemble(
-		mut self,
+		self,
 		ops: &[BrainIr],
 	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
 		self.init_pointers()?;
 
 		self.ops(ops)?;
+
+		self.builder
+			.build_free(
+				self.builder
+					.build_load(self.context.default_ptr_type(), self.tape, "load")
+					.map_err(AssemblyError::backend)?
+					.into_pointer_value(),
+			)
+			.map_err(AssemblyError::backend)?;
 
 		self.builder
 			.build_return(None)
@@ -81,29 +88,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn ops(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+	fn ops(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		for op in ops {
 			match op {
+				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::SetCell(value, offset) => {
 					self.set_cell(*value, offset.map_or(0, NonZero::get))?;
 				}
 				BrainIr::ChangeCell(value, offset) => {
 					self.change_cell(*value, offset.map_or(0, NonZero::get))?;
 				}
-				BrainIr::SubCell(offset) => self.sub_cell(*offset)?,
-				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::OutputCurrentCell => self.output_current_cell()?,
-				BrainIr::OutputChar(c) => self.output_char(*c)?,
-				BrainIr::OutputChars(c) => self.output_chars(c)?,
-				BrainIr::InputIntoCell => self.input_into_cell()?,
-				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
-				BrainIr::IfNz(ops) => self.if_nz(ops)?,
-				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
-				BrainIr::MoveValue(factor, offset) => self.move_value(*factor, *offset)?,
-				BrainIr::TakeValue(factor, offset) => self.take_value(*factor, *offset)?,
-				BrainIr::FetchValue(factor, offset) => self.fetch_value(*factor, *offset)?,
-				BrainIr::ReplaceValue(factor, offset) => self.replace_value(*factor, *offset)?,
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
+				// _ => {}
 			}
 		}
 
