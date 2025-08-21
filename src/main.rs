@@ -51,7 +51,7 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	let mut compiler = Compiler::from_iter(parsed);
+	let mut compiler = Compiler::from_iter(parsed.clone());
 
 	serialize(&compiler, args.output_path(), "unoptimized")?;
 
@@ -78,7 +78,9 @@ fn main() -> Result<()> {
 				None => LlvmAssembler::default(),
 			};
 
-			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
+			let unoptimized = Compiler::from_iter(parsed);
+
+			let module = assembler.assemble(&unoptimized, args.output_path())?;
 
 			tracing::info!("finished assembling with LLVM");
 

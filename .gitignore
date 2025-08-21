@@ -5,3 +5,4 @@ mutants.out*/
 chrome_profiler.json
 crox
 output.txt
+core.*
