@@ -682,6 +682,11 @@ dependencies = [
 [[package]]
 name = "frick_llvm_assembler"
 version = "0.1.0"
+dependencies = [
+ "frick_assembler",
+ "frick_ir",
+ "inkwell",
+]
 
 [[package]]
 name = "frick_utils"
@@ -905,7 +910,6 @@ dependencies = [
 name = "llvm_test"
 version = "0.1.0"
 dependencies = [
- "clap",
  "color-eyre",
  "inkwell",
 ]

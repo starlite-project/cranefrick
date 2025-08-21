@@ -7,6 +7,8 @@ use color_eyre::Result;
 use frick_assembler::{AssembledModule as _, Assembler as _};
 use frick_cranelift_assembler::{AssemblerFlags, CraneliftAssembler};
 use frick_ir::{AstParser as BrainParser, Compiler};
+#[cfg(feature = "llvm")]
+use frick_llvm_assembler::LlvmAssembler;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing::warn;
@@ -71,7 +73,13 @@ fn main() -> Result<()> {
 		}
 		#[cfg(feature = "llvm")]
 		AssemblerType::Llvm => {
-			todo!()
+			let assembler = LlvmAssembler::default();
+
+			let module = assembler.assemble(compiler.as_slice(), &args.output_path)?;
+
+			tracing::info!("finished assembling with LLVM");
+
+			module.execute()?;
 		}
 	}
 

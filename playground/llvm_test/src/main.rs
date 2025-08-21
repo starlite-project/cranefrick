@@ -1,91 +1,56 @@
-mod compiler;
-
-use std::{fs, path::PathBuf};
-
-use clap::Parser;
-use color_eyre::{Report, Result, eyre::ContextCompat};
+use color_eyre::{
+	Result,
+	eyre::{ContextCompat, Report},
+};
 use inkwell::{
 	OptimizationLevel,
 	context::Context,
-	passes::PassBuilderOptions,
-	targets::{CodeModel, RelocMode, Target, TargetMachine},
+	targets::{InitializationConfig, Target},
 };
-
-use self::compiler::Compiler;
-
-const PASSES: &str = "default<O3>,aa-eval,instcount,lint,adce,break-crit-edges,dse,instcombine,jump-threading,lcssa,loop-deletion,loop-rotate,loop-simplify,loop-unroll,mem2reg,memcpyopt,reassociate,simplifycfg,sink,simple-loop-unswitch,strip,tailcallelim,transform-warning";
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
 
-	let args = match Args::try_parse() {
-		Ok(a) => a,
-		Err(e) => {
-			eprintln!("{e}");
-			return Ok(());
-		}
-	};
-
-	let raw_source = fs::read_to_string(&args.file_path)?;
-
-	Compiler::init_targets();
+	Target::initialize_native(&InitializationConfig::default()).map_err(Report::msg)?;
 
 	let context = Context::create();
-	let module = context.create_module("cranefrick-rust-llvm");
+	let module = context.create_module("test");
+	let builder = context.create_builder();
 
-	let compiler = Compiler {
-		context: &context,
-		module,
-		builder: context.create_builder(),
-	};
+	let ft = context.f64_type();
+	let fnt = ft.fn_type(&[], false);
 
-	compiler.compile(&raw_source)?;
+	let f = module.add_function("test_fn", fnt, None);
+	let b = context.append_basic_block(f, "entry");
 
-	let Compiler { module, .. } = compiler;
+	builder.position_at_end(b);
 
-	{
-		fs::write(
-			"../../out/unoptimized.ir",
-			module.print_to_string().to_string(),
-		)?;
-	}
+	let extf = module.add_function("sumf", ft.fn_type(&[ft.into(), ft.into()], false), None);
 
-	let target_triple = TargetMachine::get_default_triple();
-	let cpu = TargetMachine::get_host_cpu_name().to_string();
-	let features = TargetMachine::get_host_cpu_features().to_string();
+	let argf = ft.const_float(64.0);
+	let call_site_value = builder.build_call(extf, &[argf.into(), argf.into()], "retv")?;
+	let retv = call_site_value
+		.try_as_basic_value()
+		.left()
+		.context("could not create basic value")?
+		.into_float_value();
 
-	let target = Target::from_triple(&target_triple).map_err(|e| Report::msg(e.to_string()))?;
+	builder.build_return(Some(&retv))?;
 
-	let target_machine = target
-		.create_target_machine(
-			&target_triple,
-			&cpu,
-			&features,
-			OptimizationLevel::Aggressive,
-			RelocMode::Default,
-			CodeModel::Default,
-		)
-		.context("Unable to create target machine")?;
-
-	let pass_options = PassBuilderOptions::create();
-
-	pass_options.set_verify_each(true);
-
-	module
-		.run_passes(PASSES, &target_machine, pass_options)
+	let ee = module
+		.create_jit_execution_engine(OptimizationLevel::Aggressive)
 		.map_err(|e| Report::msg(e.to_string()))?;
+	ee.add_global_mapping(&extf, sumf as usize);
 
-	{
-		fs::write(
-			"../../out/optimized.ir",
-			module.print_to_string().to_string(),
-		)?;
-	}
+	module.print_to_stderr();
+
+	let result = unsafe { ee.run_function(f, &[]) }.as_float(&ft);
+
+	println!("{result}");
 
 	Ok(())
 }
 
-#[derive(Debug, Parser)]
-struct Args {
-	file_path: PathBuf,
+extern "C" fn sumf(a: f64, b: f64) -> f64 {
+	a + b
 }
