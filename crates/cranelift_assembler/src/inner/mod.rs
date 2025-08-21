@@ -20,7 +20,6 @@ use self::srcloc::SrcLoc;
 use super::CraneliftAssemblyError;
 
 pub struct InnerAssembler<'a> {
-	ptr_type: Type,
 	builder: FunctionBuilder<'a>,
 	read: FuncRef,
 	write: FuncRef,
@@ -83,7 +82,6 @@ impl<'a> InnerAssembler<'a> {
 
 		Ok(Self {
 			current_srcloc: SrcLoc::empty(),
-			ptr_type,
 			builder,
 			read,
 			write,

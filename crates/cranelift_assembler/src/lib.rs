@@ -12,8 +12,7 @@ use std::{
 };
 
 use cranelift_codegen::{
-	CodegenError, CompileError, Context, cfg_printer::CFGPrinter, control::ControlPlane,
-	ir::Function, isa, settings,
+	CodegenError, CompileError, cfg_printer::CFGPrinter, control::ControlPlane, isa, settings,
 };
 use cranelift_frontend::FunctionBuilderContext;
 use cranelift_jit::{JITBuilder, JITModule};
@@ -22,6 +21,7 @@ use frick_assembler::{Assembler, AssemblyError, frick_assembler_read, frick_asse
 use frick_ir::BrainIr;
 use inner::InnerAssembler;
 use target_lexicon::Triple;
+use tracing::info;
 
 pub use self::{flags::AssemblerFlags, module::CraneliftAssembledModule};
 
@@ -50,12 +50,15 @@ impl Assembler for CraneliftAssembler {
 	type Error = CraneliftAssemblyError;
 	type Module = CraneliftAssembledModule;
 
+	#[tracing::instrument(skip_all)]
 	fn assemble(
 		&self,
-		ops: &[frick_ir::BrainIr],
-		output_path: &std::path::Path,
+		ops: &[BrainIr],
+		output_path: &Path,
 	) -> Result<Self::Module, AssemblyError<Self::Error>> {
 		let triple = Triple::host();
+
+		info!("looking up ISA");
 
 		let isa = {
 			let flags = self.flags.try_into().map_err(AssemblyError::backend)?;
@@ -66,6 +69,8 @@ impl Assembler for CraneliftAssembler {
 				.map_err(AssemblyError::backend)
 		}?;
 
+		info!("creating JIT module");
+
 		let mut jit_builder =
 			JITBuilder::with_isa(isa.clone(), cranelift_module::default_libcall_names());
 
@@ -73,6 +78,8 @@ impl Assembler for CraneliftAssembler {
 		jit_builder.symbol("read", frick_assembler_read as *const u8);
 
 		let mut module = JITModule::new(jit_builder);
+
+		info!("declaring main function");
 
 		let ptr_type = module.target_config().pointer_type();
 
@@ -89,13 +96,17 @@ impl Assembler for CraneliftAssembler {
 
 		ctx.func.signature = sig;
 
+		info!("lowering into cranelift IR");
+
 		let inner = InnerAssembler::new(&mut ctx.func, &mut fn_ctx, &mut module, ptr_type)?;
 
 		inner.assemble(ops)?;
 
 		{
+			info!("writing unoptimized cranelift IR");
 			fs::write(output_path.join("unoptimized.clif"), ctx.func.to_string())?;
 
+			info!("writing unoptimized CFG dot graph");
 			let mut out = String::new();
 
 			let printer = CFGPrinter::new(&ctx.func);
@@ -105,13 +116,18 @@ impl Assembler for CraneliftAssembler {
 			fs::write(output_path.join("unoptimized.dot"), out)?;
 		}
 
+		info!("verifying cranelift IR");
 		ctx.verify(&*isa).unwrap();
+
+		info!("optimizing cranelift IR");
 		ctx.optimize(&*isa, &mut ControlPlane::default())
 			.map_err(AssemblyError::backend)?;
 
 		{
+			info!("writing optimized cranelift IR");
 			fs::write(output_path.join("optimized.clif"), ctx.func.to_string())?;
 
+			info!("writing optimized CFG dot graph");
 			let mut out = String::new();
 
 			let printer = CFGPrinter::new(&ctx.func);
@@ -121,11 +137,23 @@ impl Assembler for CraneliftAssembler {
 			fs::write(output_path.join("optimized.dot"), out)?;
 		}
 
+		{
+			info!("compiling binary");
+			let compiled_func = ctx
+				.compile(&*isa, &mut ControlPlane::default())
+				.map_err(AssemblyError::backend)?;
+
+			info!("writing compiled binary");
+			fs::write(output_path.join("program.bin"), compiled_func.code_buffer())?;
+		}
+
+		info!("finishing up module definitions");
 		module
 			.define_function(func, &mut ctx)
 			.map_err(AssemblyError::backend)?;
 		module.clear_context(&mut ctx);
 
+		info!("lowering to native assembly");
 		module
 			.finalize_definitions()
 			.map_err(AssemblyError::backend)?;
