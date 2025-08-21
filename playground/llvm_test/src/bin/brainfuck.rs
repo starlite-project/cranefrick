@@ -1,5 +1,3 @@
-mod compiler;
-
 use std::{fs, path::PathBuf};
 
 use clap::Parser;
@@ -10,8 +8,7 @@ use inkwell::{
 	passes::PassBuilderOptions,
 	targets::{CodeModel, RelocMode, Target, TargetMachine},
 };
-
-use self::compiler::Compiler;
+use llvm_test::compiler::Compiler;
 
 const PASSES: &str = "default<O3>,aa-eval,instcount,lint,adce,break-crit-edges,dse,instcombine,jump-threading,lcssa,loop-deletion,loop-rotate,loop-simplify,loop-unroll,mem2reg,memcpyopt,reassociate,simplifycfg,sink,simple-loop-unswitch,strip,tailcallelim,transform-warning";
 
