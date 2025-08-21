@@ -1,4 +1,4 @@
-use cranelift_codegen::ir::{InstBuilder as _, types};
+use cranelift_codegen::ir::InstBuilder as _;
 
 use crate::inner::{InnerAssembler, SrcLoc};
 
@@ -9,14 +9,8 @@ impl InnerAssembler<'_> {
 		self.add_srcflag(SrcLoc::CHANGE_CELL);
 
 		let heap_value = self.load(offset);
-		let changed = if value.is_negative() {
-			let sub_value = self
-				.ins()
-				.iconst(types::I8, i64::from(value.unsigned_abs()));
-			self.ins().isub(heap_value, sub_value)
-		} else {
-			self.ins().iadd_imm(heap_value, i64::from(value))
-		};
+
+		let changed = self.ins().iadd_imm(heap_value, i64::from(value));
 
 		self.store(changed, offset);
 
