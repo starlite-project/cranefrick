@@ -6,11 +6,10 @@ use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
 use inkwell::{
 	AddressSpace,
-	basic_block::BasicBlock,
 	builder::Builder,
 	context::Context,
 	module::{Linkage, Module},
-	values::{FunctionValue, IntValue, PointerValue},
+	values::{FunctionValue, PointerValue},
 };
 
 use super::ContextExt;
@@ -96,6 +95,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::OutputCurrentCell => self.output_current_cell()?,
 				BrainIr::OutputChar(c) => self.output_char(*c)?,
 				BrainIr::OutputChars(c) => self.output_chars(c)?,
+				BrainIr::InputIntoCell => self.input_into_cell()?,
 				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
 				BrainIr::IfNz(ops) => self.if_nz(ops)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
