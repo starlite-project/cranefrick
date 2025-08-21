@@ -78,9 +78,9 @@ fn main() -> Result<()> {
 				None => LlvmAssembler::default(),
 			};
 
-			// let unoptimized = Compiler::from_iter(parsed);
+			let unoptimized = Compiler::from_iter(parsed);
 
-			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
+			let module = assembler.assemble(&unoptimized, args.output_path())?;
 
 			tracing::info!("finished assembling with LLVM");
 
