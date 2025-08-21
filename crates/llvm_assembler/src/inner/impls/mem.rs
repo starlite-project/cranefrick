@@ -8,9 +8,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let i8_type = self.context.i8_type();
 
-		let current_index_ptr = unsafe {
+		let current_index_ptr = {
+			let i64_type = self.context.i64_type();
+			let ptr_type = self.context.default_ptr_type();
+
+			let tape_ptr = self.tape.const_to_int(i64_type);
+
+			let tape_offset_ptr = self
+				.builder
+				.build_int_add(tape_ptr, ptr, "offset tape ptr")?;
+
 			self.builder
-				.build_gep(i8_type, self.tape, &[ptr], "load array index ptr")?
+				.build_int_to_ptr(tape_offset_ptr, ptr_type, "cast int to ptr")?
 		};
 
 		let value = self
@@ -23,11 +32,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn store(&self, value: IntValue<'ctx>, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let ptr = self.load_ptr(offset)?;
 
-		let i8_type = self.context.i8_type();
+		let current_index_ptr = {
+			let i64_type = self.context.i64_type();
+			let ptr_type = self.context.default_ptr_type();
 
-		let current_index_ptr = unsafe {
+			let tape_ptr = self.tape.const_to_int(i64_type);
+
+			let tape_offset_ptr = self.builder.build_int_add(tape_ptr, ptr, "offset tape ptr")?;
+
 			self.builder
-				.build_gep(i8_type, self.tape, &[ptr], "load array index ptr")?
+				.build_int_to_ptr(tape_offset_ptr, ptr_type, "cast int to ptr")?
 		};
 
 		self.builder.build_store(current_index_ptr, value)?;

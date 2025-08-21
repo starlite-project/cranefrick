@@ -6,6 +6,7 @@ use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
 use inkwell::{
 	AddressSpace,
+	basic_block::BasicBlock,
 	builder::Builder,
 	context::Context,
 	module::{Linkage, Module},
@@ -85,15 +86,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 		for op in ops {
 			match op {
 				BrainIr::SetCell(value, offset) => {
-					self.set_value(*value, offset.map_or(0, NonZero::get))?;
+					self.set_cell(*value, offset.map_or(0, NonZero::get))?;
 				}
 				BrainIr::ChangeCell(value, offset) => {
-					self.change_value(*value, offset.map_or(0, NonZero::get))?;
+					self.change_cell(*value, offset.map_or(0, NonZero::get))?;
 				}
+				BrainIr::SubCell(offset) => self.sub_cell(*offset)?,
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::OutputCurrentCell => self.output_current_cell()?,
 				BrainIr::OutputChar(c) => self.output_char(*c)?,
 				BrainIr::OutputChars(c) => self.output_chars(c)?,
+				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
+				BrainIr::MoveValue(factor, offset) => self.move_value(*factor, *offset)?,
+				BrainIr::TakeValue(factor, offset) => self.take_value(*factor, *offset)?,
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}
@@ -106,6 +111,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 }
 
+#[derive(Clone, Copy)]
 pub struct Functions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
