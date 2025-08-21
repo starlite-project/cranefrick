@@ -4,6 +4,8 @@ use crate::inner::{InnerAssembler, SrcLoc};
 
 impl InnerAssembler<'_> {
 	pub fn move_value(&mut self, factor: u8, offset: i32) {
+		self.invalidate_loads_at([0, offset]);
+
 		self.add_srcflag(SrcLoc::MOVE_VALUE);
 
 		let current_value = self.load(0);
@@ -21,6 +23,8 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn take_value(&mut self, factor: u8, offset: i32) {
+		self.invalidate_loads_at([0, offset]);
+
 		self.add_srcflag(SrcLoc::TAKE_VALUE);
 
 		let current_value = self.load(0);
@@ -40,6 +44,8 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn fetch_value(&mut self, factor: u8, offset: i32) {
+		self.invalidate_loads_at([0, offset]);
+
 		self.add_srcflag(SrcLoc::FETCH_VALUE);
 
 		let other_cell = self.load(offset);
@@ -58,6 +64,8 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn replace_value(&mut self, factor: u8, offset: i32) {
+		self.invalidate_loads_at([0, offset]);
+
 		self.add_srcflag(SrcLoc::REPLACE_VALUE);
 
 		let other_cell = self.load(offset);

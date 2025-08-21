@@ -25,8 +25,8 @@ pub struct InnerAssembler<'a> {
 	read: FuncRef,
 	write: FuncRef,
 	current_srcloc: SrcLoc,
-	cells: HashMap<i32, Variable>,
-	ptr_value: i32,
+	ptr_variable: Variable,
+	loads: HashMap<i32, Value>,
 }
 
 impl<'a> InnerAssembler<'a> {
@@ -36,11 +36,33 @@ impl<'a> InnerAssembler<'a> {
 		module: &mut JITModule,
 		ptr_type: Type,
 	) -> Result<Self, CraneliftAssemblyError> {
+		let tape_global_value = {
+			let tape_id = module.declare_data("tape", Linkage::Local, true, false)?;
+
+			let mut tape_description = DataDescription::new();
+
+			tape_description.define_zeroinit(30_000);
+
+			module.define_data(tape_id, &tape_description)?;
+
+			module.declare_data_in_func(tape_id, func)
+		};
+
 		let mut builder = FunctionBuilder::new(func, fn_ctx);
 
 		let block = builder.create_block();
 
 		builder.switch_to_block(block);
+
+		let ptr_variable = {
+			let ptr_value = builder.declare_var(ptr_type);
+
+			let tape_value = builder.ins().symbol_value(ptr_type, tape_global_value);
+
+			builder.def_var(ptr_value, tape_value);
+
+			ptr_value
+		};
 
 		let write = {
 			let mut write_sig = module.make_signature();
@@ -59,26 +81,14 @@ impl<'a> InnerAssembler<'a> {
 		let write = module.declare_func_in_func(write, builder.func);
 		let read = module.declare_func_in_func(read, builder.func);
 
-		let mut cells = HashMap::new();
-
-		let zero = builder.ins().iconst(types::I8, 0);
-
-		for i in 0..30_000 {
-			let var = builder.declare_var(types::I8);
-
-			builder.def_var(var, zero);
-
-			cells.insert(i, var);
-		}
-
 		Ok(Self {
 			current_srcloc: SrcLoc::empty(),
 			ptr_type,
 			builder,
 			read,
 			write,
-			cells,
-			ptr_value: 0,
+			ptr_variable,
+			loads: HashMap::new(),
 		})
 	}
 
@@ -128,6 +138,12 @@ impl<'a> InnerAssembler<'a> {
 
 	fn ins<'short>(&'short mut self) -> FuncInstBuilder<'short, 'a> {
 		self.builder.ins()
+	}
+
+	fn ptr_value(&mut self) -> Value {
+		let variable = self.ptr_variable;
+
+		self.use_var(variable)
 	}
 
 	fn const_u8(&mut self, value: u8) -> Value {

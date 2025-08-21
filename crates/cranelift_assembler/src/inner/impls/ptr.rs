@@ -4,20 +4,27 @@ use crate::inner::{InnerAssembler, SrcLoc};
 
 impl InnerAssembler<'_> {
 	pub fn move_pointer(&mut self, offset: i32) {
+		self.shift_load_offsets(offset);
+
 		self.add_srcflag(SrcLoc::MOVE_POINTER);
 
-		self.ptr_value = self.calculate_ptr(offset);
-		self.remove_srcflag(SrcLoc::MOVE_POINTER);
+		let ptr_var = self.ptr_variable;
+		let ptr_value = self.ptr_value();
 
-		// self.ptr_value = self.ptr_value.wrapping_add(offset);
+		let new_ptr_value = self.ins().iadd_imm(ptr_value, i64::from(offset));
+
+		self.def_var(ptr_var, new_ptr_value);
+
+		self.remove_srcflag(SrcLoc::MOVE_POINTER);
 	}
 
-	pub const fn calculate_ptr(&self, offset: i32) -> i32 {
-		const LEN: i32 = 30_000;
-		let ptr = self.ptr_value;
+	fn shift_load_offsets(&mut self, offset: i32) {
+		let loads = self.loads.clone();
 
-		let n = LEN + offset % LEN;
+		self.invalidate_loads();
 
-		(ptr + n) % LEN
+		for (key, value) in loads {
+			self.loads.insert(key.wrapping_sub(offset), value);
+		}
 	}
 }

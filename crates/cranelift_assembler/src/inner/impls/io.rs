@@ -42,10 +42,12 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn input_into_cell(&mut self) {
+		self.invalidate_load_at(0);
+
 		self.add_srcflag(SrcLoc::INPUT_INTO_CELL);
 
 		let read = self.read;
-		let value = self.load(0);
+		let value = self.ptr_value();
 
 		self.ins().call(read, &[value]);
 
