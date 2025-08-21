@@ -12,6 +12,8 @@ impl AssembledModule for LlvmAssembledModule<'_> {
 	type Error = LlvmAssemblyError;
 
 	fn execute(&self) -> Result<(), Self::Error> {
+		inkwell::support::enable_llvm_pretty_stack_trace();
+
 		unsafe { self.execution_engine.run_function(self.main, &[]) };
 
 		Ok(())

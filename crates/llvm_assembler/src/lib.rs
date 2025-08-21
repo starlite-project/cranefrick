@@ -94,6 +94,8 @@ impl Assembler for LlvmAssembler {
 			.print_to_file(output_path.join("optimized.ir"))
 			.map_err(AssemblyError::backend)?;
 
+		module.verify().map_err(AssemblyError::backend)?;
+
 		let execution_engine = module
 			.create_execution_engine()
 			.map_err(AssemblyError::backend)?;
