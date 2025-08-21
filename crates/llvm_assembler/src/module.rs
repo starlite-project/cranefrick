@@ -1,7 +1,5 @@
 use frick_assembler::AssembledModule;
-use inkwell::{
-	context::Context, execution_engine::ExecutionEngine, module::Module, values::FunctionValue,
-};
+use inkwell::{execution_engine::ExecutionEngine, values::FunctionValue};
 
 use super::LlvmAssemblyError;
 

@@ -1,10 +1,11 @@
 use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
 use inkwell::{
+	AddressSpace,
 	builder::Builder,
 	context::Context,
 	module::{Linkage, Module},
-	values::FunctionValue,
+	values::{FunctionValue, PointerValue},
 };
 
 use super::ContextExt;
@@ -15,6 +16,8 @@ pub struct InnerAssembler<'ctx> {
 	pub module: Module<'ctx>,
 	pub builder: Builder<'ctx>,
 	pub functions: Functions<'ctx>,
+	tape: PointerValue<'ctx>,
+	ptr: PointerValue<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -22,11 +25,38 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let module = context.create_module("frick");
 		let functions = Functions::new(context, &module);
 
+		let tape = {
+			let i8_type = context.i8_type();
+			let i8_array_type = i8_type.array_type(30_000);
+
+			let glob = module.add_global(i8_array_type, Some(AddressSpace::default()), "tape");
+
+			let i8_array = i8_array_type.const_zero();
+
+			glob.set_initializer(&i8_array);
+
+			glob.as_pointer_value()
+		};
+
+		let ptr = {
+			let i64_type = context.i64_type();
+
+			let glob = module.add_global(i64_type, Some(AddressSpace::default()), "ptr");
+
+			let i64_zero = i64_type.const_zero();
+
+			glob.set_initializer(&i64_zero);
+
+			glob.as_pointer_value()
+		};
+
 		Self {
 			context,
 			module,
 			builder: context.create_builder(),
 			functions,
+			tape,
+			ptr,
 		}
 	}
 
@@ -39,7 +69,27 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.append_basic_block(self.functions.main, "entry");
 		self.builder.position_at_end(basic_block);
 
-		self.builder.build_return(None).map_err(AssemblyError::backend)?;
+		let ptr_value = self
+			.builder
+			.build_load(self.context.i64_type(), self.ptr, "load ptr")
+			.map_err(AssemblyError::backend)?
+			.into_int_value();
+
+		let tape_value = self
+			.builder
+			.build_load(
+				self.context.i8_type().array_type(30_000),
+				self.tape,
+				"load tape",
+			)
+			.map_err(AssemblyError::backend)?;
+
+		dbg!(ptr_value);
+		dbg!(tape_value);
+
+		self.builder
+			.build_return(None)
+			.map_err(AssemblyError::backend)?;
 		Ok(self.into_parts())
 	}
 
