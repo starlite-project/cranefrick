@@ -1,40 +1,59 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use clap::{Parser, ValueEnum, builder::PossibleValue};
+use clap::Parser;
 
-#[derive(Debug, Parser)]
-#[command(version, about, long_about = None)]
-pub struct Args {
-	pub file_path: PathBuf,
-	#[arg(short, long)]
-	pub output_path: PathBuf,
-	#[arg(short, long)]
-	pub flags_path: Option<PathBuf>,
-	#[arg(short, long, default_value = "cranelift")]
-	pub assembler: Assembler,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Assembler {
-	Cranelift,
+#[derive(Debug, Clone, Parser)]
+pub enum Args {
+	Cranelift {
+		file_path: PathBuf,
+		#[arg(short, long)]
+		output_path: PathBuf,
+		#[arg(short, long)]
+		flags_path: Option<PathBuf>,
+	},
 	#[cfg(feature = "llvm")]
-	Llvm,
+	Llvm {
+		file_path: PathBuf,
+		#[arg(short, long)]
+		output_path: PathBuf,
+		#[arg(short, long)]
+		passes: Option<String>,
+	},
 }
 
-impl ValueEnum for Assembler {
-	fn value_variants<'a>() -> &'a [Self] {
-		&[
-			Self::Cranelift,
-			#[cfg(feature = "llvm")]
-			Self::Llvm,
-		]
+impl Args {
+	pub fn file_path(&self) -> &Path {
+		match self {
+			Self::Cranelift { file_path, .. } | Self::Llvm { file_path, .. } => file_path,
+		}
 	}
 
-	fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
-		Some(PossibleValue::new(match *self {
-			Self::Cranelift => "cranelift",
-			#[cfg(feature = "llvm")]
-			Self::Llvm => "llvm",
-		}))
+	pub fn output_path(&self) -> &Path {
+		match self {
+			Self::Cranelift { output_path, .. } | Self::Llvm { output_path, .. } => output_path,
+		}
 	}
 }
+
+// #[derive(Debug, Parser)]
+// #[command(version, about, long_about = None)]
+// pub struct Args {
+// 	pub file_path: PathBuf,
+// 	#[arg(short, long)]
+// 	pub output_path: PathBuf,
+// 	#[arg(short, long)]
+// 	pub flags_path: Option<PathBuf>,
+// 	#[arg(short, long, default_value = "cranelift")]
+// 	pub assembler: AssemblerType,
+// }
+
+// #[derive(Debug, Clone, ValueEnum
+// )]
+// pub enum AssemblerType {
+// 	Cranelift {
+// 		flags_path: Option<PathBuf>
+// 	},
+// 	Llvm {
+// 		passes: Option<String>
+// 	}
+// }

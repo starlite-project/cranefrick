@@ -17,6 +17,7 @@ use frick_assembler::{
 use frick_ir::BrainIr;
 use inkwell::{
 	OptimizationLevel,
+	builder::BuilderError,
 	context::Context,
 	passes::PassBuilderOptions,
 	support::LLVMString,
@@ -30,6 +31,17 @@ pub use self::module::LlvmAssembledModule;
 
 pub struct LlvmAssembler {
 	context: Context,
+	passes: String,
+}
+
+impl LlvmAssembler {
+	#[must_use]
+	pub fn new(passes: String) -> Self {
+		Self {
+			context: Context::create(),
+			passes,
+		}
+	}
 }
 
 impl Assembler for LlvmAssembler {
@@ -44,11 +56,16 @@ impl Assembler for LlvmAssembler {
 		Target::initialize_native(&InitializationConfig::default())
 			.map_err(LlvmAssemblyError::Llvm)?;
 
-		let context = &self.context;
-
 		let assembler = InnerAssembler::new(&self.context);
 
-		let (module, Functions { getchar, putchar }) = assembler.into_parts();
+		let (
+			module,
+			Functions {
+				getchar,
+				putchar,
+				main,
+			},
+		) = assembler.assemble(ops)?;
 
 		module
 			.print_to_file(output_path.join("unoptimized.ir"))
@@ -77,11 +94,13 @@ impl Assembler for LlvmAssembler {
 			pass_options.set_verify_each(true);
 
 			module
-				.run_passes("", &target_machine, pass_options)
+				.run_passes(&self.passes, &target_machine, pass_options)
 				.map_err(AssemblyError::backend)?;
 		}
 
-		module.print_to_file(output_path.join("optimized.ir")).map_err(AssemblyError::backend)?;
+		module
+			.print_to_file(output_path.join("optimized.ir"))
+			.map_err(AssemblyError::backend)?;
 
 		let execution_engine = module
 			.create_execution_engine()
@@ -91,18 +110,16 @@ impl Assembler for LlvmAssembler {
 		execution_engine.add_global_mapping(&putchar, frick_assembler_write as usize);
 
 		Ok(LlvmAssembledModule {
-			context,
 			module,
 			execution_engine,
+			main,
 		})
 	}
 }
 
 impl Default for LlvmAssembler {
 	fn default() -> Self {
-		Self {
-			context: Context::create(),
-		}
+		Self::new("default<O0>".to_owned())
 	}
 }
 
@@ -110,6 +127,7 @@ impl Default for LlvmAssembler {
 pub enum LlvmAssemblyError {
 	Llvm(String),
 	NoTargetMachine,
+	Builder(BuilderError),
 }
 
 impl Display for LlvmAssemblyError {
@@ -120,15 +138,29 @@ impl Display for LlvmAssemblyError {
 				f.write_str(l)
 			}
 			Self::NoTargetMachine => f.write_str("unable to get target machine"),
+			Self::Builder(..) => f.write_str("an error occurred building an instruction"),
 		}
 	}
 }
 
-impl StdError for LlvmAssemblyError {}
+impl StdError for LlvmAssemblyError {
+	fn source(&self) -> Option<&(dyn StdError + 'static)> {
+		match self {
+			Self::Builder(e) => Some(e),
+			Self::NoTargetMachine | Self::Llvm(..) => None,
+		}
+	}
+}
 
 impl From<LLVMString> for LlvmAssemblyError {
 	fn from(value: LLVMString) -> Self {
 		Self::Llvm(value.to_string())
+	}
+}
+
+impl From<BuilderError> for LlvmAssemblyError {
+	fn from(value: BuilderError) -> Self {
+		Self::Builder(value)
 	}
 }
 

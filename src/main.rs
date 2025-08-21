@@ -21,7 +21,7 @@ use tracing_subscriber::{
 };
 use tracing_tree::HierarchicalLayer;
 
-use self::args::{Args, Assembler as AssemblerType};
+use self::args::Args;
 
 #[cfg(target_os = "windows")]
 #[global_allocator]
@@ -35,10 +35,10 @@ fn main() -> Result<()> {
 			return Ok(());
 		}
 	};
-	install_tracing(&args.output_path);
+	install_tracing(args.output_path());
 	color_eyre::install()?;
 
-	let raw_data = fs::read_to_string(&args.file_path)?
+	let raw_data = fs::read_to_string(args.file_path())?
 		.chars()
 		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
 		.collect::<String>();
@@ -53,29 +53,32 @@ fn main() -> Result<()> {
 
 	let mut compiler = Compiler::from_iter(parsed);
 
-	serialize(&compiler, &args.output_path, "unoptimized")?;
+	serialize(&compiler, args.output_path(), "unoptimized")?;
 
 	compiler.optimize();
 
-	serialize(&compiler, &args.output_path, "optimized")?;
+	serialize(&compiler, args.output_path(), "optimized")?;
 
-	match args.assembler {
-		AssemblerType::Cranelift => {
-			let flags = get_cranelift_assembler(args.flags_path.as_deref());
+	match &args {
+		Args::Cranelift { flags_path, .. } => {
+			let flags = get_cranelift_assembler(flags_path.as_deref());
 
 			let assembler = CraneliftAssembler::with_flags(flags);
 
-			let module = assembler.assemble(compiler.as_slice(), &args.output_path)?;
+			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
 
 			tracing::info!("finished assembling with cranelift");
 
 			module.execute()?;
 		}
 		#[cfg(feature = "llvm")]
-		AssemblerType::Llvm => {
-			let assembler = LlvmAssembler::default();
+		Args::Llvm { passes, .. } => {
+			let assembler = match passes {
+				Some(passes) => LlvmAssembler::new(passes.clone()),
+				None => LlvmAssembler::default()
+			};
 
-			let module = assembler.assemble(compiler.as_slice(), &args.output_path)?;
+			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
 
 			tracing::info!("finished assembling with LLVM");
 

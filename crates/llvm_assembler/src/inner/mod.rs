@@ -1,3 +1,5 @@
+use frick_assembler::AssemblyError;
+use frick_ir::BrainIr;
 use inkwell::{
 	builder::Builder,
 	context::Context,
@@ -6,6 +8,7 @@ use inkwell::{
 };
 
 use super::ContextExt;
+use crate::LlvmAssemblyError;
 
 pub struct InnerAssembler<'ctx> {
 	pub context: &'ctx Context,
@@ -27,7 +30,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 		}
 	}
 
-	pub fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>) {
+	pub fn assemble(
+		self,
+		ops: &[BrainIr],
+	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
+		let basic_block = self
+			.context
+			.append_basic_block(self.functions.main, "entry");
+		self.builder.position_at_end(basic_block);
+
+		self.builder.build_return(None).map_err(AssemblyError::backend)?;
+		Ok(self.into_parts())
+	}
+
+	fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>) {
 		(self.module, self.functions)
 	}
 }
@@ -35,6 +51,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 pub struct Functions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
+	pub main: FunctionValue<'ctx>,
 }
 
 impl<'ctx> Functions<'ctx> {
@@ -44,11 +61,18 @@ impl<'ctx> Functions<'ctx> {
 		let void_type = context.void_type();
 
 		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);
-		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
+		let getchar = module.add_function("frick_assembler_read", getchar_ty, Some(Linkage::External));
 
 		let putchar_ty = void_type.fn_type(&[i8_type.into()], false);
-		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
+		let putchar = module.add_function("frick_assembler_write", putchar_ty, Some(Linkage::External));
 
-		Self { getchar, putchar }
+		let main_ty = void_type.fn_type(&[], false);
+		let main = module.add_function("main", main_ty, Some(Linkage::External));
+
+		Self {
+			getchar,
+			putchar,
+			main,
+		}
 	}
 }
