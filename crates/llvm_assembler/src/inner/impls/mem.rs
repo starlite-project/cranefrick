@@ -12,7 +12,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let zero = self.ptr_type.const_zero();
 
 		let value = unsafe {
-			self.builder.build_gep(
+			self.builder.build_in_bounds_gep(
 				i8_array_type,
 				self.tape,
 				&[zero, current_offset],
@@ -36,7 +36,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let zero = self.ptr_type.const_zero();
 
 		let current_tape_value = unsafe {
-			self.builder.build_gep(
+			self.builder.build_in_bounds_gep(
 				i8_array_type,
 				self.tape,
 				&[zero, current_offset],
