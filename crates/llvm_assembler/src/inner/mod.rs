@@ -103,7 +103,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn assemble(
 		self,
 		ops: &[BrainIr],
-	) -> Result<(Module<'ctx>, Functions<'ctx>, DebugInfoBuilder<'ctx>), AssemblyError<LlvmAssemblyError>> {
+	) -> Result<
+		(Module<'ctx>, Functions<'ctx>, DebugInfoBuilder<'ctx>),
+		AssemblyError<LlvmAssemblyError>,
+	> {
 		self.ops(ops)?;
 
 		self.builder
@@ -126,6 +129,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::OutputCurrentCell => self.output_current_cell()?,
 				BrainIr::OutputChar(c) => self.output_char(*c)?,
 				BrainIr::OutputChars(c) => self.output_chars(c)?,
+				BrainIr::InputIntoCell => self.input_into_cell()?,
 				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
 				BrainIr::IfNz(ops) => self.if_nz(ops)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
