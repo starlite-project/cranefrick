@@ -74,7 +74,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			DWARFSourceLanguage::C,
 			file_name,
 			directory_name,
-			"frick_ir",
+			"frick",
 			true,
 			"",
 			0,
