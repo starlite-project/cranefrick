@@ -1,5 +1,5 @@
 use color_eyre::{Result, eyre::ContextCompat};
-use inkwell::{context::Context, intrinsics::Intrinsic, types::BasicType};
+use inkwell::{context::Context, intrinsics::Intrinsic};
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
