@@ -12,8 +12,7 @@ use inkwell::{
 	values::{FunctionValue, PointerValue},
 };
 
-use super::ContextExt;
-use crate::LlvmAssemblyError;
+use super::{ContextExt, LlvmAssemblyError};
 
 pub struct InnerAssembler<'ctx> {
 	pub context: &'ctx Context,
@@ -26,7 +25,7 @@ pub struct InnerAssembler<'ctx> {
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn new(context: &'ctx Context) -> Self {
+	pub fn new(context: &'ctx Context) -> Result<Self, LlvmAssemblyError> {
 		let module = context.create_module("frick");
 		let functions = Functions::new(context, &module);
 		let builder = context.create_builder();
@@ -38,29 +37,30 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let i8_type = context.i8_type();
 			let i8_array_type = i8_type.array_type(30_000);
 
-			let tape_global_value = module.add_global(i8_array_type, None, "tape");
+			let tape_alloca = builder.build_alloca(i8_array_type, "tape")?;
 
-			let zero_array = i8_array_type.const_zero();
+			builder.build_store(tape_alloca, i8_array_type.const_zero())?;
 
-			tape_global_value.set_initializer(&zero_array);
-
-			tape_global_value.set_alignment(1);
-
-			tape_global_value.as_pointer_value()
+			tape_alloca
 		};
 
 		let i32_type = context.i32_type();
 		let ptr = {
-			let ptr_global_value = module.add_global(i32_type, None, "ptr");
+			// let ptr_global_value = module.add_global(i32_type, None, "ptr");
 
-			let zero_ptr = i32_type.const_zero();
+			// let zero_ptr = i32_type.const_zero();
 
-			ptr_global_value.set_initializer(&zero_ptr);
+			// ptr_global_value.set_initializer(&zero_ptr);
 
-			ptr_global_value.as_pointer_value()
+			// ptr_global_value.as_pointer_value()
+			let ptr_alloca = builder.build_alloca(i32_type, "ptr")?;
+
+			builder.build_store(ptr_alloca, i32_type.const_zero())?;
+
+			ptr_alloca
 		};
 
-		Self {
+		Ok(Self {
 			context,
 			module,
 			builder,
@@ -68,7 +68,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			tape,
 			ptr,
 			ptr_type: i32_type,
-		}
+		})
 	}
 
 	pub fn assemble(

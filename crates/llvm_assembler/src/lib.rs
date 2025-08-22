@@ -55,7 +55,7 @@ impl Assembler for LlvmAssembler {
 		Target::initialize_native(&InitializationConfig::default())
 			.map_err(LlvmAssemblyError::Llvm)?;
 
-		let assembler = InnerAssembler::new(&self.context);
+		let assembler = InnerAssembler::new(&self.context)?;
 
 		let (module, Functions { main, .. }) = assembler.assemble(ops)?;
 
