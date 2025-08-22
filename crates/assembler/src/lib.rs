@@ -5,7 +5,7 @@ use std::{
 	fmt::{Debug, Display, Error as FmtError, Formatter, Result as FmtResult},
 	io::{self, Error as IoError, prelude::*},
 	path::Path,
-	process::exit,
+	process::abort,
 	ptr, slice,
 };
 
@@ -108,7 +108,7 @@ pub unsafe extern "C" fn frick_assembler_write(value: u8) {
 
 	if let Err(e) = result {
 		error!("error occurred during write: {e}");
-		exit(1);
+		abort();
 	}
 }
 
@@ -122,7 +122,7 @@ pub unsafe extern "C" fn frick_assembler_read(buf: *mut u8) {
 		if let Err(e) = err {
 			if !matches!(e.kind(), io::ErrorKind::UnexpectedEof) {
 				error!("error occurred during read: {e}");
-				exit(1);
+				abort();
 			}
 
 			value = 0;
