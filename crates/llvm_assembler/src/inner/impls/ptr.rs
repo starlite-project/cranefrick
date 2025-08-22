@@ -21,7 +21,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.into_int_value();
 
 		if matches!(offset, 0) {
-			return Ok(current_ptr)
+			return Ok(current_ptr);
 		}
 
 		let offset_ptr = self
