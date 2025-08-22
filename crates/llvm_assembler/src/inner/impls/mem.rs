@@ -22,7 +22,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let value = unsafe {
 			self.builder
-				.build_gep(ptr_type, self.tape, &[current_offset], "index into tape")
+				.build_in_bounds_gep(ptr_type, self.tape, &[current_offset], "index into tape")
 		}?;
 
 		let loaded_value = self
@@ -50,7 +50,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_tape_value = unsafe {
 			self.builder
-				.build_gep(ptr_type, self.tape, &[current_offset], "index into tape")
+				.build_in_bounds_gep(ptr_type, self.tape, &[current_offset], "index into tape")
 		}?;
 
 		self.builder.build_store(current_tape_value, value)?;

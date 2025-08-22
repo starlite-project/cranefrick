@@ -28,4 +28,8 @@ impl InnerAssembler<'_> {
 
 		Ok(())
 	}
+
+	pub fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
+		c.iter().copied().try_for_each(|c| self.output_char(c))
+	}
 }
