@@ -103,7 +103,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn assemble(
 		self,
 		ops: &[BrainIr],
-	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
+	) -> Result<(Module<'ctx>, Functions<'ctx>, DebugInfoBuilder<'ctx>), AssemblyError<LlvmAssemblyError>> {
 		self.ops(ops)?;
 
 		self.builder
@@ -140,8 +140,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>) {
-		(self.module, self.functions)
+	fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>, DebugInfoBuilder<'ctx>) {
+		(self.module, self.functions, self.debug_builder)
 	}
 }
 

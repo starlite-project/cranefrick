@@ -61,7 +61,9 @@ impl Assembler for LlvmAssembler {
 
 		let assembler = InnerAssembler::new(&self.context, &self.file_name, &self.directory_name)?;
 
-		let (module, Functions { main, .. }) = assembler.assemble(ops)?;
+		let (module, Functions { main, .. }, debug_builder) = assembler.assemble(ops)?;
+
+		debug_builder.finalize();
 
 		module
 			.print_to_file(output_path.join("unoptimized.ir"))
