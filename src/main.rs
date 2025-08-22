@@ -73,11 +73,6 @@ fn main() -> Result<()> {
 		}
 		#[cfg(feature = "llvm")]
 		Args::Llvm { passes_path, .. } => {
-			// let assembler = match passes {
-			// 	Some(passes) => LlvmAssembler::new(passes.clone()),
-			// 	None => LlvmAssembler::default(),
-			// };
-
 			let assembler = match passes_path {
 				None => LlvmAssembler::default(),
 				Some(passes_path) => {
