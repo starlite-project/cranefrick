@@ -6,10 +6,39 @@ use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	pub fn if_nz(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
-		let body_block = self.context.append_basic_block(self.functions.main ,"if_nz body");
-		let next_block = self.context.append_basic_block(self.functions.main, "if_nz next");
+		let body_block = self
+			.context
+			.append_basic_block(self.functions.main, "if_nz body");
+		let next_block = self
+			.context
+			.append_basic_block(self.functions.main, "if_nz next");
 
 		let value = self.load(0)?;
+
+		let zero = {
+			let i8_type = self.context.i8_type();
+
+			i8_type.const_zero()
+		};
+
+		let cmp = self
+			.builder
+			.build_int_compare(IntPredicate::NE, value, zero, "check if value is zero")
+			.map_err(AssemblyError::backend)?;
+
+		self.builder
+			.build_conditional_branch(cmp, body_block, next_block)
+			.map_err(AssemblyError::backend)?;
+
+		self.builder.position_at_end(body_block);
+
+		self.ops(ops)?;
+
+		self.builder
+			.build_unconditional_branch(next_block)
+			.map_err(AssemblyError::backend)?;
+
+		self.builder.position_at_end(next_block);
 
 		Ok(())
 	}

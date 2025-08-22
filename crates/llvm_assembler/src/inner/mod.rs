@@ -95,6 +95,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::OutputCurrentCell => self.output_current_cell()?,
 				BrainIr::OutputChar(c) => self.output_char(*c)?,
 				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
+				BrainIr::IfNz(ops) => self.if_nz(ops)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
 				BrainIr::MoveValue(factor, offset) => self.move_value(*factor, *offset)?,
 				BrainIr::TakeValue(factor, offset) => self.take_value(*factor, *offset)?,
