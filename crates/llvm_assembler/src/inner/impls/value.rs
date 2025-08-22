@@ -51,8 +51,8 @@ impl InnerAssembler<'_> {
 		self.store(added, 0)
 	}
 
-    pub fn replace_value(&self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
-        self.set_cell(0, 0)?;
-        self.fetch_value(factor, offset)
-    }
+	pub fn replace_value(&self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
+		self.set_cell(0, 0)?;
+		self.fetch_value(factor, offset)
+	}
 }
