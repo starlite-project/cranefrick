@@ -17,7 +17,7 @@ pub enum Args {
 		#[arg(short, long)]
 		output_path: PathBuf,
 		#[arg(short, long)]
-		passes: Option<String>,
+		passes_path: Option<PathBuf>,
 	},
 }
 

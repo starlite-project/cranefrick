@@ -72,10 +72,19 @@ fn main() -> Result<()> {
 			module.execute()?;
 		}
 		#[cfg(feature = "llvm")]
-		Args::Llvm { passes, .. } => {
-			let assembler = match passes {
-				Some(passes) => LlvmAssembler::new(passes.clone()),
+		Args::Llvm { passes_path, .. } => {
+			// let assembler = match passes {
+			// 	Some(passes) => LlvmAssembler::new(passes.clone()),
+			// 	None => LlvmAssembler::default(),
+			// };
+
+			let assembler = match passes_path {
 				None => LlvmAssembler::default(),
+				Some(passes_path) => {
+					let passes = fs::read_to_string(passes_path)?;
+
+					LlvmAssembler::new(passes.trim().to_owned())
+				}
 			};
 
 			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
