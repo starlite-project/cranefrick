@@ -23,7 +23,7 @@ impl InnerAssembler<'_> {
 
 		let cmp = self
 			.builder
-			.build_int_compare(IntPredicate::NE, value, zero, "check if value is zero")
+			.build_int_compare(IntPredicate::NE, value, zero, "check_if_value_is_zero")
 			.map_err(AssemblyError::backend)?;
 
 		self.builder
@@ -70,7 +70,7 @@ impl InnerAssembler<'_> {
 
 		let cmp = self
 			.builder
-			.build_int_compare(IntPredicate::NE, value, zero, "check if value is zero")
+			.build_int_compare(IntPredicate::NE, value, zero, "check_if_value_is_zero")
 			.map_err(AssemblyError::backend)?;
 
 		self.builder
@@ -117,7 +117,7 @@ impl InnerAssembler<'_> {
 			IntPredicate::NE,
 			value,
 			zero,
-			"check if value is zero",
+			"check_if_value_is_zero",
 		)?;
 
 		self.builder
