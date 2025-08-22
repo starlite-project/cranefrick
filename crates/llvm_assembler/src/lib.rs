@@ -88,6 +88,14 @@ impl Assembler for LlvmAssembler {
 			module
 				.run_passes(&self.passes, &target_machine, pass_options)
 				.map_err(AssemblyError::backend)?;
+
+			let pass_options = PassBuilderOptions::create();
+
+			pass_options.set_verify_each(true);
+
+			module
+				.run_passes("lint", &target_machine, pass_options)
+				.map_err(AssemblyError::backend)?;
 		}
 
 		module
