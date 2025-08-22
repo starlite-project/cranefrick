@@ -206,6 +206,20 @@ pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 		[BrainIr::OutputChars(chars), BrainIr::OutputChar(c)] => Some(Change::replace(
 			BrainIr::output_chars(chars.iter().copied().chain(iter::once(*c))),
 		)),
+		[BrainIr::OutputChars(a), BrainIr::OutputChars(b)] => Some(Change::replace(
+			BrainIr::output_chars(a.iter().copied().chain(b.iter().copied())),
+		)),
+		_ => None,
+	}
+}
+
+pub const fn optimize_sets_and_writes(ops: &[BrainIr; 3]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::SetCell(.., None),
+			BrainIr::OutputChars(..),
+			BrainIr::SetCell(.., None),
+		] => Some(Change::remove_offset(0)),
 		_ => None,
 	}
 }
