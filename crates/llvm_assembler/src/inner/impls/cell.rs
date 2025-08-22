@@ -1,16 +1,7 @@
-use crate::{ContextExt, LlvmAssemblyError, inner::InnerAssembler};
+use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	pub fn set_cell(&self, value: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		// let ptr_type = self.context.default_ptr_type();
-
-		// let i8_type = self.context.i8_type();
-		// let i8_amount = i8_type.const_int(value as u64, false);
-
-		// let ptr_load = self.builder.build_load(ptr_type, self.ptr, "load ptr")?.into_pointer_value();
-
-		// self.builder.build_store(ptr_load, i8_amount)?;
-
 		let value = self.context.i8_type().const_int(u64::from(value), false);
 
 		self.store(value, offset)?;
@@ -23,10 +14,24 @@ impl InnerAssembler<'_> {
 
 		let value_to_add = self.context.i8_type().const_int(value as u64, false);
 
-		let added_together = self.builder.build_int_add(current_cell_value, value_to_add, "add to value")?;
+		let added_together =
+			self.builder
+				.build_int_add(current_cell_value, value_to_add, "add to value")?;
 
 		self.store(added_together, offset)?;
 
 		Ok(())
+	}
+
+	pub fn sub_cell(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
+		let subtractor = self.load(0)?;
+
+		self.set_cell(0, 0)?;
+
+		let other_value = self.load(offset)?;
+
+		let value_to_store = self.builder.build_int_sub(other_value, subtractor, "sub other_value by current value")?;
+
+		self.store(value_to_store, offset)
 	}
 }

@@ -8,7 +8,7 @@ use inkwell::{
 	builder::Builder,
 	context::Context,
 	module::{Linkage, Module},
-	values::{ArrayValue, FunctionValue, IntValue, PointerValue},
+	values::{FunctionValue, PointerValue},
 };
 
 use super::ContextExt;
@@ -20,7 +20,7 @@ pub struct InnerAssembler<'ctx> {
 	pub builder: Builder<'ctx>,
 	pub functions: Functions<'ctx>,
 	tape: PointerValue<'ctx>,
-	ptr: IntValue<'ctx>,
+	ptr: PointerValue<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -48,9 +48,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		let ptr = {
-			let i64_type = context.i64_type();
+			let i32_type = context.i32_type();
 
-			i64_type.const_zero()
+			let ptr_global_value = module.add_global(i32_type, None, "ptr");
+
+			let zero_ptr = i32_type.const_zero();
+
+			ptr_global_value.set_initializer(&zero_ptr);
+
+			ptr_global_value.as_pointer_value()
 		};
 
 		Self {
@@ -64,7 +70,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn assemble(
-		mut self,
+		self,
 		ops: &[BrainIr],
 	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
 		self.ops(ops)?;
@@ -75,7 +81,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(self.into_parts())
 	}
 
-	fn ops(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+	fn ops(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		for op in ops {
 			match op {
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
@@ -85,9 +91,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::ChangeCell(value, offset) => {
 					self.change_cell(*value, offset.map_or(0, NonZero::get))?;
 				}
+				BrainIr::SubCell(offset) => self.sub_cell(*offset)?,
 				BrainIr::OutputCurrentCell => self.output_current_cell()?,
+				BrainIr::OutputChar(c) => self.output_char(*c)?,
+				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
+				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
+				BrainIr::MoveValue(factor, offset) => self.move_value(*factor, *offset)?,
+				BrainIr::TakeValue(factor, offset) => self.take_value(*factor, *offset)?,
+				BrainIr::FetchValue(factor, offset) => self.fetch_value(*factor, *offset)?,
+				BrainIr::ReplaceValue(factor, offset) => self.replace_value(*factor, *offset)?,
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
-				// _ => {}
 			}
 		}
 
