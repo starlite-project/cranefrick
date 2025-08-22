@@ -686,6 +686,7 @@ dependencies = [
  "frick_assembler",
  "frick_ir",
  "inkwell",
+ "tracing",
 ]
 
 [[package]]

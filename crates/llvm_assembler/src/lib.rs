@@ -23,6 +23,7 @@ use inkwell::{
 	targets::{CodeModel, InitializationConfig, RelocMode, Target, TargetMachine},
 };
 use inner::Functions;
+use tracing::info;
 
 pub(crate) use self::ext::ContextExt;
 use self::inner::InnerAssembler;
@@ -51,20 +52,28 @@ impl Assembler for LlvmAssembler {
 	type Error = LlvmAssemblyError;
 	type Module<'ctx> = LlvmAssembledModule<'ctx>;
 
+	#[tracing::instrument(skip_all)]
 	fn assemble<'ctx>(
 		&'ctx self,
 		ops: &[BrainIr],
 		output_path: &Path,
 	) -> Result<Self::Module<'ctx>, AssemblyError<Self::Error>> {
+		info!("initializing native target");
+
 		Target::initialize_native(&InitializationConfig::default())
 			.map_err(LlvmAssemblyError::Llvm)?;
+
+		info!("lowering into LLVM IR");
 
 		let assembler = InnerAssembler::new(&self.context, &self.file_name, &self.directory_name)?;
 
 		let (module, Functions { main, .. }, debug_builder) = assembler.assemble(ops)?;
 
+		info!("finalizing debug information");
+
 		debug_builder.finalize();
 
+		info!("writing unoptimized LLVM IR");
 		module
 			.print_to_file(output_path.join("unoptimized.ir"))
 			.map_err(AssemblyError::backend)?;
@@ -91,6 +100,8 @@ impl Assembler for LlvmAssembler {
 
 			pass_options.set_verify_each(true);
 
+			info!("verifying and optimizing LLVM IR");
+
 			module
 				.run_passes(&self.passes, &target_machine, pass_options)
 				.map_err(AssemblyError::backend)?;
@@ -99,10 +110,14 @@ impl Assembler for LlvmAssembler {
 
 			pass_options.set_verify_each(true);
 
+			info!("linting generated LLVM IR");
+
 			module
 				.run_passes("lint", &target_machine, pass_options)
 				.map_err(AssemblyError::backend)?;
 		}
+
+		info!("writing optimized LLVM IR");
 
 		module
 			.print_to_file(output_path.join("optimized.ir"))
@@ -110,8 +125,10 @@ impl Assembler for LlvmAssembler {
 
 		module.verify().map_err(AssemblyError::backend)?;
 
+		info!("creating JIT execution engine");
+
 		let execution_engine = module
-			.create_jit_execution_engine(OptimizationLevel::None)
+			.create_jit_execution_engine(OptimizationLevel::Aggressive)
 			.map_err(AssemblyError::backend)?;
 
 		if let Some(getchar) = module.get_function("getchar") {

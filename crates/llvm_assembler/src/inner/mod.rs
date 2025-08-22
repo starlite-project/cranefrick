@@ -16,6 +16,7 @@ use inkwell::{
 
 use super::{ContextExt, LlvmAssemblyError};
 
+#[allow(dead_code)]
 pub struct InnerAssembler<'ctx> {
 	context: &'ctx Context,
 	module: Module<'ctx>,

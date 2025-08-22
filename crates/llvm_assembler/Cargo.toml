@@ -11,3 +11,4 @@ version.workspace = true
 frick_assembler.workspace = true
 frick_ir.workspace = true
 inkwell = { version = "0.6", features = ["llvm18-1"] }
+tracing.workspace = true
