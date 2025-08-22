@@ -8,7 +8,8 @@ use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	builder::Builder,
 	context::Context,
-	module::{Linkage, Module},
+	debug_info::{DICompileUnit, DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder},
+	module::{FlagBehavior, Linkage, Module},
 	types::IntType,
 	values::{FunctionValue, PointerValue},
 };
@@ -16,17 +17,23 @@ use inkwell::{
 use super::{ContextExt, LlvmAssemblyError};
 
 pub struct InnerAssembler<'ctx> {
-	pub context: &'ctx Context,
-	pub module: Module<'ctx>,
-	pub builder: Builder<'ctx>,
-	pub functions: Functions<'ctx>,
+	context: &'ctx Context,
+	module: Module<'ctx>,
+	builder: Builder<'ctx>,
+	functions: Functions<'ctx>,
 	tape: PointerValue<'ctx>,
 	ptr: PointerValue<'ctx>,
 	ptr_type: IntType<'ctx>,
+	debug_builder: DebugInfoBuilder<'ctx>,
+	debug_compile_unit: DICompileUnit<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn new(context: &'ctx Context) -> Result<Self, LlvmAssemblyError> {
+	pub fn new(
+		context: &'ctx Context,
+		file_name: &str,
+		directory_name: &str,
+	) -> Result<Self, LlvmAssemblyError> {
 		let module = context.create_module("frick");
 		let functions = Functions::new(context, &module);
 		let builder = context.create_builder();
@@ -54,6 +61,32 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_alloca
 		};
 
+		let debug_metadata_version = i32_type.const_int(3, false);
+
+		module.add_basic_value_flag(
+			"Debug Info Version",
+			FlagBehavior::Warning,
+			debug_metadata_version,
+		);
+
+		let (debug_builder, debug_compile_unit) = module.create_debug_info_builder(
+			true,
+			DWARFSourceLanguage::C,
+			file_name,
+			directory_name,
+			"frick_ir",
+			true,
+			"",
+			0,
+			"",
+			DWARFEmissionKind::Full,
+			0,
+			false,
+			true,
+			"",
+			"",
+		);
+
 		Ok(Self {
 			context,
 			module,
@@ -62,6 +95,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			tape,
 			ptr,
 			ptr_type: i32_type,
+			debug_builder,
+			debug_compile_unit,
 		})
 	}
 
@@ -112,6 +147,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 #[derive(Clone, Copy)]
 pub struct Functions<'ctx> {
+	#[allow(dead_code)]
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,

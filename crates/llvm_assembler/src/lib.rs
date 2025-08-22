@@ -31,14 +31,18 @@ pub use self::module::LlvmAssembledModule;
 pub struct LlvmAssembler {
 	context: Context,
 	passes: String,
+	file_name: String,
+	directory_name: String,
 }
 
 impl LlvmAssembler {
 	#[must_use]
-	pub fn new(passes: String) -> Self {
+	pub fn new(passes: String, file_name: String, directory_name: String) -> Self {
 		Self {
 			context: Context::create(),
 			passes,
+			file_name,
+			directory_name,
 		}
 	}
 }
@@ -55,7 +59,7 @@ impl Assembler for LlvmAssembler {
 		Target::initialize_native(&InitializationConfig::default())
 			.map_err(LlvmAssemblyError::Llvm)?;
 
-		let assembler = InnerAssembler::new(&self.context)?;
+		let assembler = InnerAssembler::new(&self.context, &self.file_name, &self.directory_name)?;
 
 		let (module, Functions { main, .. }) = assembler.assemble(ops)?;
 
@@ -125,7 +129,11 @@ impl Assembler for LlvmAssembler {
 
 impl Default for LlvmAssembler {
 	fn default() -> Self {
-		Self::new("default<O0>".to_owned())
+		Self::new(
+			"default<O0>".to_owned(),
+			"<unknown>".to_owned(),
+			".".to_owned(),
+		)
 	}
 }
 

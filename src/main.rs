@@ -73,12 +73,25 @@ fn main() -> Result<()> {
 		}
 		#[cfg(feature = "llvm")]
 		Args::Llvm { passes_path, .. } => {
+			let file_name = args
+				.file_path()
+				.file_name()
+				.unwrap()
+				.to_string_lossy()
+				.into_owned();
+			let directory_name = args
+				.file_path()
+				.parent()
+				.unwrap()
+				.to_string_lossy()
+				.into_owned();
+
 			let assembler = match passes_path {
-				None => LlvmAssembler::default(),
+				None => LlvmAssembler::new("default<O0>".to_owned(), file_name, directory_name),
 				Some(passes_path) => {
 					let passes = fs::read_to_string(passes_path)?;
 
-					LlvmAssembler::new(passes.trim().to_owned())
+					LlvmAssembler::new(passes.trim().to_owned(), file_name, directory_name)
 				}
 			};
 
