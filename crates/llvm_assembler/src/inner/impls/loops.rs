@@ -8,10 +8,10 @@ impl InnerAssembler<'_> {
 	pub fn if_nz(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let body_block = self
 			.context
-			.append_basic_block(self.functions.main, "if_nz body");
+			.append_basic_block(self.functions.main, "if_nz.body");
 		let next_block = self
 			.context
-			.append_basic_block(self.functions.main, "if_nz next");
+			.append_basic_block(self.functions.main, "if_nz.next");
 
 		let value = self.load(0)?;
 
@@ -46,13 +46,13 @@ impl InnerAssembler<'_> {
 	pub fn dynamic_loop(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let head_block = self
 			.context
-			.append_basic_block(self.functions.main, "dynamic_loop head");
+			.append_basic_block(self.functions.main, "dynamic_loop.head");
 		let body_block = self
 			.context
-			.append_basic_block(self.functions.main, "dynamic_loop body");
+			.append_basic_block(self.functions.main, "dynamic_loop.body");
 		let next_block = self
 			.context
-			.append_basic_block(self.functions.main, "dynamic_loop next");
+			.append_basic_block(self.functions.main, "dynamic_loop.next");
 
 		self.builder
 			.build_unconditional_branch(head_block)
@@ -93,13 +93,13 @@ impl InnerAssembler<'_> {
 	pub fn find_zero(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let head_block = self
 			.context
-			.append_basic_block(self.functions.main, "find_zero head");
+			.append_basic_block(self.functions.main, "find_zero.head");
 		let body_block = self
 			.context
-			.append_basic_block(self.functions.main, "find_zero body");
+			.append_basic_block(self.functions.main, "find_zero.body");
 		let next_block = self
 			.context
-			.append_basic_block(self.functions.main, "find_zero next");
+			.append_basic_block(self.functions.main, "find_zero.next");
 
 		self.builder.build_unconditional_branch(head_block)?;
 
