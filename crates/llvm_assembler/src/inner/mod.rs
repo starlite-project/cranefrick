@@ -8,6 +8,7 @@ use inkwell::{
 	builder::Builder,
 	context::Context,
 	module::{Linkage, Module},
+	types::IntType,
 	values::{FunctionValue, PointerValue},
 };
 
@@ -21,6 +22,7 @@ pub struct InnerAssembler<'ctx> {
 	pub functions: Functions<'ctx>,
 	tape: PointerValue<'ctx>,
 	ptr: PointerValue<'ctx>,
+	ptr_type: IntType<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -47,9 +49,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			tape_global_value.as_pointer_value()
 		};
 
+		let i32_type = context.i32_type();
 		let ptr = {
-			let i32_type = context.i32_type();
-
 			let ptr_global_value = module.add_global(i32_type, None, "ptr");
 
 			let zero_ptr = i32_type.const_zero();
@@ -66,6 +67,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			functions,
 			tape,
 			ptr,
+			ptr_type: i32_type,
 		}
 	}
 

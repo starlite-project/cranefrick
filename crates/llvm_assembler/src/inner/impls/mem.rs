@@ -6,14 +6,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn load(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
 		let ptr_type = self.context.default_ptr_type();
 		let i8_type = self.context.i8_type();
-		let i32_type = self.context.i32_type();
+		let ptr_int_type = self.ptr_type;
 
-		let offset = i32_type.const_int(offset as u64, false);
+		let offset = ptr_int_type.const_int(offset as u64, false);
 
 		let current_offset = {
 			let current_ptr = self
 				.builder
-				.build_load(i32_type, self.ptr, "load ptr")?
+				.build_load(ptr_int_type, self.ptr, "load ptr")?
 				.into_int_value();
 
 			self.builder
@@ -34,14 +34,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub fn store(&self, value: IntValue<'ctx>, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let ptr_type = self.context.default_ptr_type();
-		let i32_type = self.context.i32_type();
+		let ptr_int_type = self.ptr_type;
 
-		let offset = i32_type.const_int(offset as u64, false);
+		let offset = ptr_int_type.const_int(offset as u64, false);
 
 		let current_offset = {
 			let current_ptr = self
 				.builder
-				.build_load(i32_type, self.ptr, "load ptr")?
+				.build_load(ptr_int_type, self.ptr, "load ptr")?
 				.into_int_value();
 
 			self.builder
