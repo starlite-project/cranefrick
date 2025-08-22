@@ -13,12 +13,12 @@ impl InnerAssembler<'_> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(current_value, factor, "multiply current value by factor")
+				.build_int_mul(current_value, factor, "multiply_current_value_by_factor")
 		}?;
 
 		let added =
 			self.builder
-				.build_int_add(other_cell, value_to_add, "add value to other cell")?;
+				.build_int_add(other_cell, value_to_add, "add_value_to_other_cell")?;
 
 		self.store(added, offset)
 	}
@@ -41,12 +41,12 @@ impl InnerAssembler<'_> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(other_cell, factor, "multiply other value by factor")
+				.build_int_mul(other_cell, factor, "multiply_other_value_by_factor")
 		}?;
 
 		let added =
 			self.builder
-				.build_int_add(current_cell, value_to_add, "add value to current cell")?;
+				.build_int_add(current_cell, value_to_add, "add_value_to_current_cell")?;
 
 		self.store(added, 0)
 	}
