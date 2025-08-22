@@ -44,18 +44,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			tape_alloca
 		};
 
-		let i32_type = context.i32_type();
+		let i64_type = context.i64_type();
 		let ptr = {
-			// let ptr_global_value = module.add_global(i32_type, None, "ptr");
+			let ptr_alloca = builder.build_alloca(i64_type, "ptr")?;
 
-			// let zero_ptr = i32_type.const_zero();
-
-			// ptr_global_value.set_initializer(&zero_ptr);
-
-			// ptr_global_value.as_pointer_value()
-			let ptr_alloca = builder.build_alloca(i32_type, "ptr")?;
-
-			builder.build_store(ptr_alloca, i32_type.const_zero())?;
+			builder.build_store(ptr_alloca, i64_type.const_zero())?;
 
 			ptr_alloca
 		};
@@ -67,7 +60,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			functions,
 			tape,
 			ptr,
-			ptr_type: i32_type,
+			ptr_type: i64_type,
 		})
 	}
 
