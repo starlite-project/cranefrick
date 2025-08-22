@@ -1,1 +1,1 @@
-default<O3>,globalopt,gvn,aggressive-instcombine,adce,function-attrs,lcssa,loop-deletion,loop-reduce,loop-rotate,loop-simplify,loop-unroll,loop-unroll,break-crit-edges,default<O3>,sink,tailcallelim,default<O3>
+default<O3>,globalopt,gvn,aggressive-instcombine,adce,dce,dse,ipsccp,function-attrs,default<O3>,lcssa,loop-deletion,loop-reduce,loop-rotate,loop-simplify,loop-unroll,loop-unroll,break-crit-edges,default<O3>,sink,tailcallelim,default<O3>
