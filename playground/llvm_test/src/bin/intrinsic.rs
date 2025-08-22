@@ -1,12 +1,19 @@
-use color_eyre::Result;
-use inkwell::intrinsics::Intrinsic;
+use color_eyre::{Result, eyre::ContextCompat};
+use inkwell::{context::Context, intrinsics::Intrinsic, types::BasicType};
 
 fn main() -> Result<()> {
-    color_eyre::install()?;
+	color_eyre::install()?;
 
-    let intrinsic = Intrinsic::find("llvm.assume");
+	let context = Context::create();
+	let module = context.create_module("intrinsics");
 
-    dbg!(intrinsic);
+	let intrinsic = Intrinsic::find("llvm.assume").context("no intrinsic found")?;
 
-    Ok(())
+	let _func = intrinsic
+		.get_declaration(&module, &[])
+		.context("no declaration found")?;
+
+	module.print_to_stderr();
+
+	Ok(())
 }
