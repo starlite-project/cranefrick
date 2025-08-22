@@ -1,6 +1,6 @@
 use inkwell::values::IntValue;
 
-use crate::{ContextExt as _, LlvmAssemblyError, inner::InnerAssembler};
+use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn load(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
