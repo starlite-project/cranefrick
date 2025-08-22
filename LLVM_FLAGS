@@ -1,1 +1,1 @@
-"default<O3>,lcssa,loop-deletion-loop-rotate-loop-simplify-loop-unroll"
+"default<O3>,lcssa,loop-deletion,loop-rotate,loop-simplify,loop-unroll"
