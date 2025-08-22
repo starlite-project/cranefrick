@@ -12,7 +12,7 @@ pub struct CraneliftAssembledModule<'ctx> {
 	pub(crate) marker: PhantomData<&'ctx ()>,
 }
 
-impl<'ctx> AssembledModule for CraneliftAssembledModule<'ctx> {
+impl AssembledModule for CraneliftAssembledModule<'_> {
 	type Error = CraneliftAssemblyError;
 
 	fn execute(&self) -> Result<(), Self::Error> {
