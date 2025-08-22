@@ -1,1 +1,1 @@
-default<O3>,globalopt,function-attrs,break-crit-edges,lcssa,loop-deletion,loop-rotate,loop-simplify,loop-unroll,default<O3>
+default<O3>,globalopt,gvn,aggressive-instcombine,function-attrs,break-crit-edges,lcssa,loop-deletion,loop-rotate,loop-simplify,loop-unroll,jump-threading,default<O3>
