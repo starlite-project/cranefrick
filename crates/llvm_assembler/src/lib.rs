@@ -32,18 +32,14 @@ pub use self::module::LlvmAssembledModule;
 pub struct LlvmAssembler {
 	context: Context,
 	passes: String,
-	file_name: String,
-	directory_name: String,
 }
 
 impl LlvmAssembler {
 	#[must_use]
-	pub fn new(passes: String, file_name: String, directory_name: String) -> Self {
+	pub fn new(passes: String) -> Self {
 		Self {
 			context: Context::create(),
 			passes,
-			file_name,
-			directory_name,
 		}
 	}
 }
@@ -65,13 +61,11 @@ impl Assembler for LlvmAssembler {
 
 		info!("lowering into LLVM IR");
 
-		let assembler = InnerAssembler::new(&self.context, &self.file_name, &self.directory_name)?;
+		let assembler = InnerAssembler::new(&self.context)?;
 
-		let (module, Functions { main, .. }, debug_builder) = assembler.assemble(ops)?;
+		let (module, Functions { main, .. }) = assembler.assemble(ops)?;
 
 		info!("finalizing debug information");
-
-		debug_builder.finalize();
 
 		info!("writing unoptimized LLVM IR");
 		module
@@ -148,11 +142,7 @@ impl Assembler for LlvmAssembler {
 
 impl Default for LlvmAssembler {
 	fn default() -> Self {
-		Self::new(
-			"default<O0>".to_owned(),
-			"<unknown>".to_owned(),
-			".".to_owned(),
-		)
+		Self::new("default<O0>".to_owned())
 	}
 }
 

@@ -8,7 +8,6 @@ use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	builder::Builder,
 	context::Context,
-	debug_info::{DICompileUnit, DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder},
 	module::{FlagBehavior, Linkage, Module},
 	types::IntType,
 	values::{FunctionValue, PointerValue},
@@ -25,16 +24,10 @@ pub struct InnerAssembler<'ctx> {
 	tape: PointerValue<'ctx>,
 	ptr: PointerValue<'ctx>,
 	ptr_type: IntType<'ctx>,
-	debug_builder: DebugInfoBuilder<'ctx>,
-	debug_compile_unit: DICompileUnit<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn new(
-		context: &'ctx Context,
-		file_name: &str,
-		directory_name: &str,
-	) -> Result<Self, LlvmAssemblyError> {
+	pub fn new(context: &'ctx Context) -> Result<Self, LlvmAssemblyError> {
 		let module = context.create_module("frick");
 		let functions = Functions::new(context, &module);
 		let builder = context.create_builder();
@@ -62,32 +55,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_alloca
 		};
 
-		let debug_metadata_version = i32_type.const_int(3, false);
-
-		module.add_basic_value_flag(
-			"Debug Info Version",
-			FlagBehavior::Warning,
-			debug_metadata_version,
-		);
-
-		let (debug_builder, debug_compile_unit) = module.create_debug_info_builder(
-			true,
-			DWARFSourceLanguage::C,
-			file_name,
-			directory_name,
-			"frick",
-			true,
-			"",
-			0,
-			"",
-			DWARFEmissionKind::Full,
-			0,
-			false,
-			true,
-			"",
-			"",
-		);
-
 		Ok(Self {
 			context,
 			module,
@@ -96,18 +63,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 			tape,
 			ptr,
 			ptr_type: i32_type,
-			debug_builder,
-			debug_compile_unit,
 		})
 	}
 
 	pub fn assemble(
 		self,
 		ops: &[BrainIr],
-	) -> Result<
-		(Module<'ctx>, Functions<'ctx>, DebugInfoBuilder<'ctx>),
-		AssemblyError<LlvmAssemblyError>,
-	> {
+	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
 		self.ops(ops)?;
 
 		self.builder
@@ -145,8 +107,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>, DebugInfoBuilder<'ctx>) {
-		(self.module, self.functions, self.debug_builder)
+	fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>) {
+		(self.module, self.functions)
 	}
 }
 

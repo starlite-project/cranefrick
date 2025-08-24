@@ -6,13 +6,11 @@ fn main() -> Result<()> {
 	let module = context.create_module("my_mod");
 	let builder = context.create_builder();
 
-    let i32_type = context.i32_type();
+	let i32_type = context.i32_type();
 
-    let md_node = context.metadata_node(&[]);
+	let md_node = context.metadata_node(&[]);
 
-
-
-    module.print_to_stderr();
+	module.print_to_stderr();
 
 	Ok(())
 }
