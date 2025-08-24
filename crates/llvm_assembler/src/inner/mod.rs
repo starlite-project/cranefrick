@@ -8,7 +8,7 @@ use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	builder::Builder,
 	context::Context,
-	module::{FlagBehavior, Linkage, Module},
+	module::{Linkage, Module},
 	types::IntType,
 	values::{FunctionValue, PointerValue},
 };
