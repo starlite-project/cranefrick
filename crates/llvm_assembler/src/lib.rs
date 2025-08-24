@@ -75,7 +75,7 @@ impl Assembler for LlvmAssembler {
 
 		info!("writing unoptimized LLVM IR");
 		module
-			.print_to_file(output_path.join("unoptimized.ir"))
+			.print_to_file(output_path.join("unoptimized.ll"))
 			.map_err(AssemblyError::backend)?;
 
 		{
@@ -120,7 +120,7 @@ impl Assembler for LlvmAssembler {
 		info!("writing optimized LLVM IR");
 
 		module
-			.print_to_file(output_path.join("optimized.ir"))
+			.print_to_file(output_path.join("optimized.ll"))
 			.map_err(AssemblyError::backend)?;
 
 		module.verify().map_err(AssemblyError::backend)?;
