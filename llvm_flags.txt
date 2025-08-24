@@ -1,1 +1,1 @@
-default<O3>,globalopt,gvn,simplifycfg,sroa,aggressive-instcombine,adce,dce,dse,ipsccp,function-attrs,default<O3>,lcssa,loop-simplify,loop-deletion,loop-reduce,loop-rotate,loop-unroll,break-crit-edges,simple-loop-unswitch,loop-vectorize,sink,simplifycfg,sroa,aggressive-instcombine
+default<O3>,globalopt,gvn,sroa,aggressive-instcombine,adce,dce,dse,ipsccp,function-attrs,default<O3>,lcssa,loop-simplify,loop-deletion,loop-reduce,loop-rotate,loop-unroll,memcpyopt,break-crit-edges,simple-loop-unswitch,loop-vectorize,sink,sroa,aggressive-instcombine,default<O3>
