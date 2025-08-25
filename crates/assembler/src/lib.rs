@@ -5,12 +5,10 @@ use std::{
 	fmt::{Debug, Display, Error as FmtError, Formatter, Result as FmtResult},
 	io::{self, Error as IoError, prelude::*},
 	path::Path,
-	process::abort,
-	ptr, slice,
+	slice,
 };
 
 use frick_ir::BrainIr;
-use tracing::error;
 
 #[derive(Debug)]
 pub enum AssemblyError<E> {
@@ -104,11 +102,12 @@ pub unsafe extern "C" fn frick_assembler_write(value: u8) {
 
 	let mut stdout = io::stdout().lock();
 
-	let result = stdout.write_all(&[value]).and_then(|()| stdout.flush());
+	let result = stdout
+		.write_all(slice::from_ref(&value))
+		.and_then(|()| stdout.flush());
 
 	if let Err(e) = result {
-		error!("error occurred during write: {e}");
-		abort();
+		panic!("error occurred during write: {e}");
 	}
 }
 
@@ -120,10 +119,10 @@ pub unsafe extern "C" fn frick_assembler_read(buf: *mut u8) {
 		let err = stdin.read_exact(slice::from_mut(&mut value));
 
 		if let Err(e) = err {
-			if !matches!(e.kind(), io::ErrorKind::UnexpectedEof) {
-				error!("error occurred during read: {e}");
-				abort();
-			}
+			assert!(
+				matches!(e.kind(), io::ErrorKind::UnexpectedEof),
+				"error occurred during read: {e}"
+			);
 
 			value = 0;
 		}
@@ -133,7 +132,7 @@ pub unsafe extern "C" fn frick_assembler_read(buf: *mut u8) {
 		}
 
 		unsafe {
-			ptr::write(buf, value);
+			*buf = value;
 		}
 
 		break;
