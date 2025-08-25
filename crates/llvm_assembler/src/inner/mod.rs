@@ -129,27 +129,45 @@ impl<'ctx> Functions<'ctx> {
 		let noundef_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
 		let zeroext_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 1);
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
 		let nocapture_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocapture"), 2);
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocapture"), 0);
 		let writeonly_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("writeonly"), 3);
-		let nounwind_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 4);
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("writeonly"), 0);
 		let nonlazybind_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 5);
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 0);
+		let uwtable_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 2);
+		let nounwind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
 
 		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
 
-		Self::setup_attributes(getchar, AttributeLoc::Param(0), [nocapture_attr, noundef_attr, writeonly_attr]);
-		Self::setup_attributes(getchar, AttributeLoc::Function, [nounwind_attr, nonlazybind_attr]);
+		Self::setup_attributes(
+			getchar,
+			AttributeLoc::Param(0),
+			[nocapture_attr, noundef_attr, writeonly_attr],
+		);
+		Self::setup_attributes(
+			getchar,
+			AttributeLoc::Function,
+			[nounwind_attr, nonlazybind_attr, uwtable_attr],
+		);
 
 		let putchar_ty = void_type.fn_type(&[i8_type.into()], false);
 		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
 
-		Self::setup_attributes(putchar, AttributeLoc::Param(0), [noundef_attr, zeroext_attr]);
-		Self::setup_attributes(putchar, AttributeLoc::Function, [nounwind_attr, nonlazybind_attr]);
+		Self::setup_attributes(
+			putchar,
+			AttributeLoc::Param(0),
+			[noundef_attr, zeroext_attr],
+		);
+		Self::setup_attributes(
+			putchar,
+			AttributeLoc::Function,
+			[nounwind_attr, nonlazybind_attr, uwtable_attr],
+		);
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, Some(Linkage::External));
@@ -161,7 +179,11 @@ impl<'ctx> Functions<'ctx> {
 		}
 	}
 
-	fn setup_attributes(func: FunctionValue<'ctx>, loc: AttributeLoc, attributes: impl IntoIterator<Item = Attribute>) {
+	fn setup_attributes(
+		func: FunctionValue<'ctx>,
+		loc: AttributeLoc,
+		attributes: impl IntoIterator<Item = Attribute>,
+	) {
 		for attribute in attributes {
 			func.add_attribute(loc, attribute);
 		}
