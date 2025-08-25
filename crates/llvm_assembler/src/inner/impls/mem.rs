@@ -20,9 +20,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			)
 		}?;
 
-		let loaded_value = self.builder.build_load(i8_type, value, "load_load")?;
+		let loaded_value = self
+			.builder
+			.build_load(i8_type, value, "load_load")?
+			.into_int_value();
 
-		Ok(loaded_value.into_int_value())
+		Ok(loaded_value)
 	}
 
 	pub fn store(&self, value: IntValue<'ctx>, offset: i32) -> Result<(), LlvmAssemblyError> {
