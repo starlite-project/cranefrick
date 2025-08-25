@@ -5,13 +5,13 @@ use inkwell::IntPredicate;
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	pub fn if_nz(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+	pub fn if_not_zero(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let body_block = self
 			.context
-			.append_basic_block(self.functions.main, "if_nz.body");
+			.append_basic_block(self.functions.main, "if_not_zero.body");
 		let next_block = self
 			.context
-			.append_basic_block(self.functions.main, "if_nz.next");
+			.append_basic_block(self.functions.main, "if_not_zero.next");
 
 		let value = self.load(0)?;
 
@@ -23,7 +23,7 @@ impl InnerAssembler<'_> {
 
 		let cmp = self
 			.builder
-			.build_int_compare(IntPredicate::NE, value, zero, "if_nz_cmp")
+			.build_int_compare(IntPredicate::NE, value, zero, "if_not_zero_cmp")
 			.map_err(AssemblyError::backend)?;
 
 		self.builder

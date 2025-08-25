@@ -94,9 +94,6 @@ impl Compiler {
 		self.pass_info("unrolling no-move dynamic loops");
 		*progress |= run_peephole_pass(self, passes::unroll_basic_dynamic_loop);
 
-		self.pass_info("partially unrolling no-move dynamic loops");
-		*progress |= run_peephole_pass(self, passes::partially_unroll_basic_dynamic_loop);
-
 		self.pass_info("sorting cell changes");
 		*progress |= run_peephole_pass(self, passes::sort_changes);
 

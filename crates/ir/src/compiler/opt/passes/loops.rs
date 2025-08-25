@@ -1,3 +1,5 @@
+use std::iter;
+
 use super::{BrainIr, Change};
 use crate::compiler::opt::utils::calculate_ptr_movement;
 
@@ -8,7 +10,7 @@ pub const fn remove_unreachable_loops(ops: &[BrainIr; 2]) -> Option<Change> {
 			BrainIr::DynamicLoop(..)
 			| BrainIr::FindZero(..)
 			| BrainIr::MoveValueTo(..)
-			| BrainIr::IfNz(..),
+			| BrainIr::IfNotZero(..),
 		] if l.is_zeroing_cell() => Some(Change::remove_offset(1)),
 		_ => None,
 	}
@@ -89,36 +91,6 @@ pub fn unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change> {
-	match ops {
-		[BrainIr::ChangeCell(v, None), BrainIr::DynamicLoop(l)]
-			if *v >= 1
-				&& matches!(calculate_ptr_movement(l)?, 0)
-				&& matches!(
-					l.as_slice(),
-					[.., BrainIr::ChangeCell(-1, None)] | [BrainIr::ChangeCell(-1, None), ..]
-				) =>
-		{
-			if l.iter().any(|op| matches!(op, BrainIr::DynamicLoop(..))) {
-				return None;
-			}
-
-			let mut out = Vec::with_capacity(l.len() * *v as usize);
-
-			for _ in 0..*v {
-				out.extend_from_slice(l);
-			}
-
-			out.insert(0, BrainIr::change_cell(*v));
-
-			out.push(BrainIr::dynamic_loop(l.iter().cloned()));
-
-			Some(Change::swap(out))
-		}
-		_ => None,
-	}
-}
-
 pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
@@ -147,10 +119,9 @@ pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
 
 pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[rest @ .., i] if i.is_zeroing_cell() => Some(Change::swap([
-			BrainIr::if_nz(rest.iter().cloned()),
-			i.clone(),
-		])),
+		[rest @ .., i] if i.is_zeroing_cell() => Some(Change::swap([BrainIr::if_not_zero(
+			rest.iter().cloned().chain(iter::once(i.clone())),
+		)])),
 		_ => None,
 	}
 }

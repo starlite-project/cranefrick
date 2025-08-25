@@ -34,7 +34,7 @@ pub enum BrainIr {
 	ReplaceValueFrom(u8, i32),
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
-	IfNz(Vec<Self>),
+	IfNotZero(Vec<Self>),
 }
 
 impl BrainIr {
@@ -77,6 +77,7 @@ impl BrainIr {
 				| Self::MoveValueTo(..)
 				| Self::FindZero(..)
 				| Self::SubCell(..)
+				| Self::IfNotZero(..)
 		)
 	}
 
@@ -154,14 +155,14 @@ impl BrainIr {
 	#[must_use]
 	pub const fn child_ops(&self) -> Option<&Vec<Self>> {
 		match self {
-			Self::DynamicLoop(ops) | Self::IfNz(ops) => Some(ops),
+			Self::DynamicLoop(ops) | Self::IfNotZero(ops) => Some(ops),
 			_ => None,
 		}
 	}
 
 	pub const fn child_ops_mut(&mut self) -> Option<&mut Vec<Self>> {
 		match self {
-			Self::DynamicLoop(ops) | Self::IfNz(ops) => Some(ops),
+			Self::DynamicLoop(ops) | Self::IfNotZero(ops) => Some(ops),
 			_ => None,
 		}
 	}
@@ -172,7 +173,7 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub fn if_nz(instrs: impl IntoIterator<Item = Self>) -> Self {
-		Self::IfNz(instrs.collect_to())
+	pub fn if_not_zero(instrs: impl IntoIterator<Item = Self>) -> Self {
+		Self::IfNotZero(instrs.collect_to())
 	}
 }

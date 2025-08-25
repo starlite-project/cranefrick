@@ -10,7 +10,10 @@ use crate::{
 };
 
 impl InnerAssembler<'_> {
-	pub fn block(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
+	pub fn if_not_zero(
+		&mut self,
+		ops: &[BrainIr],
+	) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
 		self.invalidate_loads();
 
 		self.add_srcflag(SrcLoc::BLOCK);
