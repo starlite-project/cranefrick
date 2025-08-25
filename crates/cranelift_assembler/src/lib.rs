@@ -18,7 +18,7 @@ use cranelift_codegen::{
 use cranelift_frontend::FunctionBuilderContext;
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module as _, ModuleError};
-use frick_assembler::{Assembler, AssemblyError, InnerAssemblyError, frick_assembler_read};
+use frick_assembler::{frick_assembler_read, frick_assembler_write, Assembler, AssemblyError, InnerAssemblyError};
 use frick_ir::BrainIr;
 use inner::InnerAssembler;
 use target_lexicon::Triple;
@@ -75,7 +75,7 @@ impl Assembler for CraneliftAssembler {
 		let mut jit_builder =
 			JITBuilder::with_isa(isa.clone(), cranelift_module::default_libcall_names());
 
-		jit_builder.symbol("write", libc::putchar as *const u8);
+		jit_builder.symbol("write", frick_assembler_write as *const u8);
 		jit_builder.symbol("read", frick_assembler_read as *const u8);
 
 		let mut module = JITModule::new(jit_builder);

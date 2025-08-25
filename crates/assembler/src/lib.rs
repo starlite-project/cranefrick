@@ -95,12 +95,20 @@ pub trait AssembledModule {
 pub trait InnerAssemblyError {}
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn frick_assembler_write(value: u8) {
+pub unsafe extern "C-unwind" fn frick_assembler_write(value: u32) {
 	if cfg!(target_os = "windows") && value >= 128 {
 		return;
 	}
 
 	let mut stdout = io::stdout().lock();
+
+	let value = {
+		let Some(ch) = char::from_u32(value) else {
+			return;
+		};
+
+		ch as u8
+	};
 
 	let result = stdout
 		.write_all(slice::from_ref(&value))
@@ -112,7 +120,7 @@ pub unsafe extern "C" fn frick_assembler_write(value: u8) {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn frick_assembler_read(buf: *mut u8) {
+pub unsafe extern "C-unwind" fn frick_assembler_read(buf: *mut u8) {
 	let mut stdin = io::stdin().lock();
 	loop {
 		let mut value = 0;

@@ -134,7 +134,7 @@ impl<'ctx> Functions<'ctx> {
 		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
 
-		let putchar_ty = i32_type.fn_type(&[i32_type.into()], false);
+		let putchar_ty = void_type.fn_type(&[i32_type.into()], false);
 		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
 
 		let main_ty = void_type.fn_type(&[], false);
@@ -146,13 +146,15 @@ impl<'ctx> Functions<'ctx> {
 			main,
 		};
 
-		this.setup_getchar_attributes(context);
-		this.setup_putchar_attributes(context);
-
-		this
+		this.setup(context)
 	}
 
-	fn setup_getchar_attributes(self, context: &'ctx Context) {
+	fn setup(self, context: &'ctx Context) -> Self {
+		self.setup_getchar_attributes(context)
+			.setup_putchar_attributes(context)
+	}
+
+	fn setup_getchar_attributes(self, context: &'ctx Context) -> Self {
 		let noundef_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
 		let writeonly_attr =
@@ -167,20 +169,20 @@ impl<'ctx> Functions<'ctx> {
 
 		let nofree_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
-		let nounwind_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
 		let nonlazybind_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 0);
 		let uwtable_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 2);
 
-		for attribute in [nofree_attr, nounwind_attr, nonlazybind_attr, uwtable_attr] {
+		for attribute in [nofree_attr, nonlazybind_attr, uwtable_attr] {
 			self.getchar
 				.add_attribute(AttributeLoc::Function, attribute);
 		}
+
+		self
 	}
 
-	fn setup_putchar_attributes(self, context: &'ctx Context) {
+	fn setup_putchar_attributes(self, context: &'ctx Context) -> Self {
 		let noundef_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
 
@@ -192,12 +194,16 @@ impl<'ctx> Functions<'ctx> {
 
 		let nofree_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
-		let nounwind_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
+		let nonlazybind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 0);
+		let uwtable_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 2);
 
-		for attribute in [nofree_attr, nounwind_attr] {
+		for attribute in [nofree_attr, nonlazybind_attr, uwtable_attr] {
 			self.putchar
 				.add_attribute(AttributeLoc::Function, attribute);
 		}
+
+		self
 	}
 }
