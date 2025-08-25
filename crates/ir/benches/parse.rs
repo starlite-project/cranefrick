@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use frick_ir::AstParser;
 
 const HELLO_WORLD: &str = include_str!("../../../programs/hello_world.bf");
@@ -21,29 +21,22 @@ fn setup(source: &str) -> AstParser {
 }
 
 fn bench_basic(c: &mut Criterion) {
-	c.bench_function("hello_world parse", |b| {
-		b.iter(|| {
-			assert!(setup(black_box(HELLO_WORLD)).parse().is_ok());
-		});
-	});
-
-	c.bench_function("hello_world_test parse", |b| {
-		b.iter(|| {
-			assert!(setup(black_box(HELLO_WORLD_TEST)).parse().is_ok());
-		});
-	});
-
-	c.bench_function("mandlebrot parse", |b| {
-		b.iter(|| {
-			assert!(setup(black_box(MANDLEBROT)).parse().is_ok());
-		});
-	});
-
-	c.bench_function("awib parse", |b| {
-		b.iter(|| {
-			assert!(setup(black_box(AWIB)).parse().is_ok());
-		});
-	});
+	let mut group = c.benchmark_group("parse");
+	for (name, value) in [
+		("hello_world", HELLO_WORLD),
+		("hello_world_test", HELLO_WORLD_TEST),
+		("mandlebrot", MANDLEBROT),
+		("awib", AWIB),
+	] {
+		group.throughput(Throughput::Bytes(value.len() as u64));
+		group.bench_with_input(
+			BenchmarkId::new(format!("{name} parse"), value.len()),
+			&value,
+			|b, &i| {
+				b.iter(|| assert!(setup(i).parse().is_ok()));
+			},
+		);
+	}
 }
 
 criterion_group!(benches, bench_basic);
