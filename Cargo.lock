@@ -646,6 +646,7 @@ name = "frick_assembler"
 version = "0.1.0"
 dependencies = [
  "frick_ir",
+ "libc",
  "tracing",
 ]
 
@@ -686,6 +687,7 @@ dependencies = [
  "frick_assembler",
  "frick_ir",
  "inkwell",
+ "libc",
  "tracing",
 ]
 

@@ -127,72 +127,49 @@ pub struct Functions<'ctx> {
 
 impl<'ctx> Functions<'ctx> {
 	fn new(context: &'ctx Context, module: &Module<'ctx>) -> Self {
-		let i8_type = context.i8_type();
 		let ptr_type = context.default_ptr_type();
 		let void_type = context.void_type();
-
-		let noundef_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
-		let zeroext_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
-		let nocapture_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocapture"), 0);
-		let writeonly_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("writeonly"), 0);
-		let nonlazybind_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 0);
-		let uwtable_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 2);
-		let nounwind_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
-		let nofree_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
+		let i32_type = context.i32_type();
 
 		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
 
-		Self::setup_attributes(
-			getchar,
-			AttributeLoc::Param(0),
-			[nocapture_attr, noundef_attr, writeonly_attr],
-		);
-		Self::setup_attributes(
-			getchar,
-			AttributeLoc::Function,
-			[nounwind_attr, nonlazybind_attr, uwtable_attr, nofree_attr],
-		);
-
-		let putchar_ty = void_type.fn_type(&[i8_type.into()], false);
+		let putchar_ty = i32_type.fn_type(&[i32_type.into()], false);
 		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
-
-		Self::setup_attributes(
-			putchar,
-			AttributeLoc::Param(0),
-			[noundef_attr, zeroext_attr],
-		);
-		Self::setup_attributes(
-			putchar,
-			AttributeLoc::Function,
-			[nounwind_attr, nonlazybind_attr, uwtable_attr, nofree_attr],
-		);
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, Some(Linkage::External));
 
-		Self {
+		let this = Self {
 			getchar,
 			putchar,
 			main,
-		}
+		};
+
+		this.setup_getchar_attributes(context);
+
+		this
 	}
 
-	fn setup_attributes(
-		func: FunctionValue<'ctx>,
-		loc: AttributeLoc,
-		attributes: impl IntoIterator<Item = Attribute>,
-	) {
-		for attribute in attributes {
-			func.add_attribute(loc, attribute);
+	fn setup_getchar_attributes(self, context: &'ctx Context) {
+		let noundef_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
+		let writeonly_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("writeonly"), 0);
+
+		for attribute in [noundef_attr, writeonly_attr] {
+			self.getchar
+				.add_attribute(AttributeLoc::Param(0), attribute);
+		}
+
+		let nofree_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
+		let nounwind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
+
+		for attribute in [nofree_attr, nounwind_attr] {
+			self.getchar
+				.add_attribute(AttributeLoc::Function, attribute);
 		}
 	}
 }

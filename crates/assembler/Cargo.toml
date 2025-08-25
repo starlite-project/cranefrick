@@ -13,3 +13,4 @@ crate-type = ["lib", "cdylib"]
 [dependencies]
 frick_ir.workspace = true
 tracing.workspace = true
+libc.workspace = true

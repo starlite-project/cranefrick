@@ -4,9 +4,15 @@ impl InnerAssembler<'_> {
 	pub fn output_current_cell(&self) -> Result<(), LlvmAssemblyError> {
 		let char_to_put = self.load(0)?;
 
+		let i32_type = self.context.i32_type();
+
+		let extended_char =
+			self.builder
+				.build_int_s_extend(char_to_put, i32_type, "output_current_cell_extend")?;
+
 		self.builder.build_call(
 			self.functions.putchar,
-			&[char_to_put.into()],
+			&[extended_char.into()],
 			"output_current_cell_call",
 		)?;
 
@@ -20,9 +26,15 @@ impl InnerAssembler<'_> {
 			i8_type.const_int(c.into(), false)
 		};
 
+		let i32_type = self.context.i32_type();
+
+		let extended_char =
+			self.builder
+				.build_int_s_extend(char_to_put, i32_type, "output_char_extend")?;
+
 		self.builder.build_call(
 			self.functions.putchar,
-			&[char_to_put.into()],
+			&[extended_char.into()],
 			"output_char_call",
 		)?;
 
@@ -30,19 +42,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
-		let i8_type = self.context.i8_type();
-
-		for c in c.iter().copied() {
-			let char_to_put = i8_type.const_int(c.into(), false);
-
-			self.builder.build_call(
-				self.functions.putchar,
-				&[char_to_put.into()],
-				"output_chars_call",
-			)?;
-		}
-
-		Ok(())
+		c.iter().copied().try_for_each(|c| self.output_char(c))
 	}
 
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {

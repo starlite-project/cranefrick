@@ -66,6 +66,7 @@ frick_assembler = { path = "crates/assembler" }
 frick_ir = { path = "crates/ir" }
 frick_utils = { path = "crates/utils" }
 inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "279ef78b3507a431e48767748c2335aef26b7d9f" }
+libc = "0.2"
 serde = { version = "1", default-features = false }
 target-lexicon = "0.13"
 tracing = "0.1"
