@@ -253,7 +253,11 @@ pub fn optimize_constant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 		[BrainIr::SetCell(a, None), BrainIr::TakeValueTo(factor, x)] => Some(Change::swap([
 			BrainIr::clear_cell(),
 			BrainIr::move_pointer(*x),
-			BrainIr::set_cell(a.wrapping_mul(*factor)),
+			BrainIr::change_cell(a.wrapping_mul(*factor) as i8),
+		])),
+		[BrainIr::SetCell(a, None), BrainIr::MoveValueTo(factor, x)] => Some(Change::swap([
+			BrainIr::clear_cell(),
+			BrainIr::change_cell_at(a.wrapping_mul(*factor) as i8, *x),
 		])),
 		_ => None,
 	}
