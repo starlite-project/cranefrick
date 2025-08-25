@@ -18,7 +18,9 @@ use cranelift_codegen::{
 use cranelift_frontend::FunctionBuilderContext;
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module as _, ModuleError};
-use frick_assembler::{frick_assembler_read, frick_assembler_write, Assembler, AssemblyError, InnerAssemblyError};
+use frick_assembler::{
+	Assembler, AssemblyError, InnerAssemblyError, frick_assembler_read, frick_assembler_write,
+};
 use frick_ir::BrainIr;
 use inner::InnerAssembler;
 use target_lexicon::Triple;
