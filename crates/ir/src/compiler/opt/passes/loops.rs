@@ -147,9 +147,10 @@ pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
 
 pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		instrs @ [.., i] if i.is_zeroing_cell() => {
-			Some(Change::replace(BrainIr::if_nz(instrs.iter().cloned())))
-		}
+		[rest @ .., i] if i.is_zeroing_cell() => Some(Change::swap([
+			BrainIr::if_nz(rest.iter().cloned()),
+			i.clone(),
+		])),
 		_ => None,
 	}
 }

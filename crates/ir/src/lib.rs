@@ -77,7 +77,6 @@ impl BrainIr {
 				| Self::MoveValueTo(..)
 				| Self::FindZero(..)
 				| Self::SubCell(..)
-				| Self::IfNz(..)
 		)
 	}
 
