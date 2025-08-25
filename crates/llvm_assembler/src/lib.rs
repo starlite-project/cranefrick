@@ -120,6 +120,15 @@ impl Assembler for LlvmAssembler {
 			module
 				.run_passes("lint", &target_machine, pass_options)
 				.map_err(AssemblyError::backend)?;
+
+			info!("writing asm");
+			target_machine
+				.write_to_file(
+					&module,
+					inkwell::targets::FileType::Assembly,
+					&output_path.join("program.asm"),
+				)
+				.map_err(AssemblyError::backend)?;
 		}
 
 		info!("writing optimized LLVM IR");
