@@ -10,4 +10,4 @@ version.workspace = true
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 color-eyre.workspace = true
-inkwell = { version = "0.6", features = ["llvm18-1"] }
+inkwell = { workspace = true, features = ["llvm18-1"] }
