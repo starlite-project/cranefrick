@@ -37,11 +37,22 @@ pub struct LlvmAssembler {
 impl LlvmAssembler {
 	#[must_use]
 	pub fn new(passes: String) -> Self {
+		inkwell::support::error_handling::reset_fatal_error_handler();
+		unsafe {
+			inkwell::support::error_handling::install_fatal_error_handler(handler);
+		}
+
+		inkwell::support::enable_llvm_pretty_stack_trace();
+
 		Self {
 			context: Context::create(),
 			passes,
 		}
 	}
+}
+
+extern "C" fn handler(ptr: *const i8) {
+	println!("caught exception: {ptr:p}");
 }
 
 impl Assembler for LlvmAssembler {
