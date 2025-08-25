@@ -119,16 +119,6 @@ pub fn partially_unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change>
 	}
 }
 
-pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
-	match ops {
-		[rest @ .., BrainIr::SetCell(0, None)] => Some(Change::swap([
-			BrainIr::if_nz(rest.iter().cloned()),
-			BrainIr::clear_cell(),
-		])),
-		_ => None,
-	}
-}
-
 pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
@@ -150,6 +140,15 @@ pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {
 			Some(Change::replace(BrainIr::find_zero(*offset)))
+		}
+		_ => None,
+	}
+}
+
+pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
+		instrs @ [.., i] if i.is_zeroing_cell() => {
+			Some(Change::replace(BrainIr::if_nz(instrs.iter().cloned())))
 		}
 		_ => None,
 	}

@@ -76,8 +76,8 @@ impl BrainIr {
 				| Self::DynamicLoop(..)
 				| Self::MoveValueTo(..)
 				| Self::FindZero(..)
-				| Self::IfNz(..)
 				| Self::SubCell(..)
+				| Self::IfNz(..)
 		)
 	}
 

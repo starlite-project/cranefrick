@@ -13,7 +13,7 @@ bitflags! {
 		const TAKE_VALUE = 1 << 8;
 		const FETCH_VALUE = 1 << 9;
 		const DYNAMIC_LOOP = 1 << 10;
-		const IF_NZ = 1 << 11;
+		const BLOCK = 1 << 11;
 		const REPLACE_VALUE = 1 << 12;
 		const OUTPUT_CHARS = 1 << 13;
 		const SUB_CELL = 1 << 14;

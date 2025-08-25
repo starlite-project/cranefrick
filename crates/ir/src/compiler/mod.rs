@@ -107,9 +107,6 @@ impl Compiler {
 		*progress |= run_peephole_pass(self, passes::optimize_replace_value);
 		*progress |= run_peephole_pass(self, passes::optimize_scale_value);
 
-		self.pass_info("optimize if nz");
-		*progress |= run_loop_pass(self, passes::optimize_if_nz);
-
 		self.pass_info("optimize write calls");
 		*progress |= run_peephole_pass(self, passes::optimize_writes);
 		*progress |= run_peephole_pass(self, passes::optimize_sets_and_writes);
@@ -128,6 +125,9 @@ impl Compiler {
 
 		self.pass_info("optimize sub cell");
 		*progress |= run_loop_pass(self, passes::optimize_sub_cell);
+
+		self.pass_info("optimizing if_nz");
+		*progress |= run_loop_pass(self, passes::optimize_if_nz);
 	}
 
 	fn pass_info(&self, pass: &str) {

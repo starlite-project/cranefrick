@@ -10,10 +10,10 @@ use crate::{
 };
 
 impl InnerAssembler<'_> {
-	pub fn if_nz(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
+	pub fn block(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
 		self.invalidate_loads();
 
-		self.add_srcflag(SrcLoc::IF_NZ);
+		self.add_srcflag(SrcLoc::BLOCK);
 
 		let body_block = self.create_block();
 		let next_block = self.create_block();
@@ -27,7 +27,7 @@ impl InnerAssembler<'_> {
 		for op in ops {
 			self.invalidate_loads();
 			self.ops(slice::from_ref(op))?;
-			self.add_srcflag(SrcLoc::IF_NZ);
+			self.add_srcflag(SrcLoc::BLOCK);
 		}
 
 		self.ins().jump(next_block, &[]);
@@ -35,7 +35,7 @@ impl InnerAssembler<'_> {
 		self.switch_to_block(next_block);
 		self.seal_block(next_block);
 
-		self.remove_srcflag(SrcLoc::IF_NZ);
+		self.remove_srcflag(SrcLoc::BLOCK);
 
 		Ok(())
 	}
