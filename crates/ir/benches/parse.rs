@@ -11,13 +11,15 @@ const AWIB: &str = include_str!("../../../programs/awib.bf");
 
 const TURING: &str = include_str!("../../../programs/turing.bf");
 
-fn setup(source: &str) -> AstParser {
-	AstParser::new(
-		source
-			.chars()
-			.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | '.' | ','))
-			.collect(),
-	)
+fn filter(source: &str) -> String {
+	source
+		.chars()
+		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | '.' | ','))
+		.collect()
+}
+
+const fn setup(source: String) -> AstParser {
+	AstParser::new(source)
 }
 
 fn bench_basic(c: &mut Criterion) {
@@ -27,14 +29,17 @@ fn bench_basic(c: &mut Criterion) {
 		("hello_world_test", HELLO_WORLD_TEST),
 		("mandlebrot", MANDLEBROT),
 		("awib", AWIB),
-		("turing", TURING)
-	] {
+		("turing", TURING),
+	]
+	.iter()
+	.map(|(name, raw)| (name, filter(raw)))
+	{
 		group.throughput(Throughput::Bytes(value.len() as u64));
 		group.bench_with_input(
 			BenchmarkId::new(format!("{name} parse"), value.len()),
 			&value,
-			|b, &i| {
-				b.iter(|| assert!(setup(i).parse().is_ok()));
+			|b, i| {
+				b.iter(|| assert!(setup(i.clone()).parse().is_ok()));
 			},
 		);
 	}
