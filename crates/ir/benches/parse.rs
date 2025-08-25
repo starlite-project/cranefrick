@@ -1,5 +1,3 @@
-use std::hint::black_box;
-
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use frick_ir::AstParser;
 
@@ -10,6 +8,8 @@ const HELLO_WORLD_TEST: &str = include_str!("../../../programs/tests/hello_world
 const MANDLEBROT: &str = include_str!("../../../programs/mandlebrot.bf");
 
 const AWIB: &str = include_str!("../../../programs/awib.bf");
+
+const TURING: &str = include_str!("../../../programs/turing.bf");
 
 fn setup(source: &str) -> AstParser {
 	AstParser::new(
@@ -27,6 +27,7 @@ fn bench_basic(c: &mut Criterion) {
 		("hello_world_test", HELLO_WORLD_TEST),
 		("mandlebrot", MANDLEBROT),
 		("awib", AWIB),
+		("turing", TURING)
 	] {
 		group.throughput(Throughput::Bytes(value.len() as u64));
 		group.bench_with_input(
