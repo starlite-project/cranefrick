@@ -8,7 +8,7 @@ impl InnerAssembler<'_> {
 
 		let extended_char =
 			self.builder
-				.build_int_s_extend(char_to_put, i32_type, "output_current_cell_extend")?;
+				.build_int_z_extend(char_to_put, i32_type, "output_current_cell_extend")?;
 
 		self.builder.build_call(
 			self.functions.putchar,
@@ -30,7 +30,7 @@ impl InnerAssembler<'_> {
 
 		let extended_char =
 			self.builder
-				.build_int_s_extend(char_to_put, i32_type, "output_char_extend")?;
+				.build_int_z_extend(char_to_put, i32_type, "output_char_extend")?;
 
 		self.builder.build_call(
 			self.functions.putchar,
