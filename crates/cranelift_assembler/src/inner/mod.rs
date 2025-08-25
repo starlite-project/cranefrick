@@ -65,7 +65,8 @@ impl<'a> InnerAssembler<'a> {
 
 		let write = {
 			let mut write_sig = module.make_signature();
-			write_sig.params.push(AbiParam::new(types::I8));
+			write_sig.params.push(AbiParam::new(types::I32));
+			write_sig.returns.push(AbiParam::new(types::I32));
 
 			module.declare_function("write", Linkage::Import, &write_sig)
 		}?;

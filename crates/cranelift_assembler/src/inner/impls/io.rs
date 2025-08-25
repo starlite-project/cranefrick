@@ -1,4 +1,4 @@
-use cranelift_codegen::ir::InstBuilder as _;
+use cranelift_codegen::ir::{InstBuilder as _, types};
 
 use crate::inner::{InnerAssembler, SrcLoc};
 
@@ -8,7 +8,7 @@ impl InnerAssembler<'_> {
 
 		let write = self.write;
 
-		let value = self.const_u8(c);
+		let value = self.ins().iconst(types::I32, i64::from(c));
 
 		self.ins().call(write, &[value]);
 
@@ -21,7 +21,7 @@ impl InnerAssembler<'_> {
 		let write = self.write;
 
 		for c in chars.iter().copied() {
-			let value = self.const_u8(c);
+			let value = self.ins().iconst(types::I32, i64::from(c));
 
 			self.ins().call(write, &[value]);
 		}
@@ -35,6 +35,8 @@ impl InnerAssembler<'_> {
 		let write = self.write;
 
 		let value = self.load(0);
+
+		let value = self.ins().sextend(types::I32, value);
 
 		self.ins().call(write, &[value]);
 

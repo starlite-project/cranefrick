@@ -662,6 +662,7 @@ dependencies = [
  "cranelift-native",
  "frick_assembler",
  "frick_ir",
+ "libc",
  "serde",
  "target-lexicon",
  "tracing",

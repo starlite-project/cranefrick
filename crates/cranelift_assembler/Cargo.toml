@@ -20,6 +20,7 @@ cranelift-module.workspace = true
 cranelift-native.workspace = true
 frick_assembler.workspace = true
 frick_ir.workspace = true
+libc.workspace = true
 serde = { workspace = true, features = ["derive", "std"] }
 target-lexicon = "0.13"
 tracing.workspace = true
