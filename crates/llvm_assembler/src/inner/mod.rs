@@ -134,6 +134,10 @@ impl<'ctx> Functions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocapture"), 2);
 		let writeonly_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("writeonly"), 3);
+		let nounwind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 4);
+		let nonlazybind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 5);
 
 		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
@@ -142,11 +146,19 @@ impl<'ctx> Functions<'ctx> {
 			getchar.add_attribute(AttributeLoc::Param(0), attr);
 		}
 
+		for attr in [nounwind_attr, nonlazybind_attr] {
+			getchar.add_attribute(AttributeLoc::Function, attr);
+		}
+
 		let putchar_ty = void_type.fn_type(&[i8_type.into()], false);
 		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
 
 		for attr in [noundef_attr, zeroext_attr] {
 			putchar.add_attribute(AttributeLoc::Param(0), attr);
+		}
+
+		for attr in [nounwind_attr, nonlazybind_attr] {
+			putchar.add_attribute(AttributeLoc::Function, attr);
 		}
 
 		let main_ty = void_type.fn_type(&[], false);
