@@ -65,7 +65,7 @@ where
 			just('-').repeated().at_least(1).map_with(|(), e| {
 				let span: SimpleSpan = e.span();
 
-				BrainIr::change_cell(-(span.into_iter().len() as i8))
+				BrainIr::change_cell((span.into_iter().len() as i8).wrapping_neg())
 			}),
 			just('>').repeated().at_least(1).map_with(|(), e| {
 				let span: SimpleSpan = e.span();
@@ -75,7 +75,7 @@ where
 			just('<').repeated().at_least(1).map_with(|(), e| {
 				let span: SimpleSpan = e.span();
 
-				BrainIr::move_pointer(-(span.into_iter().len() as i32))
+				BrainIr::move_pointer((span.into_iter().len() as i32).wrapping_neg())
 			}),
 			just(',').repeated().at_least(1).to(BrainIr::input_cell()),
 			just('.').to(BrainIr::output_current_cell()),
