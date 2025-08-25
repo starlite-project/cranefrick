@@ -17,7 +17,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_ptr = self
 			.builder
-			.build_load(ptr_type, self.ptr, "load_ptr")?
+			.build_load(ptr_type, self.ptr, "offset_ptr_load")?
 			.into_int_value();
 
 		if matches!(offset, 0) {
@@ -26,34 +26,36 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let offset_ptr = self
 			.builder
-			.build_int_add(current_ptr, offset_value, "offset_ptr")?;
+			.build_int_add(current_ptr, offset_value, "offset_ptr_add")?;
 
 		let wrapped_offset_ptr = if offset > 0 {
 			self.builder.build_int_unsigned_rem(
 				offset_ptr,
 				ptr_type.const_int(30_000, false),
-				"wrap_ptr_positive",
+				"offset_ptr_urem",
 			)
 		} else {
 			let tmp = self.builder.build_int_signed_rem(
 				offset_ptr,
 				ptr_type.const_int(30_000, false),
-				"tmp",
+				"offset_pre_srem",
 			)?;
 
-			let added_offset =
-				self.builder
-					.build_int_add(tmp, ptr_type.const_int(30_000, false), "added_tmp")?;
+			let added_offset = self.builder.build_int_add(
+				tmp,
+				ptr_type.const_int(30_000, false),
+				"offset_ptr_add",
+			)?;
 
 			let cmp = self.builder.build_int_compare(
 				IntPredicate::SLT,
 				tmp,
 				ptr_type.const_zero(),
-				"isneg",
+				"offset_ptr_cmp",
 			)?;
 
 			self.builder
-				.build_select(cmp, added_offset, tmp, "wrapped")
+				.build_select(cmp, added_offset, tmp, "offset_ptr_select")
 				.map(|v| v.into_int_value())
 		}?;
 

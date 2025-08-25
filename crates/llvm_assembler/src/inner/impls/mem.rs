@@ -16,13 +16,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 				i8_array_type,
 				self.tape,
 				&[zero, current_offset],
-				"index_into_tape",
+				"load_gep",
 			)
 		}?;
 
-		let loaded_value = self
-			.builder
-			.build_load(i8_type, value, "load_value_from_tape")?;
+		let loaded_value = self.builder.build_load(i8_type, value, "load_load")?;
 
 		Ok(loaded_value.into_int_value())
 	}
@@ -40,7 +38,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				i8_array_type,
 				self.tape,
 				&[zero, current_offset],
-				"index_into_tape",
+				"store_gep",
 			)
 		}?;
 

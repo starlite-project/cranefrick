@@ -23,7 +23,7 @@ impl InnerAssembler<'_> {
 
 		let cmp = self
 			.builder
-			.build_int_compare(IntPredicate::NE, value, zero, "check_if_value_is_zero")
+			.build_int_compare(IntPredicate::NE, value, zero, "if_nz_cmp")
 			.map_err(AssemblyError::backend)?;
 
 		self.builder
@@ -70,7 +70,7 @@ impl InnerAssembler<'_> {
 
 		let cmp = self
 			.builder
-			.build_int_compare(IntPredicate::NE, value, zero, "check_if_value_is_zero")
+			.build_int_compare(IntPredicate::NE, value, zero, "dynamic_loop_cmp")
 			.map_err(AssemblyError::backend)?;
 
 		self.builder
@@ -113,12 +113,9 @@ impl InnerAssembler<'_> {
 			i8_type.const_zero()
 		};
 
-		let cmp = self.builder.build_int_compare(
-			IntPredicate::NE,
-			value,
-			zero,
-			"check_if_value_is_zero",
-		)?;
+		let cmp = self
+			.builder
+			.build_int_compare(IntPredicate::NE, value, zero, "find_zero_cmp")?;
 
 		self.builder
 			.build_conditional_branch(cmp, body_block, next_block)?;

@@ -13,19 +13,38 @@ impl InnerAssembler<'_> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(current_value, factor, "multiply_current_value_by_factor")
+				.build_int_mul(current_value, factor, "move_value_mul")
 		}?;
 
-		let added =
-			self.builder
-				.build_int_add(other_cell, value_to_add, "add_value_to_other_cell")?;
+		let added = self
+			.builder
+			.build_int_add(other_cell, value_to_add, "move_value_add")?;
 
 		self.store(added, offset)
 	}
 
 	pub fn take_value(&self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		self.move_value(factor, offset)?;
-		self.move_pointer(offset)
+		let current_value = self.load(0)?;
+		self.set_cell(0, 0)?;
+
+		self.move_pointer(offset)?;
+
+		let other_cell = self.load(0)?;
+
+		let value_to_add = {
+			let i8_type = self.context.i8_type();
+
+			let factor = i8_type.const_int(factor.into(), false);
+
+			self.builder
+				.build_int_mul(current_value, factor, "take_value_mul")
+		}?;
+
+		let added = self
+			.builder
+			.build_int_add(other_cell, value_to_add, "take_value_add")?;
+
+		self.store(added, 0)
 	}
 
 	pub fn fetch_value(&self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
@@ -41,18 +60,30 @@ impl InnerAssembler<'_> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(other_cell, factor, "multiply_other_value_by_factor")
+				.build_int_mul(other_cell, factor, "fetch_value_mul")
 		}?;
 
-		let added =
-			self.builder
-				.build_int_add(current_cell, value_to_add, "add_value_to_current_cell")?;
+		let added = self
+			.builder
+			.build_int_add(current_cell, value_to_add, "fetch_value_add")?;
 
 		self.store(added, 0)
 	}
 
 	pub fn replace_value(&self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		self.set_cell(0, 0)?;
-		self.fetch_value(factor, offset)
+		let other_cell = self.load(offset)?;
+
+		self.set_cell(0, offset)?;
+
+		let value_to_store = {
+			let i8_type = self.context.i8_type();
+
+			let factor = i8_type.const_int(factor.into(), false);
+
+			self.builder
+				.build_int_mul(other_cell, factor, "replace_value_mul")
+		}?;
+
+		self.store(value_to_store, 0)
 	}
 }

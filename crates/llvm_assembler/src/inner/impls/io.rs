@@ -7,7 +7,7 @@ impl InnerAssembler<'_> {
 		self.builder.build_call(
 			self.functions.putchar,
 			&[char_to_put.into()],
-			"call putchar with current cell",
+			"output_current_cell_call",
 		)?;
 
 		Ok(())
@@ -23,14 +23,26 @@ impl InnerAssembler<'_> {
 		self.builder.build_call(
 			self.functions.putchar,
 			&[char_to_put.into()],
-			&format!("call putchar with char {c}"),
+			"output_char_call",
 		)?;
 
 		Ok(())
 	}
 
 	pub fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
-		c.iter().copied().try_for_each(|c| self.output_char(c))
+		let i8_type = self.context.i8_type();
+
+		for c in c.iter().copied() {
+			let char_to_put = i8_type.const_int(c.into(), false);
+
+			self.builder.build_call(
+				self.functions.putchar,
+				&[char_to_put.into()],
+				"output_chars_call",
+			)?;
+		}
+
+		Ok(())
 	}
 
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
@@ -46,12 +58,15 @@ impl InnerAssembler<'_> {
 				i8_array_type,
 				self.tape,
 				&[zero, current_ptr],
-				"index_into_tape_for_write",
+				"input_into_cell_gep",
 			)?
 		};
 
-		self.builder
-			.build_call(self.functions.getchar, &[ptr_value.into()], "call_putchar")?;
+		self.builder.build_call(
+			self.functions.getchar,
+			&[ptr_value.into()],
+			"input_into_cell_call",
+		)?;
 
 		Ok(())
 	}

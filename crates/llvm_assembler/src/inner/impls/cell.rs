@@ -16,7 +16,7 @@ impl InnerAssembler<'_> {
 
 		let added_together =
 			self.builder
-				.build_int_add(current_cell_value, value_to_add, "add_to_value")?;
+				.build_int_add(current_cell_value, value_to_add, "change_cell_add")?;
 
 		self.store(added_together, offset)?;
 
@@ -30,11 +30,9 @@ impl InnerAssembler<'_> {
 
 		let other_value = self.load(offset)?;
 
-		let value_to_store = self.builder.build_int_sub(
-			other_value,
-			subtractor,
-			"sub_other_value_by_current_value",
-		)?;
+		let value_to_store = self
+			.builder
+			.build_int_sub(other_value, subtractor, "sub_cell_sub")?;
 
 		self.store(value_to_store, offset)
 	}
