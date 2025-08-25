@@ -77,4 +77,18 @@ impl InnerAssembler<'_> {
 
 		self.remove_srcflag(SrcLoc::REPLACE_VALUE);
 	}
+
+	pub fn scale_value(&mut self, factor: u8) {
+		self.invalidate_load_at(0);
+
+		self.add_srcflag(SrcLoc::SCALE_VALUE);
+
+		let cell = self.load(0);
+
+		let value_to_store = self.ins().imul_imm(cell, i64::from(factor));
+
+		self.store(value_to_store, 0);
+
+		self.remove_srcflag(SrcLoc::SCALE_VALUE);
+	}
 }

@@ -189,6 +189,27 @@ pub fn optimize_replace_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
+pub fn optimize_scale_value(ops: &[BrainIr; 4]) -> Option<Change> {
+	match ops {
+		[
+			first @ BrainIr::TakeValueTo(.., first_move),
+			second @ BrainIr::TakeValueTo(.., second_move),
+			BrainIr::TakeValueTo(a, third_move),
+			BrainIr::TakeValueTo(b, fourth_move),
+		] if *first_move == *third_move
+			&& *second_move == *fourth_move
+			&& *first_move == -second_move =>
+		{
+			Some(Change::swap([
+				first.clone(),
+				second.clone(),
+				BrainIr::scale_value(a.wrapping_mul(*b)),
+			]))
+		}
+		_ => None,
+	}
+}
+
 pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {

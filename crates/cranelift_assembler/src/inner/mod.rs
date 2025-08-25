@@ -129,6 +129,7 @@ impl<'a> InnerAssembler<'a> {
 				BrainIr::ReplaceValueFrom(factor, offset) => {
 					self.replace_value_from(*factor, *offset);
 				}
+				BrainIr::ScaleValue(factor) => self.scale_value(*factor),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

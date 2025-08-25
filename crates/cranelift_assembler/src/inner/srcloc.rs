@@ -17,5 +17,6 @@ bitflags! {
 		const REPLACE_VALUE = 1 << 12;
 		const OUTPUT_CHARS = 1 << 13;
 		const SUB_CELL = 1 << 14;
+		const SCALE_VALUE = 1 << 15;
 	}
 }

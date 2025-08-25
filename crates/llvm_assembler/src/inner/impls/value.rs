@@ -13,12 +13,12 @@ impl InnerAssembler<'_> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(current_value, factor, "move_value_mul")
+				.build_int_mul(current_value, factor, "move_value_to_mul")
 		}?;
 
 		let added = self
 			.builder
-			.build_int_add(other_cell, value_to_add, "move_value_add")?;
+			.build_int_add(other_cell, value_to_add, "move_value_to_add")?;
 
 		self.store(added, offset)
 	}
@@ -37,12 +37,12 @@ impl InnerAssembler<'_> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(current_value, factor, "take_value_mul")
+				.build_int_mul(current_value, factor, "take_value_to_mul")
 		}?;
 
 		let added = self
 			.builder
-			.build_int_add(other_cell, value_to_add, "take_value_add")?;
+			.build_int_add(other_cell, value_to_add, "take_value_to_add")?;
 
 		self.store(added, 0)
 	}
@@ -60,12 +60,12 @@ impl InnerAssembler<'_> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(other_cell, factor, "fetch_value_mul")
+				.build_int_mul(other_cell, factor, "fetch_value_from_mul")
 		}?;
 
-		let added = self
-			.builder
-			.build_int_add(current_cell, value_to_add, "fetch_value_add")?;
+		let added =
+			self.builder
+				.build_int_add(current_cell, value_to_add, "fetch_value_from_add")?;
 
 		self.store(added, 0)
 	}
@@ -81,7 +81,21 @@ impl InnerAssembler<'_> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(other_cell, factor, "replace_value_mul")
+				.build_int_mul(other_cell, factor, "replace_value_from_mul")
+		}?;
+
+		self.store(value_to_store, 0)
+	}
+
+	pub fn scale_value(&self, factor: u8) -> Result<(), LlvmAssemblyError> {
+		let cell = self.load(0)?;
+
+		let value_to_store = {
+			let i8_type = self.context.i8_type();
+
+			let factor = i8_type.const_int(factor.into(), false);
+
+			self.builder.build_int_mul(cell, factor, "scale_value_mul")
 		}?;
 
 		self.store(value_to_store, 0)
