@@ -147,6 +147,7 @@ impl<'ctx> Functions<'ctx> {
 		};
 
 		this.setup_getchar_attributes(context);
+		this.setup_putchar_attributes(context);
 
 		this
 	}
@@ -156,9 +157,36 @@ impl<'ctx> Functions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
 		let writeonly_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("writeonly"), 0);
+		let nocapture_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocapture"), 0);
 
-		for attribute in [noundef_attr, writeonly_attr] {
+		for attribute in [noundef_attr, writeonly_attr, nocapture_attr] {
 			self.getchar
+				.add_attribute(AttributeLoc::Param(0), attribute);
+		}
+
+		let nofree_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
+		let nounwind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
+		let nonlazybind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 0);
+		let uwtable_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 2);
+
+		for attribute in [nofree_attr, nounwind_attr, nonlazybind_attr, uwtable_attr] {
+			self.getchar
+				.add_attribute(AttributeLoc::Function, attribute);
+		}
+	}
+
+	fn setup_putchar_attributes(self, context: &'ctx Context) {
+		let noundef_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
+
+		#[allow(clippy::single_element_loop)]
+		for attribute in [noundef_attr] {
+			self.putchar
 				.add_attribute(AttributeLoc::Param(0), attribute);
 		}
 
@@ -168,7 +196,7 @@ impl<'ctx> Functions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
 
 		for attribute in [nofree_attr, nounwind_attr] {
-			self.getchar
+			self.putchar
 				.add_attribute(AttributeLoc::Function, attribute);
 		}
 	}
