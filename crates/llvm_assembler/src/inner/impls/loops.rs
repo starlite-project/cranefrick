@@ -26,9 +26,17 @@ impl InnerAssembler<'_> {
 			.build_int_compare(IntPredicate::NE, value, zero, "if_nz_cmp")
 			.map_err(AssemblyError::backend)?;
 
-		self.builder
+		let br = self
+			.builder
 			.build_conditional_branch(cmp, body_block, next_block)
 			.map_err(AssemblyError::backend)?;
+
+		let loop_metadata_id = self.context.get_kind_id("llvm.loop");
+
+		let loop_metadata_node = self.context.metadata_node(&[]);
+
+		br.set_metadata(loop_metadata_node, loop_metadata_id)
+			.unwrap();
 
 		self.builder.position_at_end(body_block);
 
@@ -117,8 +125,16 @@ impl InnerAssembler<'_> {
 			.builder
 			.build_int_compare(IntPredicate::NE, value, zero, "find_zero_cmp")?;
 
-		self.builder
+		let br = self
+			.builder
 			.build_conditional_branch(cmp, body_block, next_block)?;
+
+		let loop_metadata_id = self.context.get_kind_id("llvm.loop");
+
+		let loop_metadata_node = self.context.metadata_node(&[]);
+
+		br.set_metadata(loop_metadata_node, loop_metadata_id)
+			.unwrap();
 
 		self.builder.position_at_end(body_block);
 
