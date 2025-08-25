@@ -210,15 +210,6 @@ pub fn optimize_scale_value(ops: &[BrainIr; 4]) -> Option<Change> {
 	}
 }
 
-pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
-	match ops {
-		[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {
-			Some(Change::replace(BrainIr::find_zero(*offset)))
-		}
-		_ => None,
-	}
-}
-
 pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetCell(value, None), BrainIr::OutputCurrentCell] => Some(Change::swap([

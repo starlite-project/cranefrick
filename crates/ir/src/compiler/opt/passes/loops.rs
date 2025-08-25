@@ -145,3 +145,12 @@ pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
+		[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {
+			Some(Change::replace(BrainIr::find_zero(*offset)))
+		}
+		_ => None,
+	}
+}
