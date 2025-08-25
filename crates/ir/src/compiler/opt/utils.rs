@@ -5,7 +5,7 @@ pub fn calculate_ptr_movement(ops: &[BrainIr]) -> Option<i32> {
 
 	for op in ops {
 		match op {
-			BrainIr::MovePointer(offset) | BrainIr::TakeValue(.., offset) => {
+			BrainIr::MovePointer(offset) | BrainIr::TakeValueTo(.., offset) => {
 				sum = sum.wrapping_add(*offset);
 			}
 			BrainIr::DynamicLoop(l) | BrainIr::IfNz(l) => {
@@ -18,8 +18,8 @@ pub fn calculate_ptr_movement(ops: &[BrainIr]) -> Option<i32> {
 			| BrainIr::InputIntoCell
 			| BrainIr::OutputChar(..)
 			| BrainIr::OutputCurrentCell
-			| BrainIr::MoveValue(..)
-			| BrainIr::FetchValue(..) => {}
+			| BrainIr::MoveValueTo(..)
+			| BrainIr::FetchValueFrom(..) => {}
 			_ => return None,
 		}
 	}

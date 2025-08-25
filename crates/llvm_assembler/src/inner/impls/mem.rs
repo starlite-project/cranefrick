@@ -30,7 +30,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let noalias_metadata_node = self.context.metadata_node(&[]);
 
-			instr.set_metadata(noalias_metadata_node, noalias_metadata_id).unwrap();
+			instr
+				.set_metadata(noalias_metadata_node, noalias_metadata_id)
+				.unwrap();
 		}
 
 		Ok(loaded_value)
@@ -59,7 +61,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let noalias_metadata_node = self.context.metadata_node(&[]);
 
-		instr.set_metadata(noalias_metadata_node, noalias_metadata_id).unwrap();
+		instr
+			.set_metadata(noalias_metadata_node, noalias_metadata_id)
+			.unwrap();
 
 		Ok(())
 	}

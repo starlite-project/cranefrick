@@ -3,7 +3,7 @@ use cranelift_codegen::ir::InstBuilder as _;
 use crate::inner::{InnerAssembler, SrcLoc};
 
 impl InnerAssembler<'_> {
-	pub fn move_value(&mut self, factor: u8, offset: i32) {
+	pub fn move_value_to(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads_at([0, offset]);
 
 		self.add_srcflag(SrcLoc::MOVE_VALUE);
@@ -22,7 +22,7 @@ impl InnerAssembler<'_> {
 		self.remove_srcflag(SrcLoc::MOVE_VALUE);
 	}
 
-	pub fn take_value(&mut self, factor: u8, offset: i32) {
+	pub fn take_value_to(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads_at([0, offset]);
 
 		self.add_srcflag(SrcLoc::TAKE_VALUE);
@@ -43,7 +43,7 @@ impl InnerAssembler<'_> {
 		self.remove_srcflag(SrcLoc::TAKE_VALUE);
 	}
 
-	pub fn fetch_value(&mut self, factor: u8, offset: i32) {
+	pub fn fetch_value_from(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads_at([0, offset]);
 
 		self.add_srcflag(SrcLoc::FETCH_VALUE);
@@ -63,7 +63,7 @@ impl InnerAssembler<'_> {
 		self.remove_srcflag(SrcLoc::FETCH_VALUE);
 	}
 
-	pub fn replace_value(&mut self, factor: u8, offset: i32) {
+	pub fn replace_value_from(&mut self, factor: u8, offset: i32) {
 		self.invalidate_loads_at([0, offset]);
 
 		self.add_srcflag(SrcLoc::REPLACE_VALUE);

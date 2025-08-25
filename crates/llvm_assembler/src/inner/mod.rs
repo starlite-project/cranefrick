@@ -96,10 +96,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
 				BrainIr::IfNz(ops) => self.if_nz(ops)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
-				BrainIr::MoveValue(factor, offset) => self.move_value(*factor, *offset)?,
-				BrainIr::TakeValue(factor, offset) => self.take_value(*factor, *offset)?,
-				BrainIr::FetchValue(factor, offset) => self.fetch_value(*factor, *offset)?,
-				BrainIr::ReplaceValue(factor, offset) => self.replace_value(*factor, *offset)?,
+				BrainIr::MoveValueTo(factor, offset) => self.move_value_to(*factor, *offset)?,
+				BrainIr::TakeValueTo(factor, offset) => self.take_value_to(*factor, *offset)?,
+				BrainIr::FetchValueFrom(factor, offset) => {
+					self.fetch_value_from(*factor, *offset)?;
+				}
+				BrainIr::ReplaceValueFrom(factor, offset) => {
+					self.replace_value_from(*factor, *offset)?;
+				}
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

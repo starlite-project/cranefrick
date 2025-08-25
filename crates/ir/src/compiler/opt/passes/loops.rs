@@ -7,7 +7,7 @@ pub const fn remove_unreachable_loops(ops: &[BrainIr; 2]) -> Option<Change> {
 			l,
 			BrainIr::DynamicLoop(..)
 			| BrainIr::FindZero(..)
-			| BrainIr::MoveValue(..)
+			| BrainIr::MoveValueTo(..)
 			| BrainIr::IfNz(..),
 		] if l.is_zeroing_cell() => Some(Change::remove_offset(1)),
 		_ => None,

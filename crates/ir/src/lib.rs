@@ -28,10 +28,10 @@ pub enum BrainIr {
 	OutputCurrentCell,
 	OutputChar(u8),
 	OutputChars(Vec<u8>),
-	MoveValue(u8, i32),
-	TakeValue(u8, i32),
-	FetchValue(u8, i32),
-	ReplaceValue(u8, i32),
+	MoveValueTo(u8, i32),
+	TakeValueTo(u8, i32),
+	FetchValueFrom(u8, i32),
+	ReplaceValueFrom(u8, i32),
 	DynamicLoop(Vec<Self>),
 	IfNz(Vec<Self>),
 }
@@ -73,7 +73,7 @@ impl BrainIr {
 			self,
 			Self::SetCell(0, None)
 				| Self::DynamicLoop(..)
-				| Self::MoveValue(..)
+				| Self::MoveValueTo(..)
 				| Self::FindZero(..)
 				| Self::IfNz(..)
 				| Self::SubCell(..)
@@ -111,23 +111,23 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn fetch_value(value: u8, offset: i32) -> Self {
-		Self::FetchValue(value, offset)
+	pub const fn fetch_value_from(value: u8, offset: i32) -> Self {
+		Self::FetchValueFrom(value, offset)
 	}
 
 	#[must_use]
-	pub const fn replace_value(value: u8, offset: i32) -> Self {
-		Self::ReplaceValue(value, offset)
+	pub const fn replace_value_from(value: u8, offset: i32) -> Self {
+		Self::ReplaceValueFrom(value, offset)
 	}
 
 	#[must_use]
-	pub const fn take_value(value: u8, offset: i32) -> Self {
-		Self::TakeValue(value, offset)
+	pub const fn take_value_to(value: u8, offset: i32) -> Self {
+		Self::TakeValueTo(value, offset)
 	}
 
 	#[must_use]
-	pub const fn move_value(value: u8, offset: i32) -> Self {
-		Self::MoveValue(value, offset)
+	pub const fn move_value_to(value: u8, offset: i32) -> Self {
+		Self::MoveValueTo(value, offset)
 	}
 
 	#[must_use]
