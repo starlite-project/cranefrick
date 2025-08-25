@@ -142,24 +142,14 @@ impl<'ctx> Functions<'ctx> {
 		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
 
-		for attr in [nocapture_attr, noundef_attr, writeonly_attr] {
-			getchar.add_attribute(AttributeLoc::Param(0), attr);
-		}
-
-		for attr in [nounwind_attr, nonlazybind_attr] {
-			getchar.add_attribute(AttributeLoc::Function, attr);
-		}
+		Self::setup_attributes(getchar, AttributeLoc::Param(0), [nocapture_attr, noundef_attr, writeonly_attr]);
+		Self::setup_attributes(getchar, AttributeLoc::Function, [nounwind_attr, nonlazybind_attr]);
 
 		let putchar_ty = void_type.fn_type(&[i8_type.into()], false);
 		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
 
-		for attr in [noundef_attr, zeroext_attr] {
-			putchar.add_attribute(AttributeLoc::Param(0), attr);
-		}
-
-		for attr in [nounwind_attr, nonlazybind_attr] {
-			putchar.add_attribute(AttributeLoc::Function, attr);
-		}
+		Self::setup_attributes(putchar, AttributeLoc::Param(0), [noundef_attr, zeroext_attr]);
+		Self::setup_attributes(putchar, AttributeLoc::Function, [nounwind_attr, nonlazybind_attr]);
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, Some(Linkage::External));
@@ -168,6 +158,12 @@ impl<'ctx> Functions<'ctx> {
 			getchar,
 			putchar,
 			main,
+		}
+	}
+
+	fn setup_attributes(func: FunctionValue<'ctx>, loc: AttributeLoc, attributes: impl IntoIterator<Item = Attribute>) {
+		for attribute in attributes {
+			func.add_attribute(loc, attribute);
 		}
 	}
 }
