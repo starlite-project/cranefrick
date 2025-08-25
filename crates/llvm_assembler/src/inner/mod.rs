@@ -140,6 +140,8 @@ impl<'ctx> Functions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 2);
 		let nounwind_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
+		let nofree_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
 
 		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
@@ -152,7 +154,7 @@ impl<'ctx> Functions<'ctx> {
 		Self::setup_attributes(
 			getchar,
 			AttributeLoc::Function,
-			[nounwind_attr, nonlazybind_attr, uwtable_attr],
+			[nounwind_attr, nonlazybind_attr, uwtable_attr, nofree_attr],
 		);
 
 		let putchar_ty = void_type.fn_type(&[i8_type.into()], false);
@@ -166,7 +168,7 @@ impl<'ctx> Functions<'ctx> {
 		Self::setup_attributes(
 			putchar,
 			AttributeLoc::Function,
-			[nounwind_attr, nonlazybind_attr, uwtable_attr],
+			[nounwind_attr, nonlazybind_attr, uwtable_attr, nofree_attr],
 		);
 
 		let main_ty = void_type.fn_type(&[], false);
