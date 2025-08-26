@@ -36,7 +36,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let functions = Functions::new(context, &module);
 		let builder = context.create_builder();
 
-		let triple = module.get_triple();
+		let triple = target_machine.get_triple();
 		let target_data = target_machine.get_target_data();
 		let data_layout = target_data.get_data_layout();
 
