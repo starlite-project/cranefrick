@@ -8,9 +8,9 @@ pub struct CalcDatabase {
 }
 
 impl CalcDatabase {
-    pub fn logs(&self) -> Vec<String> {
-        self.logs.lock().unwrap().clone()
-    }
+	pub fn logs(&self) -> Vec<String> {
+		self.logs.lock().unwrap().clone()
+	}
 }
 
 #[salsa::db]
@@ -21,7 +21,7 @@ impl Default for CalcDatabase {
 		let logs: Arc<Mutex<Vec<String>>> = Arc::default();
 		Self {
 			storage: salsa::Storage::new(Some(Box::new({
-                let logs = logs.clone();
+				let logs = logs.clone();
 				move |event| {
 					eprintln!("Event: {event:?}");
 					let logs = &mut *logs.lock().unwrap();

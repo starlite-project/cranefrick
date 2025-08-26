@@ -70,66 +70,62 @@ impl Assembler for LlvmAssembler {
 		Target::initialize_native(&InitializationConfig::default())
 			.map_err(LlvmAssemblyError::Llvm)?;
 
+		let target_triple = TargetMachine::get_default_triple();
+		let cpu = TargetMachine::get_host_cpu_name().to_string();
+		let features = TargetMachine::get_host_cpu_features().to_string();
+
+		let target = Target::from_triple(&target_triple).map_err(AssemblyError::backend)?;
+
+		let target_machine = target
+			.create_target_machine(
+				&target_triple,
+				&cpu,
+				&features,
+				OptimizationLevel::Aggressive,
+				RelocMode::Default,
+				CodeModel::Default,
+			)
+			.ok_or(LlvmAssemblyError::NoTargetMachine)?;
+
 		info!("lowering into LLVM IR");
 
-		let assembler = InnerAssembler::new(&self.context)?;
+		let assembler = InnerAssembler::new(&self.context, &target_machine)?;
 
 		let (module, Functions { main, .. }) = assembler.assemble(ops)?;
-
-		info!("finalizing debug information");
 
 		info!("writing unoptimized LLVM IR");
 		module
 			.print_to_file(output_path.join("unoptimized.ll"))
 			.map_err(AssemblyError::backend)?;
 
-		{
-			let target_triple = TargetMachine::get_default_triple();
-			let cpu = TargetMachine::get_host_cpu_name().to_string();
-			let features = TargetMachine::get_host_cpu_features().to_string();
+		let pass_options = PassBuilderOptions::create();
 
-			let target = Target::from_triple(&target_triple).map_err(AssemblyError::backend)?;
+		pass_options.set_verify_each(true);
 
-			let target_machine = target
-				.create_target_machine(
-					&target_triple,
-					&cpu,
-					&features,
-					OptimizationLevel::Aggressive,
-					RelocMode::Default,
-					CodeModel::Default,
-				)
-				.ok_or(LlvmAssemblyError::NoTargetMachine)?;
+		info!("verifying and optimizing LLVM IR");
 
-			let pass_options = PassBuilderOptions::create();
+		module
+			.run_passes(&self.passes, &target_machine, pass_options)
+			.map_err(AssemblyError::backend)?;
 
-			pass_options.set_verify_each(true);
+		let pass_options = PassBuilderOptions::create();
 
-			info!("verifying and optimizing LLVM IR");
+		pass_options.set_verify_each(true);
 
-			module
-				.run_passes(&self.passes, &target_machine, pass_options)
-				.map_err(AssemblyError::backend)?;
+		info!("linting generated LLVM IR");
 
-			let pass_options = PassBuilderOptions::create();
+		module
+			.run_passes("lint", &target_machine, pass_options)
+			.map_err(AssemblyError::backend)?;
 
-			pass_options.set_verify_each(true);
-
-			info!("linting generated LLVM IR");
-
-			module
-				.run_passes("lint", &target_machine, pass_options)
-				.map_err(AssemblyError::backend)?;
-
-			info!("writing asm");
-			target_machine
-				.write_to_file(
-					&module,
-					inkwell::targets::FileType::Assembly,
-					&output_path.join("program.asm"),
-				)
-				.map_err(AssemblyError::backend)?;
-		}
+		info!("writing asm");
+		target_machine
+			.write_to_file(
+				&module,
+				inkwell::targets::FileType::Assembly,
+				&output_path.join("program.asm"),
+			)
+			.map_err(AssemblyError::backend)?;
 
 		info!("writing optimized LLVM IR");
 
