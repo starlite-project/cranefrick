@@ -1,0 +1,13 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "salsa_test"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+annotate-snippets = "0.11.5"
+ordered-float = "5.0.0"
+salsa = "0.23"
