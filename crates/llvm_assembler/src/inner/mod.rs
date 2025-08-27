@@ -46,11 +46,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let basic_block = context.append_basic_block(functions.main, "entry");
 		builder.position_at_end(basic_block);
 
-		let i32_type = context.i32_type();
+		let i64_type = context.i64_type();
 		let tape = {
 			let i8_type = context.i8_type();
 			let i8_array_type = i8_type.array_type(30_000);
-			let array_size = i32_type.const_int(30_000, false);
+			let array_size = i64_type.const_int(30_000, false);
 
 			let tape_alloca = builder.build_array_alloca(i8_type, array_size, "tape")?;
 
@@ -60,9 +60,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		let ptr = {
-			let ptr_alloca = builder.build_alloca(i32_type, "ptr")?;
+			let ptr_alloca = builder.build_alloca(i64_type, "ptr")?;
 
-			builder.build_store(ptr_alloca, i32_type.const_zero())?;
+			builder.build_store(ptr_alloca, i64_type.const_zero())?;
 
 			ptr_alloca
 		};
@@ -74,7 +74,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			functions,
 			tape,
 			ptr,
-			ptr_type: i32_type,
+			ptr_type: i64_type,
 		})
 	}
 
