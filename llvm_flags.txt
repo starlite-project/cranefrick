@@ -1,1 +1,1 @@
-default<O3>,sroa,newgvn,lcssa,function(loop-mssa(licm)),loop-simplify,loop-reduce,loop-rotate,loop-unroll<O3>,loop-deletion,loop-vectorize,sroa,break-crit-edges,slp-vectorizer,aggressive-instcombine,dce,adce,memcpyopt,sink,load-store-vectorizer,sroa,default<O3>
+default<O3>,sroa,newgvn,loop-simplify,lcssa,function(loop-mssa(licm)),loop-reduce,loop-unroll<O3>,loop-rotate,loop-deletion,loop-vectorize,slp-vectorizer,sink,aggressive-instcombine,dce,adce,memcpyopt,load-store-vectorizer,sroa,default<O3>
