@@ -50,10 +50,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let tape = {
 			let i8_type = context.i8_type();
 			let i8_array_type = i8_type.array_type(30_000);
+			let array_size = i32_type.const_int(30_000, false);
 
-			let tape_alloca = builder.build_alloca(i8_array_type, "tape")?;
+			let tape_alloca = builder.build_array_alloca(i8_type, array_size, "tape")?;
 
-			builder.build_store(tape_alloca, i8_type.array_type(30_000).const_zero())?;
+			builder.build_store(tape_alloca, i8_array_type.const_zero())?;
 
 			tape_alloca
 		};
