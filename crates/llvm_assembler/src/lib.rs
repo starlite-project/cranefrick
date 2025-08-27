@@ -101,21 +101,18 @@ impl Assembler for LlvmAssembler {
 		let pass_options = PassBuilderOptions::create();
 
 		pass_options.set_verify_each(true);
+		pass_options.set_loop_interleaving(true);
+		pass_options.set_loop_vectorization(true);
+		pass_options.set_loop_slp_vectorization(true);
+		pass_options.set_loop_unrolling(true);
+		pass_options.set_forget_all_scev_in_loop_unroll(true);
+		pass_options.set_call_graph_profile(true);
+		pass_options.set_merge_functions(true);
 
 		info!("verifying and optimizing LLVM IR");
 
 		module
 			.run_passes(&self.passes, &target_machine, pass_options)
-			.map_err(AssemblyError::backend)?;
-
-		let pass_options = PassBuilderOptions::create();
-
-		pass_options.set_verify_each(true);
-
-		info!("linting generated LLVM IR");
-
-		module
-			.run_passes("lint", &target_machine, pass_options)
 			.map_err(AssemblyError::backend)?;
 
 		info!("writing asm");
