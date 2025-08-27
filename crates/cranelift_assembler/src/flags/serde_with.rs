@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 )]
 pub enum FakeRegallocAlgorithm {
 	Backtracking,
+	SinglePass
 }
 
 #[derive(Serialize, Deserialize)]
