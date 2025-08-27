@@ -21,7 +21,7 @@ fn main() -> Result<()> {
 	let lifetime_end_intrinsic =
 		Intrinsic::find("llvm.lifetime.end").context("no intrinsic found")?;
 
-	let lifetime_end = lifetime_end_intrinsic
+	let _lifetime_end = lifetime_end_intrinsic
 		.get_declaration(&module, &[ptr_type.into()])
 		.context("no declaration found")?;
 
