@@ -8,12 +8,11 @@ use std::{
 };
 
 use cranelift_codegen::ir::{
-	AbiParam, Fact, FuncRef, Function, InstBuilder as _, MemoryTypeData, SourceLoc, StackSlotData,
-	StackSlotKind, Type, Value, types,
+	AbiParam, FuncRef, Function, InstBuilder as _, SourceLoc, Type, Value, types,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_jit::JITModule;
-use cranelift_module::{Linkage, Module};
+use cranelift_module::{DataDescription, Linkage, Module};
 use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
 
@@ -36,36 +35,30 @@ impl<'a> InnerAssembler<'a> {
 		module: &mut JITModule,
 		ptr_type: Type,
 	) -> Result<Self, CraneliftAssemblyError> {
+		let tape_global_value = {
+			let tape_id = module.declare_data("tape", Linkage::Local, true, false)?;
+
+			let mut tape_description = DataDescription::new();
+
+			tape_description.define_zeroinit(30_000);
+
+			module.define_data(tape_id, &tape_description)?;
+
+			module.declare_data_in_func(tape_id, func)
+		};
+
 		let mut builder = FunctionBuilder::new(func, fn_ctx);
 
 		let block = builder.create_block();
 
 		builder.switch_to_block(block);
 
-		let tape_stack_slot = builder.create_sized_stack_slot(StackSlotData::new(
-			StackSlotKind::ExplicitSlot,
-			30_000,
-			0,
-		));
-
 		let ptr_variable = {
 			let ptr_value = builder.declare_var(ptr_type);
-			let stack_slot = builder.ins().stack_addr(ptr_type, tape_stack_slot, 0);
 
-			let memory_type = builder
-				.func
-				.create_memory_type(MemoryTypeData::Memory { size: 30_000 });
+			let tape_value = builder.ins().symbol_value(ptr_type, tape_global_value);
 
-			let fact = Fact::Mem {
-				ty: memory_type,
-				min_offset: 0,
-				max_offset: 30_000,
-				nullable: false,
-			};
-
-			builder.func.dfg.facts[stack_slot] = Some(fact);
-
-			builder.def_var(ptr_value, stack_slot);
+			builder.def_var(ptr_value, tape_value);
 
 			ptr_value
 		};
