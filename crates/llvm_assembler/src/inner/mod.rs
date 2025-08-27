@@ -46,7 +46,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let basic_block = context.append_basic_block(functions.main, "entry");
 		builder.position_at_end(basic_block);
 
+		let ptr_type = context.default_ptr_type();
+		let lifetime_start = {
+			let intrinsic = inkwell::intrinsics::Intrinsic::find("llvm.lifetime.start").unwrap();
+
+			intrinsic
+				.get_declaration(&module, &[ptr_type.into()])
+				.unwrap()
+		};
+
 		let i32_type = context.i32_type();
+		let i64_type = context.i64_type();
 		let tape = {
 			let i8_type = context.i8_type();
 			let i8_array_type = i8_type.array_type(30_000);
@@ -54,6 +64,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let tape_alloca = builder.build_array_alloca(i8_type, array_size, "tape")?;
 
+			builder.build_call(
+				lifetime_start,
+				&[i64_type.const_int(30_000, false).into(), tape_alloca.into()],
+				"tape_lifetime_start",
+			)?;
 			builder.build_store(tape_alloca, i8_array_type.const_zero())?;
 
 			tape_alloca
@@ -61,6 +76,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let ptr = {
 			let ptr_alloca = builder.build_alloca(i32_type, "ptr")?;
+
+			builder.build_call(
+				lifetime_start,
+				&[i64_type.const_int(4, false).into(), ptr_alloca.into()],
+				"ptr_lifetime_start",
+			)?;
 
 			builder.build_store(ptr_alloca, i32_type.const_zero())?;
 
@@ -84,9 +105,36 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
 		self.ops(ops)?;
 
+		let lifetime_end = {
+			let intrinsic = inkwell::intrinsics::Intrinsic::find("llvm.lifetime.end").unwrap();
+
+			intrinsic
+				.get_declaration(&self.module, &[self.context.default_ptr_type().into()])
+				.unwrap()
+		};
+
+		let i64_type = self.context.i64_type();
+
+		self.builder
+			.build_call(
+				lifetime_end,
+				&[i64_type.const_int(30_000, false).into(), self.tape.into()],
+				"tape_lifetime_end",
+			)
+			.map_err(AssemblyError::backend)?;
+
+		self.builder
+			.build_call(
+				lifetime_end,
+				&[i64_type.const_int(4, false).into(), self.ptr.into()],
+				"ptr_lifetime_end",
+			)
+			.map_err(AssemblyError::backend)?;
+
 		self.builder
 			.build_return(None)
 			.map_err(AssemblyError::backend)?;
+
 		Ok(self.into_parts())
 	}
 
