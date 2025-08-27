@@ -8,8 +8,8 @@ use std::{
 };
 
 use cranelift_codegen::ir::{
-	AbiParam, FuncRef, Function, InstBuilder as _, SourceLoc, StackSlotData, StackSlotKind, Type,
-	Value, types,
+	AbiParam, Fact, FuncRef, Function, InstBuilder as _, MemoryTypeData, SourceLoc, StackSlotData,
+	StackSlotKind, Type, Value, types,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_jit::JITModule;
@@ -51,6 +51,19 @@ impl<'a> InnerAssembler<'a> {
 		let ptr_variable = {
 			let ptr_value = builder.declare_var(ptr_type);
 			let stack_slot = builder.ins().stack_addr(ptr_type, tape_stack_slot, 0);
+
+			let memory_type = builder
+				.func
+				.create_memory_type(MemoryTypeData::Memory { size: 30_000 });
+
+			let fact = Fact::Mem {
+				ty: memory_type,
+				min_offset: 0,
+				max_offset: 30_000,
+				nullable: false,
+			};
+
+			builder.func.dfg.facts[stack_slot] = Some(fact);
 
 			builder.def_var(ptr_value, stack_slot);
 
