@@ -6,6 +6,7 @@ mod module;
 
 use std::{
 	error::Error as StdError,
+	ffi::CStr,
 	fmt::{Display, Formatter, Result as FmtResult},
 	path::Path,
 };
@@ -52,7 +53,12 @@ impl LlvmAssembler {
 }
 
 extern "C" fn handler(ptr: *const i8) {
-	println!("caught exception: {ptr:p}");
+	// println!("caught exception: {ptr:p}");
+	let c_str = unsafe { CStr::from_ptr(ptr) };
+
+	println!("{}", c_str.to_string_lossy());
+
+	std::process::abort()
 }
 
 impl Assembler for LlvmAssembler {
