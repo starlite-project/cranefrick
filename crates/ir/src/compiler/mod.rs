@@ -128,34 +128,43 @@ impl Compiler {
 	}
 
 	fn pass_info(&self, pass: &str) {
-		let (op_count, dloop_count) = self.stats();
-		debug!("running pass {pass} with {op_count} instructions ({dloop_count}) loops");
+		let (op_count, dloop_count, if_count) = self.stats();
+		debug!(
+			"running pass {pass} with {op_count} instructions ({dloop_count}) loops and {if_count} ifs"
+		);
 	}
 
-	fn stats(&self) -> (usize, usize) {
+	fn stats(&self) -> (usize, usize, usize) {
 		Self::stats_of(self)
 	}
 
-	#[expect(clippy::single_match)]
-	fn stats_of(ops: &[BrainIr]) -> (usize, usize) {
+	fn stats_of(ops: &[BrainIr]) -> (usize, usize, usize) {
 		let mut op_count = 0;
 		let mut dloop_count = 0;
+		let mut if_count = 0;
 
 		for op in ops {
 			op_count += 1;
 			match op {
 				BrainIr::DynamicLoop(l) => {
-					let (ops, dloops) = Self::stats_of(l);
+					let (ops, dloops, ifs) = Self::stats_of(l);
 
 					op_count += ops;
-					dloop_count += 1;
+					dloop_count += dloops + 1;
+					if_count += ifs;
+				}
+				BrainIr::IfNotZero(l) => {
+					let (ops, dloops, ifs) = Self::stats_of(l);
+
+					op_count += ops;
 					dloop_count += dloops;
+					if_count += ifs + 1;
 				}
 				_ => {}
 			}
 		}
 
-		(op_count, dloop_count)
+		(op_count, dloop_count, if_count)
 	}
 }
 
