@@ -8,7 +8,11 @@ use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	builder::Builder,
 	context::Context,
-	module::{Linkage, Module},
+	debug_info::{
+		AsDIScope, DICompileUnit, DIFlagsConstants as _, DWARFEmissionKind, DWARFSourceLanguage,
+		DebugInfoBuilder,
+	},
+	module::{FlagBehavior, Linkage, Module},
 	targets::TargetMachine,
 	types::IntType,
 	values::{FunctionValue, PointerValue},
@@ -25,6 +29,8 @@ pub struct InnerAssembler<'ctx> {
 	tape: PointerValue<'ctx>,
 	ptr: PointerValue<'ctx>,
 	ptr_type: IntType<'ctx>,
+	di_builder: DebugInfoBuilder<'ctx>,
+	compile_unit: DICompileUnit<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -67,6 +73,81 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_alloca
 		};
 
+		let i32_type = context.i32_type();
+		let debug_metadata_version = i32_type.const_int(3, false);
+		module.add_basic_value_flag(
+			"Debug Info Version",
+			FlagBehavior::Warning,
+			debug_metadata_version,
+		);
+
+		let (di_builder, compile_unit) = module.create_debug_info_builder(
+			true,
+			DWARFSourceLanguage::C,
+			"file",
+			".",
+			"frick",
+			true,
+			"",
+			0,
+			"",
+			DWARFEmissionKind::Full,
+			0,
+			false,
+			false,
+			"",
+			"",
+		);
+
+		let subroutine_type =
+			di_builder.create_subroutine_type(compile_unit.get_file(), None, &[], i32::PUBLIC);
+
+		let func_scope = di_builder.create_function(
+			compile_unit.as_debug_info_scope(),
+			"main",
+			None,
+			compile_unit.get_file(),
+			0,
+			subroutine_type,
+			true,
+			true,
+			0,
+			i32::PUBLIC,
+			false,
+		);
+
+		functions.main.set_subprogram(func_scope);
+
+		let i8_di_type = di_builder
+			.create_basic_type("unsigned int", 1, 7, i32::PRIVATE)
+			.unwrap();
+
+		let i8_di_array_type = di_builder.create_array_type(i8_di_type.as_type(), 30_000, 1, &[]);
+
+		let tape_variable = di_builder.create_auto_variable(
+			func_scope.as_debug_info_scope(),
+			"tape",
+			compile_unit.get_file(),
+			0,
+			i8_di_array_type.as_type(),
+			false,
+			i32::PRIVATE,
+			1,
+		);
+
+		let tape_alloca_instr = tape.as_instruction().unwrap();
+
+		let tape_location =
+			di_builder.create_debug_location(context, 0, 0, func_scope.as_debug_info_scope(), None);
+
+		di_builder.insert_declare_before_instruction(
+			tape,
+			Some(tape_variable),
+			None,
+			tape_location,
+			tape_alloca_instr,
+		);
+
 		Ok(Self {
 			context,
 			module,
@@ -75,6 +156,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			tape,
 			ptr,
 			ptr_type: i64_type,
+			di_builder,
+			compile_unit,
 		})
 	}
 
@@ -87,6 +170,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder
 			.build_return(None)
 			.map_err(AssemblyError::backend)?;
+
+		self.di_builder.finalize();
 
 		Ok(self.into_parts())
 	}
