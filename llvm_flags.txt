@@ -21,6 +21,7 @@ slp-vectorizer
 sink
 aggressive-instcombine
 adce
+dse
 load-store-vectorizer
 newgvn
 sroa<modify-cfg>
