@@ -6,6 +6,7 @@ newgvn
 loop-simplify
 lcssa
 function(loop-mssa(licm,lnicm<allowspeculation>))
+simple-loop-unswitch
 loop-reduce
 loop-load-elim
 loop-rotate
