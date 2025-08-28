@@ -78,7 +78,13 @@ fn main() -> Result<()> {
 				Some(passes_path) => {
 					let passes = fs::read_to_string(passes_path)?;
 
-					LlvmAssembler::new(passes.trim().to_owned())
+					LlvmAssembler::new(
+						passes
+							.lines()
+							.map(|l| l.trim())
+							.collect::<Vec<_>>()
+							.join(","),
+					)
 				}
 			};
 
