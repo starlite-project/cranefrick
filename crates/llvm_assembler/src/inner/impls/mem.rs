@@ -20,10 +20,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		if let Some(instr) = loaded_value.as_instruction() {
 			let noundef_metadata_id = self.context.get_kind_id("noundef");
+			let noalias_metadata_id = self.context.get_kind_id("noalias");
 			let empty_metadata_node = self.context.metadata_node(&[]);
 
 			instr
 				.set_metadata(empty_metadata_node, noundef_metadata_id)
+				.unwrap();
+
+			instr
+				.set_metadata(empty_metadata_node, noalias_metadata_id)
 				.unwrap();
 		}
 
@@ -40,7 +45,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_in_bounds_gep(i8_type, self.tape, &[current_offset], "store_gep")
 		}?;
 
-		self.builder.build_store(current_tape_value, value)?;
+		let instr = self.builder.build_store(current_tape_value, value)?;
+
+		let noalias_metadata_id = self.context.get_kind_id("noalias");
+
+		let empty_metadata_node = self.context.metadata_node(&[]);
+
+		instr
+			.set_metadata(empty_metadata_node, noalias_metadata_id)
+			.unwrap();
 
 		Ok(())
 	}
