@@ -11,9 +11,9 @@ loop-vectorize
 slp-vectorizer
 sink
 aggressive-instcombine
-dce
 adce
 load-store-vectorizer
 newgvn
 sroa
+select-optimize
 default<O3>
