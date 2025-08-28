@@ -18,6 +18,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_load(i8_type, value, "load_load")?
 			.into_int_value();
 
+		if let Some(instr) = loaded_value.as_instruction() {
+			let noundef_metadata_id = self.context.get_kind_id("noundef");
+			let empty_metadata_node =self.context.metadata_node(&[]);
+
+			instr.set_metadata(empty_metadata_node, noundef_metadata_id).unwrap();
+		}
+
 		Ok(loaded_value)
 	}
 
