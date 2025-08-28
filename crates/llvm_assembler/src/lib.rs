@@ -169,6 +169,7 @@ impl Default for LlvmAssembler {
 pub enum LlvmAssemblyError {
 	Llvm(String),
 	NoTargetMachine,
+	InvalidMetadata,
 	Builder(BuilderError),
 }
 
@@ -181,6 +182,7 @@ impl Display for LlvmAssemblyError {
 			}
 			Self::NoTargetMachine => f.write_str("unable to get target machine"),
 			Self::Builder(..) => f.write_str("an error occurred building an instruction"),
+			Self::InvalidMetadata => f.write_str("invalid metadata type"),
 		}
 	}
 }
@@ -189,7 +191,7 @@ impl StdError for LlvmAssemblyError {
 	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			Self::Builder(e) => Some(e),
-			Self::NoTargetMachine | Self::Llvm(..) => None,
+			Self::NoTargetMachine | Self::Llvm(..) | Self::InvalidMetadata => None,
 		}
 	}
 }

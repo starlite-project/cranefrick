@@ -25,11 +25,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			instr
 				.set_metadata(empty_metadata_node, noundef_metadata_id)
-				.unwrap();
+				.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
 
 			instr
 				.set_metadata(empty_metadata_node, noalias_metadata_id)
-				.unwrap();
+				.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
 		}
 
 		Ok(loaded_value)
@@ -53,7 +53,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		instr
 			.set_metadata(empty_metadata_node, noalias_metadata_id)
-			.unwrap();
+			.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
 
 		Ok(())
 	}
