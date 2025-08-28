@@ -20,9 +20,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		if let Some(instr) = loaded_value.as_instruction() {
 			let noundef_metadata_id = self.context.get_kind_id("noundef");
-			let empty_metadata_node =self.context.metadata_node(&[]);
+			let empty_metadata_node = self.context.metadata_node(&[]);
 
-			instr.set_metadata(empty_metadata_node, noundef_metadata_id).unwrap();
+			instr
+				.set_metadata(empty_metadata_node, noundef_metadata_id)
+				.unwrap();
 		}
 
 		Ok(loaded_value)

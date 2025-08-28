@@ -119,7 +119,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		functions.main.set_subprogram(func_scope);
 
 		let i8_di_type = di_builder
-			.create_basic_type("unsigned int", 1, 7, i32::PRIVATE)
+			.create_basic_type("unsigned 1-byte int", 1, 7, i32::PRIVATE)
 			.unwrap();
 
 		let i8_di_array_type = di_builder.create_array_type(i8_di_type.as_type(), 30_000, 1, &[]);
@@ -146,6 +146,34 @@ impl<'ctx> InnerAssembler<'ctx> {
 			None,
 			tape_location,
 			tape_alloca_instr,
+		);
+
+		let i64_di_type = di_builder
+			.create_basic_type("unsigned 8-byte int", 8, 7, i32::PRIVATE)
+			.unwrap();
+
+		let ptr_variable = di_builder.create_auto_variable(
+			func_scope.as_debug_info_scope(),
+			"ptr",
+			compile_unit.get_file(),
+			1,
+			i64_di_type.as_type(),
+			false,
+			i32::PRIVATE,
+			8,
+		);
+
+		let ptr_alloca_instr = ptr.as_instruction().unwrap();
+
+		let ptr_location =
+			di_builder.create_debug_location(context, 0, 0, func_scope.as_debug_info_scope(), None);
+
+		di_builder.insert_declare_before_instruction(
+			ptr,
+			Some(ptr_variable),
+			None,
+			ptr_location,
+			ptr_alloca_instr,
 		);
 
 		Ok(Self {
