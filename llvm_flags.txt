@@ -13,7 +13,6 @@ sink
 aggressive-instcombine
 dce
 adce
-memcpyopt
 load-store-vectorizer
 newgvn
 sroa
