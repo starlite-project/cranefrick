@@ -138,20 +138,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn add_loop_metadata(&self, br: InstructionValue<'ctx>) -> Result<(), LlvmAssemblyError> {
-		let bool_type = self.context.bool_type();
-		let true_value = bool_type.const_all_ones();
 		let llvm_loop_metadata_id = self.context.get_kind_id("llvm.loop");
 
-		let unroll_enable_metadata_string = self.context.metadata_string("llvm.loop.unroll.enable");
-
-		let vectorize_enable_metadata_string =
-			self.context.metadata_string("llvm.loop.vectorize.enable");
-
-		let metadata_node = self.context.metadata_node(&[
-			unroll_enable_metadata_string.into(),
-			vectorize_enable_metadata_string.into(),
-			true_value.into(),
-		]);
+		let metadata_node = self.context.metadata_node(&[]);
 
 		br.set_metadata(metadata_node, llvm_loop_metadata_id)
 			.map_err(|_| LlvmAssemblyError::InvalidMetadata)
