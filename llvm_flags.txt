@@ -1,12 +1,15 @@
 default<O3>
+early-cse<memssa>
 sroa
 newgvn
 loop-simplify
-lcssa,function(loop-mssa(licm))
+lcssa
+function(loop-mssa(licm))
 loop-reduce
 loop-deletion
+loop-load-elim
 loop-rotate
-loop-unroll<O3>
+loop-unroll<O3;partial;peeling;runtime;upperbound>
 loop-vectorize
 slp-vectorizer
 sink
@@ -16,4 +19,5 @@ load-store-vectorizer
 newgvn
 sroa
 select-optimize
+scalarizer
 default<O3>
