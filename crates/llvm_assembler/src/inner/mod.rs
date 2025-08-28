@@ -119,7 +119,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		functions.main.set_subprogram(func_scope);
 
 		let i8_di_type = di_builder
-			.create_basic_type("unsigned 1-byte int", 1, 7, i32::PRIVATE)
+			.create_basic_type("ty8", 1, 7, i32::PRIVATE)
 			.unwrap();
 
 		let i8_di_array_type = di_builder.create_array_type(i8_di_type.as_type(), 30_000, 1, &[]);
@@ -149,7 +149,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		);
 
 		let i64_di_type = di_builder
-			.create_basic_type("unsigned 8-byte int", 8, 7, i32::PRIVATE)
+			.create_basic_type("ty64", 8, 7, i32::PRIVATE)
 			.unwrap();
 
 		let ptr_variable = di_builder.create_auto_variable(
