@@ -72,8 +72,7 @@ impl Assembler for LlvmAssembler {
 	) -> Result<Self::Module<'ctx>, AssemblyError<Self::Error>> {
 		info!("initializing native target");
 
-		Target::initialize_native(&InitializationConfig::default())
-			.map_err(LlvmAssemblyError::Llvm)?;
+		Target::initialize_all(&InitializationConfig::default());
 
 		let target_triple = TargetMachine::get_default_triple();
 		let cpu = TargetMachine::get_host_cpu_name().to_string();
