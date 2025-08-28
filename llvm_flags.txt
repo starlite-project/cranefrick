@@ -1,5 +1,5 @@
 default<O3>
-debugify
+instsimplify
 early-cse<memssa>
 sroa<modify-cfg>
 newgvn
@@ -26,5 +26,4 @@ newgvn
 sroa<modify-cfg>
 select-optimize
 scalarizer
-strip
 default<O3>
