@@ -1,10 +1,10 @@
 use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
-use inkwell::IntPredicate;
+use inkwell::{IntPredicate, values::InstructionValue};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
-impl InnerAssembler<'_> {
+impl<'ctx> InnerAssembler<'ctx> {
 	pub fn if_not_zero(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let body_block = self
 			.context
@@ -73,9 +73,12 @@ impl InnerAssembler<'_> {
 			.build_int_compare(IntPredicate::NE, value, zero, "dynamic_loop_cmp")
 			.map_err(AssemblyError::backend)?;
 
-		self.builder
+		let br = self
+			.builder
 			.build_conditional_branch(cmp, body_block, next_block)
 			.map_err(AssemblyError::backend)?;
+
+		self.add_loop_metadata(br)?;
 
 		self.builder.position_at_end(body_block);
 
@@ -117,8 +120,11 @@ impl InnerAssembler<'_> {
 			.builder
 			.build_int_compare(IntPredicate::NE, value, zero, "find_zero_cmp")?;
 
-		self.builder
+		let br = self
+			.builder
 			.build_conditional_branch(cmp, body_block, next_block)?;
+
+		self.add_loop_metadata(br)?;
 
 		self.builder.position_at_end(body_block);
 
@@ -129,5 +135,25 @@ impl InnerAssembler<'_> {
 		self.builder.position_at_end(next_block);
 
 		Ok(())
+	}
+
+	fn add_loop_metadata(&self, br: InstructionValue<'ctx>) -> Result<(), LlvmAssemblyError> {
+		let bool_type = self.context.bool_type();
+		let true_value = bool_type.const_all_ones();
+		let llvm_loop_metadata_id = self.context.get_kind_id("llvm.loop");
+
+		let unroll_enable_metadata_string = self.context.metadata_string("llvm.loop.unroll.enable");
+
+		let vectorize_enable_metadata_string =
+			self.context.metadata_string("llvm.loop.vectorize.enable");
+
+		let metadata_node = self.context.metadata_node(&[
+			unroll_enable_metadata_string.into(),
+			vectorize_enable_metadata_string.into(),
+			true_value.into(),
+		]);
+
+		br.set_metadata(metadata_node, llvm_loop_metadata_id)
+			.map_err(|_| LlvmAssemblyError::InvalidMetadata)
 	}
 }
