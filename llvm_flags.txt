@@ -3,12 +3,13 @@ early-cse<memssa>
 sroa<modify-cfg>
 newgvn
 loop-simplify
-indvars
 lcssa
 function(loop-mssa(licm,lnicm<allowspeculation>))
 loop-reduce
 loop-load-elim
 loop-rotate
+indvars
+loop-unroll
 loop-unroll<O3;partial;peeling;runtime;upperbound>
 loop-unroll-full
 loop-unroll-and-jam
