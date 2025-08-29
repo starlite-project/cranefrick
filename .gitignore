@@ -6,4 +6,4 @@ chrome_profiler.json
 crox
 output.txt
 core.*
-passes.txt
+/passes
