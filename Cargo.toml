@@ -37,6 +37,7 @@ members = [
     "crates/llvm_assembler",
     "crates/utils",
     "playground/befunge_test",
+    "playground/coroutine_test",
     "playground/llvm_test",
     "playground/salsa_test",
     "tools/pattern_finder"
