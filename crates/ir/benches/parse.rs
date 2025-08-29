@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
-use frick_ir::AstParser;
+use frick_ir::parse;
 
 const HELLO_WORLD: &str = include_str!("../../../programs/hello_world.bf");
 
@@ -16,10 +16,6 @@ fn filter(source: &str) -> String {
 		.chars()
 		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | '.' | ','))
 		.collect()
-}
-
-const fn setup(source: String) -> AstParser {
-	AstParser::new(source)
 }
 
 fn bench_basic(c: &mut Criterion) {
@@ -39,7 +35,7 @@ fn bench_basic(c: &mut Criterion) {
 			BenchmarkId::new(format!("{name} parse"), value.len()),
 			&value,
 			|b, i| {
-				b.iter(|| assert!(setup(i.clone()).parse().is_ok()));
+				b.iter(|| assert!(parse(i.clone()).is_ok()));
 			},
 		);
 	}

@@ -6,7 +6,7 @@ use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::{AssembledModule as _, Assembler as _};
 use frick_cranelift_assembler::{AssemblerFlags, CraneliftAssembler};
-use frick_ir::{AstParser as BrainParser, Compiler};
+use frick_ir::{Compiler, parse};
 #[cfg(feature = "llvm")]
 use frick_llvm_assembler::LlvmAssembler;
 use ron::ser::PrettyConfig;
@@ -43,9 +43,7 @@ fn main() -> Result<()> {
 		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
 		.collect::<String>();
 
-	let parser = BrainParser::new(raw_data.clone());
-
-	let parsed = parser.parse()?;
+	let parsed = parse(raw_data)?;
 
 	if parsed.is_empty() {
 		return Ok(());
