@@ -9,7 +9,6 @@ use inkwell::{
 	builder::Builder,
 	context::Context,
 	module::{Linkage, Module},
-	targets::TargetMachine,
 	types::IntType,
 	values::{FunctionValue, PointerValue},
 };
@@ -28,20 +27,10 @@ pub struct InnerAssembler<'ctx> {
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn new(
-		context: &'ctx Context,
-		target_machine: &TargetMachine,
-	) -> Result<Self, LlvmAssemblyError> {
+	pub fn new(context: &'ctx Context) -> Result<Self, LlvmAssemblyError> {
 		let module = context.create_module("frick");
 		let functions = Functions::new(context, &module);
 		let builder = context.create_builder();
-
-		let triple = target_machine.get_triple();
-		let target_data = target_machine.get_target_data();
-		let data_layout = target_data.get_data_layout();
-
-		module.set_data_layout(&data_layout);
-		module.set_triple(&triple);
 
 		let basic_block = context.append_basic_block(functions.main, "entry");
 		builder.position_at_end(basic_block);
