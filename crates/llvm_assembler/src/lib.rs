@@ -21,7 +21,9 @@ use inkwell::{
 	context::Context,
 	passes::PassBuilderOptions,
 	support::LLVMString,
-	targets::{CodeModel, InitializationConfig, RelocMode, Target, TargetMachine},
+	targets::{
+		CodeModel, InitializationConfig, RelocMode, Target, TargetMachine, TargetMachineOptions,
+	},
 };
 use inner::Functions;
 use tracing::info;
@@ -80,16 +82,16 @@ impl Assembler for LlvmAssembler {
 
 		let target = Target::from_triple(&target_triple).map_err(AssemblyError::backend)?;
 
-		let target_machine = target
-			.create_target_machine(
-				&target_triple,
-				&cpu,
-				&features,
-				OptimizationLevel::Aggressive,
-				RelocMode::Default,
-				CodeModel::Default,
-			)
-			.ok_or(LlvmAssemblyError::NoTargetMachine)?;
+		let target_machine = {
+			let options = TargetMachineOptions::new()
+				.set_cpu(&cpu)
+				.set_features(&features)
+				.set_level(OptimizationLevel::Aggressive);
+
+			target
+				.create_target_machine_from_options(&target_triple, options)
+				.ok_or(LlvmAssemblyError::NoTargetMachine)?
+		};
 
 		target_machine.set_asm_verbosity(true);
 
@@ -99,10 +101,6 @@ impl Assembler for LlvmAssembler {
 
 		let (module, Functions { main, .. }) = assembler.assemble(ops)?;
 
-		let triple = target_machine.get_triple();
-
-		let triple = TargetMachine::normalize_triple(&triple);
-
 		let data_layout = {
 			let target_data = target_machine.get_target_data();
 
@@ -110,7 +108,7 @@ impl Assembler for LlvmAssembler {
 		};
 
 		module.set_data_layout(&data_layout);
-		module.set_triple(&triple);
+		module.set_triple(&target_triple);
 
 		info!("writing unoptimized LLVM IR");
 		module
