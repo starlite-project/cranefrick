@@ -86,6 +86,8 @@ impl Assembler for LlvmAssembler {
 			let options = TargetMachineOptions::new()
 				.set_cpu(&cpu)
 				.set_features(&features)
+				.set_reloc_mode(RelocMode::PIC)
+				.set_code_model(CodeModel::JITDefault)
 				.set_level(OptimizationLevel::Aggressive);
 
 			target
