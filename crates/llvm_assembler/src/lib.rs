@@ -91,6 +91,8 @@ impl Assembler for LlvmAssembler {
 			)
 			.ok_or(LlvmAssemblyError::NoTargetMachine)?;
 
+		target_machine.set_asm_verbosity(true);
+
 		info!("lowering into LLVM IR");
 
 		let assembler = InnerAssembler::new(&self.context)?;
