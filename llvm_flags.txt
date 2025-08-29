@@ -1,9 +1,6 @@
 default<O3>
 instcombine
 aggressive-instcombine
-simplifycfg
-instcombine
-aggressive-instcombine
 jump-threading
 sroa<modify-cfg>
 simplifycfg
@@ -17,8 +14,6 @@ lcssa
 loop-rotate
 function(loop-mssa(licm,lnicm<allowspeculation>))
 simple-loop-unswitch
-instcombine
-aggressive-instcombine
 loop-unroll-full
 loop-distribute
 loop-vectorize
@@ -28,16 +23,10 @@ loop-unroll-and-jam
 loop-reduce
 loop-load-elim
 loop-deletion
-instcombine
-aggressive-instcombine
 slp-vectorizer
 newgvn
 sccp
-instcombine
-aggressive-instcombine
 sink
-instcombine
-aggressive-instcombine
 dse
 adce
 load-store-vectorizer
