@@ -13,4 +13,4 @@ crossbeam-channel = "0.5.15"
 dashmap = { version = "6", features = ["raw-api"] }
 notify-debouncer-mini = "0.4.1"
 ordered-float = "5.0.0"
-salsa = "0.23"
+salsa = { version = "0.23" }
