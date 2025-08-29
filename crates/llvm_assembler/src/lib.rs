@@ -76,7 +76,11 @@ impl Assembler for LlvmAssembler {
 
 		Target::initialize_all(&InitializationConfig::default());
 
-		let target_triple = TargetMachine::get_default_triple();
+		let target_triple = {
+			let default_triple = TargetMachine::get_default_triple();
+
+			TargetMachine::normalize_triple(&default_triple)
+		};
 		let cpu = TargetMachine::get_host_cpu_name().to_string();
 		let features = TargetMachine::get_host_cpu_features().to_string();
 
