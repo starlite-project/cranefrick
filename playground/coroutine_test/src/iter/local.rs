@@ -322,4 +322,16 @@ mod async_tests {
 		let list = iter.collect::<Vec<_>>().await;
 		assert!(list.is_empty());
 	}
+
+	#[test]
+	async fn values() {
+		let iter = LocalAsyncIter::new(|mut y| async move {
+			y.ret(1).await;
+			y.ret(2).await;
+		});
+
+		let list = iter.collect::<Vec<_>>().await;
+
+		assert_eq!(list, [1, 2]);
+	}
 }
