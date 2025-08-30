@@ -37,7 +37,7 @@ impl<T> Iterator for LocalIter<'_, T> {
 	fn next(&mut self) -> Option<Self::Item> {
 		match self.0.poll_next(&mut Context::from_waker(Waker::noop())) {
 			Poll::Ready(value) => value,
-			Poll::Pending => panic!("'ret' was not called"),
+			Poll::Pending => panic!("ret was not called"),
 		}
 	}
 }
@@ -63,12 +63,52 @@ impl<T> LocalIterContext<T> {
 pub struct LocalAsyncIterContext<T>(LocalIterContext<T>);
 
 impl<T> LocalAsyncIterContext<T> {
-    pub async fn ret_stream(&mut self, stream: impl Stream<Item = T>) {
-        let mut stream = pin!(stream);
-        while let Some(value) = stream.next().await {
-            self.0.ret(value).await;
-        }
-    }
+	pub async fn ret_stream(&mut self, stream: impl Stream<Item = T>) {
+		let mut stream = pin!(stream);
+		while let Some(value) = stream.next().await {
+			self.0.ret(value).await;
+		}
+	}
+}
+
+impl<T> Deref for LocalAsyncIterContext<T> {
+	type Target = LocalIterContext<T>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<T> DerefMut for LocalAsyncIterContext<T> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
+	}
+}
+
+#[repr(transparent)]
+pub struct LocalAsyncIter<'a, T>(LocalIter<'a, T>);
+
+impl<'a, T: 'a> LocalAsyncIter<'a, T> {
+	pub fn new<Fut>(f: impl FnOnce(LocalAsyncIterContext<T>) -> Fut) -> Self
+	where
+		Fut: Future<Output = ()> + 'a,
+	{
+		Self(LocalIter::new(|cx| f(LocalAsyncIterContext(cx))))
+	}
+}
+
+impl<T> FusedStream for LocalAsyncIter<'_, T> {
+	fn is_terminated(&self) -> bool {
+		self.0.0.fut.is_none()
+	}
+}
+
+impl<T> Stream for LocalAsyncIter<'_, T> {
+	type Item = T;
+
+	fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+		self.0.0.poll_next(cx)
+	}
 }
 
 #[repr(transparent)]
@@ -78,7 +118,7 @@ impl<T> Sender<T> {
 	#[track_caller]
 	fn set(&self, value: T) {
 		let mut data = self.0.borrow_mut();
-		assert!(data.is_none(), "the result of 'ret' is not await");
+		assert!(data.is_none(), "ret was not awaited");
 		*data = Some(value);
 	}
 }
@@ -109,10 +149,7 @@ impl<T> Data<'_, T> {
 		let poll = fut.as_mut().poll(cx);
 		match poll {
 			Poll::Ready(()) => {
-				assert!(
-					self.value.borrow().is_none(),
-					"the result of 'ret' is not await"
-				);
+				assert!(self.value.borrow().is_none(), "ret was not awaited");
 				self.fut = None;
 				Poll::Ready(None)
 			}
@@ -140,46 +177,149 @@ mod tests {
 		assert!(list.is_empty());
 	}
 
-    #[test]
+	#[test]
 	fn values() {
 		let iter = LocalIter::new(|mut y| async move {
-            eprintln!("yielding 1");
+			eprintln!("yielding 1");
 			y.ret(1).await;
-            eprintln!("yielding 2");
+			eprintln!("yielding 2");
 			y.ret(2).await;
-            eprintln!("done yielding");
+			eprintln!("done yielding");
 		});
 
-        let mut counter = 1;
+		let mut counter = 1;
 
-        for i in iter {
-            eprintln!("got {i}");
-            assert_eq!(counter, i);
+		for i in iter {
+			eprintln!("got {i}");
+			assert_eq!(counter, i);
 
-            counter += 1;
-        }
+			counter += 1;
+		}
 
-        eprintln!("done counting");
+		eprintln!("done counting");
 	}
 
-    #[test]
-    fn values_ret_iter() {
-        let iter = LocalIter::new(|mut y| async move {
-            eprintln!("yielding 1 and 2");
-            y.ret_iter([1,2]).await;
+	#[test]
+	fn values_ret_iter() {
+		let iter = LocalIter::new(|mut y| async move {
+			eprintln!("yielding 1 and 2");
+			y.ret_iter([1, 2]).await;
+			eprintln!("done yielding");
+		});
 
-            eprintln!("done yielding");
-        });
+		let mut counter = 1;
 
-        let mut counter = 1;
+		for i in iter {
+			eprintln!("got {i}");
+			assert_eq!(counter, i);
 
-        for i in iter {
-            eprintln!("got {i}");
-            assert_eq!(counter, i);
+			counter += 1;
+		}
 
-            counter += 1;
-        }
+		eprintln!("done counting");
+	}
 
-        eprintln!("done counting");
-    }
+	#[test]
+	fn fused() {
+		let mut iter = LocalIter::new(|mut y| async move {
+			eprintln!("yielding 1");
+			y.ret(1).await;
+			eprintln!("yielding 2");
+			y.ret(2).await;
+			eprintln!("done yielding");
+		});
+
+		assert_eq!(iter.next(), Some(1));
+		eprintln!("got 1");
+		assert_eq!(iter.next(), Some(2));
+		eprintln!("got 2");
+		assert_eq!(iter.next(), None);
+		assert_eq!(iter.next(), None);
+	}
+
+	#[test]
+	fn values_with_lifetime() {
+		let items = [1, 2];
+		let items = &items;
+		let iter = LocalIter::new(|mut y| async move {
+			y.ret(&items[0]).await;
+			y.ret(&items[1]).await;
+		});
+
+		let list = iter.collect::<Vec<_>>();
+
+		assert_eq!(list, [&1, &2]);
+	}
+
+	#[test]
+	#[should_panic = "ret was not called"]
+	fn use_pending() {
+		let iter = LocalIter::<u32>::new(|mut y| async move {
+			y.ret(1).await;
+			pending::<()>().await;
+			y.ret(2).await;
+		});
+
+		_ = iter.collect::<Vec<_>>();
+	}
+
+	#[test]
+	#[allow(unused_must_use)]
+	#[should_panic = "ret was not awaited"]
+	fn no_await_1() {
+		let iter = LocalIter::new(|mut y| async move {
+			y.ret(1);
+		});
+
+		_ = iter.collect::<Vec<_>>();
+	}
+
+	#[test]
+	#[allow(unused_must_use)]
+	#[should_panic = "ret was not awaited"]
+	fn no_await_2() {
+		let iter = LocalIter::new(|mut y| async move {
+			y.ret(1);
+			y.ret(2);
+		});
+
+		_ = iter.collect::<Vec<_>>();
+	}
+
+	#[test]
+	fn check_not_send() {
+		#[repr(transparent)]
+		struct NotSend(#[allow(unused)] *const ());
+
+		impl Drop for NotSend {
+			fn drop(&mut self) {}
+		}
+
+		let iter = LocalIter::new(|mut y| async move {
+			let _not_send = NotSend(null());
+			y.ret(1).await;
+			y.ret(2).await;
+		});
+
+		let list = iter.collect::<Vec<_>>();
+		assert_eq!(list, [1, 2]);
+	}
+}
+
+#[cfg(test)]
+mod async_tests {
+	use std::{ptr::null, time::Duration};
+
+	use futures::{StreamExt, stream};
+	use rt_local::runtime::core::test;
+
+	use super::LocalAsyncIter;
+	use crate::test_utils::sleep;
+
+	#[test]
+	async fn no_value() {
+		let iter = LocalAsyncIter::<u32>::new(|mut _y| async move {});
+		let list = iter.collect::<Vec<_>>().await;
+		assert!(list.is_empty());
+	}
 }
