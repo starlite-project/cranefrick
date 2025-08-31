@@ -3,12 +3,10 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "generator_test"
+name = "chess_test"
 rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-futures = "0.3"
-
-[dev-dependencies]
-rt-local = "0.1"
+color-eyre.workspace = true
+shakmaty = "0.29"
