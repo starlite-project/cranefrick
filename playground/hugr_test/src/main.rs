@@ -1,8 +1,11 @@
+mod ext;
+
 use color_eyre::Result;
+use ext::inc_op;
 use hugr::{
 	Hugr,
 	algorithms::ComposablePass as _,
-	builder::{Dataflow, DataflowSubContainer, HugrBuilder, ModuleBuilder},
+	builder::{DFGBuilder, Dataflow, DataflowSubContainer, HugrBuilder, ModuleBuilder, inout_sig},
 	extension::prelude::*,
 	std_extensions::logic::LogicOp,
 	types::Signature,
@@ -14,32 +17,9 @@ fn main() -> Result<()> {
 	color_eyre::install()?;
 
 	let mut hugr = {
-		let mut module_builder = ModuleBuilder::new();
+		let mut dfg_builder = DFGBuilder::new(inout_sig(vec![], vec![]))?;
 
-		let _dfg_handle = {
-			let mut dfg = module_builder.define_function("main", Signature::new_endo(bool_t()))?;
-
-			let [w] = dfg.input_wires_arr();
-
-			let [w] = dfg.add_dataflow_op(LogicOp::Not, [w])?.outputs_arr();
-
-			dfg.finish_with_outputs([w])
-		}?;
-
-		let _circuit_handle = {
-			let mut dfg = module_builder
-				.define_function("circuit", Signature::new_endo(vec![bool_t(), bool_t()]))?;
-			let mut circuit = dfg.as_circuit(dfg.input_wires());
-
-			circuit
-				.append(LogicOp::Not, [0])?
-				.append(LogicOp::Not, [1])?;
-
-			let outputs = circuit.finish();
-			dfg.finish_with_outputs(outputs)
-		}?;
-
-		module_builder.finish_hugr()
+		dfg_builder.finish_hugr()
 	}?;
 
 	print_hugr(&hugr);
