@@ -1,3 +1,3 @@
 fn main() {
-	println!("cargo:rerun-if-changed=build.rs");
+	build_rs::output::rerun_if_changed("build.rs");
 }

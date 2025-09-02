@@ -314,6 +314,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "build-rs"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0466bb4013e90b22fb8e17e5e1717c49b8049aa46dc1692e3f74659d181c8b4"
+dependencies = [
+ "unicode-ident",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1092,6 +1101,7 @@ checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 name = "frick"
 version = "0.1.0"
 dependencies = [
+ "build-rs",
  "clap",
  "color-eyre",
  "frick_assembler",
