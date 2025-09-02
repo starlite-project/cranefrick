@@ -5,13 +5,13 @@ use std::{fs, path::Path};
 use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::{AssembledModule as _, Assembler as _};
+#[cfg(feature = "cranelift")]
 use frick_cranelift_assembler::{AssemblerFlags, CraneliftAssembler};
 use frick_ir::{Compiler, parse};
 #[cfg(feature = "llvm")]
 use frick_llvm_assembler::LlvmAssembler;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
-use tracing::warn;
 use tracing_error::ErrorLayer;
 use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{
@@ -22,6 +22,9 @@ use tracing_subscriber::{
 use tracing_tree::HierarchicalLayer;
 
 use self::args::Args;
+
+#[cfg(not(any(feature = "llvm", feature = "cranelift")))]
+compile_error!("a backend must be enabled");
 
 #[cfg(target_os = "windows")]
 #[global_allocator]
@@ -57,7 +60,9 @@ fn main() -> Result<()> {
 
 	serialize(&compiler, args.output_path(), "optimized")?;
 
+	#[allow(unreachable_patterns)]
 	match &args {
+		#[cfg(feature = "cranelift")]
 		Args::Cranelift { flags_path, .. } => {
 			let flags = get_cranelift_assembler(flags_path.as_deref());
 
@@ -92,6 +97,7 @@ fn main() -> Result<()> {
 
 			module.execute()?;
 		}
+		_ => unreachable!(),
 	}
 
 	Ok(())
@@ -201,13 +207,14 @@ fn serialize_as_s_expr<T: Serialize>(value: &T, folder_path: &Path, file_name: &
 	Ok(())
 }
 
+#[cfg(feature = "cranelift")]
 fn get_cranelift_assembler(path: Option<&Path>) -> AssemblerFlags {
 	if let Some(path) = path {
 		let data = match fs::read(path) {
 			Ok(data) => data,
 			Err(e) => {
-				warn!("error reading flags file: {e}");
-				warn!("resorting to default flags");
+				tracing::warn!("error reading flags file: {e}");
+				tracing::warn!("resorting to default flags");
 				return AssemblerFlags::default();
 			}
 		};
@@ -215,8 +222,8 @@ fn get_cranelift_assembler(path: Option<&Path>) -> AssemblerFlags {
 		match toml::from_slice(&data) {
 			Ok(flags) => flags,
 			Err(e) => {
-				warn!("error deserializing flags: {e}");
-				warn!("resorting to default flags");
+				tracing::warn!("error deserializing flags: {e}");
+				tracing::warn!("resorting to default flags");
 				AssemblerFlags::default()
 			}
 		}
