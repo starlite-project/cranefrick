@@ -20,6 +20,12 @@ pub enum Args {
 		#[arg(short, long)]
 		passes_path: Option<PathBuf>,
 	},
+	#[cfg(feature = "interpret")]
+	Interpret {
+		file_path: PathBuf,
+		#[arg(short, long)]
+		output_path: PathBuf,
+	},
 }
 
 #[allow(unreachable_patterns)]
@@ -30,6 +36,8 @@ impl Args {
 			Self::Cranelift { file_path, .. } => file_path,
 			#[cfg(feature = "llvm")]
 			Self::Llvm { file_path, .. } => file_path,
+			#[cfg(feature = "interpret")]
+			Self::Interpret { file_path, .. } => file_path,
 			_ => unreachable!(),
 		}
 	}
@@ -40,6 +48,8 @@ impl Args {
 			Self::Cranelift { output_path, .. } => output_path,
 			#[cfg(feature = "llvm")]
 			Self::Llvm { output_path, .. } => output_path,
+			#[cfg(feature = "interpret")]
+			Self::Interpret { output_path, .. } => output_path,
 			_ => unreachable!(),
 		}
 	}

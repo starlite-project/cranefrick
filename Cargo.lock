@@ -1091,6 +1091,7 @@ dependencies = [
  "frick_cranelift_assembler",
  "frick_ir",
  "frick_llvm_assembler",
+ "frick_rust_assembler",
  "indicatif",
  "mimalloc",
  "ron",
@@ -1149,6 +1150,15 @@ dependencies = [
  "frick_assembler",
  "frick_ir",
  "inkwell",
+ "tracing",
+]
+
+[[package]]
+name = "frick_rust_assembler"
+version = "0.1.0"
+dependencies = [
+ "frick_assembler",
+ "frick_ir",
  "tracing",
 ]
 

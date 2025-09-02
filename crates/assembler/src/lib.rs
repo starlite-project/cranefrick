@@ -94,6 +94,8 @@ pub trait AssembledModule {
 
 pub trait InnerAssemblyError {}
 
+pub const TAPE_SIZE: usize = 30_000;
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn frick_assembler_write(value: u32) {
 	if cfg!(target_os = "windows") && value >= 128 {

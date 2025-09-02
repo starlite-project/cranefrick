@@ -4,10 +4,7 @@ use color_eyre::Result;
 use hugr::{
 	Hugr,
 	algorithms::ComposablePass as _,
-	builder::{
-		DFGBuilder, Dataflow, DataflowHugr, DataflowSubContainer, HugrBuilder,
-		inout_sig,
-	},
+	builder::{DFGBuilder, Dataflow, DataflowHugr, DataflowSubContainer, HugrBuilder, inout_sig},
 	extension::prelude::*,
 	ops::Value,
 	types::Signature,

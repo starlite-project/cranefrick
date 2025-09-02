@@ -10,6 +10,8 @@ use frick_cranelift_assembler::{AssemblerFlags, CraneliftAssembler};
 use frick_ir::{Compiler, parse};
 #[cfg(feature = "llvm")]
 use frick_llvm_assembler::LlvmAssembler;
+#[cfg(feature = "interpret")]
+use frick_rust_assembler::RustInterpreterAssembler;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
@@ -94,6 +96,16 @@ fn main() -> Result<()> {
 			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
 
 			tracing::info!("finished assembling with LLVM");
+
+			module.execute()?;
+		}
+		#[cfg(feature = "interpret")]
+		Args::Interpret { .. } => {
+			let assembler = RustInterpreterAssembler;
+
+			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
+
+			tracing::info!("finished assembling with Rust");
 
 			module.execute()?;
 		}
