@@ -29,12 +29,28 @@ impl RustInterpreterModule<'_> {
 			BrainIr::ChangeCell(value, offset) => {
 				Self::change_cell(*value, offset.map_or(0, NonZero::get), memory, *ptr);
 			}
+			BrainIr::SubCell(offset) => Self::sub_cell(*offset, memory, *ptr),
 			BrainIr::OutputCurrentCell => Self::output_current_cell(memory, *ptr),
 			BrainIr::OutputChar(c) => Self::output_char(*c),
 			BrainIr::OutputChars(c) => Self::output_chars(c),
+			BrainIr::InputIntoCell => Self::input_into_cell(memory, *ptr),
 			BrainIr::DynamicLoop(ops) => Self::dynamic_loop(ops, memory, ptr),
+			BrainIr::IfNotZero(ops) => Self::if_not_zero(ops, memory, ptr),
 			BrainIr::FindZero(offset) => Self::find_zero(*offset, memory, ptr),
-			_ => todo!("op {op:?}"),
+			BrainIr::MoveValueTo(factor, offset) => {
+				Self::move_value_to(*factor, *offset, memory, *ptr);
+			}
+			BrainIr::TakeValueTo(factor, offset) => {
+				Self::take_value_to(*factor, *offset, memory, ptr);
+			}
+			BrainIr::FetchValueFrom(factor, offset) => {
+				Self::fetch_value_from(*factor, *offset, memory, *ptr);
+			}
+			BrainIr::ReplaceValueFrom(factor, offset) => {
+				Self::replace_value_from(*factor, *offset, memory, *ptr);
+			}
+			BrainIr::ScaleValue(factor) => Self::scale_value(*factor, memory, *ptr),
+			_ => unimplemented!("op {op:?}"),
 		}
 	}
 }
