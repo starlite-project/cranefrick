@@ -41,7 +41,7 @@ members = [
     "crates/rust_assembler",
     "crates/utils",
     "playground/befunge_test",
-    "playground/chess_test",
+    "playground/chess_test", "playground/futures_test",
     "playground/hugr_test",
     "playground/llvm_test",
     "playground/salsa_test",
