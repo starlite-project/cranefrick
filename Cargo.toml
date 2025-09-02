@@ -38,6 +38,7 @@ members = [
     "crates/utils",
     "playground/befunge_test",
     "playground/chess_test",
+    "playground/hugr_test",
     "playground/llvm_test",
     "playground/salsa_test",
     "tools/pattern_finder"
