@@ -117,6 +117,9 @@ impl<'a> InnerAssembler<'a> {
 				}
 				BrainIr::SubCell(offset) => self.sub_cell(*offset),
 				BrainIr::OutputCurrentCell(None) => self.output_current_cell(),
+				BrainIr::OutputCurrentCell(Some(value)) => {
+					self.output_current_cell_offset_by(value.get());
+				}
 				BrainIr::OutputChar(c) => self.output_char(*c),
 				BrainIr::OutputChars(c) => self.output_chars(c),
 				BrainIr::InputIntoCell => self.input_into_cell(),

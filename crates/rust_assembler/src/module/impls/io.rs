@@ -13,6 +13,20 @@ impl RustInterpreterModule<'_> {
 		}
 	}
 
+	pub(crate) fn output_current_cell_offset_by(
+		offset: i8,
+		memory: &[u8; 30_000],
+		current_ptr: usize,
+	) {
+		let value = memory[current_ptr].wrapping_add_signed(offset);
+
+		let extended = value.into();
+
+		unsafe {
+			frick_assembler_write(extended);
+		}
+	}
+
 	pub(crate) fn output_char(c: u8) {
 		let extended = c.into();
 
