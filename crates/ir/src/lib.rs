@@ -2,7 +2,7 @@
 
 mod compiler;
 
-use std::num::NonZeroI32;
+use std::num::{NonZeroI8, NonZeroI32};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
@@ -25,7 +25,7 @@ pub enum BrainIr {
 	SubCell(i32),
 	FindZero(i32),
 	InputIntoCell,
-	OutputCurrentCell,
+	OutputCurrentCell(#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI8>),
 	OutputChar(u8),
 	OutputChars(Vec<u8>),
 	MoveValueTo(u8, i32),
@@ -98,7 +98,12 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn output_current_cell() -> Self {
-		Self::OutputCurrentCell
+		Self::OutputCurrentCell(None)
+	}
+
+	#[must_use]
+	pub const fn output_current_cell_offset_by(c: i8) -> Self {
+		Self::OutputCurrentCell(NonZeroI8::new(c))
 	}
 
 	#[must_use]
