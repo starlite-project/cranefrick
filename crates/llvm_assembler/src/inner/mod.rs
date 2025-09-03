@@ -91,9 +91,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 					self.change_cell(*value, offset.map_or(0, NonZero::get))?;
 				}
 				BrainIr::SubCell(offset) => self.sub_cell(*offset)?,
-				BrainIr::OutputCurrentCell(None) => self.output_current_cell()?,
-				BrainIr::OutputCurrentCell(Some(value)) => {
-					self.output_current_cell_offset_by(value.get())?;
+				BrainIr::OutputCurrentCell(value) => {
+					self.output_current_cell(value.map_or(0, NonZero::get))?;
 				}
 				BrainIr::OutputChar(c) => self.output_char(*c)?,
 				BrainIr::OutputChars(c) => self.output_chars(c)?,

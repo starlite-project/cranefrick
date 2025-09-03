@@ -29,7 +29,7 @@ impl InnerAssembler<'_> {
 		self.remove_srcflag(SrcLoc::OUTPUT_CHARS);
 	}
 
-	pub fn output_current_cell(&mut self) {
+	pub fn output_current_cell(&mut self, cell_offset: i8) {
 		self.add_srcflag(SrcLoc::OUTPUT_CURRENT_CELL);
 
 		let write = self.write;
@@ -38,25 +38,11 @@ impl InnerAssembler<'_> {
 
 		let value = self.ins().sextend(types::I32, value);
 
+		let value = self.ins().iadd_imm(value, i64::from(cell_offset));
+
 		self.ins().call(write, &[value]);
 
 		self.remove_srcflag(SrcLoc::OUTPUT_CURRENT_CELL);
-	}
-
-	pub fn output_current_cell_offset_by(&mut self, cell_offset: i8) {
-		self.add_srcflag(SrcLoc::OUTPUT_CURRENT_CELL_OFFSET_BY);
-
-		let write = self.write;
-
-		let value = self.load(0);
-
-		let value = self.ins().sextend(types::I32, value);
-
-		let added_value = self.ins().iadd_imm(value, i64::from(cell_offset));
-
-		self.ins().call(write, &[added_value]);
-
-		self.remove_srcflag(SrcLoc::OUTPUT_CURRENT_CELL_OFFSET_BY);
 	}
 
 	pub fn input_into_cell(&mut self) {
