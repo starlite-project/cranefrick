@@ -203,6 +203,12 @@ impl<'ctx> Functions<'ctx> {
 	}
 
 	fn setup_getchar_attributes(self, context: &'ctx Context) -> Self {
+		let memory_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 2);
+
+		self.getchar
+			.add_attribute(AttributeLoc::Function, memory_attr);
+
 		let writeonly_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("writeonly"), 0);
 		let nocapture_attr =
