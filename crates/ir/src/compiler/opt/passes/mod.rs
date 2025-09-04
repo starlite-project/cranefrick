@@ -5,18 +5,17 @@ mod sort;
 
 use std::{iter, num::NonZero};
 
+use frick_utils::GetOrZero as _;
+
 pub use self::{loops::*, sort::*};
 use super::Change;
 use crate::BrainIr;
 
 pub fn optimize_consecutive_instructions(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::ChangeCell(a, x), BrainIr::ChangeCell(b, y)] if *x == *y => {
-			Some(Change::replace(BrainIr::change_cell_at(
-				a.wrapping_add(*b),
-				x.map_or(0, NonZero::get),
-			)))
-		}
+		[BrainIr::ChangeCell(a, x), BrainIr::ChangeCell(b, y)] if *x == *y => Some(
+			Change::replace(BrainIr::change_cell_at(a.wrapping_add(*b), x.get_or_zero())),
+		),
 		[BrainIr::MovePointer(a), BrainIr::MovePointer(b)] => {
 			Some(Change::replace(BrainIr::move_pointer(a.wrapping_add(*b))))
 		}
@@ -31,7 +30,7 @@ pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 			BrainIr::SetCell(.., b),
 		] if *a == *b => Some(Change::remove_offset(0)),
 		[BrainIr::SetCell(i1, x), BrainIr::ChangeCell(i2, y)] if *x == *y => Some(Change::replace(
-			BrainIr::set_cell_at(i1.wrapping_add_signed(*i2), x.map_or(0, NonZero::get)),
+			BrainIr::set_cell_at(i1.wrapping_add_signed(*i2), x.get_or_zero()),
 		)),
 		[l, BrainIr::ChangeCell(i1, None)] if l.is_zeroing_cell() => {
 			Some(Change::swap([l.clone(), BrainIr::set_cell(*i1 as u8)]))
@@ -46,7 +45,7 @@ pub fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[BrainIr::ChangeCell(.., offset)] => Some(Change::replace(BrainIr::set_cell_at(
 			0,
-			offset.map_or(0, NonZero::get),
+			offset.get_or_zero(),
 		))),
 		_ => None,
 	}
@@ -66,7 +65,7 @@ pub fn fix_beginning_instructions(ops: &mut Vec<BrainIr>) -> bool {
 			true
 		}
 		Some(instr @ &mut BrainIr::ChangeCell(i, x)) => {
-			*instr = BrainIr::set_cell_at(i as u8, x.map_or(0, NonZero::get));
+			*instr = BrainIr::set_cell_at(i as u8, x.get_or_zero());
 			true
 		}
 		_ => false,
@@ -220,7 +219,7 @@ pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 			},
 		] if *x == *y => Some(Change::swap([
 			BrainIr::output_char(*value),
-			BrainIr::set_cell_at(*value, x.map_or(0, NonZero::get)),
+			BrainIr::set_cell_at(*value, x.get_or_zero()),
 		])),
 		[BrainIr::OutputChar(x), BrainIr::OutputChar(y)] => {
 			Some(Change::replace(BrainIr::output_chars([*x, *y])))
@@ -284,11 +283,9 @@ pub const fn optimize_sets_and_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 
 pub fn optimize_constant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::SetCell(a, x), BrainIr::FetchValueFrom(factor, y)]
-			if x.map_or(0, NonZero::get) == *y =>
-		{
+		[BrainIr::SetCell(a, x), BrainIr::FetchValueFrom(factor, y)] if x.get_or_zero() == *y => {
 			Some(Change::swap([
-				BrainIr::set_cell_at(0, x.map_or(0, NonZero::get)),
+				BrainIr::set_cell_at(0, x.get_or_zero()),
 				BrainIr::set_cell(a.wrapping_mul(*factor)),
 			]))
 		}

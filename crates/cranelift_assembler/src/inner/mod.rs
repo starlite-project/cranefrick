@@ -3,7 +3,6 @@ mod srcloc;
 
 use std::{
 	collections::HashMap,
-	num::NonZero,
 	ops::{Deref, DerefMut},
 };
 
@@ -15,6 +14,7 @@ use cranelift_jit::JITModule;
 use cranelift_module::{DataDescription, Linkage, Module};
 use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
+use frick_utils::GetOrZero as _;
 
 use self::srcloc::SrcLoc;
 use super::CraneliftAssemblyError;
@@ -110,20 +110,17 @@ impl<'a> InnerAssembler<'a> {
 			match op {
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset),
 				BrainIr::SetCell(value, offset) => {
-					self.set_cell(*value, offset.map_or(0, NonZero::get));
+					self.set_cell(*value, offset.get_or_zero());
 				}
 				BrainIr::ChangeCell(value, offset) => {
-					self.change_cell(*value, offset.map_or(0, NonZero::get));
+					self.change_cell(*value, offset.get_or_zero());
 				}
 				BrainIr::SubCell(offset) => self.sub_cell(*offset),
 				BrainIr::OutputCell {
 					value_offset: value,
 					offset,
 				} => {
-					self.output_current_cell(
-						value.map_or(0, NonZero::get),
-						offset.map_or(0, NonZero::get),
-					);
+					self.output_current_cell(value.get_or_zero(), offset.get_or_zero());
 				}
 				BrainIr::OutputChar(c) => self.output_char(*c),
 				BrainIr::OutputChars(c) => self.output_chars(c),

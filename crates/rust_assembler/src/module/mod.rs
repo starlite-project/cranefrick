@@ -4,6 +4,7 @@ use std::{marker::PhantomData, num::NonZero};
 
 use frick_assembler::{AssembledModule, TAPE_SIZE};
 use frick_ir::BrainIr;
+use frick_utils::GetOrZero as _;
 
 use super::RustInterpreterError;
 
@@ -24,21 +25,16 @@ impl RustInterpreterModule<'_> {
 		match op {
 			BrainIr::MovePointer(offset) => Self::move_pointer(*offset, ptr),
 			BrainIr::SetCell(value, offset) => {
-				Self::set_cell(*value, offset.map_or(0, NonZero::get), memory, *ptr);
+				Self::set_cell(*value, offset.get_or_zero(), memory, *ptr);
 			}
 			BrainIr::ChangeCell(value, offset) => {
-				Self::change_cell(*value, offset.map_or(0, NonZero::get), memory, *ptr);
+				Self::change_cell(*value, offset.get_or_zero(), memory, *ptr);
 			}
 			BrainIr::SubCell(offset) => Self::sub_cell(*offset, memory, *ptr),
 			BrainIr::OutputCell {
 				value_offset: value,
 				offset,
-			} => Self::output_current_cell(
-				value.map_or(0, NonZero::get),
-				offset.map_or(0, NonZero::get),
-				memory,
-				*ptr,
-			),
+			} => Self::output_current_cell(value.get_or_zero(), offset.get_or_zero(), memory, *ptr),
 			BrainIr::OutputChar(c) => Self::output_char(*c),
 			BrainIr::OutputChars(c) => Self::output_chars(c),
 			BrainIr::InputIntoCell => Self::input_into_cell(memory, *ptr),

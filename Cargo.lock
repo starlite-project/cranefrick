@@ -1142,6 +1142,7 @@ dependencies = [
  "cranelift-native",
  "frick_assembler",
  "frick_ir",
+ "frick_utils",
  "serde",
  "target-lexicon",
  "tracing",
@@ -1166,6 +1167,7 @@ version = "0.1.0"
 dependencies = [
  "frick_assembler",
  "frick_ir",
+ "frick_utils",
  "inkwell",
  "tracing",
 ]
@@ -1176,6 +1178,7 @@ version = "0.1.0"
 dependencies = [
  "frick_assembler",
  "frick_ir",
+ "frick_utils",
  "tracing",
 ]
 

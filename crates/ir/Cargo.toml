@@ -15,6 +15,7 @@ chumsky = { workspace = true, default-features = false, features = [
 ] }
 frick_utils = { workspace = true, features = [
     "alloc",
+    "get_or_zero",
     "insert_or_push",
     "iter"
 ] }

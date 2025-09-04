@@ -9,14 +9,14 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(feature = "convert")]
+#[cfg(any(feature = "unwrap_from", feature = "get_or_zero"))]
 mod convert;
 #[cfg(feature = "insert_or_push")]
 mod insert_or_push;
 #[cfg(feature = "iter")]
 mod iter;
 
-#[cfg(feature = "convert")]
+#[cfg(any(feature = "unwrap_from", feature = "get_or_zero"))]
 pub use self::convert::*;
 #[cfg(feature = "insert_or_push")]
 pub use self::insert_or_push::*;
