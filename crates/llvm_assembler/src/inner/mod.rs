@@ -207,8 +207,20 @@ impl<'ctx> Functions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("writeonly"), 0);
 		let nocapture_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocapture"), 0);
+		let noalias_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noalias"), 0);
+		let nofree_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
+		let nonnull_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonnull"), 0);
 
-		for attribute in [writeonly_attr, nocapture_attr] {
+		for attribute in [
+			writeonly_attr,
+			nocapture_attr,
+			noalias_attr,
+			nofree_attr,
+			nonnull_attr,
+		] {
 			self.getchar
 				.add_attribute(AttributeLoc::Param(0), attribute);
 		}
@@ -216,8 +228,15 @@ impl<'ctx> Functions<'ctx> {
 		self
 	}
 
-	const fn setup_putchar_attributes(self, context: &'ctx Context) -> Self {
-		let _ = context;
+	fn setup_putchar_attributes(self, context: &'ctx Context) -> Self {
+		let zeroext_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
+
+		for attribute in std::iter::once(zeroext_attr) {
+			self.putchar
+				.add_attribute(AttributeLoc::Param(0), attribute);
+		}
+
 		self
 	}
 }
