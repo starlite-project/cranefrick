@@ -22,7 +22,7 @@ impl InnerAssembler<'_> {
 			"output_current_cell_offset",
 		)?;
 
-		self.builder.build_call(
+		self.builder.build_direct_call(
 			self.functions.putchar,
 			&[output_char.into()],
 			"output_current_cell_call",
@@ -44,7 +44,7 @@ impl InnerAssembler<'_> {
 			self.builder
 				.build_int_z_extend(char_to_put, i32_type, "output_char_extend")?;
 
-		self.builder.build_call(
+		self.builder.build_direct_call(
 			self.functions.putchar,
 			&[extended_char.into()],
 			"output_char_call",
@@ -74,7 +74,7 @@ impl InnerAssembler<'_> {
 			)?
 		};
 
-		self.builder.build_call(
+		self.builder.build_direct_call(
 			self.functions.getchar,
 			&[ptr_value.into()],
 			"input_into_cell_call",
