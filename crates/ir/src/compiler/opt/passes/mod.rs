@@ -213,11 +213,14 @@ pub fn optimize_scale_value(ops: &[BrainIr; 4]) -> Option<Change> {
 pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::SetCell(value, None),
-			BrainIr::OutputCurrentCell(None),
-		] => Some(Change::swap([
+			BrainIr::SetCell(value, x),
+			BrainIr::OutputCell {
+				value_offset: None,
+				offset: y,
+			},
+		] if *x == *y => Some(Change::swap([
 			BrainIr::output_char(*value),
-			BrainIr::set_cell(*value),
+			BrainIr::set_cell_at(*value, x.map_or(0, NonZero::get)),
 		])),
 		[BrainIr::OutputChar(x), BrainIr::OutputChar(y)] => {
 			Some(Change::replace(BrainIr::output_chars([*x, *y])))
@@ -236,16 +239,33 @@ pub fn optimize_offset_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::ChangeCell(a, None),
-			BrainIr::OutputCurrentCell(None),
+			BrainIr::OutputCell {
+				value_offset: None,
+				offset: None,
+			},
 			BrainIr::ChangeCell(b, None),
-		] if *a == -b => Some(Change::replace(BrainIr::output_current_cell_offset_by(*a))),
+		] if *a == -b => Some(Change::replace(BrainIr::output_offset_cell(*a))),
 		[
 			BrainIr::ChangeCell(a, None),
-			BrainIr::OutputCurrentCell(None),
+			BrainIr::OutputCell {
+				value_offset: None,
+				offset: None,
+			},
 			BrainIr::ChangeCell(b, None),
 		] => Some(Change::swap([
-			BrainIr::output_current_cell_offset_by(*a),
+			BrainIr::output_offset_cell(*a),
 			BrainIr::change_cell(a.wrapping_add(*b)),
+		])),
+		[
+			BrainIr::MovePointer(x),
+			BrainIr::OutputCell {
+				value_offset: None,
+				offset: None,
+			},
+			BrainIr::MovePointer(y),
+		] => Some(Change::swap([
+			BrainIr::output_cell_at(*x),
+			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
 		_ => None,
 	}

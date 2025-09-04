@@ -3,27 +3,22 @@ use frick_assembler::{frick_assembler_read, frick_assembler_write};
 use crate::RustInterpreterModule;
 
 impl RustInterpreterModule<'_> {
-	pub(crate) fn output_current_cell(memory: &[u8; 30_000], current_ptr: usize) {
-		let value = memory[current_ptr];
-
-		let extended = value.into();
-
-		unsafe {
-			frick_assembler_write(extended);
-		}
-	}
-
-	pub(crate) fn output_current_cell_offset_by(
-		offset: i8,
+	pub(crate) fn output_current_cell(
+		cell_offset: i8,
+		offset: i32,
 		memory: &[u8; 30_000],
 		current_ptr: usize,
 	) {
-		let value = memory[current_ptr].wrapping_add_signed(offset);
+		let offset_ptr = Self::offset_ptr(current_ptr, offset);
 
-		let extended = value.into();
+		let value = memory[offset_ptr];
+
+		let extended = u32::from(value);
+
+		let output = extended.wrapping_add_signed(cell_offset.into());
 
 		unsafe {
-			frick_assembler_write(extended);
+			frick_assembler_write(output);
 		}
 	}
 

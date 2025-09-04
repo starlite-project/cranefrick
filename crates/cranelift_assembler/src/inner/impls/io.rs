@@ -29,12 +29,12 @@ impl InnerAssembler<'_> {
 		self.remove_srcflag(SrcLoc::OUTPUT_CHARS);
 	}
 
-	pub fn output_current_cell(&mut self, cell_offset: i8) {
+	pub fn output_current_cell(&mut self, cell_offset: i8, offset: i32) {
 		self.add_srcflag(SrcLoc::OUTPUT_CURRENT_CELL);
 
 		let write = self.write;
 
-		let value = self.load(0);
+		let value = self.load(offset);
 
 		let value = self.ins().sextend(types::I32, value);
 

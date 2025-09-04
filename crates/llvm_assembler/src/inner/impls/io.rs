@@ -1,8 +1,12 @@
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	pub fn output_current_cell(&self, cell_offset: i8) -> Result<(), LlvmAssemblyError> {
-		let char_to_put = self.load(0)?;
+	pub fn output_current_cell(
+		&self,
+		cell_offset: i8,
+		offset: i32,
+	) -> Result<(), LlvmAssemblyError> {
+		let char_to_put = self.load(offset)?;
 
 		let i32_type = self.context.i32_type();
 

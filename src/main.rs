@@ -70,7 +70,7 @@ fn main() -> Result<()> {
 
 			let assembler = CraneliftAssembler::with_flags(flags);
 
-			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
+			let module = assembler.assemble(&compiler, args.output_path())?;
 
 			tracing::info!("finished assembling with cranelift");
 
@@ -93,7 +93,7 @@ fn main() -> Result<()> {
 				}
 			};
 
-			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
+			let module = assembler.assemble(&compiler, args.output_path())?;
 
 			tracing::info!("finished assembling with LLVM");
 
@@ -103,7 +103,7 @@ fn main() -> Result<()> {
 		Args::Interpret { .. } => {
 			let assembler = RustInterpreterAssembler;
 
-			let module = assembler.assemble(compiler.as_slice(), args.output_path())?;
+			let module = assembler.assemble(&compiler, args.output_path())?;
 
 			tracing::info!("finished assembling with Rust");
 

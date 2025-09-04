@@ -2,7 +2,7 @@
 
 mod compiler;
 
-use std::num::{NonZeroI8, NonZeroI32};
+use std::num::NonZero;
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
@@ -15,17 +15,20 @@ pub use self::compiler::*;
 pub enum BrainIr {
 	ChangeCell(
 		i8,
-		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI32>,
+		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
 	),
 	MovePointer(i32),
 	SetCell(
 		u8,
-		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI32>,
+		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
 	),
 	SubCell(i32),
 	FindZero(i32),
 	InputIntoCell,
-	OutputCurrentCell(#[serde(skip_serializing_if = "Option::is_none")] Option<NonZeroI8>),
+	OutputCell {
+		value_offset: Option<NonZero<i8>>,
+		offset: Option<NonZero<i32>>,
+	},
 	OutputChar(u8),
 	OutputChars(Vec<u8>),
 	MoveValueTo(u8, i32),
@@ -45,7 +48,7 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn change_cell_at(value: i8, offset: i32) -> Self {
-		Self::ChangeCell(value, NonZeroI32::new(offset))
+		Self::ChangeCell(value, NonZero::new(offset))
 	}
 
 	#[must_use]
@@ -60,7 +63,7 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn set_cell_at(value: u8, offset: i32) -> Self {
-		Self::SetCell(value, NonZeroI32::new(offset))
+		Self::SetCell(value, NonZero::new(offset))
 	}
 
 	#[must_use]
@@ -97,13 +100,26 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn output_current_cell() -> Self {
-		Self::OutputCurrentCell(None)
+	pub const fn output_cell_at(offset: i32) -> Self {
+		Self::output_offset_cell_at(0, offset)
 	}
 
 	#[must_use]
-	pub const fn output_current_cell_offset_by(c: i8) -> Self {
-		Self::OutputCurrentCell(NonZeroI8::new(c))
+	pub const fn output_offset_cell_at(value: i8, offset: i32) -> Self {
+		Self::OutputCell {
+			value_offset: NonZero::new(value),
+			offset: NonZero::new(offset),
+		}
+	}
+
+	#[must_use]
+	pub const fn output_cell() -> Self {
+		Self::output_offset_cell_at(0, 0)
+	}
+
+	#[must_use]
+	pub const fn output_offset_cell(value: i8) -> Self {
+		Self::output_offset_cell_at(value, 0)
 	}
 
 	#[must_use]

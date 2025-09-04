@@ -17,7 +17,7 @@ pub fn calculate_ptr_movement(ops: &[BrainIr]) -> Option<i32> {
 			| BrainIr::SetCell(..)
 			| BrainIr::InputIntoCell
 			| BrainIr::OutputChar(..)
-			| BrainIr::OutputCurrentCell(..)
+			| BrainIr::OutputCell { .. }
 			| BrainIr::MoveValueTo(..)
 			| BrainIr::FetchValueFrom(..) => {}
 			_ => return None,
