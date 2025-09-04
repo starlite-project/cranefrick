@@ -23,13 +23,13 @@ loop-unroll-and-jam
 loop-reduce
 loop-load-elim
 loop-deletion
-slp-vectorizer
 newgvn
 sccp
 sink
 dse
 adce
 load-store-vectorizer
+slp-vectorizer
 sroa<modify-cfg>
 select-optimize
 scalarizer
