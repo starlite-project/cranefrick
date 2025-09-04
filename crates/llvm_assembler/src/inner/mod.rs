@@ -219,6 +219,8 @@ impl<'ctx> Functions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
 		let nonnull_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonnull"), 0);
+		let dead_on_unwind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("dead_on_unwind"), 0);
 
 		for attribute in [
 			writeonly_attr,
@@ -226,6 +228,7 @@ impl<'ctx> Functions<'ctx> {
 			noalias_attr,
 			nofree_attr,
 			nonnull_attr,
+			dead_on_unwind_attr,
 		] {
 			self.getchar
 				.add_attribute(AttributeLoc::Param(0), attribute);
