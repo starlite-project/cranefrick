@@ -1,4 +1,5 @@
 default<O3>
+inferattrs
 instcombine
 aggressive-instcombine
 jump-threading
@@ -36,4 +37,5 @@ scalarizer
 instcombine
 aggressive-instcombine
 simplifycfg
+inferattrs
 default<O3>
