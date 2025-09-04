@@ -85,6 +85,32 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub fn has_input(&self) -> bool {
+		if let Some(children) = self.child_ops() {
+			return children.iter().any(Self::has_input);
+		}
+
+		matches!(self, Self::InputIntoCell)
+	}
+
+	#[must_use]
+	pub fn has_output(&self) -> bool {
+		if let Some(children) = self.child_ops() {
+			return children.iter().any(Self::has_output);
+		}
+
+		matches!(
+			self,
+			Self::OutputCell { .. } | Self::OutputChar(..) | Self::OutputChars(..)
+		)
+	}
+
+	#[must_use]
+	pub fn has_io(&self) -> bool {
+		self.has_output() || self.has_input()
+	}
+
+	#[must_use]
 	pub const fn clear_cell() -> Self {
 		Self::clear_cell_at(0)
 	}
