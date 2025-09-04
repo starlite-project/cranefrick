@@ -3,7 +3,7 @@
 mod loops;
 mod sort;
 
-use std::{iter, num::NonZero};
+use std::iter;
 
 use frick_utils::GetOrZero as _;
 

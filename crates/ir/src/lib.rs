@@ -85,6 +85,18 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub const fn needs_nonzero_cell(&self) -> bool {
+		matches!(
+			self,
+			Self::DynamicLoop(..)
+				| Self::FindZero(..)
+				| Self::MoveValueTo(..)
+				| Self::SubCell(..)
+				| Self::IfNotZero(..)
+		)
+	}
+
+	#[must_use]
 	pub fn has_input(&self) -> bool {
 		if let Some(children) = self.child_ops() {
 			return children.iter().any(Self::has_input);

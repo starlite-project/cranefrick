@@ -1,6 +1,6 @@
 mod impls;
 
-use std::{marker::PhantomData, num::NonZero};
+use std::marker::PhantomData;
 
 use frick_assembler::{AssembledModule, TAPE_SIZE};
 use frick_ir::BrainIr;

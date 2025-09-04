@@ -5,13 +5,7 @@ use crate::compiler::opt::utils::calculate_ptr_movement;
 
 pub const fn remove_unreachable_loops(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[
-			l,
-			BrainIr::DynamicLoop(..)
-			| BrainIr::FindZero(..)
-			| BrainIr::MoveValueTo(..)
-			| BrainIr::IfNotZero(..),
-		] if l.is_zeroing_cell() => Some(Change::remove_offset(1)),
+		[a, b] if a.is_zeroing_cell() && b.needs_nonzero_cell() => Some(Change::remove_offset(1)),
 		_ => None,
 	}
 }

@@ -1,7 +1,5 @@
 mod impls;
 
-use std::num::NonZero;
-
 use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
 use frick_utils::GetOrZero as _;
