@@ -121,6 +121,15 @@ impl Assembler for LlvmAssembler {
 			.print_to_file(output_path.join("unoptimized.ll"))
 			.map_err(AssemblyError::backend)?;
 
+		info!("writing unoptimized asm");
+		target_machine
+			.write_to_file(
+				&module,
+				inkwell::targets::FileType::Assembly,
+				&output_path.join("unoptimized.asm"),
+			)
+			.map_err(AssemblyError::backend)?;
+
 		let pass_options = PassBuilderOptions::create();
 
 		pass_options.set_verify_each(true);
@@ -140,12 +149,12 @@ impl Assembler for LlvmAssembler {
 			.run_passes(&self.passes, &target_machine, pass_options)
 			.map_err(AssemblyError::backend)?;
 
-		info!("writing asm");
+		info!("writing optimized asm");
 		target_machine
 			.write_to_file(
 				&module,
 				inkwell::targets::FileType::Assembly,
-				&output_path.join("program.asm"),
+				&output_path.join("optimized.asm"),
 			)
 			.map_err(AssemblyError::backend)?;
 
