@@ -23,7 +23,6 @@ impl InnerAssembler<'_> {
 		let values_to_set = {
 			let array_alloca = self
 				.builder
-				// .build_alloca(i8_type.array_type(range_len as u32), "set_range_alloca")?;
 				.build_array_alloca(i8_type, self.ptr_type.const_int(range_len as u64, false), "set_range_alloca")?;
 
 			self.builder.build_memset(
