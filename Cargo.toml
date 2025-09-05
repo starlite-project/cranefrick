@@ -47,7 +47,8 @@ members = [
     "playground/chess_test",
     "playground/futures_test",
     "playground/hugr_test",
-    "playground/llvm_test", "playground/mlir_test",
+    "playground/llvm_test",
+    "playground/mlir_test",
     "playground/salsa_test",
     "tools/pattern_finder"
 ]
@@ -76,7 +77,9 @@ cranium_srcgen = { path = "cranium/srcgen" }
 frick_assembler = { path = "crates/assembler" }
 frick_ir = { path = "crates/ir" }
 frick_utils = { path = "crates/utils" }
-inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "e29a3d068f35918316777508afcbc96b5c80537c" }
+inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "e29a3d068f35918316777508afcbc96b5c80537c", features = [
+    "llvm19-1"
+] }
 serde = { version = "1", default-features = false }
 target-lexicon = "0.13"
 tracing = "0.1"
