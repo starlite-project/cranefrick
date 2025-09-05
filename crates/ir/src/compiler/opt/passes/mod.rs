@@ -239,11 +239,13 @@ pub fn optimize_offset_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 		[
 			BrainIr::ChangeCell(a, None),
 			BrainIr::OutputCell {
-				value_offset: None,
+				value_offset: b,
 				offset: None,
 			},
-			BrainIr::ChangeCell(b, None),
-		] if *a == -b => Some(Change::replace(BrainIr::output_offset_cell(*a))),
+			BrainIr::ChangeCell(c, None),
+		] if *a == -c => Some(Change::replace(BrainIr::output_offset_cell(
+			a.wrapping_add(b.get_or_zero()),
+		))),
 		[
 			BrainIr::ChangeCell(a, None),
 			BrainIr::OutputCell {
@@ -265,6 +267,17 @@ pub fn optimize_offset_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 		] => Some(Change::swap([
 			BrainIr::output_cell_at(*x),
 			BrainIr::move_pointer(x.wrapping_add(*y)),
+		])),
+		[
+			BrainIr::ChangeCell(a, None),
+			BrainIr::OutputCell {
+				value_offset: b,
+				offset: None,
+			},
+			BrainIr::SetCell(c, None),
+		] => Some(Change::swap([
+			BrainIr::output_offset_cell(a.wrapping_add(b.get_or_zero())),
+			BrainIr::set_cell(*c),
 		])),
 		_ => None,
 	}
