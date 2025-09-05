@@ -36,8 +36,8 @@ impl InnerAssembler<'_> {
 				i8_type.array_type(range_len as u32),
 				array_alloca,
 				"set_range_load",
-			)
-		}?;
+			)?
+		};
 
 		self.builder.build_store(gep, values_to_set)?;
 
