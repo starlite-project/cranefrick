@@ -373,15 +373,12 @@ pub fn optimize_set_range(ops: &[BrainIr; 2]) -> Option<Change> {
 			let start = *range.start();
 			let end = *range.end();
 
-			tracing::info!("start = {start}, end = {end}, x = {x}");
 			if !matches!((x - start).unsigned_abs(), 1) && !matches!((end - x).unsigned_abs(), 1) {
 				return None;
 			}
 
 			let max = cmp::max(x, end);
 			let min = cmp::min(x, start);
-
-			tracing::info!("min = {min}, max = {max}");
 
 			let range = min..=max;
 
