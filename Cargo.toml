@@ -47,7 +47,7 @@ members = [
     "playground/chess_test",
     "playground/futures_test",
     "playground/hugr_test",
-    "playground/llvm_test",
+    "playground/llvm_test", "playground/mlir_test",
     "playground/salsa_test",
     "tools/pattern_finder"
 ]
