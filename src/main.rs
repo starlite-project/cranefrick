@@ -25,7 +25,7 @@ use tracing_tree::HierarchicalLayer;
 
 use self::args::Args;
 
-#[cfg(not(any(feature = "llvm", feature = "cranelift")))]
+#[cfg(not(any(feature = "llvm", feature = "cranelift", feature = "interpret")))]
 compile_error!("a backend must be enabled");
 
 #[cfg(target_os = "windows")]
