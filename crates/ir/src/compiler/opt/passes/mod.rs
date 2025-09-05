@@ -214,11 +214,11 @@ pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 		[
 			BrainIr::SetCell(value, x),
 			BrainIr::OutputCell {
-				value_offset: None,
+				value_offset,
 				offset: y,
 			},
 		] if *x == *y => Some(Change::swap([
-			BrainIr::output_char(*value),
+			BrainIr::output_char(value.wrapping_add_signed(value_offset.get_or_zero())),
 			BrainIr::set_cell_at(*value, x.get_or_zero()),
 		])),
 		[BrainIr::OutputChar(x), BrainIr::OutputChar(y)] => {
