@@ -2,7 +2,7 @@
 
 mod compiler;
 
-use std::num::NonZero;
+use std::{num::NonZero, ops::RangeInclusive};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
@@ -38,6 +38,10 @@ pub enum BrainIr {
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
+	SetRange {
+		value: u8,
+		range: RangeInclusive<i32>,
+	},
 }
 
 impl BrainIr {
@@ -198,6 +202,11 @@ impl BrainIr {
 	#[must_use]
 	pub const fn find_zero(offset: i32) -> Self {
 		Self::FindZero(offset)
+	}
+
+	#[must_use]
+	pub const fn set_range(value: u8, range: RangeInclusive<i32>) -> Self {
+		Self::SetRange { value, range }
 	}
 
 	#[must_use]

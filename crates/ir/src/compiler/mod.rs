@@ -75,6 +75,7 @@ impl Compiler {
 
 		self.pass_info("optimize set-based instructions");
 		*progress |= run_peephole_pass(self, passes::optimize_sets);
+		*progress |= run_peephole_pass(self, passes::optimize_set_range);
 
 		self.pass_info("optimize find-zere instructions");
 		*progress |= run_loop_pass(self, passes::optimize_find_zero);

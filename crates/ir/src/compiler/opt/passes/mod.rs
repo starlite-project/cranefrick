@@ -3,7 +3,7 @@
 mod loops;
 mod sort;
 
-use std::iter;
+use std::{cmp, iter};
 
 use frick_utils::GetOrZero as _;
 
@@ -345,6 +345,48 @@ pub const fn optimize_sub_cell(ops: &[BrainIr]) -> Option<Change> {
 			BrainIr::ChangeCell(-1, Some(offset)),
 			BrainIr::ChangeCell(-1, None),
 		] => Some(Change::replace(BrainIr::sub_cell(offset.get()))),
+		_ => None,
+	}
+}
+
+pub fn optimize_set_range(ops: &[BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[BrainIr::SetCell(a, x), BrainIr::SetCell(b, y)] if *a == *b => {
+			let x = x.get_or_zero();
+			let y = y.get_or_zero();
+			let min = cmp::min(x, y);
+			let max = cmp::max(x, y);
+
+			if !matches!((max - min).unsigned_abs(), 1) {
+				return None;
+			}
+
+			let range = min..=max;
+
+			Some(Change::replace(BrainIr::set_range(*a, range)))
+		}
+		[
+			BrainIr::SetRange { value: a, range },
+			BrainIr::SetCell(b, x),
+		] if *a == *b => {
+			let x = x.get_or_zero();
+			let start = *range.start();
+			let end = *range.end();
+
+			tracing::info!("start = {start}, end = {end}, x = {x}");
+			if !matches!((x - start).unsigned_abs(), 1) && !matches!((end - x).unsigned_abs(), 1) {
+				return None;
+			}
+
+			let max = cmp::max(x, end);
+			let min = cmp::min(x, start);
+
+			tracing::info!("min = {min}, max = {max}");
+
+			let range = min..=max;
+
+			Some(Change::replace(BrainIr::set_range(*a, range)))
+		}
 		_ => None,
 	}
 }
