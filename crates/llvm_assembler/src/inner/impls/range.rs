@@ -1,7 +1,5 @@
 use std::ops::RangeInclusive;
 
-use inkwell::types::VectorType;
-
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
@@ -22,17 +20,26 @@ impl InnerAssembler<'_> {
 				.build_in_bounds_gep(i8_type, self.tape, &[current_offset], "set_range_gep")
 		}?;
 
-		let vector_to_set = {
-			let vec_of_values = std::iter::repeat_n(value, range_len);
+		let values_to_set = {
+			let array_alloca = self
+				.builder
+				.build_alloca(i8_type.array_type(range_len as u32), "set_range_alloca")?;
 
-			let vec_of_llvm_values = vec_of_values
-				.map(|v| i8_type.const_int(v.into(), false))
-				.collect::<Vec<_>>();
+			self.builder.build_memset(
+				array_alloca,
+				1,
+				i8_type.const_int(value.into(), false),
+				self.ptr_type.const_int(range_len as u64, false),
+			)?;
 
-			VectorType::const_vector(&vec_of_llvm_values)
-		};
+			self.builder.build_load(
+				i8_type.array_type(range_len as u32),
+				array_alloca,
+				"set_range_load",
+			)
+		}?;
 
-		self.builder.build_store(gep, vector_to_set)?;
+		self.builder.build_store(gep, values_to_set)?;
 
 		Ok(())
 	}
