@@ -1,4 +1,5 @@
 default<O3>
+reg2mem
 inferattrs
 instcombine
 aggressive-instcombine
@@ -9,6 +10,7 @@ instcombine
 aggressive-instcombine
 newgvn
 reassociate
+mem2reg
 indvars
 loop-simplify
 lcssa

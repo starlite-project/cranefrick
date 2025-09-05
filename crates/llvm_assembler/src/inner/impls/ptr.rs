@@ -50,7 +50,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let tmp = self.builder.build_int_signed_rem(
 				offset_ptr,
 				ptr_type.const_int(30_000, false),
-				"offset_pre_srem",
+				"offset_ptr_srem",
 			)?;
 
 			let added_offset = self.builder.build_int_add(
