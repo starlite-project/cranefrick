@@ -18,6 +18,6 @@ bitflags! {
 		const OUTPUT_CHARS = 1 << 13;
 		const SUB_CELL = 1 << 14;
 		const SCALE_VALUE = 1 << 15;
-		const OUTPUT_CURRENT_CELL_OFFSET_BY = 1 << 16;
+		const SET_RANGE = 1 << 16;
 	}
 }
