@@ -139,7 +139,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn add_loop_metadata(&self, br: InstructionValue<'ctx>) -> Result<(), LlvmAssemblyError> {
 		let llvm_loop_metadata_id = self.context.get_kind_id("llvm.loop");
-
 		let metadata_node = self.context.metadata_node(&[]);
 
 		br.set_metadata(metadata_node, llvm_loop_metadata_id)
