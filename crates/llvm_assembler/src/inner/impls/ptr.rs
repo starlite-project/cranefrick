@@ -13,7 +13,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn offset_ptr(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
-		let ptr_type = self.ptr_type;
+		let ptr_type = self.ptr_int_type;
 		let offset_value = ptr_type.const_int(offset as u64, false);
 
 		let current_ptr = self
@@ -54,7 +54,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		offset_ptr: IntValue<'ctx>,
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
-		let ptr_int_type = self.ptr_type;
+		let ptr_int_type = self.ptr_int_type;
 
 		let ptr_offset = self.builder.build_int_unsigned_rem(
 			offset_ptr,
@@ -69,7 +69,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		offset_ptr: IntValue<'ctx>,
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
-		let ptr_int_type = self.ptr_type;
+		let ptr_int_type = self.ptr_int_type;
 
 		let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 

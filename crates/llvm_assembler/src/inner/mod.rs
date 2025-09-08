@@ -22,7 +22,7 @@ pub struct InnerAssembler<'ctx> {
 	functions: Functions<'ctx>,
 	tape: PointerValue<'ctx>,
 	ptr: PointerValue<'ctx>,
-	ptr_type: IntType<'ctx>,
+	ptr_int_type: IntType<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -34,11 +34,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let basic_block = context.append_basic_block(functions.main, "entry");
 		builder.position_at_end(basic_block);
 
-		let i64_type = context.i64_type();
+		let ptr_int_type = context.i64_type();
 		let tape = {
 			let i8_type = context.i8_type();
 			let i8_array_type = i8_type.array_type(30_000);
-			let array_size = i64_type.const_int(30_000, false);
+			let array_size = ptr_int_type.const_int(30_000, false);
 
 			let tape_alloca = builder.build_alloca(i8_array_type, "tape")?;
 
@@ -48,9 +48,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		let ptr = {
-			let ptr_alloca = builder.build_alloca(i64_type, "ptr")?;
+			let ptr_alloca = builder.build_alloca(ptr_int_type, "ptr")?;
 
-			builder.build_store(ptr_alloca, i64_type.const_zero())?;
+			builder.build_store(ptr_alloca, ptr_int_type.const_zero())?;
 
 			ptr_alloca
 		};
@@ -62,7 +62,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			functions,
 			tape,
 			ptr,
-			ptr_type: i64_type,
+			ptr_int_type,
 		})
 	}
 

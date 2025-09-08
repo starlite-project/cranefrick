@@ -20,7 +20,7 @@ impl InnerAssembler<'_> {
 		}?;
 
 		let range_len_value = {
-			let ptr_int_type = self.ptr_type;
+			let ptr_int_type = self.ptr_int_type;
 
 			ptr_int_type.const_int(range_len as u64, false)
 		};
