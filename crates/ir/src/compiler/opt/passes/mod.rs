@@ -58,7 +58,11 @@ pub fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
 
 pub const fn remove_noop_instructions(ops: &[BrainIr; 1]) -> Option<Change> {
 	match ops {
-		[BrainIr::ChangeCell(0, ..) | BrainIr::MovePointer(0)] => Some(Change::remove()),
+		[
+			BrainIr::ChangeCell(0, ..)
+			| BrainIr::MovePointer(0)
+			| BrainIr::ChangeRange { value: 0, .. },
+		] => Some(Change::remove()),
 		_ => None,
 	}
 }
@@ -422,6 +426,13 @@ pub fn optimize_ranges(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::change_range(*a, range)))
 		}
+		[
+			BrainIr::ChangeRange { value: a, range: x },
+			BrainIr::ChangeRange { value: b, range: y },
+		] if *x == *y => Some(Change::replace(BrainIr::change_range(
+			a.wrapping_add(*b),
+			x.clone(),
+		))),
 		_ => None,
 	}
 }
