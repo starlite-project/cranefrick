@@ -38,18 +38,21 @@ impl InnerAssembler<'_> {
 		let i8_vector_type = i8_type.vec_type(count as u32);
 		let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
 
-		let undef_vector = i8_vector_type.get_undef();
+		let vector_alloca = self
+			.builder
+			.build_alloca(i8_vector_type, "change_range_alloca")?;
 
-		let mut tmp_vector = self.builder.build_insert_element(
-			undef_vector,
-			i8_type.const_int(values[0] as u64, false),
-			i8_type.const_zero(),
-			"change_range_insertelement",
-		)?;
+		self.builder
+			.build_store(vector_alloca, i8_vector_type.get_undef())?;
 
-		for (i, value) in values.iter().enumerate().skip(1) {
-			tmp_vector = self.builder.build_insert_element(
-				tmp_vector,
+		let mut loaded_vector = self
+			.builder
+			.build_load(i8_vector_type, vector_alloca, "change_range_load_alloca")?
+			.into_vector_value();
+
+		for (i, value) in values.iter().enumerate() {
+			loaded_vector = self.builder.build_insert_element(
+				loaded_vector,
 				i8_type.const_int(*value as u64, false),
 				i8_type.const_int(i as u64, false),
 				"change_range_insertelement",
@@ -80,7 +83,7 @@ impl InnerAssembler<'_> {
 
 		let added_range =
 			self.builder
-				.build_int_add(range_to_add_to, tmp_vector, "change_range_add")?;
+				.build_int_add(range_to_add_to, loaded_vector, "change_range_add")?;
 
 		self.builder.build_store(gep, added_range)?;
 
