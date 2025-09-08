@@ -429,17 +429,13 @@ pub fn optimize_ranges(ops: &[BrainIr; 2]) -> Option<Change> {
 				values: b,
 				start: y,
 			},
-		] if *x == *y && a.len() == b.len() => {
-			tracing::info!("a = {a:?}, b = {b:?}, x = {x}, y = {y}");
-
-			Some(Change::replace(BrainIr::change_range(
-				*x,
-				a.iter()
-					.copied()
-					.zip(b.iter().copied())
-					.map(|(a, b)| a.wrapping_add(b)),
-			)))
-		}
+		] if *x == *y && a.len() == b.len() => Some(Change::replace(BrainIr::change_range(
+			*x,
+			a.iter()
+				.copied()
+				.zip(b.iter().copied())
+				.map(|(a, b)| a.wrapping_add(b)),
+		))),
 		_ => None,
 	}
 }
