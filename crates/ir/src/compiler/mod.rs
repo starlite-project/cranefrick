@@ -125,7 +125,7 @@ impl Compiler {
 		self.pass_info("optimize sub cell");
 		*progress |= run_loop_pass(self, passes::optimize_sub_cell);
 
-		self.pass_info("optimizing if_nz");
+		self.pass_info("optimize if_nz");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);
 	}
 
