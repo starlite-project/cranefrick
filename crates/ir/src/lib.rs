@@ -42,6 +42,10 @@ pub enum BrainIr {
 		value: u8,
 		range: RangeInclusive<i32>,
 	},
+	ChangeRange {
+		values: Vec<i8>,
+		start: i32,
+	},
 }
 
 impl BrainIr {
@@ -205,7 +209,7 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn set_range(value: u8, range: RangeInclusive<i32>) -> Self {
+	pub const fn mem_set(value: u8, range: RangeInclusive<i32>) -> Self {
 		Self::MemSet { value, range }
 	}
 
@@ -243,5 +247,13 @@ impl BrainIr {
 	#[must_use]
 	pub fn if_not_zero(instrs: impl IntoIterator<Item = Self>) -> Self {
 		Self::IfNotZero(instrs.collect_to())
+	}
+
+	#[must_use]
+	pub fn change_range(start: i32, values: impl IntoIterator<Item = i8>) -> Self {
+		Self::ChangeRange {
+			start,
+			values: values.collect_to(),
+		}
 	}
 }

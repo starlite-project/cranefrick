@@ -58,10 +58,7 @@ pub fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
 
 pub const fn remove_noop_instructions(ops: &[BrainIr; 1]) -> Option<Change> {
 	match ops {
-		[
-			BrainIr::ChangeCell(0, ..)
-			| BrainIr::MovePointer(0)
-		] => Some(Change::remove()),
+		[BrainIr::ChangeCell(0, ..) | BrainIr::MovePointer(0)] => Some(Change::remove()),
 		_ => None,
 	}
 }
@@ -371,12 +368,9 @@ pub fn optimize_ranges(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			let range = min..=max;
 
-			Some(Change::replace(BrainIr::set_range(*a, range)))
+			Some(Change::replace(BrainIr::mem_set(*a, range)))
 		}
-		[
-			BrainIr::MemSet { value: a, range },
-			BrainIr::SetCell(b, x),
-		] if *a == *b => {
+		[BrainIr::MemSet { value: a, range }, BrainIr::SetCell(b, x)] if *a == *b => {
 			let x = x.get_or_zero();
 			let start = *range.start();
 			let end = *range.end();
@@ -390,7 +384,61 @@ pub fn optimize_ranges(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			let range = min..=max;
 
-			Some(Change::replace(BrainIr::set_range(*a, range)))
+			Some(Change::replace(BrainIr::mem_set(*a, range)))
+		}
+		[BrainIr::ChangeCell(a, x), BrainIr::ChangeCell(b, y)] => {
+			let x = x.get_or_zero();
+			let y = y.get_or_zero();
+			let min = cmp::min(x, y);
+			let max = cmp::max(x, y);
+
+			if !matches!((max - min).unsigned_abs(), 1) {
+				return None;
+			}
+
+			let (a, b) = if x == min { (*a, *b) } else { (*b, *a) };
+
+			Some(Change::replace(BrainIr::change_range(min, [a, b])))
+		}
+		[
+			BrainIr::ChangeRange { values, start },
+			BrainIr::ChangeCell(a, x),
+		]
+		| [
+			BrainIr::ChangeCell(a, x),
+			BrainIr::ChangeRange { values, start },
+		] => {
+			let x = x.get_or_zero();
+			let end = start.wrapping_add_unsigned(values.len() as u32);
+
+			if x != end {
+				return None;
+			}
+
+			Some(Change::replace(BrainIr::change_range(
+				*start,
+				values.iter().copied().chain(iter::once(*a)),
+			)))
+		}
+		[
+			BrainIr::ChangeRange {
+				values: a,
+				start: x,
+			},
+			BrainIr::ChangeRange {
+				values: b,
+				start: y,
+			},
+		] if *x == *y && a.len() == b.len() => {
+			tracing::info!("a = {a:?}, b = {b:?}, x = {x}, y = {y}");
+
+			Some(Change::replace(BrainIr::change_range(
+				*x,
+				a.iter()
+					.copied()
+					.zip(b.iter().copied())
+					.map(|(a, b)| a.wrapping_add(b)),
+			)))
 		}
 		_ => None,
 	}

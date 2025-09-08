@@ -112,6 +112,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				}
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
 				BrainIr::MemSet { value, range } => self.mem_set(*value, range.clone())?,
+				BrainIr::ChangeRange { values, start } => self.change_range(*start, values)?,
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}
