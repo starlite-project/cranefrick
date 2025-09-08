@@ -76,7 +76,7 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn is_zeroing_cell(&self) -> bool {
+	pub fn is_zeroing_cell(&self) -> bool {
 		matches!(
 			self,
 			Self::SetCell(0, None)
@@ -85,7 +85,7 @@ impl BrainIr {
 				| Self::FindZero(..)
 				| Self::SubCell(..)
 				| Self::IfNotZero(..)
-		)
+		) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
 	}
 
 	#[must_use]

@@ -37,6 +37,11 @@ pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 		}
 		[BrainIr::SetCell(.., None), BrainIr::InputIntoCell] => Some(Change::remove_offset(0)),
 		[l, BrainIr::SetCell(0, None)] if l.is_zeroing_cell() => Some(Change::remove_offset(1)),
+		[BrainIr::SetCell(.., x), BrainIr::SetRange { range, .. }]
+			if range.contains(&x.get_or_zero()) =>
+		{
+			Some(Change::remove_offset(0))
+		}
 		_ => None,
 	}
 }
@@ -274,10 +279,10 @@ pub fn optimize_offset_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 				value_offset: b,
 				offset: None,
 			},
-			BrainIr::SetCell(c, None),
-		] => Some(Change::swap([
+			l,
+		] if l.is_zeroing_cell() => Some(Change::swap([
 			BrainIr::output_offset_cell(a.wrapping_add(b.get_or_zero())),
-			BrainIr::set_cell(*c),
+			l.clone(),
 		])),
 		_ => None,
 	}
