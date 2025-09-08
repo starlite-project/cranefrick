@@ -1,5 +1,4 @@
 default<O3>
-mem2reg
 inferattrs
 early-cse<memssa>
 instcombine
