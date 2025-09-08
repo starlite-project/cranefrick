@@ -2,25 +2,29 @@ use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	pub fn set_cell(&self, value: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let value = self.context.i8_type().const_int(u64::from(value), false);
+		let value = {
+			let i8_type = self.context.i8_type();
 
-		self.store(value, offset)?;
+			i8_type.const_int(value.into(), false)
+		};
 
-		Ok(())
+		self.store(value, offset)
 	}
 
 	pub fn change_cell(&self, value: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let current_cell_value = self.load(offset)?;
 
-		let value_to_add = self.context.i8_type().const_int(value as u64, false);
+		let value_to_add = {
+			let i8_type = self.context.i8_type();
 
-		let added_together =
+			i8_type.const_int(value as u64, false)
+		};
+
+		let added =
 			self.builder
 				.build_int_add(current_cell_value, value_to_add, "change_cell_add")?;
 
-		self.store(added_together, offset)?;
-
-		Ok(())
+		self.store(added, offset)
 	}
 
 	pub fn sub_cell(&self, offset: i32) -> Result<(), LlvmAssemblyError> {

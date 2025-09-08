@@ -59,24 +59,21 @@ impl InnerAssembler<'_> {
 
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context.i8_type();
-		let i8_array_type = i8_type.array_type(30_000);
 
 		let current_ptr = self.offset_ptr(0)?;
 
-		let zero = self.ptr_type.const_zero();
-
-		let ptr_value = unsafe {
-			self.builder.build_gep(
-				i8_array_type,
+		let gep = unsafe {
+			self.builder.build_in_bounds_gep(
+				i8_type,
 				self.tape,
-				&[zero, current_ptr],
+				&[current_ptr],
 				"input_into_cell_gep",
 			)?
 		};
 
 		self.builder.build_direct_call(
 			self.functions.getchar,
-			&[ptr_value.into()],
+			&[gep.into()],
 			"input_into_cell_call",
 		)?;
 
