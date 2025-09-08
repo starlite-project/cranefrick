@@ -38,7 +38,8 @@ impl InnerAssembler<'_> {
 				array_alloca,
 				"set_range_load",
 			)?
-		};
+		}
+		.into_array_value();
 
 		self.builder.build_store(gep, values_to_set)?;
 
