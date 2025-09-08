@@ -19,18 +19,39 @@ impl InnerAssembler<'_> {
 				.build_in_bounds_gep(i8_type, self.tape, &[current_offset], "set_range_gep")
 		}?;
 
+		if matches!(value, 0) && is_valid_range(range_len) {
+			let ty = match range_len {
+				1 => self.context.i8_type(),
+				2 => self.context.i16_type(),
+				4 => self.context.i32_type(),
+				8 => self.context.i64_type(),
+				16 => self.context.i128_type(),
+				_ => unreachable!(),
+			};
+
+			let int_value = ty.const_zero();
+
+			self.builder.build_store(gep, int_value)?;
+
+			return Ok(());
+		}
+
 		let values_to_set = {
-			let array_alloca = self.builder.build_array_alloca(
-				i8_type,
-				self.ptr_type.const_int(range_len as u64, false),
-				"set_range_alloca",
-			)?;
+			let range_len_value = {
+				let ptr_int_type = self.ptr_type;
+
+				ptr_int_type.const_int(range_len as u64, false)
+			};
+
+			let array_alloca =
+				self.builder
+					.build_array_alloca(i8_type, range_len_value, "set_range_alloca")?;
 
 			self.builder.build_memset(
 				array_alloca,
 				1,
 				i8_type.const_int(value.into(), false),
-				self.ptr_type.const_int(range_len as u64, false),
+				range_len_value,
 			)?;
 
 			self.builder.build_load(
@@ -45,4 +66,8 @@ impl InnerAssembler<'_> {
 
 		Ok(())
 	}
+}
+
+const fn is_valid_range(len: usize) -> bool {
+	matches!(len, 1 | 2 | 4 | 8 | 16)
 }
