@@ -1,7 +1,5 @@
 use std::ops::RangeInclusive;
 
-use frick_assembler::TAPE_SIZE;
-
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
