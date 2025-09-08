@@ -1,3 +1,4 @@
+use frick_assembler::TAPE_SIZE;
 use inkwell::{IntPredicate, values::IntValue};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
@@ -41,36 +42,57 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_int_add(current_ptr, offset_value, "offset_ptr_add")?;
 
 		let wrapped_offset_ptr = if offset > 0 {
-			self.builder.build_int_unsigned_rem(
-				offset_ptr,
-				ptr_type.const_int(30_000, false),
-				"offset_ptr_urem",
-			)
+			self.wrap_ptr_positive(offset_ptr)
 		} else {
-			let tmp = self.builder.build_int_signed_rem(
-				offset_ptr,
-				ptr_type.const_int(30_000, false),
-				"offset_ptr_srem",
-			)?;
-
-			let added_offset = self.builder.build_int_add(
-				tmp,
-				ptr_type.const_int(30_000, false),
-				"offset_ptr_add",
-			)?;
-
-			let cmp = self.builder.build_int_compare(
-				IntPredicate::SLT,
-				tmp,
-				ptr_type.const_zero(),
-				"offset_ptr_cmp",
-			)?;
-
-			self.builder
-				.build_select(cmp, added_offset, tmp, "offset_ptr_select")
-				.map(|v| v.into_int_value())
+			self.wrap_ptr_negative(offset_ptr)
 		}?;
 
 		Ok(wrapped_offset_ptr)
+	}
+
+	fn wrap_ptr_positive(
+		&self,
+		offset_ptr: IntValue<'ctx>,
+	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+		let ptr_int_type = self.ptr_type;
+
+		let ptr_offset = self.builder.build_int_unsigned_rem(
+			offset_ptr,
+			ptr_int_type.const_int(TAPE_SIZE as u64, false),
+			"wrap_ptr_positive_urem",
+		)?;
+
+		Ok(ptr_offset)
+	}
+
+	fn wrap_ptr_negative(
+		&self,
+		offset_ptr: IntValue<'ctx>,
+	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+		let ptr_int_type = self.ptr_type;
+
+		let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
+
+		let tmp =
+			self.builder
+				.build_int_signed_rem(offset_ptr, tape_size, "wrap_ptr_negative_srem")?;
+
+		let added_offset = self
+			.builder
+			.build_int_add(tmp, tape_size, "wrap_ptr_negative_add")?;
+
+		let cmp = self.builder.build_int_compare(
+			IntPredicate::SLT,
+			tmp,
+			ptr_int_type.const_zero(),
+			"wrap_ptr_negative_cmp",
+		)?;
+
+		let ptr_offset = self
+			.builder
+			.build_select(cmp, added_offset, tmp, "wrap_ptr_negative_select")?
+			.into_int_value();
+
+		Ok(ptr_offset)
 	}
 }

@@ -1,5 +1,4 @@
 default<O3>
-reg2mem
 inferattrs
 instcombine
 aggressive-instcombine
