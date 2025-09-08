@@ -1,5 +1,7 @@
 default<O3>
+mem2reg
 inferattrs
+early-cse<memssa>
 instcombine
 aggressive-instcombine
 jump-threading
