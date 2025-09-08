@@ -50,7 +50,3 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 }
-
-const fn is_valid_range(len: usize) -> bool {
-	matches!(len, 1 | 2 | 4 | 8 | 16)
-}
