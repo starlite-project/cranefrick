@@ -54,8 +54,8 @@ impl RustInterpreterModule<'_> {
 				Self::replace_value_from(*factor, *offset, memory, *ptr);
 			}
 			BrainIr::ScaleValue(factor) => Self::scale_value(*factor, memory, *ptr),
-			BrainIr::SetRange { value, range } => {
-				Self::set_range(*value, range.clone(), memory, *ptr);
+			BrainIr::MemSet { value, range } => {
+				Self::mem_set(*value, range.clone(), memory, *ptr);
 			}
 			BrainIr::ChangeRange { value, range } => {
 				Self::change_range(*value, range.clone(), memory, *ptr);

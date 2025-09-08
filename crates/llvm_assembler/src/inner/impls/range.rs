@@ -5,7 +5,7 @@ use frick_assembler::TAPE_SIZE;
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	pub fn set_range(
+	pub fn mem_set(
 		&self,
 		value: u8,
 		range: RangeInclusive<i32>,

@@ -111,7 +111,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 					self.replace_value_from(*factor, *offset)?;
 				}
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
-				BrainIr::SetRange { value, range } => self.set_range(*value, range.clone())?,
+				BrainIr::MemSet { value, range } => self.mem_set(*value, range.clone())?,
 				BrainIr::ChangeRange { value, range } => {
 					self.change_range(*value, range.clone())?;
 				}

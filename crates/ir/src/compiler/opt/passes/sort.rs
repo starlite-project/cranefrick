@@ -8,7 +8,7 @@ pub fn sort_changes(ops: &[BrainIr; 2]) -> Option<Change> {
 			i,
 			BrainIr::SetCell(..)
 				| BrainIr::ChangeCell(..)
-				| BrainIr::SetRange { .. }
+				| BrainIr::MemSet { .. }
 				| BrainIr::ChangeRange { .. }
 		)
 	}) {
@@ -29,7 +29,7 @@ fn sorter_key(i: &BrainIr) -> (u8, i32, i32) {
 
 			(0, offset.abs(), offset)
 		}
-		BrainIr::SetRange { range, .. } | BrainIr::ChangeRange { range, .. } => {
+		BrainIr::MemSet { range, .. } | BrainIr::ChangeRange { range, .. } => {
 			let start = *range.start();
 
 			(1, start.abs(), start)

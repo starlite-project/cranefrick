@@ -38,7 +38,7 @@ pub enum BrainIr {
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
-	SetRange {
+	MemSet {
 		value: u8,
 		range: RangeInclusive<i32>,
 	},
@@ -89,7 +89,7 @@ impl BrainIr {
 				| Self::FindZero(..)
 				| Self::SubCell(..)
 				| Self::IfNotZero(..)
-		) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
+		) || matches!(self, Self::MemSet { value: 0, range } if range.contains(&0))
 	}
 
 	#[must_use]
@@ -210,7 +210,7 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn set_range(value: u8, range: RangeInclusive<i32>) -> Self {
-		Self::SetRange { value, range }
+		Self::MemSet { value, range }
 	}
 
 	#[must_use]

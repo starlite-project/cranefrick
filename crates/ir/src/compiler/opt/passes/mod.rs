@@ -37,7 +37,7 @@ pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 		}
 		[BrainIr::SetCell(.., None), BrainIr::InputIntoCell] => Some(Change::remove_offset(0)),
 		[l, BrainIr::SetCell(0, None)] if l.is_zeroing_cell() => Some(Change::remove_offset(1)),
-		[BrainIr::SetCell(.., x), BrainIr::SetRange { range, .. }]
+		[BrainIr::SetCell(.., x), BrainIr::MemSet { range, .. }]
 			if range.contains(&x.get_or_zero()) =>
 		{
 			Some(Change::remove_offset(0))
@@ -375,7 +375,7 @@ pub fn optimize_ranges(ops: &[BrainIr; 2]) -> Option<Change> {
 			Some(Change::replace(BrainIr::set_range(*a, range)))
 		}
 		[
-			BrainIr::SetRange { value: a, range },
+			BrainIr::MemSet { value: a, range },
 			BrainIr::SetCell(b, x),
 		] if *a == *b => {
 			let x = x.get_or_zero();
