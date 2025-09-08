@@ -11,6 +11,7 @@ aggressive-instcombine
 newgvn
 reassociate
 mem2reg
+slp-vectorizer
 indvars
 loop-simplify
 lcssa
