@@ -8,10 +8,9 @@ impl InnerAssembler<'_> {
 		value: u8,
 		range: RangeInclusive<i32>,
 	) -> Result<(), LlvmAssemblyError> {
-		let range_len = range.clone().count();
-		let i8_type = self.context.i8_type();
-
 		let start = *range.start();
+		let range_len = range.count();
+		let i8_type = self.context.i8_type();
 
 		let current_offset = self.offset_ptr(start)?;
 
