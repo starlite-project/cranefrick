@@ -61,7 +61,6 @@ pub const fn remove_noop_instructions(ops: &[BrainIr; 1]) -> Option<Change> {
 		[
 			BrainIr::ChangeCell(0, ..)
 			| BrainIr::MovePointer(0)
-			| BrainIr::ChangeRange { value: 0, .. },
 		] => Some(Change::remove()),
 		_ => None,
 	}
@@ -393,46 +392,6 @@ pub fn optimize_ranges(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::set_range(*a, range)))
 		}
-		[BrainIr::ChangeCell(a, x), BrainIr::ChangeCell(b, y)] if *a == *b => {
-			let x = x.get_or_zero();
-			let y = y.get_or_zero();
-			let min = cmp::min(x, y);
-			let max = cmp::max(x, y);
-
-			if !matches!((max - min).unsigned_abs(), 1) {
-				return None;
-			}
-
-			let range = min..=max;
-
-			Some(Change::replace(BrainIr::change_range(*a, range)))
-		}
-		[
-			BrainIr::ChangeRange { value: a, range },
-			BrainIr::ChangeCell(b, x),
-		] if *a == *b => {
-			let x = x.get_or_zero();
-			let start = *range.start();
-			let end = *range.end();
-
-			if !matches!((x - start).unsigned_abs(), 1) && !matches!((end - x).unsigned_abs(), 1) {
-				return None;
-			}
-
-			let min = cmp::min(x, start);
-			let max = cmp::max(x, end);
-
-			let range = min..=max;
-
-			Some(Change::replace(BrainIr::change_range(*a, range)))
-		}
-		[
-			BrainIr::ChangeRange { value: a, range: x },
-			BrainIr::ChangeRange { value: b, range: y },
-		] if *x == *y => Some(Change::replace(BrainIr::change_range(
-			a.wrapping_add(*b),
-			x.clone(),
-		))),
 		_ => None,
 	}
 }

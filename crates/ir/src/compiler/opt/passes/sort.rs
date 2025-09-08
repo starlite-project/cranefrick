@@ -6,10 +6,7 @@ pub fn sort_changes(ops: &[BrainIr; 2]) -> Option<Change> {
 	if !ops.iter().all(|i| {
 		matches!(
 			i,
-			BrainIr::SetCell(..)
-				| BrainIr::ChangeCell(..)
-				| BrainIr::MemSet { .. }
-				| BrainIr::ChangeRange { .. }
+			BrainIr::SetCell(..) | BrainIr::ChangeCell(..) | BrainIr::MemSet { .. }
 		)
 	}) {
 		return None;
@@ -29,7 +26,7 @@ fn sorter_key(i: &BrainIr) -> (u8, i32, i32) {
 
 			(0, offset.abs(), offset)
 		}
-		BrainIr::MemSet { range, .. } | BrainIr::ChangeRange { range, .. } => {
+		BrainIr::MemSet { range, .. } => {
 			let start = *range.start();
 
 			(1, start.abs(), start)

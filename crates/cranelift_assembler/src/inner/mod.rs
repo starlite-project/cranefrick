@@ -136,7 +136,6 @@ impl<'a> InnerAssembler<'a> {
 				}
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor),
 				BrainIr::MemSet { value, range } => self.mem_set(*value, range.clone()),
-				BrainIr::ChangeRange { value, range } => self.change_range(*value, range.clone()),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

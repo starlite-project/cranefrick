@@ -42,10 +42,6 @@ pub enum BrainIr {
 		value: u8,
 		range: RangeInclusive<i32>,
 	},
-	ChangeRange {
-		value: i8,
-		range: RangeInclusive<i32>,
-	},
 }
 
 impl BrainIr {
@@ -211,11 +207,6 @@ impl BrainIr {
 	#[must_use]
 	pub const fn set_range(value: u8, range: RangeInclusive<i32>) -> Self {
 		Self::MemSet { value, range }
-	}
-
-	#[must_use]
-	pub const fn change_range(value: i8, range: RangeInclusive<i32>) -> Self {
-		Self::ChangeRange { value, range }
 	}
 
 	#[must_use]
