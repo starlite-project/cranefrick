@@ -57,6 +57,9 @@ impl RustInterpreterModule<'_> {
 			BrainIr::SetRange { value, range } => {
 				Self::set_range(*value, range.clone(), memory, *ptr);
 			}
+			BrainIr::ChangeRange { value, range } => {
+				Self::change_range(*value, range.clone(), memory, *ptr);
+			}
 			_ => unimplemented!("op {op:?}"),
 		}
 	}

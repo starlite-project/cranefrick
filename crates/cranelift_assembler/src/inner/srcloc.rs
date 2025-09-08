@@ -19,5 +19,6 @@ bitflags! {
 		const SUB_CELL = 1 << 14;
 		const SCALE_VALUE = 1 << 15;
 		const SET_RANGE = 1 << 16;
+		const CHANGE_RANGE = 1 << 17;
 	}
 }
