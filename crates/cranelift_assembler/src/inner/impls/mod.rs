@@ -3,5 +3,5 @@ mod io;
 mod loops;
 mod mem;
 mod ptr;
-mod value;
 mod range;
+mod value;

@@ -127,87 +127,110 @@ impl TryFrom<AssemblerFlags> for Flags {
 	fn try_from(flags: AssemblerFlags) -> Result<Self, Self::Error> {
 		let mut flag_builder = cranelift_codegen::settings::builder();
 
-		flag_builder.enable("enable_pcc")?;
-		flag_builder.enable("enable_pinned_reg")?;
-		flag_builder.set("is_pic", "false")?;
-
-		flag_builder.set("regalloc_algorithm", &flags.regalloc_algorithm())?;
-		flag_builder.set("stack_switch_model", &flags.stack_switch_model())?;
-		flag_builder.set("opt_level", &flags.opt_level())?;
-		flag_builder.set("tls_model", &flags.tls_model())?;
-		flag_builder.set("libcall_call_conv", &flags.libcall_call_conv())?;
-		flag_builder.set("probestack_strategy", &flags.probestack_strategy())?;
-
-		flag_builder.set(
-			"probestack_size_log2",
-			&flags.probestack_size_log2.to_string(),
-		)?;
-
-		flag_builder.set(
-			"bb_padding_log2_minus_one",
-			&flags.bb_padding_log2_minus_one.to_string(),
-		)?;
-
-		flag_builder.set(
-			"log2_min_function_alignment",
-			&flags.log2_min_function_alignment.to_string(),
-		)?;
-
-		let get_bool = |b| if b { "true" } else { "false" };
-
-		flag_builder.set("regalloc_checker", get_bool(flags.regalloc_checker))?;
-		flag_builder.set(
-			"regalloc_verbose_logs",
-			get_bool(flags.regalloc_verbose_logs),
-		)?;
-		flag_builder.set(
-			"enable_alias_analysis",
-			get_bool(flags.enable_alias_analysis),
-		)?;
-		flag_builder.set("enable_verifier", get_bool(flags.enable_verifier))?;
-		flag_builder.set(
-			"use_colocated_libcalls",
-			get_bool(flags.use_colocated_libcalls),
-		)?;
-		flag_builder.set("enable_float", get_bool(flags.enable_float))?;
-		flag_builder.set(
-			"enable_nan_canonicalization",
-			get_bool(flags.enable_nan_canonicalization),
-		)?;
-		flag_builder.set("enable_atomics", get_bool(flags.enable_atomics))?;
-		flag_builder.set("enable_safepoints", get_bool(flags.enable_safepoints))?;
-		flag_builder.set(
-			"enable_llvm_abi_extensions",
-			get_bool(flags.enable_llvm_abi_extensions),
-		)?;
-		flag_builder.set(
-			"enable_multi_ret_implicit_sret",
-			get_bool(flags.enable_multi_ret_implicit_sret),
-		)?;
-		flag_builder.set("unwind_info", get_bool(flags.unwind_info))?;
-		flag_builder.set(
-			"preserve_frame_pointers",
-			get_bool(flags.preserve_frame_pointers),
-		)?;
-		flag_builder.set(
-			"machine_code_cfg_info",
-			get_bool(flags.machine_code_cfg_info),
-		)?;
-		flag_builder.set("enable_probestack", get_bool(flags.enable_probestack))?;
-		flag_builder.set("enable_jump_tables", get_bool(flags.enable_jump_tables))?;
-		flag_builder.set(
-			"enable_heap_access_spectre_mitigation",
-			get_bool(flags.enable_heap_access_spectre_mitigation),
-		)?;
-		flag_builder.set(
-			"enable_table_access_spectre_mitigation",
-			get_bool(flags.enable_table_access_spectre_mitigation),
-		)?;
-		flag_builder.set(
-			"enable_incremental_compilation_cache_checks",
-			get_bool(flags.enable_incremental_compilation_cache_checks),
-		)?;
+		set_enum_options(&mut flag_builder, flags)?;
+		set_int_options(&mut flag_builder, flags)?;
+		set_bool_options(&mut flag_builder, flags)?;
 
 		Ok(Self::new(flag_builder))
 	}
+}
+
+fn set_enum_options(
+	flag_builder: &mut cranelift_codegen::settings::Builder,
+	flags: AssemblerFlags,
+) -> Result<(), SetError> {
+	flag_builder.enable("enable_pcc")?;
+	flag_builder.enable("enable_pinned_reg")?;
+	flag_builder.set("is_pic", "false")?;
+
+	flag_builder.set("regalloc_algorithm", &flags.regalloc_algorithm())?;
+	flag_builder.set("stack_switch_model", &flags.stack_switch_model())?;
+	flag_builder.set("opt_level", &flags.opt_level())?;
+	flag_builder.set("tls_model", &flags.tls_model())?;
+	flag_builder.set("libcall_call_conv", &flags.libcall_call_conv())?;
+	flag_builder.set("probestack_strategy", &flags.probestack_strategy())
+}
+
+fn set_int_options(
+	flag_builder: &mut cranelift_codegen::settings::Builder,
+	flags: AssemblerFlags,
+) -> Result<(), SetError> {
+	flag_builder.set(
+		"probestack_size_log2",
+		&flags.probestack_size_log2.to_string(),
+	)?;
+
+	flag_builder.set(
+		"bb_padding_log2_minus_one",
+		&flags.bb_padding_log2_minus_one.to_string(),
+	)?;
+
+	flag_builder.set(
+		"log2_min_function_alignment",
+		&flags.log2_min_function_alignment.to_string(),
+	)
+}
+
+// debtmap:ignore-start -- Too verbose
+fn set_bool_options(
+	flag_builder: &mut cranelift_codegen::settings::Builder,
+	flags: AssemblerFlags,
+) -> Result<(), SetError> {
+	flag_builder.set("regalloc_checker", get_bool(flags.regalloc_checker))?;
+	flag_builder.set(
+		"regalloc_verbose_logs",
+		get_bool(flags.regalloc_verbose_logs),
+	)?;
+	flag_builder.set(
+		"enable_alias_analysis",
+		get_bool(flags.enable_alias_analysis),
+	)?;
+	flag_builder.set("enable_verifier", get_bool(flags.enable_verifier))?;
+	flag_builder.set(
+		"use_colocated_libcalls",
+		get_bool(flags.use_colocated_libcalls),
+	)?;
+	flag_builder.set("enable_float", get_bool(flags.enable_float))?;
+	flag_builder.set(
+		"enable_nan_canonicalization",
+		get_bool(flags.enable_nan_canonicalization),
+	)?;
+	flag_builder.set("enable_atomics", get_bool(flags.enable_atomics))?;
+	flag_builder.set("enable_safepoints", get_bool(flags.enable_safepoints))?;
+	flag_builder.set(
+		"enable_llvm_abi_extensions",
+		get_bool(flags.enable_llvm_abi_extensions),
+	)?;
+	flag_builder.set(
+		"enable_multi_ret_implicit_sret",
+		get_bool(flags.enable_multi_ret_implicit_sret),
+	)?;
+	flag_builder.set("unwind_info", get_bool(flags.unwind_info))?;
+	flag_builder.set(
+		"preserve_frame_pointers",
+		get_bool(flags.preserve_frame_pointers),
+	)?;
+	flag_builder.set(
+		"machine_code_cfg_info",
+		get_bool(flags.machine_code_cfg_info),
+	)?;
+	flag_builder.set("enable_probestack", get_bool(flags.enable_probestack))?;
+	flag_builder.set("enable_jump_tables", get_bool(flags.enable_jump_tables))?;
+	flag_builder.set(
+		"enable_heap_access_spectre_mitigation",
+		get_bool(flags.enable_heap_access_spectre_mitigation),
+	)?;
+	flag_builder.set(
+		"enable_table_access_spectre_mitigation",
+		get_bool(flags.enable_table_access_spectre_mitigation),
+	)?;
+	flag_builder.set(
+		"enable_incremental_compilation_cache_checks",
+		get_bool(flags.enable_incremental_compilation_cache_checks),
+	)
+}
+// debtmap:ignore-end
+
+const fn get_bool(b: bool) -> &'static str {
+	if b { "true" } else { "false" }
 }
