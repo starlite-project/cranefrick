@@ -19,9 +19,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let value = self.gep(i8_type, current_offset, format!("{fn_name}_load"))?;
 
+		let new_value_slot = self.builder.build_alloca(i8_type, "load_alloca")?;
+
+		self.builder
+			.build_memcpy(new_value_slot, 1, value, 1, i8_type.const_int(1, false))?;
+
 		let loaded_value = self
 			.builder
-			.build_load(i8_type, value, &format!("{fn_name}_load_load"))?
+			.build_load(i8_type, new_value_slot, &format!("{fn_name}_load_load"))?
 			.into_int_value();
 
 		if let Some(instr) = loaded_value.as_instruction() {
@@ -73,19 +78,31 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
+		// let current_offset = self.offset_ptr(offset)?;
+
+		// let current_tape_value = self.gep(i8_type, current_offset, fn_name)?;
+
+		// self.builder.build_store(current_tape_value, value)?;
+
+		let new_alloca_slot = self
+			.builder
+			.build_alloca(i8_type, &format!("{fn_name}_alloca"))?;
+
+		self.builder.build_store(new_alloca_slot, value)?;
+
 		let current_offset = self.offset_ptr(offset)?;
 
 		let current_tape_value = self.gep(i8_type, current_offset, fn_name)?;
 
-		let instr = self.builder.build_store(current_tape_value, value)?;
+		self.builder.build_memcpy(
+			current_tape_value,
+			1,
+			new_alloca_slot,
+			1,
+			self.context().i64_type().const_int(1, false),
+		)?;
 
-		let noalias_metadata_id = self.context().get_kind_id("noalias");
-
-		let empty_metadata_node = self.context().metadata_node(&[]);
-
-		instr
-			.set_metadata(empty_metadata_node, noalias_metadata_id)
-			.map_err(|_| LlvmAssemblyError::InvalidMetadata)
+		Ok(())
 	}
 
 	pub fn mem_set(&self, value: u8, range: RangeInclusive<i32>) -> Result<(), LlvmAssemblyError> {
