@@ -7,6 +7,7 @@ use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	builder::Builder,
 	context::Context,
+	intrinsics::Intrinsic,
 	module::{Linkage, Module},
 	types::IntType,
 	values::{FunctionValue, PointerValue},
@@ -28,7 +29,7 @@ pub struct InnerAssembler<'ctx> {
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn new(context: &'ctx Context) -> Result<Self, LlvmAssemblyError> {
 		let module = context.create_module("frick");
-		let functions = Functions::new(context, &module);
+		let functions = Functions::new(context, &module)?;
 		let builder = context.create_builder();
 
 		let basic_block = context.append_basic_block(functions.main, "entry");
@@ -55,6 +56,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_alloca
 		};
 
+		let zero = {
+			let i64_type = context.i64_type();
+
+			i64_type.const_zero()
+		};
+
+		builder.build_call(functions.lifetime_start, &[zero.into(), tape.into()], "")?;
+
+		builder.build_call(functions.lifetime_start, &[zero.into(), ptr.into()], "")?;
+
 		Ok(Self {
 			context,
 			module,
@@ -71,6 +82,27 @@ impl<'ctx> InnerAssembler<'ctx> {
 		ops: &[BrainIr],
 	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
 		self.ops(ops)?;
+
+		let zero = {
+			let i64_type = self.context.i64_type();
+
+			i64_type.const_zero()
+		};
+
+		self.builder
+			.build_call(
+				self.functions.lifetime_end,
+				&[zero.into(), self.tape.into()],
+				"",
+			)
+			.map_err(AssemblyError::backend)?;
+		self.builder
+			.build_call(
+				self.functions.lifetime_end,
+				&[zero.into(), self.ptr.into()],
+				"",
+			)
+			.map_err(AssemblyError::backend)?;
 
 		self.builder
 			.build_return(None)
@@ -130,10 +162,12 @@ pub struct Functions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
+	pub lifetime_start: FunctionValue<'ctx>,
+	pub lifetime_end: FunctionValue<'ctx>,
 }
 
 impl<'ctx> Functions<'ctx> {
-	fn new(context: &'ctx Context, module: &Module<'ctx>) -> Self {
+	fn new(context: &'ctx Context, module: &Module<'ctx>) -> Result<Self, LlvmAssemblyError> {
 		let ptr_type = context.default_ptr_type();
 		let void_type = context.void_type();
 		let i32_type = context.i32_type();
@@ -147,13 +181,35 @@ impl<'ctx> Functions<'ctx> {
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, Some(Linkage::External));
 
+		let lifetime_start_intrinsic = Intrinsic::find("llvm.lifetime.start")
+			.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.start"))?;
+		let lifetime_end_intrinsic = Intrinsic::find("llvm.lifetime.end")
+			.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.end"))?;
+
+		let (lifetime_start, lifetime_end) = {
+			let context = module.get_context();
+			let ptr_type = context.default_ptr_type();
+
+			let lifetime_start = lifetime_start_intrinsic
+				.get_declaration(module, &[ptr_type.into()])
+				.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.start"))?;
+
+			let lifetime_end = lifetime_end_intrinsic
+				.get_declaration(module, &[ptr_type.into()])
+				.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.end"))?;
+
+			(lifetime_start, lifetime_end)
+		};
+
 		let this = Self {
 			getchar,
 			putchar,
 			main,
+			lifetime_start,
+			lifetime_end,
 		};
 
-		this.setup(context)
+		Ok(this.setup(context))
 	}
 
 	fn setup(self, context: &'ctx Context) -> Self {

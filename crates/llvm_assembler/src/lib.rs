@@ -5,6 +5,7 @@ mod inner;
 mod module;
 
 use std::{
+	borrow::Cow,
 	error::Error as StdError,
 	ffi::CStr,
 	fmt::{Display, Formatter, Result as FmtResult},
@@ -198,7 +199,14 @@ pub enum LlvmAssemblyError {
 	Llvm(String),
 	NoTargetMachine,
 	InvalidMetadata,
+	IntrinsicNotFound(Cow<'static, str>),
 	Builder(BuilderError),
+}
+
+impl LlvmAssemblyError {
+	pub(crate) const fn intrinsic(s: &'static str) -> Self {
+		Self::IntrinsicNotFound(Cow::Borrowed(s))
+	}
 }
 
 impl Display for LlvmAssemblyError {
@@ -211,6 +219,11 @@ impl Display for LlvmAssemblyError {
 			Self::NoTargetMachine => f.write_str("unable to get target machine"),
 			Self::Builder(..) => f.write_str("an error occurred building an instruction"),
 			Self::InvalidMetadata => f.write_str("invalid metadata type"),
+			Self::IntrinsicNotFound(intrinsic) => {
+				f.write_str("instrinsic '")?;
+				f.write_str(intrinsic)?;
+				f.write_str("' was not found")
+			}
 		}
 	}
 }
@@ -219,7 +232,10 @@ impl StdError for LlvmAssemblyError {
 	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			Self::Builder(e) => Some(e),
-			Self::NoTargetMachine | Self::Llvm(..) | Self::InvalidMetadata => None,
+			Self::NoTargetMachine
+			| Self::Llvm(..)
+			| Self::InvalidMetadata
+			| Self::IntrinsicNotFound(..) => None,
 		}
 	}
 }
