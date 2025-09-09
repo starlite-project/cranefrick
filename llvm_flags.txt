@@ -1,6 +1,7 @@
 default<O3>
 inferattrs
 early-cse<memssa>
+memcpyopt
 instcombine
 aggressive-instcombine
 jump-threading

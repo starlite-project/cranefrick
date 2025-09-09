@@ -386,20 +386,6 @@ pub fn optimize_mem_ops(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::mem_set(*a, range)))
 		}
-		[BrainIr::SetCell(a, x), BrainIr::SetCell(b, y)] => {
-			let x = x.get_or_zero();
-			let y = y.get_or_zero();
-			let min = cmp::min(x, y);
-			let max = cmp::max(x, y);
-
-			if !matches!((max - min).unsigned_abs(), 1) {
-				return None;
-			}
-
-			let (a, b) = if x == min { (*a, *b) } else { (*b, *a) };
-
-			Some(Change::replace(BrainIr::mem_copy([a, b], min)))
-		}
 		_ => None,
 	}
 }
