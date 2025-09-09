@@ -46,6 +46,27 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(loaded_value)
 	}
 
+	pub fn load_into(
+		&self,
+		slot: PointerValue<'ctx>,
+		offset: i32,
+	) -> Result<(), LlvmAssemblyError> {
+		let i8_type = self.context().i8_type();
+		let i8_size = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(1, false)
+		};
+
+		let current_offset = self.offset_ptr(offset)?;
+
+		let value = self.gep(i8_type, current_offset, "load_into")?;
+
+		self.builder.build_memcpy(slot, 1, value, 1, i8_size)?;
+
+		Ok(())
+	}
+
 	pub fn store_value(
 		&self,
 		value: u8,
