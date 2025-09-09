@@ -13,23 +13,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		offset: i32,
 		fn_name: impl Display,
-	) -> Result<(IntValue<'ctx>, PtrLifetime<'ctx, '_>), LlvmAssemblyError> {
+	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let new_value_slot = self.builder.build_alloca(i8_type, "load_alloca")?;
+		let current_offset = self.offset_ptr(offset)?;
 
-		self.load_into(new_value_slot, offset)?;
+		let current_gep = self.gep(i8_type, current_offset, format!("{fn_name}_load"))?;
 
 		let loaded_value = self
 			.builder
-			.build_load(i8_type, new_value_slot, &format!("{fn_name}_load_load"))?
+			.build_load(i8_type, current_gep, &format!("{fn_name}_load_load"))?
 			.into_int_value();
-
-		let i8_size = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(1, false)
-		};
 
 		if let Some(instr) = loaded_value.as_instruction() {
 			let noundef_metadata_id = self.context().get_kind_id("noundef");
@@ -45,14 +39,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
 		}
 
-		let lifetime_slot = PtrLifetime::new(
-			new_value_slot,
-			i8_size,
-			self.functions.lifetime.end,
-			&self.builder,
-		);
-
-		Ok((loaded_value, lifetime_slot))
+		Ok(loaded_value)
 	}
 
 	pub fn load_into(
@@ -227,36 +214,5 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		Ok(gep)
-	}
-}
-
-pub struct PtrLifetime<'ctx, 'builder> {
-	ptr: PointerValue<'ctx>,
-	size: IntValue<'ctx>,
-	lifetime_end: FunctionValue<'ctx>,
-	builder: &'builder Builder<'ctx>,
-}
-
-impl<'ctx, 'builder> PtrLifetime<'ctx, 'builder> {
-	const fn new(
-		ptr: PointerValue<'ctx>,
-		size: IntValue<'ctx>,
-		lifetime_end: FunctionValue<'ctx>,
-		builder: &'builder Builder<'ctx>,
-	) -> Self {
-		Self {
-			ptr,
-			size,
-			lifetime_end,
-			builder,
-		}
-	}
-}
-
-impl Drop for PtrLifetime<'_, '_> {
-	fn drop(&mut self) {
-		self.builder
-			.build_call(self.lifetime_end, &[self.size.into(), self.ptr.into()], "")
-			.unwrap();
 	}
 }

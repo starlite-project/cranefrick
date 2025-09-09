@@ -6,7 +6,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn change_cell(&self, value: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let (current_cell_value, _lifetime) = self.load(offset, "change_cell")?;
+		let current_cell_value = self.load(offset, "change_cell")?;
 
 		let value_to_add = {
 			let i8_type = self.context().i8_type();
@@ -22,11 +22,11 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn sub_cell(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let (subtractor, _lifetime) = self.load(0, "sub_cell")?;
+		let subtractor= self.load(0, "sub_cell")?;
 
 		self.store_value(0, 0, "sub_cell")?;
 
-		let (other_value, _second_lifetime) = self.load(offset, "sub_cell")?;
+		let other_value = self.load(offset, "sub_cell")?;
 
 		let value_to_store = self
 			.builder
@@ -36,12 +36,12 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn duplicate_cell(&self, indices: &[i32]) -> Result<(), LlvmAssemblyError> {
-		let (value, _lifetime) = self.load(0, "duplicate_cell")?;
+		let value = self.load(0, "duplicate_cell")?;
 
 		self.store_value(0, 0, "duplicate_cell")?;
 
 		for index in indices.iter().copied() {
-			let (other_value, _second_lifetime) = self.load(index, "duplicate_cell")?;
+			let other_value = self.load(index, "duplicate_cell")?;
 
 			let added_together =
 				self.builder
