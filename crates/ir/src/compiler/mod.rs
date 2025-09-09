@@ -127,8 +127,8 @@ impl Compiler {
 		self.pass_info("optimize if_nz");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);
 
-		self.pass_info("optimize ranges");
-		*progress |= run_peephole_pass(self, passes::optimize_ranges);
+		self.pass_info("optimize memory operations");
+		*progress |= run_peephole_pass(self, passes::optimize_mem_ops);
 	}
 
 	fn pass_info(&self, pass: &str) {

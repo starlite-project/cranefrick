@@ -1,4 +1,9 @@
-use inkwell::values::IntValue;
+use std::{fmt::Display, ops::RangeInclusive};
+
+use inkwell::{
+	types::BasicType,
+	values::{IntValue, PointerValue},
+};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -8,10 +13,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_offset = self.offset_ptr(offset)?;
 
-		let value = unsafe {
-			self.builder
-				.build_in_bounds_gep(i8_type, self.tape, &[current_offset], "load_gep")
-		}?;
+		let value = self.gep(i8_type, current_offset, "load")?;
 
 		let loaded_value = self
 			.builder
@@ -40,10 +42,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_offset = self.offset_ptr(offset)?;
 
-		let current_tape_value = unsafe {
-			self.builder
-				.build_in_bounds_gep(i8_type, self.tape, &[current_offset], "store_gep")
-		}?;
+		let current_tape_value = self.gep(i8_type, current_offset, "store")?;
 
 		let instr = self.builder.build_store(current_tape_value, value)?;
 
@@ -56,5 +55,68 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
 
 		Ok(())
+	}
+
+	pub fn mem_set(&self, value: u8, range: RangeInclusive<i32>) -> Result<(), LlvmAssemblyError> {
+		let start = *range.start();
+		let range_len = range.count();
+		let i8_type = self.context.i8_type();
+
+		let current_offset = self.offset_ptr(start)?;
+
+		let gep = self.gep(i8_type, current_offset, "set_range")?;
+
+		let range_len_value = {
+			let ptr_int_type = self.ptr_int_type;
+
+			ptr_int_type.const_int(range_len as u64, false)
+		};
+
+		let value_value = i8_type.const_int(value.into(), false);
+
+		self.builder
+			.build_memset(gep, 1, value_value, range_len_value)?;
+
+		Ok(())
+	}
+
+	pub fn gep<T>(
+		&self,
+		ty: T,
+		offset: IntValue<'ctx>,
+		name: impl Display,
+	) -> Result<PointerValue<'ctx>, LlvmAssemblyError>
+	where
+		T: BasicType<'ctx>,
+	{
+		let basic_type = ty.as_basic_type_enum();
+
+		let gep = if basic_type.is_array_type() {
+			let zero = {
+				let ptr_int_type = self.ptr_int_type;
+
+				ptr_int_type.const_zero()
+			};
+
+			unsafe {
+				self.builder.build_in_bounds_gep(
+					basic_type.into_array_type(),
+					self.tape,
+					&[zero, offset],
+					&format!("{name}_array_gep"),
+				)?
+			}
+		} else {
+			unsafe {
+				self.builder.build_in_bounds_gep(
+					basic_type.into_int_type(),
+					self.tape,
+					&[offset],
+					&format!("{name}_gep"),
+				)?
+			}
+		};
+
+		Ok(gep)
 	}
 }

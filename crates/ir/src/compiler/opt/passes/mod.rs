@@ -354,7 +354,7 @@ pub const fn optimize_sub_cell(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_ranges(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_mem_ops(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetCell(a, x), BrainIr::SetCell(b, y)] if *a == *b => {
 			let x = x.get_or_zero();
@@ -386,56 +386,6 @@ pub fn optimize_ranges(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::mem_set(*a, range)))
 		}
-		[BrainIr::ChangeCell(a, x), BrainIr::ChangeCell(b, y)] => {
-			let x = x.get_or_zero();
-			let y = y.get_or_zero();
-			let min = cmp::min(x, y);
-			let max = cmp::max(x, y);
-
-			if !matches!((max - min).unsigned_abs(), 1) {
-				return None;
-			}
-
-			let (a, b) = if x == min { (*a, *b) } else { (*b, *a) };
-
-			Some(Change::replace(BrainIr::change_range(min, [a, b])))
-		}
-		[
-			BrainIr::ChangeRange { values, start },
-			BrainIr::ChangeCell(a, x),
-		]
-		| [
-			BrainIr::ChangeCell(a, x),
-			BrainIr::ChangeRange { values, start },
-		] => {
-			let x = x.get_or_zero();
-			let end = start.wrapping_add_unsigned(values.len() as u32);
-
-			if x != end {
-				return None;
-			}
-
-			Some(Change::replace(BrainIr::change_range(
-				*start,
-				values.iter().copied().chain(iter::once(*a)),
-			)))
-		}
-		[
-			BrainIr::ChangeRange {
-				values: a,
-				start: x,
-			},
-			BrainIr::ChangeRange {
-				values: b,
-				start: y,
-			},
-		] if *x == *y && a.len() == b.len() => Some(Change::replace(BrainIr::change_range(
-			*x,
-			a.iter()
-				.copied()
-				.zip(b.iter().copied())
-				.map(|(a, b)| a.wrapping_add(b)),
-		))),
 		_ => None,
 	}
 }
