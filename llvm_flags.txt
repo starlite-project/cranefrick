@@ -6,7 +6,6 @@ instcombine
 aggressive-instcombine
 jump-threading
 sroa<modify-cfg>
-simplifycfg
 instcombine
 aggressive-instcombine
 newgvn
