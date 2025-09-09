@@ -201,7 +201,7 @@ impl<'ctx> Functions<'ctx> {
 		let lifetime_end_intrinsic = Intrinsic::find("llvm.lifetime.end")
 			.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.end"))?;
 
-		let (lifetime_start, lifetime_end) = {
+		let lifetime = {
 			let context = module.get_context();
 			let ptr_type = context.default_ptr_type();
 
@@ -213,14 +213,14 @@ impl<'ctx> Functions<'ctx> {
 				.get_declaration(module, &[ptr_type.into()])
 				.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.end"))?;
 
-			(lifetime_start, lifetime_end)
+			IntrinsicSet::new(lifetime_start, lifetime_end)
 		};
 
 		let this = Self {
 			getchar,
 			putchar,
 			main,
-			lifetime: IntrinsicSet::new(lifetime_start, lifetime_end),
+			lifetime,
 		};
 
 		Ok(this.setup(context))
