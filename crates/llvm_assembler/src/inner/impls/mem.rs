@@ -9,7 +9,7 @@ use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn load(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
-		let i8_type = self.context.i8_type();
+		let i8_type = self.context().i8_type();
 
 		let current_offset = self.offset_ptr(offset)?;
 
@@ -21,9 +21,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.into_int_value();
 
 		if let Some(instr) = loaded_value.as_instruction() {
-			let noundef_metadata_id = self.context.get_kind_id("noundef");
-			let noalias_metadata_id = self.context.get_kind_id("noalias");
-			let empty_metadata_node = self.context.metadata_node(&[]);
+			let noundef_metadata_id = self.context().get_kind_id("noundef");
+			let noalias_metadata_id = self.context().get_kind_id("noalias");
+			let empty_metadata_node = self.context().metadata_node(&[]);
 
 			instr
 				.set_metadata(empty_metadata_node, noundef_metadata_id)
@@ -38,7 +38,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn store(&self, value: IntValue<'ctx>, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let i8_type = self.context.i8_type();
+		let i8_type = self.context().i8_type();
 
 		let current_offset = self.offset_ptr(offset)?;
 
@@ -46,9 +46,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let instr = self.builder.build_store(current_tape_value, value)?;
 
-		let noalias_metadata_id = self.context.get_kind_id("noalias");
+		let noalias_metadata_id = self.context().get_kind_id("noalias");
 
-		let empty_metadata_node = self.context.metadata_node(&[]);
+		let empty_metadata_node = self.context().metadata_node(&[]);
 
 		instr
 			.set_metadata(empty_metadata_node, noalias_metadata_id)
@@ -60,7 +60,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn mem_set(&self, value: u8, range: RangeInclusive<i32>) -> Result<(), LlvmAssemblyError> {
 		let start = *range.start();
 		let range_len = range.count();
-		let i8_type = self.context.i8_type();
+		let i8_type = self.context().i8_type();
 
 		let current_offset = self.offset_ptr(start)?;
 

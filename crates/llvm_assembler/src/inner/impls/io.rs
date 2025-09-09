@@ -8,7 +8,7 @@ impl InnerAssembler<'_> {
 	) -> Result<(), LlvmAssemblyError> {
 		let char_to_put = self.load(offset)?;
 
-		let i32_type = self.context.i32_type();
+		let i32_type = self.context().i32_type();
 
 		let cell_offset_value = i32_type.const_int(cell_offset as u64, false);
 
@@ -33,12 +33,12 @@ impl InnerAssembler<'_> {
 
 	pub fn output_char(&self, c: u8) -> Result<(), LlvmAssemblyError> {
 		let char_to_put = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			i8_type.const_int(c.into(), false)
 		};
 
-		let i32_type = self.context.i32_type();
+		let i32_type = self.context().i32_type();
 
 		let extended_char =
 			self.builder
@@ -58,7 +58,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
-		let i8_type = self.context.i8_type();
+		let i8_type = self.context().i8_type();
 
 		let current_ptr = self.offset_ptr(0)?;
 

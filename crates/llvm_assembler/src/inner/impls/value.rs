@@ -8,7 +8,7 @@ impl InnerAssembler<'_> {
 		let other_cell = self.load(offset)?;
 
 		let value_to_add = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			let factor = i8_type.const_int(factor.into(), false);
 
@@ -32,7 +32,7 @@ impl InnerAssembler<'_> {
 		let other_cell = self.load(0)?;
 
 		let value_to_add = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			let factor = i8_type.const_int(factor.into(), false);
 
@@ -55,7 +55,7 @@ impl InnerAssembler<'_> {
 		let current_cell = self.load(0)?;
 
 		let value_to_add = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			let factor = i8_type.const_int(factor.into(), false);
 
@@ -76,7 +76,7 @@ impl InnerAssembler<'_> {
 		self.set_cell(0, offset)?;
 
 		let value_to_store = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			let factor = i8_type.const_int(factor.into(), false);
 
@@ -91,7 +91,7 @@ impl InnerAssembler<'_> {
 		let cell = self.load(0)?;
 
 		let value_to_store = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			let factor = i8_type.const_int(factor.into(), false);
 

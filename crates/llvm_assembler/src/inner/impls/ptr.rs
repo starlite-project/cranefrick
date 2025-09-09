@@ -22,8 +22,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.into_int_value();
 
 		if let Some(instr) = current_ptr.as_instruction() {
-			let range_metadata_id = self.context.get_kind_id("range");
-			let range_metadata_node = self.context.metadata_node(&[
+			let range_metadata_id = self.context().get_kind_id("range");
+			let range_metadata_node = self.context().metadata_node(&[
 				ptr_type.const_zero().into(),
 				ptr_type.const_int(TAPE_SIZE as u64, false).into(),
 			]);

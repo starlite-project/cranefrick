@@ -6,7 +6,7 @@ use frick_utils::GetOrZero as _;
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	builder::Builder,
-	context::Context,
+	context::{Context, ContextRef},
 	intrinsics::Intrinsic,
 	module::{Linkage, Module},
 	types::IntType,
@@ -17,7 +17,6 @@ use super::{ContextExt, LlvmAssemblyError};
 
 #[allow(dead_code)]
 pub struct InnerAssembler<'ctx> {
-	context: &'ctx Context,
 	module: Module<'ctx>,
 	builder: Builder<'ctx>,
 	functions: Functions<'ctx>,
@@ -62,12 +61,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i64_type.const_zero()
 		};
 
-		builder.build_call(functions.lifetime_start, &[zero.into(), tape.into()], "")?;
+		builder.build_call(functions.lifetime.start, &[zero.into(), tape.into()], "")?;
 
-		builder.build_call(functions.lifetime_start, &[zero.into(), ptr.into()], "")?;
+		builder.build_call(functions.lifetime.start, &[zero.into(), ptr.into()], "")?;
 
 		Ok(Self {
-			context,
 			module,
 			builder,
 			functions,
@@ -77,6 +75,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		})
 	}
 
+	pub fn context(&self) -> ContextRef<'ctx> {
+		self.module.get_context()
+	}
+
 	pub fn assemble(
 		self,
 		ops: &[BrainIr],
@@ -84,21 +86,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.ops(ops)?;
 
 		let zero = {
-			let i64_type = self.context.i64_type();
+			let i64_type = self.context().i64_type();
 
 			i64_type.const_zero()
 		};
 
 		self.builder
 			.build_call(
-				self.functions.lifetime_end,
+				self.functions.lifetime.end,
 				&[zero.into(), self.tape.into()],
 				"",
 			)
 			.map_err(AssemblyError::backend)?;
 		self.builder
 			.build_call(
-				self.functions.lifetime_end,
+				self.functions.lifetime.end,
 				&[zero.into(), self.ptr.into()],
 				"",
 			)
@@ -162,8 +164,7 @@ pub struct Functions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
-	pub lifetime_start: FunctionValue<'ctx>,
-	pub lifetime_end: FunctionValue<'ctx>,
+	pub lifetime: IntrinsicSet<'ctx>,
 }
 
 impl<'ctx> Functions<'ctx> {
@@ -205,8 +206,7 @@ impl<'ctx> Functions<'ctx> {
 			getchar,
 			putchar,
 			main,
-			lifetime_start,
-			lifetime_end,
+			lifetime: IntrinsicSet::new(lifetime_start, lifetime_end),
 		};
 
 		Ok(this.setup(context))
@@ -305,5 +305,17 @@ impl<'ctx> Functions<'ctx> {
 		}
 
 		self
+	}
+}
+
+#[derive(Clone, Copy)]
+pub struct IntrinsicSet<'ctx> {
+	start: FunctionValue<'ctx>,
+	end: FunctionValue<'ctx>,
+}
+
+impl<'ctx> IntrinsicSet<'ctx> {
+	pub const fn new(start: FunctionValue<'ctx>, end: FunctionValue<'ctx>) -> Self {
+		Self { start, end }
 	}
 }

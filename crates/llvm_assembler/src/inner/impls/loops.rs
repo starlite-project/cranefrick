@@ -7,16 +7,16 @@ use crate::{LlvmAssemblyError, inner::InnerAssembler};
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn if_not_zero(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let body_block = self
-			.context
+			.context()
 			.append_basic_block(self.functions.main, "if_not_zero.body");
 		let next_block = self
-			.context
+			.context()
 			.append_basic_block(self.functions.main, "if_not_zero.next");
 
 		let value = self.load(0)?;
 
 		let zero = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			i8_type.const_zero()
 		};
@@ -45,13 +45,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub fn dynamic_loop(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let head_block = self
-			.context
+			.context()
 			.append_basic_block(self.functions.main, "dynamic_loop.head");
 		let body_block = self
-			.context
+			.context()
 			.append_basic_block(self.functions.main, "dynamic_loop.body");
 		let next_block = self
-			.context
+			.context()
 			.append_basic_block(self.functions.main, "dynamic_loop.next");
 
 		self.builder
@@ -63,7 +63,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value = self.load(0)?;
 
 		let zero = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			i8_type.const_zero()
 		};
@@ -95,13 +95,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub fn find_zero(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let head_block = self
-			.context
+			.context()
 			.append_basic_block(self.functions.main, "find_zero.head");
 		let body_block = self
-			.context
+			.context()
 			.append_basic_block(self.functions.main, "find_zero.body");
 		let next_block = self
-			.context
+			.context()
 			.append_basic_block(self.functions.main, "find_zero.next");
 
 		self.builder.build_unconditional_branch(head_block)?;
@@ -111,7 +111,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value = self.load(0)?;
 
 		let zero = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			i8_type.const_zero()
 		};
@@ -138,8 +138,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn add_loop_metadata(&self, br: InstructionValue<'ctx>) -> Result<(), LlvmAssemblyError> {
-		let llvm_loop_metadata_id = self.context.get_kind_id("llvm.loop");
-		let metadata_node = self.context.metadata_node(&[]);
+		let llvm_loop_metadata_id = self.context().get_kind_id("llvm.loop");
+		let metadata_node = self.context().metadata_node(&[]);
 
 		br.set_metadata(metadata_node, llvm_loop_metadata_id)
 			.map_err(|_| LlvmAssemblyError::InvalidMetadata)

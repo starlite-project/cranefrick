@@ -3,7 +3,7 @@ use crate::{LlvmAssemblyError, inner::InnerAssembler};
 impl InnerAssembler<'_> {
 	pub fn set_cell(&self, value: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let value = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			i8_type.const_int(value.into(), false)
 		};
@@ -15,7 +15,7 @@ impl InnerAssembler<'_> {
 		let current_cell_value = self.load(offset)?;
 
 		let value_to_add = {
-			let i8_type = self.context.i8_type();
+			let i8_type = self.context().i8_type();
 
 			i8_type.const_int(value as u64, false)
 		};
