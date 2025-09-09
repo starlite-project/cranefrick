@@ -48,7 +48,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"",
 			)?;
 
-			builder.build_memset(tape_alloca, 1, i8_type.const_zero(), array_size)?;
+			builder.build_store(tape_alloca, i8_array_type.const_zero())?;
 
 			tape_alloca
 		};
