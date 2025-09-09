@@ -6,9 +6,7 @@ pub fn sort_changes(ops: &[BrainIr; 2]) -> Option<Change> {
 	if !ops.iter().all(|i| {
 		matches!(
 			i,
-			BrainIr::SetCell(..)
-				| BrainIr::ChangeCell(..)
-				| BrainIr::MemSet { .. }
+			BrainIr::SetCell(..) | BrainIr::ChangeCell(..) | BrainIr::MemSet { .. }
 		)
 	}) {
 		return None;

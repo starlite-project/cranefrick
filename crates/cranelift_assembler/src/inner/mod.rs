@@ -12,7 +12,7 @@ use cranelift_codegen::ir::{
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_jit::JITModule;
 use cranelift_module::{DataDescription, Linkage, Module};
-use frick_assembler::AssemblyError;
+use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use frick_utils::GetOrZero as _;
 
@@ -40,7 +40,7 @@ impl<'a> InnerAssembler<'a> {
 
 			let mut tape_description = DataDescription::new();
 
-			tape_description.define_zeroinit(30_000);
+			tape_description.define_zeroinit(TAPE_SIZE);
 
 			module.define_data(tape_id, &tape_description)?;
 

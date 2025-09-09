@@ -1,6 +1,6 @@
 mod impls;
 
-use frick_assembler::AssemblyError;
+use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use frick_utils::GetOrZero as _;
 use inkwell::{
@@ -37,8 +37,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let ptr_int_type = context.i64_type();
 		let tape = {
 			let i8_type = context.i8_type();
-			let i8_array_type = i8_type.array_type(30_000);
-			let array_size = ptr_int_type.const_int(30_000, false);
+			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
+			let array_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
 			let tape_alloca = builder.build_alloca(i8_array_type, "tape")?;
 

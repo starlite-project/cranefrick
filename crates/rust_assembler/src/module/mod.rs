@@ -66,7 +66,7 @@ impl AssembledModule for RustInterpreterModule<'_> {
 	type Error = RustInterpreterError;
 
 	fn execute(&self) -> Result<(), Self::Error> {
-		let mut memory = [0u8; 30_000];
+		let mut memory = [0u8; TAPE_SIZE];
 		let mut ptr = 0;
 
 		for op in &self.ops {
