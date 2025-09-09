@@ -8,16 +8,20 @@ use inkwell::{
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn load(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+	pub fn load(
+		&self,
+		offset: i32,
+		fn_name: impl Display,
+	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let current_offset = self.offset_ptr(offset)?;
 
-		let value = self.gep(i8_type, current_offset, "load")?;
+		let value = self.gep(i8_type, current_offset, format!("{fn_name}_load"))?;
 
 		let loaded_value = self
 			.builder
-			.build_load(i8_type, value, "load_load")?
+			.build_load(i8_type, value, &format!("{fn_name}_load_load"))?
 			.into_int_value();
 
 		if let Some(instr) = loaded_value.as_instruction() {
@@ -37,12 +41,41 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(loaded_value)
 	}
 
-	pub fn store(&self, value: IntValue<'ctx>, offset: i32) -> Result<(), LlvmAssemblyError> {
+	pub fn store_value(
+		&self,
+		value: u8,
+		offset: i32,
+		fn_name: impl Display,
+	) -> Result<(), LlvmAssemblyError> {
+		let value = {
+			let i8_type = self.context().i8_type();
+
+			i8_type.const_int(value.into(), false)
+		};
+
+		self.store_inner(value, offset, format!("{fn_name}_store_value"))
+	}
+
+	pub fn store(
+		&self,
+		value: IntValue<'ctx>,
+		offset: i32,
+		fn_name: impl Display,
+	) -> Result<(), LlvmAssemblyError> {
+		self.store_inner(value, offset, format!("{fn_name}_store"))
+	}
+
+	fn store_inner(
+		&self,
+		value: IntValue<'ctx>,
+		offset: i32,
+		fn_name: String,
+	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let current_offset = self.offset_ptr(offset)?;
 
-		let current_tape_value = self.gep(i8_type, current_offset, "store")?;
+		let current_tape_value = self.gep(i8_type, current_offset, fn_name)?;
 
 		let instr = self.builder.build_store(current_tape_value, value)?;
 
@@ -52,9 +85,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		instr
 			.set_metadata(empty_metadata_node, noalias_metadata_id)
-			.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
-
-		Ok(())
+			.map_err(|_| LlvmAssemblyError::InvalidMetadata)
 	}
 
 	pub fn mem_set(&self, value: u8, range: RangeInclusive<i32>) -> Result<(), LlvmAssemblyError> {
