@@ -6,7 +6,7 @@ impl InnerAssembler<'_> {
 		cell_offset: i8,
 		offset: i32,
 	) -> Result<(), LlvmAssemblyError> {
-		let char_to_put = self.load(offset, "output_current_cell")?;
+		let (char_to_put, _lifetime) = self.load(offset, "output_current_cell")?;
 
 		let i32_type = self.context().i32_type();
 

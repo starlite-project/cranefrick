@@ -1,8 +1,9 @@
 use std::{fmt::Display, ops::RangeInclusive};
 
 use inkwell::{
+	builder::Builder,
 	types::BasicType,
-	values::{IntValue, PointerValue},
+	values::{FunctionValue, IntValue, PointerValue},
 };
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
@@ -12,7 +13,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		offset: i32,
 		fn_name: impl Display,
-	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+	) -> Result<(IntValue<'ctx>, PtrLifetime<'ctx, '_>), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let new_value_slot = self.builder.build_alloca(i8_type, "load_alloca")?;
@@ -23,6 +24,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_load(i8_type, new_value_slot, &format!("{fn_name}_load_load"))?
 			.into_int_value();
+
+		let i8_size = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(1, false)
+		};
 
 		if let Some(instr) = loaded_value.as_instruction() {
 			let noundef_metadata_id = self.context().get_kind_id("noundef");
@@ -38,7 +45,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
 		}
 
-		Ok(loaded_value)
+		let lifetime_slot = PtrLifetime::new(
+			new_value_slot,
+			i8_size,
+			self.functions.lifetime.end,
+			&self.builder,
+		);
+
+		Ok((loaded_value, lifetime_slot))
 	}
 
 	pub fn load_into(
@@ -213,5 +227,36 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		Ok(gep)
+	}
+}
+
+pub struct PtrLifetime<'ctx, 'builder> {
+	ptr: PointerValue<'ctx>,
+	size: IntValue<'ctx>,
+	lifetime_end: FunctionValue<'ctx>,
+	builder: &'builder Builder<'ctx>,
+}
+
+impl<'ctx, 'builder> PtrLifetime<'ctx, 'builder> {
+	const fn new(
+		ptr: PointerValue<'ctx>,
+		size: IntValue<'ctx>,
+		lifetime_end: FunctionValue<'ctx>,
+		builder: &'builder Builder<'ctx>,
+	) -> Self {
+		Self {
+			ptr,
+			size,
+			lifetime_end,
+			builder,
+		}
+	}
+}
+
+impl Drop for PtrLifetime<'_, '_> {
+	fn drop(&mut self) {
+		self.builder
+			.build_call(self.lifetime_end, &[self.size.into(), self.ptr.into()], "")
+			.unwrap();
 	}
 }

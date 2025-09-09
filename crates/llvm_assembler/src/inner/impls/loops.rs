@@ -13,7 +13,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.context()
 			.append_basic_block(self.functions.main, "if_not_zero.next");
 
-		let value = self.load(0, "if_not_zero")?;
+		let (value, lifetime) = self.load(0, "if_not_zero")?;
 
 		let zero = {
 			let i8_type = self.context().i8_type();
@@ -31,6 +31,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.map_err(AssemblyError::backend)?;
 
 		self.builder.position_at_end(body_block);
+
+		drop(lifetime);
 
 		self.ops(ops)?;
 
@@ -60,7 +62,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(head_block);
 
-		let value = self.load(0, "dynamic_loop")?;
+		let (value, lifetime) = self.load(0, "dynamic_loop")?;
 
 		let zero = {
 			let i8_type = self.context().i8_type();
@@ -81,6 +83,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.add_loop_metadata(br)?;
 
 		self.builder.position_at_end(body_block);
+
+		drop(lifetime);
 
 		self.ops(ops)?;
 
@@ -108,7 +112,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(head_block);
 
-		let value = self.load(0, "find_zero")?;
+		let (value, lifetime) = self.load(0, "find_zero")?;
 
 		let zero = {
 			let i8_type = self.context().i8_type();
@@ -127,6 +131,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.add_loop_metadata(br)?;
 
 		self.builder.position_at_end(body_block);
+
+		drop(lifetime);
 
 		self.move_pointer(offset)?;
 
