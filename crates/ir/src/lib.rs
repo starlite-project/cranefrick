@@ -42,6 +42,11 @@ pub enum BrainIr {
 		value: u8,
 		range: RangeInclusive<i32>,
 	},
+	MemCopy {
+		values: Vec<u8>,
+		#[serde(skip_serializing_if = "Option::is_none")]
+		start: Option<NonZero<i32>>,
+	},
 }
 
 impl BrainIr {
@@ -207,6 +212,14 @@ impl BrainIr {
 	#[must_use]
 	pub const fn mem_set(value: u8, range: RangeInclusive<i32>) -> Self {
 		Self::MemSet { value, range }
+	}
+
+	#[must_use]
+	pub fn mem_copy(values: impl IntoIterator<Item = u8>, offset: i32) -> Self {
+		Self::MemCopy {
+			values: values.collect_to(),
+			start: NonZero::new(offset),
+		}
 	}
 
 	#[must_use]

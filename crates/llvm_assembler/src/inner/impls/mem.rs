@@ -1,5 +1,6 @@
 use std::{fmt::Display, ops::RangeInclusive};
 
+use frick_assembler::TAPE_SIZE;
 use inkwell::{
 	types::BasicType,
 	values::{IntValue, PointerValue},
@@ -76,6 +77,40 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder
 			.build_memset(gep, 1, value_value, range_len_value)?;
+
+		Ok(())
+	}
+
+	pub fn mem_copy(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
+		let i8_type = self.context.i8_type();
+		let i8_array_type = i8_type.array_type(values.len() as u32);
+		let i8_tape_type = i8_type.array_type(TAPE_SIZE as u32);
+		let ptr_int_type = self.ptr_int_type;
+
+		let array_len = ptr_int_type.const_int(values.len() as u64, false);
+
+		let i8_array_alloca = self
+			.builder
+			.build_alloca(i8_array_type, "mem_copy_alloca")?;
+
+		for (i, value) in values.iter().copied().enumerate() {
+			let index = ptr_int_type.const_int(i as u64, false);
+
+			let memcpy_array_gep = unsafe {
+				self.builder
+					.build_gep(i8_type, i8_array_alloca, &[index], "mem_copy_gep")
+			}?;
+
+			self.builder
+				.build_store(memcpy_array_gep, i8_type.const_int(value.into(), false))?;
+		}
+
+		let current_offset = self.offset_ptr(start)?;
+
+		let gep = self.gep(i8_tape_type, current_offset, "mem_copy")?;
+
+		self.builder
+			.build_memcpy(gep, 1, i8_array_alloca, 1, array_len)?;
 
 		Ok(())
 	}
