@@ -78,12 +78,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		// let current_offset = self.offset_ptr(offset)?;
-
-		// let current_tape_value = self.gep(i8_type, current_offset, fn_name)?;
-
-		// self.builder.build_store(current_tape_value, value)?;
-
 		let new_alloca_slot = self
 			.builder
 			.build_alloca(i8_type, &format!("{fn_name}_alloca"))?;
@@ -110,20 +104,27 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let range_len = range.count();
 		let i8_type = self.context().i8_type();
 
-		let current_offset = self.offset_ptr(start)?;
-
-		let gep = self.gep(i8_type, current_offset, "set_range")?;
-
 		let range_len_value = {
 			let ptr_int_type = self.ptr_int_type;
 
 			ptr_int_type.const_int(range_len as u64, false)
 		};
 
+		let array_alloca =
+			self.builder
+				.build_array_alloca(i8_type, range_len_value, "mem_set_alloca")?;
+
 		let value_value = i8_type.const_int(value.into(), false);
 
 		self.builder
-			.build_memset(gep, 1, value_value, range_len_value)?;
+			.build_memset(array_alloca, 1, value_value, range_len_value)?;
+
+		let current_offset = self.offset_ptr(start)?;
+
+		let gep = self.gep(i8_type, current_offset, "mem_set")?;
+
+		self.builder
+			.build_memcpy(gep, 1, array_alloca, 1, range_len_value)?;
 
 		Ok(())
 	}
