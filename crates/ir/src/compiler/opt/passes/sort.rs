@@ -1,3 +1,5 @@
+use std::cmp;
+
 use frick_utils::{GetOrZero as _, IteratorExt as _};
 
 use super::{BrainIr, Change};
@@ -28,8 +30,11 @@ fn sorter_key(i: &BrainIr) -> (u8, i32, i32) {
 		}
 		BrainIr::MemSet { range, .. } => {
 			let start = *range.start();
+			let end = *range.end();
 
-			(1, start.abs(), start)
+			let min = cmp::min(start, end);
+
+			(1, min.abs(), min)
 		}
 		_ => (0, 0, 0),
 	}

@@ -111,6 +111,14 @@ pub fn add_offsets(ops: &[BrainIr; 3]) -> Option<Change> {
 			BrainIr::set_cell_at(*i, x.wrapping_add(y.get())),
 			BrainIr::move_pointer(x.wrapping_add(*z)),
 		])),
+		[
+			BrainIr::MovePointer(x),
+			BrainIr::MemSet { range, value },
+			BrainIr::MovePointer(y),
+		] if *x == -y => Some(Change::replace(BrainIr::mem_set(
+			*value,
+			range.start().wrapping_add(*x)..=range.end().wrapping_add(*x),
+		))),
 		_ => None,
 	}
 }
@@ -386,6 +394,26 @@ pub fn optimize_mem_ops(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::mem_set(*a, range)))
 		}
+		[
+			BrainIr::MemSet { range: x, value: a },
+			BrainIr::MemSet { range: y, value: b },
+		] if x.end().wrapping_add(1) == *y.start() && *a == *b => Some(Change::replace(
+			BrainIr::mem_set(*a, (*x.start())..=(*y.end())),
+		)),
+		[
+			BrainIr::MemSet { range: x, value: a },
+			BrainIr::MemSet { range: y, value: b },
+		] if y.end().wrapping_add(1) == *x.start() && *a == *b => Some(Change::replace(
+			BrainIr::mem_set(*a, (*y.start())..=(*x.end())),
+		)),
+		[
+			BrainIr::MemSet { range: x, .. },
+			BrainIr::MemSet { range: y, .. },
+		] if x == y => Some(Change::remove_offset(0)),
+		[
+			BrainIr::ChangeCell(.., offset) | BrainIr::SetCell(.., offset),
+			BrainIr::MemSet { range, .. },
+		] if range.contains(&offset.get_or_zero()) => Some(Change::remove_offset(0)),
 		_ => None,
 	}
 }
