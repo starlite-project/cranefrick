@@ -58,36 +58,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_unconditional_branch(head_block)
 			.map_err(AssemblyError::backend)?;
 
-		let i8_type = self.context().i8_type();
-
 		self.builder.position_at_end(head_block);
 
-		let loaded_value_alloca = self
-			.builder
-			.build_alloca(i8_type, "dynamic_loop_alloca")
-			.map_err(AssemblyError::backend)?;
-
-		let i8_size = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(1, false)
-		};
-
-		self.builder
-			.build_call(
-				self.functions.lifetime.start,
-				&[i8_size.into(), loaded_value_alloca.into()],
-				"",
-			)
-			.map_err(AssemblyError::backend)?;
-
-		self.load_into(loaded_value_alloca, 0)?;
-
-		let value = self
-			.builder
-			.build_load(i8_type, loaded_value_alloca, "dynamic_loop_alloca_load")
-			.map_err(AssemblyError::backend)?
-			.into_int_value();
+		let value = self.load(0, "dynamic_loop")?;
 
 		let zero = {
 			let i8_type = self.context().i8_type();
@@ -117,14 +90,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(next_block);
 
-		self.builder
-			.build_call(
-				self.functions.lifetime.end,
-				&[i8_size.into(), loaded_value_alloca.into()],
-				"",
-			)
-			.map_err(AssemblyError::backend)?;
-
 		Ok(())
 	}
 
@@ -139,32 +104,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.context()
 			.append_basic_block(self.functions.main, "find_zero.next");
 
-		let i8_type = self.context().i8_type();
-
 		self.builder.build_unconditional_branch(head_block)?;
 
 		self.builder.position_at_end(head_block);
 
-		let loaded_value_alloca = self.builder.build_alloca(i8_type, "find_zero_alloca")?;
-
-		let i8_size = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(1, false)
-		};
-
-		self.builder.build_call(
-			self.functions.lifetime.start,
-			&[i8_size.into(), loaded_value_alloca.into()],
-			"",
-		)?;
-
-		self.load_into(loaded_value_alloca, 0)?;
-
-		let value = self
-			.builder
-			.build_load(i8_type, loaded_value_alloca, "find_zero_alloca_load")?
-			.into_int_value();
+		let value = self.load(0, "find_zero")?;
 
 		let zero = {
 			let i8_type = self.context().i8_type();
@@ -190,11 +134,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(next_block);
 
-		self.builder.build_call(
-			self.functions.lifetime.end,
-			&[i8_size.into(), loaded_value_alloca.into()],
-			"",
-		)?;
 		Ok(())
 	}
 

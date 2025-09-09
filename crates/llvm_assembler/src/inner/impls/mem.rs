@@ -15,14 +15,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let current_offset = self.offset_ptr(offset)?;
-
-		let value = self.gep(i8_type, current_offset, format!("{fn_name}_load"))?;
-
 		let new_value_slot = self.builder.build_alloca(i8_type, "load_alloca")?;
 
-		self.builder
-			.build_memcpy(new_value_slot, 1, value, 1, i8_type.const_int(1, false))?;
+		self.load_into(new_value_slot, offset)?;
 
 		let loaded_value = self
 			.builder
