@@ -84,7 +84,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn mem_copy(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context.i8_type();
 		let i8_array_type = i8_type.array_type(values.len() as u32);
-		let i8_tape_type = i8_type.array_type(TAPE_SIZE as u32);
 		let ptr_int_type = self.ptr_int_type;
 
 		let array_len = ptr_int_type.const_int(values.len() as u64, false);
@@ -107,7 +106,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_offset = self.offset_ptr(start)?;
 
-		let gep = self.gep(i8_tape_type, current_offset, "mem_copy")?;
+		let gep = self.gep(i8_type, current_offset, "mem_copy")?;
 
 		self.builder
 			.build_memcpy(gep, 1, i8_array_alloca, 1, array_len)?;
