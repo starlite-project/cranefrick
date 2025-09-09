@@ -78,9 +78,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
+		let i8_size = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(1, false)
+		};
+
 		let new_alloca_slot = self
 			.builder
 			.build_alloca(i8_type, &format!("{fn_name}_alloca"))?;
+
+		self.builder.build_call(
+			self.functions.lifetime.start,
+			&[i8_size.into(), new_alloca_slot.into()],
+			"",
+		)?;
 
 		self.builder.build_store(new_alloca_slot, value)?;
 
@@ -94,6 +106,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			new_alloca_slot,
 			1,
 			self.context().i64_type().const_int(1, false),
+		)?;
+
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[i8_size.into(), new_alloca_slot.into()],
+			"",
 		)?;
 
 		Ok(())
@@ -114,6 +132,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_array_alloca(i8_type, range_len_value, "mem_set_alloca")?;
 
+		self.builder.build_call(
+			self.functions.lifetime.start,
+			&[range_len_value.into(), array_alloca.into()],
+			"",
+		)?;
+
 		let value_value = i8_type.const_int(value.into(), false);
 
 		self.builder
@@ -125,6 +149,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder
 			.build_memcpy(gep, 1, array_alloca, 1, range_len_value)?;
+
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[range_len_value.into(), array_alloca.into()],
+			"",
+		)?;
 
 		Ok(())
 	}
