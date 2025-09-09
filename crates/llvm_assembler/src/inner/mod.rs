@@ -42,6 +42,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let tape_alloca = builder.build_alloca(i8_array_type, "tape")?;
 
+			builder.build_call(
+				functions.lifetime.start,
+				&[array_size.into(), tape_alloca.into()],
+				"",
+			)?;
+
 			builder.build_memset(tape_alloca, 1, i8_type.const_zero(), array_size)?;
 
 			tape_alloca
@@ -50,20 +56,22 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let ptr = {
 			let ptr_alloca = builder.build_alloca(ptr_int_type, "ptr")?;
 
+			let i64_size = {
+				let i64_type = context.i64_type();
+
+				i64_type.const_int(8, false)
+			};
+
+			builder.build_call(
+				functions.lifetime.start,
+				&[i64_size.into(), ptr_alloca.into()],
+				"",
+			)?;
+
 			builder.build_store(ptr_alloca, ptr_int_type.const_zero())?;
 
 			ptr_alloca
 		};
-
-		let zero = {
-			let i64_type = context.i64_type();
-
-			i64_type.const_zero()
-		};
-
-		builder.build_call(functions.lifetime.start, &[zero.into(), tape.into()], "")?;
-
-		builder.build_call(functions.lifetime.start, &[zero.into(), ptr.into()], "")?;
 
 		Ok(Self {
 			module,
@@ -85,23 +93,29 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
 		self.ops(ops)?;
 
-		let zero = {
+		let i64_size = {
 			let i64_type = self.context().i64_type();
 
-			i64_type.const_zero()
+			i64_type.const_int(8, false)
+		};
+
+		let tape_size = {
+			let ptr_int_type = self.ptr_int_type;
+
+			ptr_int_type.const_int(30_000, false)
 		};
 
 		self.builder
 			.build_call(
 				self.functions.lifetime.end,
-				&[zero.into(), self.tape.into()],
+				&[tape_size.into(), self.tape.into()],
 				"",
 			)
 			.map_err(AssemblyError::backend)?;
 		self.builder
 			.build_call(
 				self.functions.lifetime.end,
-				&[zero.into(), self.ptr.into()],
+				&[i64_size.into(), self.ptr.into()],
 				"",
 			)
 			.map_err(AssemblyError::backend)?;
