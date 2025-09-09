@@ -40,4 +40,22 @@ impl InnerAssembler<'_> {
 
 		self.store(value_to_store, offset)
 	}
+
+	pub fn duplicate_cell(&self, indices: &[i32]) -> Result<(), LlvmAssemblyError> {
+		let value = self.load(0)?;
+
+		self.set_cell(0, 0)?;
+
+		for index in indices.iter().copied() {
+			let other_value = self.load(index)?;
+
+			let added_together =
+				self.builder
+					.build_int_add(other_value, value, "duplicate_cell_add")?;
+
+			self.store(added_together, index)?;
+		}
+
+		Ok(())
+	}
 }

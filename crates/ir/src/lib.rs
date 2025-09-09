@@ -42,6 +42,9 @@ pub enum BrainIr {
 		value: u8,
 		range: RangeInclusive<i32>,
 	},
+	DuplicateCell {
+		indices: Vec<i32>,
+	},
 }
 
 impl BrainIr {
@@ -85,6 +88,7 @@ impl BrainIr {
 				| Self::FindZero(..)
 				| Self::SubCell(..)
 				| Self::IfNotZero(..)
+				| Self::DuplicateCell { .. }
 		) || matches!(self, Self::MemSet { value: 0, range } if range.contains(&0))
 	}
 
@@ -97,6 +101,7 @@ impl BrainIr {
 				| Self::MoveValueTo(..)
 				| Self::SubCell(..)
 				| Self::IfNotZero(..)
+				| Self::DuplicateCell { .. }
 		)
 	}
 
@@ -207,6 +212,13 @@ impl BrainIr {
 	#[must_use]
 	pub const fn mem_set(value: u8, range: RangeInclusive<i32>) -> Self {
 		Self::MemSet { value, range }
+	}
+
+	#[must_use]
+	pub fn duplicate_cell(indices: impl IntoIterator<Item = i32>) -> Self {
+		Self::DuplicateCell {
+			indices: indices.collect_to(),
+		}
 	}
 
 	#[must_use]

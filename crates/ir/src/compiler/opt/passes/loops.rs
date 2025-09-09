@@ -1,5 +1,7 @@
 use std::iter;
 
+use frick_utils::GetOrZero as _;
+
 use super::{BrainIr, Change};
 use crate::compiler::opt::utils::calculate_ptr_movement;
 
@@ -116,6 +118,27 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 		[rest @ .., i] if i.is_zeroing_cell() => Some(Change::swap([BrainIr::if_not_zero(
 			rest.iter().cloned().chain(iter::once(i.clone())),
 		)])),
+		_ => None,
+	}
+}
+
+pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
+		[BrainIr::ChangeCell(-1, None), rest @ ..]
+			if rest.iter().all(|i| matches!(i, BrainIr::ChangeCell(1, ..))) =>
+		{
+			let mut indices = Vec::new();
+
+			for op in rest {
+				let BrainIr::ChangeCell(.., offset) = op else {
+					unreachable!()
+				};
+
+				indices.push(offset.get_or_zero());
+			}
+
+			Some(Change::replace(BrainIr::duplicate_cell(indices)))
+		}
 		_ => None,
 	}
 }
