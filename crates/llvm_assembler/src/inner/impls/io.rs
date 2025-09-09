@@ -62,14 +62,7 @@ impl InnerAssembler<'_> {
 
 		let current_ptr = self.offset_ptr(0)?;
 
-		let gep = unsafe {
-			self.builder.build_in_bounds_gep(
-				i8_type,
-				self.tape,
-				&[current_ptr],
-				"input_into_cell_gep",
-			)?
-		};
+		let gep = self.gep(i8_type, current_ptr, "input_into_cell")?;
 
 		self.builder.build_direct_call(
 			self.functions.getchar,
