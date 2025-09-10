@@ -13,8 +13,8 @@ impl InnerAssembler<'_> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(current_value, factor, "move_value_to_mul")
-		}?;
+				.build_int_mul(current_value, factor, "move_value_to_mul")?
+		};
 
 		let added = self
 			.builder

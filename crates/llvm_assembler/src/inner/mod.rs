@@ -93,17 +93,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			load_alloca
 		};
 
-		let store = {
-			let store_alloca = builder.build_alloca(i8_type, "store")?;
-
-			builder.build_call(
-				functions.lifetime.start,
-				&[i8_size.into(), store_alloca.into()],
-				"",
-			)?;
-
-			store_alloca
-		};
+		let store = builder.build_alloca(i8_type, "store")?;
 
 		Ok(Self {
 			module,

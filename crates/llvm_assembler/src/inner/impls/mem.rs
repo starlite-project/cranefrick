@@ -74,6 +74,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
+		let i8_size = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(1, false)
+		};
+
+		self.builder.build_call(
+			self.functions.lifetime.start,
+			&[i8_size.into(), self.store.into()],
+			"",
+		)?;
+
 		self.builder.build_store(self.store, value)?;
 
 		let current_offset = self.offset_ptr(offset)?;
@@ -86,6 +98,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.store,
 			1,
 			self.context().i64_type().const_int(1, false),
+		)?;
+
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[i8_size.into(), self.store.into()],
+			"",
 		)?;
 
 		Ok(())
