@@ -1,4 +1,4 @@
-default<O0>
+default<O3>
 inferattrs
 simplifycfg
 sroa<modify-cfg>
@@ -11,6 +11,7 @@ aggressive-instcombine
 simplifycfg
 newgvn
 reassociate
+load-store-vectorizer
 slp-vectorizer
 indvars
 loop-simplify
@@ -32,6 +33,7 @@ loop-unroll-full
 sccp
 bdce
 aggressive-instcombine
+load-store-vectorizer
 jump-threading
 correlated-propagation
 adce
@@ -81,8 +83,8 @@ sccp
 sink
 dse
 adce
-load-store-vectorizer
 sroa<modify-cfg>
+load-store-vectorizer
 slp-vectorizer
 select-optimize
 simplifycfg
