@@ -43,6 +43,7 @@ pub enum BrainIr {
 		range: RangeInclusive<i32>,
 	},
 	DuplicateCell {
+		factor: i8,
 		indices: Vec<i32>,
 	},
 }
@@ -215,8 +216,9 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub fn duplicate_cell(indices: impl IntoIterator<Item = i32>) -> Self {
+	pub fn duplicate_cell(factor: i8, indices: impl IntoIterator<Item = i32>) -> Self {
 		Self::DuplicateCell {
+			factor,
 			indices: indices.collect_to(),
 		}
 	}

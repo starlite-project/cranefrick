@@ -99,7 +99,9 @@ impl Compiler {
 		*progress |= run_peephole_pass(self, passes::sort_changes);
 
 		self.pass_info("optimize scale and shift value instructions");
-		*progress |= run_loop_pass(self, passes::optimize_move_value);
+		*progress |= run_loop_pass(self, passes::optimize_move_value_from_loop);
+		*progress |= run_peephole_pass(self, passes::optimize_move_value);
+		*progress |= run_peephole_pass(self, passes::optimize_move_value_from_duplicate_cells);
 		*progress |= run_peephole_pass(self, passes::optimize_take_value);
 		*progress |= run_peephole_pass(self, passes::optimize_fetch_value);
 		*progress |= run_peephole_pass(self, passes::optimize_replace_value);

@@ -1,4 +1,4 @@
-use std::iter;
+use std::{iter, num::NonZero};
 
 use frick_utils::GetOrZero as _;
 
@@ -122,22 +122,46 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
+pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::ChangeCell(-1, None),
+			BrainIr::ChangeCell(i, Some(offset)),
+		] if i.is_positive() => Some(Change::replace(BrainIr::move_value_to(
+			i.unsigned_abs(),
+			offset.get(),
+		))),
+		_ => None,
+	}
+}
+
 pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[BrainIr::ChangeCell(-1, None), rest @ ..]
-			if rest.iter().all(|i| matches!(i, BrainIr::ChangeCell(1, ..))) =>
+			if rest.iter().all(|i| matches!(i, BrainIr::ChangeCell(..))) =>
 		{
+			let mut x = None;
+
 			let mut indices = Vec::new();
 
 			for op in rest {
-				let BrainIr::ChangeCell(.., offset) = op else {
+				let BrainIr::ChangeCell(value, offset) = op else {
 					unreachable!()
 				};
+
+				if x.is_none() {
+					x = NonZero::new(*value);
+				} else if x.get_or_zero() != *value {
+					return None;
+				}
 
 				indices.push(offset.get_or_zero());
 			}
 
-			Some(Change::replace(BrainIr::duplicate_cell(indices)))
+			Some(Change::replace(BrainIr::duplicate_cell(
+				x.get_or_zero(),
+				indices,
+			)))
 		}
 		_ => None,
 	}

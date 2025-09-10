@@ -154,19 +154,28 @@ pub fn remove_offsets(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_move_value(ops: &[BrainIr]) -> Option<Change> {
+pub fn optimize_move_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[
-			BrainIr::ChangeCell(-1, None),
-			BrainIr::ChangeCell(i, Some(offset)),
-		] if i.is_positive() => Some(Change::replace(BrainIr::move_value_to(
-			i.unsigned_abs(),
-			offset.get(),
-		))),
 		[BrainIr::TakeValueTo(factor, x), BrainIr::MovePointer(y)] => Some(Change::swap([
 			BrainIr::move_value_to(*factor, *x),
 			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
+		_ => None,
+	}
+}
+
+pub fn optimize_move_value_from_duplicate_cells(ops: &[BrainIr; 1]) -> Option<Change> {
+	match ops {
+		[BrainIr::DuplicateCell { factor, indices }]
+			if matches!(indices.len(), 1) && factor.is_positive() =>
+		{
+			let index = indices.first().copied()?;
+
+			Some(Change::replace(BrainIr::move_value_to(
+				*factor as u8,
+				index,
+			)))
+		}
 		_ => None,
 	}
 }

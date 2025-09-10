@@ -35,10 +35,19 @@ impl InnerAssembler<'_> {
 		self.store(value_to_store, offset, "sub_cell")
 	}
 
-	pub fn duplicate_cell(&self, indices: &[i32]) -> Result<(), LlvmAssemblyError> {
+	pub fn duplicate_cell(&self, factor: i8, indices: &[i32]) -> Result<(), LlvmAssemblyError> {
 		let value = self.load(0, "duplicate_cell")?;
 
 		self.store_value(0, 0, "duplicate_cell")?;
+
+		let value = {
+			let i8_type = self.context().i8_type();
+
+			let factor_value = i8_type.const_int(factor as u64, false);
+
+			self.builder
+				.build_int_mul(value, factor_value, "duplicate_cell_mul")?
+		};
 
 		for index in indices.iter().copied() {
 			let other_value = self.load(index, "duplicate_cell")?;
