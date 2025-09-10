@@ -175,9 +175,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 					self.change_cell(*value, offset.get_or_zero())?;
 				}
 				BrainIr::SubCell(offset) => self.sub_cell(*offset)?,
-				BrainIr::DuplicateCell { factor, indices } => {
-					self.duplicate_cell(*factor, indices)?
-				}
+				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
 				BrainIr::OutputCell {
 					value_offset: value,
 					offset,

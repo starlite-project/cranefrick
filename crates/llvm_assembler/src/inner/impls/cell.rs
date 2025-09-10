@@ -35,28 +35,49 @@ impl InnerAssembler<'_> {
 		self.store(value_to_store, offset, "sub_cell")
 	}
 
-	pub fn duplicate_cell(&self, factor: i8, indices: &[i32]) -> Result<(), LlvmAssemblyError> {
+	pub fn duplicate_cell(&self, values: &[(i8, i32)]) -> Result<(), LlvmAssemblyError> {
+		// let value = self.load(0, "duplicate_cell")?;
+
+		// self.store_value(0, 0, "duplicate_cell")?;
+
+		// let value = {
+		// 	let i8_type = self.context().i8_type();
+
+		// 	let factor_value = i8_type.const_int(factor as u64, false);
+
+		// 	self.builder
+		// 		.build_int_mul(value, factor_value, "duplicate_cell_mul")?
+		// };
+
+		// for index in indices.iter().copied() {
+		// 	let other_value = self.load(index, "duplicate_cell")?;
+
+		// 	let added_together =
+		// 		self.builder
+		// 			.build_int_add(other_value, value, "duplicate_cell_add")?;
+
+		// 	self.store(added_together, index, "duplicate_cell")?;
+		// }
+		let i8_type = self.context().i8_type();
+
 		let value = self.load(0, "duplicate_cell")?;
 
 		self.store_value(0, 0, "duplicate_cell")?;
 
-		let value = {
-			let i8_type = self.context().i8_type();
+		for (factor, index) in values.iter().copied() {
+			let other_value = self.load(index, "duplicate_cell")?;
 
 			let factor_value = i8_type.const_int(factor as u64, false);
 
-			self.builder
-				.build_int_mul(value, factor_value, "duplicate_cell_mul")?
-		};
-
-		for index in indices.iter().copied() {
-			let other_value = self.load(index, "duplicate_cell")?;
-
-			let added_together =
+			let factored_value =
 				self.builder
-					.build_int_add(other_value, value, "duplicate_cell_add")?;
+					.build_int_mul(value, factor_value, "duplicate_cell_mul")?;
 
-			self.store(added_together, index, "duplicate_cell")?;
+			let modified_current_value =
+				self.builder
+					.build_int_add(other_value, factored_value, "duplicate_cell_add")?;
+
+			self.store(modified_current_value, index, "duplicate_cell")?;
 		}
 
 		Ok(())

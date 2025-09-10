@@ -1,4 +1,4 @@
-use std::{iter, num::NonZero};
+use std::iter;
 
 use frick_utils::GetOrZero as _;
 
@@ -140,28 +140,17 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 		[BrainIr::ChangeCell(-1, None), rest @ ..]
 			if rest.iter().all(|i| matches!(i, BrainIr::ChangeCell(..))) =>
 		{
-			let mut x = None;
-
-			let mut indices = Vec::new();
+			let mut values = Vec::new();
 
 			for op in rest {
 				let BrainIr::ChangeCell(value, offset) = op else {
 					unreachable!()
 				};
 
-				if x.is_none() {
-					x = NonZero::new(*value);
-				} else if x.get_or_zero() != *value {
-					return None;
-				}
-
-				indices.push(offset.get_or_zero());
+				values.push((*value, offset.get_or_zero()));
 			}
 
-			Some(Change::replace(BrainIr::duplicate_cell(
-				x.get_or_zero(),
-				indices,
-			)))
+			Some(Change::replace(BrainIr::duplicate_cell(values)))
 		}
 		_ => None,
 	}
