@@ -131,6 +131,9 @@ impl Assembler for LlvmAssembler {
 			)
 			.map_err(AssemblyError::backend)?;
 
+		info!("writing unoptimized LLVM bitcode");
+		module.write_bitcode_to_path(output_path.join("unoptimized.bc"));
+
 		let pass_options = PassBuilderOptions::create();
 
 		pass_options.set_verify_each(true);
@@ -150,6 +153,11 @@ impl Assembler for LlvmAssembler {
 			.run_passes(&self.passes, &target_machine, pass_options)
 			.map_err(AssemblyError::backend)?;
 
+		info!("writing optimized LLVM IR");
+		module
+			.print_to_file(output_path.join("optimized.ll"))
+			.map_err(AssemblyError::backend)?;
+
 		info!("writing optimized asm");
 		target_machine
 			.write_to_file(
@@ -159,11 +167,8 @@ impl Assembler for LlvmAssembler {
 			)
 			.map_err(AssemblyError::backend)?;
 
-		info!("writing optimized LLVM IR");
-
-		module
-			.print_to_file(output_path.join("optimized.ll"))
-			.map_err(AssemblyError::backend)?;
+		info!("writing optimized LLVM bitcode");
+		module.write_bitcode_to_path(output_path.join("optimized.bc"));
 
 		module.verify().map_err(AssemblyError::backend)?;
 
