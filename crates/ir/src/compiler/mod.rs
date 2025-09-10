@@ -64,11 +64,12 @@ impl Compiler {
 		self.pass_info("combine relavent instructions");
 		*progress |= run_peephole_pass(self, passes::optimize_consecutive_instructions);
 
-		self.pass_info("adding relavent offsets");
+		self.pass_info("add relavent offsets");
 		*progress |= run_peephole_pass(self, passes::add_offsets);
 
-		self.pass_info("fixing beginning instructions");
+		self.pass_info("fix boundary instructions");
 		*progress |= passes::fix_beginning_instructions(self);
+		*progress |= passes::fix_ending_instructions(self);
 
 		self.pass_info("optimize clear-cell instructions");
 		*progress |= run_loop_pass(self, passes::clear_cell);

@@ -77,6 +77,19 @@ pub fn fix_beginning_instructions(ops: &mut Vec<BrainIr>) -> bool {
 	}
 }
 
+pub fn fix_ending_instructions(ops: &mut Vec<BrainIr>) -> bool {
+	let Some(last) = ops.last() else {
+		return false;
+	};
+
+	if last.has_output() {
+		false
+	} else {
+		ops.remove(ops.len() - 1);
+		true
+	}
+}
+
 pub fn add_offsets(ops: &[BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
@@ -378,7 +391,10 @@ pub fn optimize_mem_ops(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::mem_set(*a, range)))
 		}
-		[BrainIr::MemSet { value: a, range }, BrainIr::SetCell(b, x)] if *a == *b => {
+		[BrainIr::MemSet { value: a, range }, BrainIr::SetCell(b, x)]
+		| [BrainIr::SetCell(b, x), BrainIr::MemSet { value: a, range }]
+			if *a == *b =>
+		{
 			let x = x.get_or_zero();
 			let start = *range.start();
 			let end = *range.end();

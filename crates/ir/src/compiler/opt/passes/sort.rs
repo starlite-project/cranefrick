@@ -36,6 +36,6 @@ fn sorter_key(i: &BrainIr) -> (u8, i32, i32) {
 
 			(2, min.abs(), min)
 		}
-		_ => unreachable!()
+		_ => unreachable!(),
 	}
 }
