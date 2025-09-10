@@ -23,6 +23,7 @@ loop-rotate
 function(loop-mssa(licm))
 simple-loop-unswitch
 aggressive-instcombine
+break-crit-edges
 loop-simplify
 lcssa
 loop-idiom
