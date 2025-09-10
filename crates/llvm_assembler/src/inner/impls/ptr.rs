@@ -21,18 +21,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_load(ptr_type, self.ptr, "offset_ptr_load")?
 			.into_int_value();
 
-		if let Some(instr) = current_ptr.as_instruction() {
-			let range_metadata_id = self.context().get_kind_id("range");
-			let range_metadata_node = self.context().metadata_node(&[
-				ptr_type.const_zero().into(),
-				ptr_type.const_int(TAPE_SIZE as u64, false).into(),
-			]);
-
-			instr
-				.set_metadata(range_metadata_node, range_metadata_id)
-				.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
-		}
-
 		if matches!(offset, 0) {
 			return Ok(current_ptr);
 		}

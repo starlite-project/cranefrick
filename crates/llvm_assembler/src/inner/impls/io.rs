@@ -36,20 +36,14 @@ impl InnerAssembler<'_> {
 
 	pub fn output_char(&self, c: u8) -> Result<(), LlvmAssemblyError> {
 		let char_to_put = {
-			let i8_type = self.context().i8_type();
+			let i32_type = self.context().i32_type();
 
-			i8_type.const_int(c.into(), false)
+			i32_type.const_int(c.into(), false)
 		};
-
-		let i32_type = self.context().i32_type();
-
-		let extended_char =
-			self.builder
-				.build_int_z_extend(char_to_put, i32_type, "output_char_extend")?;
 
 		self.builder.build_direct_call(
 			self.functions.putchar,
-			&[extended_char.into()],
+			&[char_to_put.into()],
 			"output_char_call",
 		)?;
 
