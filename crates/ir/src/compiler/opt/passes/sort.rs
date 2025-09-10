@@ -34,8 +34,8 @@ fn sorter_key(i: &BrainIr) -> (u8, i32, i32) {
 
 			let min = cmp::min(start, end);
 
-			(1, min.abs(), min)
+			(2, min.abs(), min)
 		}
-		_ => (0, 0, 0),
+		_ => unreachable!()
 	}
 }
