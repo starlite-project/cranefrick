@@ -90,6 +90,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 			*range.start()
 		};
 
+		let current_offset = self.offset_ptr(range_start)?;
+
+		let gep = self.gep(i8_type, current_offset, "duplicate_cell_vectorized")?;
+
+		let loaded_values = self
+			.builder
+			.build_load(i8_vector_type, gep, "duplicate_cell_vectorized_load")?
+			.into_vector_value();
+
 		let vector_of_current_cells = {
 			let tmp = self.builder.build_insert_element(
 				undef,
@@ -146,17 +155,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			vector_of_new_values,
 			"duplicate_cell_vectorized_mul",
 		)?;
-
-		let current_offset = self.offset_ptr(range_start)?;
-
-		let gep = self.gep(i8_type, current_offset, "duplicate_cell_vectorized")?;
-
-		// self.builder.build_store(gep, multiplied)?;
-
-		let loaded_values = self
-			.builder
-			.build_load(i8_vector_type, gep, "duplicate_cell_vectorized_load")?
-			.into_vector_value();
 
 		let modified_vector_of_values = self.builder.build_int_add(
 			multiplied,
