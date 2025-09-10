@@ -48,7 +48,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn fetch_value_from(&self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let other_cell= self.load(offset, "fetch_value_from")?;
+		let other_cell = self.load(offset, "fetch_value_from")?;
 
 		self.store_value(0, offset, "fetch_value_from")?;
 
@@ -71,7 +71,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn replace_value_from(&self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let other_cell= self.load(offset, "replace_value_from")?;
+		let other_cell = self.load(offset, "replace_value_from")?;
 
 		self.store_value(0, offset, "replace_value_from")?;
 

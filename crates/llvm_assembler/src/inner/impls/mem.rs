@@ -1,9 +1,8 @@
 use std::{fmt::Display, ops::RangeInclusive};
 
 use inkwell::{
-	builder::Builder,
 	types::BasicType,
-	values::{FunctionValue, IntValue, PointerValue},
+	values::{IntValue, PointerValue},
 };
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
@@ -16,37 +15,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let current_offset = self.offset_ptr(offset)?;
-
-		let current_gep = self.gep(i8_type, current_offset, format!("{fn_name}_load"))?;
+		self.load_into(offset, format!("{fn_name}"))?;
 
 		let loaded_value = self
 			.builder
-			.build_load(i8_type, current_gep, &format!("{fn_name}_load_load"))?
+			.build_load(i8_type, self.load, &format!("{fn_name}_load_load"))?
 			.into_int_value();
-
-		if let Some(instr) = loaded_value.as_instruction() {
-			let noundef_metadata_id = self.context().get_kind_id("noundef");
-			let noalias_metadata_id = self.context().get_kind_id("noalias");
-			let empty_metadata_node = self.context().metadata_node(&[]);
-
-			instr
-				.set_metadata(empty_metadata_node, noundef_metadata_id)
-				.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
-
-			instr
-				.set_metadata(empty_metadata_node, noalias_metadata_id)
-				.map_err(|_| LlvmAssemblyError::InvalidMetadata)?;
-		}
 
 		Ok(loaded_value)
 	}
 
-	pub fn load_into(
-		&self,
-		slot: PointerValue<'ctx>,
-		offset: i32,
-	) -> Result<(), LlvmAssemblyError> {
+	fn load_into(&self, offset: i32, fn_name: String) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 		let i8_size = {
 			let i64_type = self.context().i64_type();
@@ -56,9 +35,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_offset = self.offset_ptr(offset)?;
 
-		let value = self.gep(i8_type, current_offset, "load_into")?;
+		let value = self.gep(i8_type, current_offset, format!("{fn_name}_load_into"))?;
 
-		self.builder.build_memcpy(slot, 1, value, 1, i8_size)?;
+		self.builder.build_memcpy(self.load, 1, value, 1, i8_size)?;
 
 		Ok(())
 	}
@@ -95,23 +74,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let i8_size = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(1, false)
-		};
-
-		let new_alloca_slot = self
-			.builder
-			.build_alloca(i8_type, &format!("{fn_name}_alloca"))?;
-
-		self.builder.build_call(
-			self.functions.lifetime.start,
-			&[i8_size.into(), new_alloca_slot.into()],
-			"",
-		)?;
-
-		self.builder.build_store(new_alloca_slot, value)?;
+		self.builder.build_store(self.store, value)?;
 
 		let current_offset = self.offset_ptr(offset)?;
 
@@ -120,15 +83,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder.build_memcpy(
 			current_tape_value,
 			1,
-			new_alloca_slot,
+			self.store,
 			1,
 			self.context().i64_type().const_int(1, false),
-		)?;
-
-		self.builder.build_call(
-			self.functions.lifetime.end,
-			&[i8_size.into(), new_alloca_slot.into()],
-			"",
 		)?;
 
 		Ok(())

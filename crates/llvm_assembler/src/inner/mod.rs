@@ -22,6 +22,8 @@ pub struct InnerAssembler<'ctx> {
 	functions: Functions<'ctx>,
 	tape: PointerValue<'ctx>,
 	ptr: PointerValue<'ctx>,
+	load: PointerValue<'ctx>,
+	store: PointerValue<'ctx>,
 	ptr_int_type: IntType<'ctx>,
 }
 
@@ -34,9 +36,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let basic_block = context.append_basic_block(functions.main, "entry");
 		builder.position_at_end(basic_block);
 
+		let i8_type = context.i8_type();
 		let ptr_int_type = context.i64_type();
+		let i8_size = {
+			let i64_type = context.i64_type();
+
+			i64_type.const_int(1, false)
+		};
+
 		let tape = {
-			let i8_type = context.i8_type();
 			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
 			let array_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
@@ -73,12 +81,42 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_alloca
 		};
 
+		let load = {
+			let load_alloca = builder.build_alloca(i8_type, "load")?;
+
+			builder.build_call(
+				functions.lifetime.start,
+				&[i8_size.into(), load_alloca.into()],
+				"",
+			)?;
+
+			builder.build_store(load_alloca, i8_type.const_zero())?;
+
+			load_alloca
+		};
+
+		let store = {
+			let store_alloca = builder.build_alloca(i8_type, "store")?;
+
+			builder.build_call(
+				functions.lifetime.start,
+				&[i8_size.into(), store_alloca.into()],
+				"",
+			)?;
+
+			builder.build_store(store_alloca, i8_type.const_zero())?;
+
+			store_alloca
+		};
+
 		Ok(Self {
 			module,
 			builder,
 			functions,
 			tape,
 			ptr,
+			load,
+			store,
 			ptr_int_type,
 		})
 	}
@@ -93,17 +131,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
 		self.ops(ops)?;
 
-		let i64_size = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(8, false)
-		};
+		let i64_type = self.context().i64_type();
+		let i64_size = i64_type.const_int(8, false);
 
 		let tape_size = {
 			let ptr_int_type = self.ptr_int_type;
 
-			ptr_int_type.const_int(30_000, false)
+			ptr_int_type.const_int(TAPE_SIZE as u64, false)
 		};
+
+		let i8_size = i64_type.const_int(1, false);
 
 		self.builder
 			.build_call(
@@ -116,6 +153,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_call(
 				self.functions.lifetime.end,
 				&[i64_size.into(), self.ptr.into()],
+				"",
+			)
+			.map_err(AssemblyError::backend)?;
+		self.builder
+			.build_call(
+				self.functions.lifetime.end,
+				&[i8_size.into(), self.load.into()],
+				"",
+			)
+			.map_err(AssemblyError::backend)?;
+		self.builder
+			.build_call(
+				self.functions.lifetime.end,
+				&[i8_size.into(), self.store.into()],
 				"",
 			)
 			.map_err(AssemblyError::backend)?;

@@ -22,7 +22,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn sub_cell(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let subtractor= self.load(0, "sub_cell")?;
+		let subtractor = self.load(0, "sub_cell")?;
 
 		self.store_value(0, 0, "sub_cell")?;
 
