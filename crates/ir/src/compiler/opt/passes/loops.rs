@@ -150,6 +150,8 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 				values.push((*value, offset.get_or_zero()));
 			}
 
+			values.sort_by_key(|(.., offset)| *offset);
+
 			Some(Change::replace(BrainIr::duplicate_cell(values)))
 		}
 		_ => None,

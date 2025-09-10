@@ -167,14 +167,10 @@ pub fn optimize_move_value(ops: &[BrainIr; 2]) -> Option<Change> {
 pub fn optimize_move_value_from_duplicate_cells(ops: &[BrainIr; 1]) -> Option<Change> {
 	match ops {
 		[BrainIr::DuplicateCell { values }] if matches!(values.len(), 1) => {
-			// let index = indices.first().copied()?;
+			let data = values.first().copied()?;
 
-			// Some(Change::replace(BrainIr::move_value_to(
-			// 	*factor as u8,
-			// 	index,
-			// )))
-
-			let (value, index) = values.first().copied()?;
+			let value = data.factor();
+			let index = data.offset();
 
 			if value.is_negative() {
 				None

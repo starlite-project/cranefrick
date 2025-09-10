@@ -1,13 +1,14 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
 mod compiler;
+mod dupe;
 
 use std::{num::NonZero, ops::RangeInclusive};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
-pub use self::compiler::*;
+pub use self::{compiler::*, dupe::*};
 
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -43,9 +44,7 @@ pub enum BrainIr {
 		range: RangeInclusive<i32>,
 	},
 	DuplicateCell {
-		// factor: i8,
-		// indices: Vec<i32>,
-		values: Vec<(i8, i32)>,
+		values: Vec<DuplicateCellData>,
 	},
 }
 
@@ -219,7 +218,10 @@ impl BrainIr {
 	#[must_use]
 	pub fn duplicate_cell(values: impl IntoIterator<Item = (i8, i32)>) -> Self {
 		Self::DuplicateCell {
-			values: values.collect_to(),
+			values: values
+				.into_iter()
+				.map(|(factor, offset)| DuplicateCellData::new(factor, offset))
+				.collect(),
 		}
 	}
 
