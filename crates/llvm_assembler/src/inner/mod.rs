@@ -90,8 +90,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"",
 			)?;
 
-			builder.build_store(load_alloca, i8_type.const_zero())?;
-
 			load_alloca
 		};
 
@@ -103,8 +101,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 				&[i8_size.into(), store_alloca.into()],
 				"",
 			)?;
-
-			builder.build_store(store_alloca, i8_type.const_zero())?;
 
 			store_alloca
 		};
