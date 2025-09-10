@@ -1,10 +1,10 @@
 use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
-use inkwell::{IntPredicate, values::InstructionValue};
+use inkwell::IntPredicate;
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
-impl<'ctx> InnerAssembler<'ctx> {
+impl InnerAssembler<'_> {
 	pub fn if_not_zero(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let body_block = self
 			.context()
@@ -73,12 +73,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_int_compare(IntPredicate::NE, value, zero, "dynamic_loop_cmp")
 			.map_err(AssemblyError::backend)?;
 
-		let br = self
-			.builder
+		self.builder
 			.build_conditional_branch(cmp, body_block, next_block)
 			.map_err(AssemblyError::backend)?;
-
-		self.add_loop_metadata(br)?;
 
 		self.builder.position_at_end(body_block);
 
@@ -120,11 +117,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_int_compare(IntPredicate::NE, value, zero, "find_zero_cmp")?;
 
-		let br = self
-			.builder
+		self.builder
 			.build_conditional_branch(cmp, body_block, next_block)?;
-
-		self.add_loop_metadata(br)?;
 
 		self.builder.position_at_end(body_block);
 
@@ -135,13 +129,5 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder.position_at_end(next_block);
 
 		Ok(())
-	}
-
-	fn add_loop_metadata(&self, br: InstructionValue<'ctx>) -> Result<(), LlvmAssemblyError> {
-		let llvm_loop_metadata_id = self.context().get_kind_id("llvm.loop");
-		let metadata_node = self.context().metadata_node(&[]);
-
-		br.set_metadata(metadata_node, llvm_loop_metadata_id)
-			.map_err(|_| LlvmAssemblyError::InvalidMetadata)
 	}
 }
