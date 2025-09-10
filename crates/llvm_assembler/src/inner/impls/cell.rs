@@ -1,7 +1,7 @@
 use std::ops::RangeInclusive;
 
 use frick_ir::DuplicateCellData;
-use inkwell::values::IntValue;
+use inkwell::{types::VectorType, values::IntValue};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -116,38 +116,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		let vector_of_new_values = {
-			let first_data_value = {
-				let first = values.first().copied().unwrap();
+			let mut vec_of_values_for_vector = Vec::with_capacity(values.len());
 
-				i8_type.const_int(first.factor() as u64, false)
-			};
-
-			let mut vec = self.builder.build_insert_element(
-				undef,
-				first_data_value,
-				zero_index,
-				"duplicate_cell_vectorized_insertelement",
-			)?;
-
-			for (i, factor) in values
-				.iter()
-				.copied()
-				.map(DuplicateCellData::factor)
-				.enumerate()
-				.skip(1)
-			{
-				let index = i64_type.const_int(i as u64, false);
+			for factor in values.iter().copied().map(DuplicateCellData::factor) {
 				let factor = i8_type.const_int(factor as u64, false);
 
-				vec = self.builder.build_insert_element(
-					vec,
-					factor,
-					index,
-					"duplicate_cell_vectorized_insertelement",
-				)?;
+				vec_of_values_for_vector.push(factor);
 			}
 
-			vec
+			VectorType::const_vector(&vec_of_values_for_vector)
 		};
 
 		let multiplied = self.builder.build_int_mul(
