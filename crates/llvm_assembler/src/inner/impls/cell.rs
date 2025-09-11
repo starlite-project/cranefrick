@@ -11,7 +11,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn change_cell(&self, value: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let current_cell_value = self.load(offset, "change_cell")?;
+		let (current_cell_value, gep) = self.load_from(offset, "change_cell")?;
 
 		let value_to_add = {
 			let i8_type = self.context().i8_type();
@@ -23,21 +23,19 @@ impl InnerAssembler<'_> {
 			self.builder
 				.build_int_add(current_cell_value, value_to_add, "change_cell_add")?;
 
-		self.store(added, offset, "change_cell")
+		self.store_into(added, gep)
 	}
 
 	pub fn sub_cell(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let subtractor = self.load(0, "sub_cell")?;
+		let subtractor = self.take(0, "sub_cell")?;
 
-		self.store_value(0, 0, "sub_cell")?;
-
-		let other_value = self.load(offset, "sub_cell")?;
+		let (other_value, gep) = self.load_from(offset, "sub_cell")?;
 
 		let value_to_store = self
 			.builder
 			.build_int_sub(other_value, subtractor, "sub_cell_sub")?;
 
-		self.store(value_to_store, offset, "sub_cell")
+		self.store_into(value_to_store, gep)
 	}
 
 	pub fn duplicate_cell(&self, values: &[DuplicateCellData]) -> Result<(), LlvmAssemblyError> {
@@ -54,10 +52,10 @@ impl InnerAssembler<'_> {
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let value = self.load(0, "duplicate_cell_iterated")?;
+		let value = self.take(0, "duplicate_cell_iterated")?;
 
 		for (factor, index) in values.iter().copied().map(DuplicateCellData::into_parts) {
-			let other_value = self.load(index, "duplicate_cell_iterated")?;
+			let (other_value, gep) = self.load_from(index, "duplicate_cell_iterated")?;
 
 			let factor_value = i8_type.const_int(factor as u64, false);
 
@@ -71,10 +69,10 @@ impl InnerAssembler<'_> {
 				"duplicate_cell_iterated_add",
 			)?;
 
-			self.store(modified_other_value, index, "duplicate_cell_iterated")?;
+			self.store_into(modified_other_value, gep)?;
 		}
 
-		self.store_value(0, 0, "duplicate_cell_iterated")
+		Ok(())
 	}
 
 	fn duplicate_cell_vectorized(
@@ -85,7 +83,7 @@ impl InnerAssembler<'_> {
 		let i64_type = self.context().i64_type();
 		let i8_vector_type = i8_type.vec_type(values.len() as u32);
 
-		let current_cell_value = self.load(0, "duplicate_cell_vectorized")?;
+		let current_cell_value = self.take(0, "duplicate_cell_vectorized")?;
 
 		let zero_index = i64_type.const_zero();
 		let undef = i8_vector_type.get_undef();
@@ -146,7 +144,6 @@ impl InnerAssembler<'_> {
 		)?;
 
 		self.builder.build_store(gep, modified_vector_of_values)?;
-		self.store_value(0, 0, "duplicate_cell_vectorized")?;
 
 		Ok(())
 	}
