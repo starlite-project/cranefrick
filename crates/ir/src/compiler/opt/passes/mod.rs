@@ -150,6 +150,16 @@ pub fn remove_offsets(ops: &[BrainIr; 2]) -> Option<Change> {
 				BrainIr::change_cell(*a),
 			]))
 		}
+		[
+			BrainIr::OutputCell {
+				offset,
+				value_offset,
+			},
+			BrainIr::MovePointer(y),
+		] if offset.get_or_zero() == *y => Some(Change::swap([
+			BrainIr::move_pointer(*y),
+			BrainIr::output_offset_cell(value_offset.get_or_zero()),
+		])),
 		_ => None,
 	}
 }
