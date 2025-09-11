@@ -162,23 +162,70 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
+		// let i8_type = self.context().i8_type();
+
+		// let values_to_set = {
+		// 	let mut vec_of_values = Vec::with_capacity(values.len());
+
+		// 	for value in values.iter().copied() {
+		// 		vec_of_values.push(i8_type.const_int(value.into(), false));
+		// 	}
+
+		// 	VectorType::const_vector(&vec_of_values)
+		// };
+
+		// let current_offset = self.offset_ptr(start)?;
+
+		// let gep = self.gep(i8_type, current_offset, "set_many_cells")?;
+
+		// self.builder.build_store(gep, values_to_set)?;
+
 		let i8_type = self.context().i8_type();
 
-		let values_to_set = {
-			let mut vec_of_values = Vec::with_capacity(values.len());
+		let array_len_value = {
+			let i64_type = self.context().i64_type();
 
-			for value in values.iter().copied() {
-				vec_of_values.push(i8_type.const_int(value.into(), false));
-			}
-
-			VectorType::const_vector(&vec_of_values)
+			i64_type.const_int(values.len() as u64, false)
 		};
+
+		self.builder.build_call(
+			self.functions.lifetime.start,
+			&[array_len_value.into(), self.scratch_buffer.into()],
+			"",
+		)?;
+
+		for (i, value) in values.iter().copied().enumerate().map(|(i, v)| {
+			let ptr_int_type = self.ptr_int_type;
+
+			(
+				ptr_int_type.const_int(i as u64, false),
+				i8_type.const_int(v.into(), false),
+			)
+		}) {
+			let gep = unsafe {
+				self.builder.build_in_bounds_gep(
+					i8_type,
+					self.scratch_buffer,
+					&[i],
+					"set_many_cells_gep",
+				)?
+			};
+
+			self.builder.build_store(gep, value)?;
+		}
 
 		let current_offset = self.offset_ptr(start)?;
 
 		let gep = self.gep(i8_type, current_offset, "set_many_cells")?;
 
-		self.builder.build_store(gep, values_to_set)?;
+		self.builder
+			.build_memcpy(gep, 1, self.scratch_buffer, 1, array_len_value)?;
+
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[array_len_value.into(), self.scratch_buffer.into()],
+			"",
+		)?;
 
 		Ok(())
 	}

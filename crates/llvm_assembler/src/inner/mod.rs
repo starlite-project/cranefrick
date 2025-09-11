@@ -22,6 +22,7 @@ pub struct InnerAssembler<'ctx> {
 	functions: Functions<'ctx>,
 	tape: PointerValue<'ctx>,
 	ptr: PointerValue<'ctx>,
+	scratch_buffer: PointerValue<'ctx>,
 	ptr_int_type: IntType<'ctx>,
 }
 
@@ -74,12 +75,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_alloca
 		};
 
+		let scratch_buffer = builder.build_alloca(i8_type.array_type(64), "scratch")?;
+
 		Ok(Self {
 			module,
 			builder,
 			functions,
 			tape,
 			ptr,
+			scratch_buffer,
 			ptr_int_type,
 		})
 	}
