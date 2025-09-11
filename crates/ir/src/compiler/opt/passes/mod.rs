@@ -37,7 +37,7 @@ pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 		}
 		[BrainIr::SetCell(.., None), BrainIr::InputIntoCell] => Some(Change::remove_offset(0)),
 		[l, BrainIr::SetCell(0, None)] if l.is_zeroing_cell() => Some(Change::remove_offset(1)),
-		[BrainIr::SetCell(.., x), BrainIr::MemSet { range, .. }]
+		[BrainIr::SetCell(.., x), BrainIr::SetRange { range, .. }]
 			if range.contains(&x.get_or_zero()) =>
 		{
 			Some(Change::remove_offset(0))
@@ -126,9 +126,9 @@ pub fn add_offsets(ops: &[BrainIr; 3]) -> Option<Change> {
 		])),
 		[
 			BrainIr::MovePointer(x),
-			BrainIr::MemSet { range, value },
+			BrainIr::SetRange { range, value },
 			BrainIr::MovePointer(y),
-		] if *x == -y => Some(Change::replace(BrainIr::mem_set(
+		] if *x == -y => Some(Change::replace(BrainIr::set_range(
 			*value,
 			range.start().wrapping_add(*x)..=range.end().wrapping_add(*x),
 		))),
@@ -413,12 +413,16 @@ pub fn optimize_mem_ops(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			let range = min..=max;
 
-			Some(Change::replace(BrainIr::mem_set(*a, range)))
+			Some(Change::replace(BrainIr::set_range(*a, range)))
 		}
-		[BrainIr::MemSet { value: a, range }, BrainIr::SetCell(b, x)]
-		| [BrainIr::SetCell(b, x), BrainIr::MemSet { value: a, range }]
-			if *a == *b =>
-		{
+		[
+			BrainIr::SetRange { value: a, range },
+			BrainIr::SetCell(b, x),
+		]
+		| [
+			BrainIr::SetCell(b, x),
+			BrainIr::SetRange { value: a, range },
+		] if *a == *b => {
 			let x = x.get_or_zero();
 			let start = *range.start();
 			let end = *range.end();
@@ -432,28 +436,73 @@ pub fn optimize_mem_ops(ops: &[BrainIr; 2]) -> Option<Change> {
 
 			let range = min..=max;
 
-			Some(Change::replace(BrainIr::mem_set(*a, range)))
+			Some(Change::replace(BrainIr::set_range(*a, range)))
 		}
 		[
-			BrainIr::MemSet { range: x, value: a },
-			BrainIr::MemSet { range: y, value: b },
+			BrainIr::SetRange { range: x, value: a },
+			BrainIr::SetRange { range: y, value: b },
 		] if x.end().wrapping_add(1) == *y.start() && *a == *b => Some(Change::replace(
-			BrainIr::mem_set(*a, (*x.start())..=(*y.end())),
+			BrainIr::set_range(*a, (*x.start())..=(*y.end())),
 		)),
 		[
-			BrainIr::MemSet { range: x, value: a },
-			BrainIr::MemSet { range: y, value: b },
+			BrainIr::SetRange { range: x, value: a },
+			BrainIr::SetRange { range: y, value: b },
 		] if y.end().wrapping_add(1) == *x.start() && *a == *b => Some(Change::replace(
-			BrainIr::mem_set(*a, (*y.start())..=(*x.end())),
+			BrainIr::set_range(*a, (*y.start())..=(*x.end())),
 		)),
 		[
-			BrainIr::MemSet { range: x, .. },
-			BrainIr::MemSet { range: y, .. },
+			BrainIr::SetRange { range: x, .. },
+			BrainIr::SetRange { range: y, .. },
 		] if x == y => Some(Change::remove_offset(0)),
 		[
 			BrainIr::ChangeCell(.., offset) | BrainIr::SetCell(.., offset),
-			BrainIr::MemSet { range, .. },
+			BrainIr::SetRange { range, .. },
 		] if range.contains(&offset.get_or_zero()) => Some(Change::remove_offset(0)),
+		[BrainIr::SetCell(a, x), BrainIr::SetCell(b, y)] => {
+			let x = x.get_or_zero();
+			let y = y.get_or_zero();
+			let min = cmp::min(x, y);
+			let max = cmp::max(x, y);
+
+			if !matches!((max - min).unsigned_abs(), 1) {
+				return None;
+			}
+
+			let (a, b) = if x == min { (*a, *b) } else { (*b, *a) };
+
+			Some(Change::replace(BrainIr::set_many_cells([a, b], min)))
+		}
+		[
+			BrainIr::SetManyCells { values, start },
+			BrainIr::SetCell(a, x),
+		]
+		| [
+			BrainIr::SetCell(a, x),
+			BrainIr::SetManyCells { values, start },
+		] => {
+			let x = x.get_or_zero();
+			let start = start.get_or_zero();
+			let end = start.wrapping_add_unsigned(values.len() as u32);
+
+			if x != end {
+				return None;
+			}
+
+			Some(Change::replace(BrainIr::set_many_cells(
+				values.iter().copied().chain(iter::once(*a)),
+				start,
+			)))
+		}
+		[
+			BrainIr::SetManyCells {
+				values: a,
+				start: x,
+			},
+			BrainIr::SetManyCells {
+				values: b,
+				start: y,
+			},
+		] if *x == *y && a.len() == b.len() => Some(Change::remove_offset(0)),
 		_ => None,
 	}
 }

@@ -39,9 +39,13 @@ pub enum BrainIr {
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
-	MemSet {
+	SetRange {
 		value: u8,
 		range: RangeInclusive<i32>,
+	},
+	SetManyCells {
+		values: Vec<u8>,
+		start: Option<NonZero<i32>>,
 	},
 	DuplicateCell {
 		values: Vec<DuplicateCellData>,
@@ -90,7 +94,7 @@ impl BrainIr {
 				| Self::SubCell(..)
 				| Self::IfNotZero(..)
 				| Self::DuplicateCell { .. }
-		) || matches!(self, Self::MemSet { value: 0, range } if range.contains(&0))
+		) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
 	}
 
 	#[must_use]
@@ -211,8 +215,16 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn mem_set(value: u8, range: RangeInclusive<i32>) -> Self {
-		Self::MemSet { value, range }
+	pub const fn set_range(value: u8, range: RangeInclusive<i32>) -> Self {
+		Self::SetRange { value, range }
+	}
+
+	#[must_use]
+	pub fn set_many_cells(values: impl IntoIterator<Item = u8>, offset: i32) -> Self {
+		Self::SetManyCells {
+			values: values.collect_to(),
+			start: NonZero::new(offset),
+		}
 	}
 
 	#[must_use]

@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::RangeInclusive};
+use std::fmt::Display;
 
 use inkwell::{
 	types::BasicType,
@@ -117,29 +117,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let gep = self.gep(i8_type, current_offset, fn_name)?;
 		self.store_into_inner(value, gep)
-	}
-
-	pub fn mem_set(&self, value: u8, range: RangeInclusive<i32>) -> Result<(), LlvmAssemblyError> {
-		let start = *range.start();
-		let range_len = range.count();
-		let i8_type = self.context().i8_type();
-
-		let range_len_value = {
-			let ptr_int_type = self.ptr_int_type;
-
-			ptr_int_type.const_int(range_len as u64, false)
-		};
-
-		let start_value = self.offset_ptr(start)?;
-
-		let value_value = i8_type.const_int(value.into(), false);
-
-		let gep = self.gep(i8_type, start_value, "mem_set")?;
-
-		self.builder
-			.build_memset(gep, 1, value_value, range_len_value)?;
-
-		Ok(())
 	}
 
 	pub fn gep<T>(

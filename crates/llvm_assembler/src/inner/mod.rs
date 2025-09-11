@@ -161,7 +161,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 					self.replace_value_from(*factor, *offset)?;
 				}
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
-				BrainIr::MemSet { value, range } => self.mem_set(*value, range.clone())?,
+				BrainIr::SetRange { value, range } => self.set_range(*value, range.clone())?,
+				BrainIr::SetManyCells { values, start } => {
+					self.set_many_cells(values, start.get_or_zero())?;
+				}
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

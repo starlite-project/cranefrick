@@ -8,7 +8,10 @@ pub fn sort_changes<const N: usize>(ops: &[BrainIr; N]) -> Option<Change> {
 	if !ops.iter().all(|i| {
 		matches!(
 			i,
-			BrainIr::SetCell(..) | BrainIr::ChangeCell(..) | BrainIr::MemSet { .. }
+			BrainIr::SetCell(..)
+				| BrainIr::ChangeCell(..)
+				| BrainIr::SetRange { .. }
+				| BrainIr::SetManyCells { .. }
 		)
 	}) {
 		return None;
@@ -28,13 +31,18 @@ fn sorter_key(i: &BrainIr) -> (Priority, i32, i32) {
 
 			(Priority::High, offset.abs(), offset)
 		}
-		BrainIr::MemSet { range, .. } => {
+		BrainIr::SetRange { range, .. } => {
 			let start = *range.start();
 			let end = *range.end();
 
 			let min = cmp::min(start, end);
 
 			(Priority::Low, min.abs(), min)
+		}
+		BrainIr::SetManyCells { start, .. } => {
+			let start = start.get_or_zero();
+
+			(Priority::Low, start.abs(), start)
 		}
 		_ => unreachable!(),
 	}

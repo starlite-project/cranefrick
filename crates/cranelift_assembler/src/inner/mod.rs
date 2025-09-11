@@ -135,7 +135,7 @@ impl<'a> InnerAssembler<'a> {
 					self.replace_value_from(*factor, *offset);
 				}
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor),
-				BrainIr::MemSet { value, range } => self.mem_set(*value, range.clone()),
+				BrainIr::SetRange { value, range } => self.set_range(*value, range.clone()),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

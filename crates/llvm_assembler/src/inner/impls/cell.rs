@@ -160,6 +160,55 @@ impl InnerAssembler<'_> {
 		self.builder.build_store(gep, modified_vector_of_values)?;
 		self.store_value_into(0, current_cell_gep)
 	}
+
+	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
+		let i8_type = self.context().i8_type();
+
+		let values_to_set = {
+			let mut vec_of_values = Vec::with_capacity(values.len());
+
+			for value in values.iter().copied() {
+				vec_of_values.push(i8_type.const_int(value.into(), false));
+			}
+
+			VectorType::const_vector(&vec_of_values)
+		};
+
+		let current_offset = self.offset_ptr(start)?;
+
+		let gep = self.gep(i8_type, current_offset, "set_many_cells")?;
+
+		self.builder.build_store(gep, values_to_set)?;
+
+		Ok(())
+	}
+
+	pub fn set_range(
+		&self,
+		value: u8,
+		range: RangeInclusive<i32>,
+	) -> Result<(), LlvmAssemblyError> {
+		let start = *range.start();
+		let range_len = range.count();
+		let i8_type = self.context().i8_type();
+
+		let range_len_value = {
+			let ptr_int_type = self.ptr_int_type;
+
+			ptr_int_type.const_int(range_len as u64, false)
+		};
+
+		let start_value = self.offset_ptr(start)?;
+
+		let value_value = i8_type.const_int(value.into(), false);
+
+		let gep = self.gep(i8_type, start_value, "mem_set")?;
+
+		self.builder
+			.build_memset(gep, 1, value_value, range_len_value)?;
+
+		Ok(())
+	}
 }
 
 fn is_vectorizable(values: &[DuplicateCellData]) -> bool {

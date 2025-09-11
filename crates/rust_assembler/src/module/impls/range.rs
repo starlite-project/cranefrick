@@ -5,7 +5,7 @@ use frick_assembler::TAPE_SIZE;
 use crate::RustInterpreterModule;
 
 impl RustInterpreterModule<'_> {
-	pub(crate) fn mem_set(
+	pub(crate) fn set_range(
 		value: u8,
 		range: RangeInclusive<i32>,
 		memory: &mut [u8; TAPE_SIZE],
