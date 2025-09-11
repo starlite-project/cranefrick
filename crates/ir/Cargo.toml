@@ -26,7 +26,7 @@ serde = { workspace = true, default-features = false, features = [
 tracing = { workspace = true, features = ["attributes"] }
 
 [dev-dependencies]
-criterion = "0.7"
+criterion.workspace = true
 
 [[bench]]
 harness = false
