@@ -1,1 +1,1 @@
-cat ./out/optimized.asm | llvm-mca -bottleneck-analysis -all-stats -all-views -show-encoding > ./out/analysis.txt
+cat ./out/optimized.asm | llvm-mca -bottleneck-analysis -all-stats -all-views -show-encoding -noalias=false > ./out/analysis.txt
