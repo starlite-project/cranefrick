@@ -132,17 +132,30 @@ impl InnerAssembler<'_> {
 			VectorType::const_vector(&vec_of_values_for_vector)
 		};
 
-		let multiplied = self.builder.build_int_mul(
-			vector_of_current_cells,
-			vector_of_new_values,
-			"duplicate_cell_vectorized_mul",
-		)?;
+		let modified_vector_of_values = if values
+			.iter()
+			.copied()
+			.map(DuplicateCellData::factor)
+			.all(|x| matches!(x, 1))
+		{
+			self.builder.build_int_add(
+				loaded_values,
+				vector_of_current_cells,
+				"duplicate_cell_vectorized_add",
+			)?
+		} else {
+			let multiplied = self.builder.build_int_mul(
+				vector_of_current_cells,
+				vector_of_new_values,
+				"duplicate_cell_vectorized_add",
+			)?;
 
-		let modified_vector_of_values = self.builder.build_int_add(
-			multiplied,
-			loaded_values,
-			"duplicate_cell_vectorized_add",
-		)?;
+			self.builder.build_int_add(
+				loaded_values,
+				multiplied,
+				"duplicate_cell_vectorized_add",
+			)?
+		};
 
 		self.builder.build_store(gep, modified_vector_of_values)?;
 		self.store_value_into(0, current_cell_gep)
