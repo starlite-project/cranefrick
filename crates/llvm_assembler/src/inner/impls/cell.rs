@@ -177,11 +177,11 @@ fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
 		}
 	}
 
-	if range.count() != values.len() {
-		return false;
+	if range.count() == values.len() {
+		values.len().is_power_of_two()
+	} else {
+		false
 	}
-
-	true
 }
 
 fn get_range(values: &[DuplicateCellData]) -> Option<RangeInclusive<i32>> {
