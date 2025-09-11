@@ -1,11 +1,11 @@
 use std::ops::RangeInclusive;
 
 use frick_ir::DuplicateCellData;
-use inkwell::{types::VectorType, values::IntValue};
+use inkwell::types::VectorType;
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
-impl<'ctx> InnerAssembler<'ctx> {
+impl InnerAssembler<'_> {
 	pub fn set_cell(&self, value: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
 		self.store_value(value, offset, "set_cell")
 	}
@@ -41,45 +41,51 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn duplicate_cell(&self, values: &[DuplicateCellData]) -> Result<(), LlvmAssemblyError> {
+		if is_range(values) {
+			self.duplicate_cell_vectorized(values)
+		} else {
+			self.duplicate_cell_iterated(values)
+		}
+	}
+
+	fn duplicate_cell_iterated(
+		&self,
+		values: &[DuplicateCellData],
+	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let value = self.load(0, "duplicate_cell")?;
+		let value = self.load(0, "duplicate_cell_iterated")?;
 
-		self.store_value(0, 0, "duplicate_cell")?;
+		for (factor, index) in values.iter().copied().map(DuplicateCellData::into_parts) {
+			let other_value = self.load(index, "duplicate_cell_iterated")?;
 
-		if is_range(values) {
-			self.duplicate_cell_vectorized(value, values)
-		} else {
-			for (factor, index) in values.iter().copied().map(DuplicateCellData::into_parts) {
-				let other_value = self.load(index, "duplicate_cell")?;
+			let factor_value = i8_type.const_int(factor as u64, false);
 
-				let factor_value = i8_type.const_int(factor as u64, false);
+			let factored_value =
+				self.builder
+					.build_int_mul(value, factor_value, "duplicate_cell_iterated_mul")?;
 
-				let factored_value =
-					self.builder
-						.build_int_mul(value, factor_value, "duplicate_cell_mul")?;
+			let modified_other_value = self.builder.build_int_add(
+				other_value,
+				factored_value,
+				"duplicate_cell_iterated_add",
+			)?;
 
-				let modified_current_value = self.builder.build_int_add(
-					other_value,
-					factored_value,
-					"duplicate_cell_add",
-				)?;
-
-				self.store(modified_current_value, index, "duplicate_cell")?;
-			}
-
-			Ok(())
+			self.store(modified_other_value, index, "duplicate_cell_iterated")?;
 		}
+
+		self.store_value(0, 0, "duplicate_cell_iterated")
 	}
 
 	fn duplicate_cell_vectorized(
 		&self,
-		current_cell_value: IntValue<'ctx>,
 		values: &[DuplicateCellData],
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 		let i64_type = self.context().i64_type();
 		let i8_vector_type = i8_type.vec_type(values.len() as u32);
+
+		let current_cell_value = self.load(0, "duplicate_cell_vectorized")?;
 
 		let zero_index = i64_type.const_zero();
 		let undef = i8_vector_type.get_undef();
@@ -140,6 +146,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		)?;
 
 		self.builder.build_store(gep, modified_vector_of_values)?;
+		self.store_value(0, 0, "duplicate_cell_vectorized")?;
 
 		Ok(())
 	}
