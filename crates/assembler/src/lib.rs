@@ -94,7 +94,7 @@ pub trait AssembledModule {
 
 pub trait InnerAssemblyError {}
 
-pub const TAPE_SIZE: usize = 30_000;
+pub const TAPE_SIZE: usize = 32768;
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn frick_assembler_write(value: u32) {
