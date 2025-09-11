@@ -57,6 +57,8 @@ impl Compiler {
 
 		self.run_all_passes(&mut progress);
 
+		self.shrink_to_fit();
+
 		progress
 	}
 
