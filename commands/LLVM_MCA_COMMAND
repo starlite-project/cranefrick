@@ -1,0 +1,1 @@
+cat ./out/optimized.asm | llvm-mca -bottleneck-analysis > ./out/analysis.txt
