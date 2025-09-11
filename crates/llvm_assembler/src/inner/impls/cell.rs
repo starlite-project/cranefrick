@@ -39,7 +39,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn duplicate_cell(&self, values: &[DuplicateCellData]) -> Result<(), LlvmAssemblyError> {
-		if is_range(values) {
+		if is_vectorizable(values) {
 			self.duplicate_cell_vectorized(values)
 		} else {
 			self.duplicate_cell_iterated(values)
@@ -149,7 +149,7 @@ impl InnerAssembler<'_> {
 	}
 }
 
-fn is_range(values: &[DuplicateCellData]) -> bool {
+fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
 	if values.len() <= 1 {
 		return false;
 	}
