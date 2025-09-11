@@ -96,7 +96,13 @@ impl Compiler {
 		*progress |= run_peephole_pass(self, passes::unroll_basic_dynamic_loop);
 
 		self.pass_info("sorting cell changes");
-		*progress |= run_peephole_pass(self, passes::sort_changes);
+		*progress |= run_peephole_pass(self, passes::sort_changes::<8>);
+		*progress |= run_peephole_pass(self, passes::sort_changes::<7>);
+		*progress |= run_peephole_pass(self, passes::sort_changes::<6>);
+		*progress |= run_peephole_pass(self, passes::sort_changes::<5>);
+		*progress |= run_peephole_pass(self, passes::sort_changes::<4>);
+		*progress |= run_peephole_pass(self, passes::sort_changes::<3>);
+		*progress |= run_peephole_pass(self, passes::sort_changes::<2>);
 
 		self.pass_info("optimize scale and shift value instructions");
 		*progress |= run_loop_pass(self, passes::optimize_move_value_from_loop);
