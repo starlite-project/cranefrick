@@ -67,6 +67,10 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn replace_value_from(&self, factor: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
+		if matches!(factor, 1) {
+			return self.replace_value_from_memmove(offset)
+		}
+
 		let other_cell = self.take(offset, "replace_value_from")?;
 
 		let value_to_store = {
@@ -79,6 +83,36 @@ impl InnerAssembler<'_> {
 		}?;
 
 		self.store(value_to_store, 0, "replace_value_from")
+	}
+
+	fn replace_value_from_memmove(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
+		let i8_type = self.context().i8_type();
+
+		// let current_offset = self.offset_ptr(offset)?;
+
+		// let gep = self.gep(i8_type, offset, "replace_value_from_memmove")?;
+
+		let current_cell_gep = {
+			let ptr = self.offset_ptr(0)?;
+
+			self.gep(i8_type, ptr, "replace_value_from_memmove")?
+		};
+
+		let other_value_gep = {
+			let ptr = self.offset_ptr(offset)?;
+
+			self.gep(i8_type, ptr, "replace_value_from_memmove")?
+		};
+
+		let one_value = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(1, false)
+		};
+
+		self.builder.build_memmove(current_cell_gep, 1, other_value_gep, 1, one_value)?;
+
+		self.store_value_into(0, other_value_gep)
 	}
 
 	pub fn scale_value(&self, factor: u8) -> Result<(), LlvmAssemblyError> {
