@@ -297,10 +297,6 @@ impl InnerAssembler<'_> {
 }
 
 fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
-	if !is_vector_size(values) {
-		return false;
-	}
-
 	let Some(range) = get_range(values) else {
 		return false;
 	};
@@ -311,11 +307,9 @@ fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
 		}
 	}
 
-	if range.count() == values.len() {
-		values.len().is_power_of_two()
-	} else {
-		false
-	}
+	let len_of_values = values.len();
+
+	range.count() == len_of_values && len_of_values.is_power_of_two() && is_vector_size(values)
 }
 
 fn get_range(values: &[DuplicateCellData]) -> Option<RangeInclusive<i32>> {
