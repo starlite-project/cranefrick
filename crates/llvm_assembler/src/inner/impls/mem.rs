@@ -130,6 +130,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 	{
 		let basic_type = ty.as_basic_type_enum();
 
+		assert!(basic_type.is_array_type() || basic_type.is_int_type());
+
 		let gep = if basic_type.is_array_type() {
 			let zero = {
 				let ptr_int_type = self.ptr_int_type;

@@ -1,7 +1,8 @@
 use std::ops::RangeInclusive;
 
+use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use frick_ir::DuplicateCellData;
-use inkwell::types::VectorType;
+use inkwell::{targets::ByteOrdering, types::VectorType};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -162,12 +163,107 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
+		if is_int_size(values) {
+			tracing::info!("made it, values = {values:?}");
+
+			self.set_many_cells_vectorized(values, start)
+		} else if values.len() <= 64 {
+			self.set_many_cells_scratch(values, start)
+		} else {
+			self.set_many_cells_iterated(values, start)
+		}
+	}
+
+	fn set_many_cells_vectorized(
+		&self,
+		mut values: &[u8],
+		start: i32,
+	) -> Result<(), LlvmAssemblyError> {
+		assert!(is_int_size(values));
+
+		let is_big_endian = {
+			let target_data = self.target_machine.get_target_data();
+
+			matches!(target_data.get_byte_ordering(), ByteOrdering::BigEndian)
+		};
+
+		let int_value = match values.len() {
+			2 => {
+				let i16_type = self.context().i16_type();
+
+				i16_type.const_int(
+					if is_big_endian {
+						values.read_u16::<BigEndian>().unwrap()
+					} else {
+						values.read_u16::<LittleEndian>().unwrap()
+					}
+					.into(),
+					false,
+				)
+			}
+			4 => {
+				let i32_type = self.context().i32_type();
+
+				i32_type.const_int(
+					if is_big_endian {
+						values.read_u32::<BigEndian>().unwrap()
+					} else {
+						values.read_u32::<LittleEndian>().unwrap()
+					}
+					.into(),
+					false,
+				)
+			}
+			8 => {
+				let i64_type = self.context().i64_type();
+
+				i64_type.const_int(
+					if is_big_endian {
+						values.read_u64::<BigEndian>().unwrap()
+					} else {
+						values.read_u64::<LittleEndian>().unwrap()
+					},
+					false,
+				)
+			}
+			16 => {
+				let i128_type = self.context().i128_type();
+
+				i128_type.const_int(
+					if is_big_endian {
+						values.read_u128::<BigEndian>().unwrap()
+					} else {
+						values.read_u128::<LittleEndian>().unwrap()
+					} as u64,
+					false,
+				)
+			}
+			_ => unreachable!(),
+		};
+
+		self.store(int_value, start, "set_many_cells_vectorized")
+	}
+
+	fn set_many_cells_iterated(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
+		for (i, value) in values.iter().copied().enumerate() {
+			self.store_value(
+				value,
+				start.wrapping_add_unsigned(i as u32),
+				"set_many_cells_iterated",
+			)?;
+		}
+
+		Ok(())
+	}
+
+	fn set_many_cells_scratch(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
 		assert!(
 			values.len() <= 64,
 			"too many values (this shouldn't happen)"
 		);
 
 		let i8_type = self.context().i8_type();
+		let ptr_int_type = self.ptr_int_type;
 
 		let array_len_value = {
 			let i64_type = self.context().i64_type();
@@ -182,8 +278,6 @@ impl InnerAssembler<'_> {
 		)?;
 
 		for (i, value) in values.iter().copied().enumerate().map(|(i, v)| {
-			let ptr_int_type = self.ptr_int_type;
-
 			(
 				ptr_int_type.const_int(i as u64, false),
 				i8_type.const_int(v.into(), false),
@@ -275,4 +369,8 @@ fn get_range(values: &[DuplicateCellData]) -> Option<RangeInclusive<i32>> {
 	let last = values.last().copied()?;
 
 	Some(first.offset()..=last.offset())
+}
+
+const fn is_int_size(values: &[u8]) -> bool {
+	matches!(values.len(), 2 | 4 | 8 | 16)
 }

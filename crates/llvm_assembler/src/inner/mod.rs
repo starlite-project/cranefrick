@@ -9,6 +9,7 @@ use inkwell::{
 	context::{Context, ContextRef},
 	intrinsics::Intrinsic,
 	module::{Linkage, Module},
+	targets::TargetMachine,
 	types::IntType,
 	values::{FunctionValue, PointerValue},
 };
@@ -24,10 +25,14 @@ pub struct InnerAssembler<'ctx> {
 	ptr: PointerValue<'ctx>,
 	scratch_buffer: PointerValue<'ctx>,
 	ptr_int_type: IntType<'ctx>,
+	target_machine: TargetMachine,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn new(context: &'ctx Context) -> Result<Self, LlvmAssemblyError> {
+	pub fn new(
+		context: &'ctx Context,
+		target_machine: TargetMachine,
+	) -> Result<Self, LlvmAssemblyError> {
 		let module = context.create_module("frick");
 		let functions = Functions::new(context, &module)?;
 		let builder = context.create_builder();
@@ -85,6 +90,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr,
 			scratch_buffer,
 			ptr_int_type,
+			target_machine,
 		})
 	}
 
@@ -95,7 +101,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn assemble(
 		self,
 		ops: &[BrainIr],
-	) -> Result<(Module<'ctx>, Functions<'ctx>), AssemblyError<LlvmAssemblyError>> {
+	) -> Result<(Module<'ctx>, Functions<'ctx>, TargetMachine), AssemblyError<LlvmAssemblyError>> {
 		self.ops(ops)?;
 
 		let i64_size = {
@@ -128,6 +134,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder
 			.build_return(None)
 			.map_err(AssemblyError::backend)?;
+
+		let data_layout = self.target_machine.get_target_data().get_data_layout();
+
+		let target_triple = {
+			let default_target = TargetMachine::get_default_triple();
+
+			TargetMachine::normalize_triple(&default_target)
+		};
+
+		self.module.set_data_layout(&data_layout);
+		self.module.set_triple(&target_triple);
 
 		Ok(self.into_parts())
 	}
@@ -176,8 +193,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>) {
-		(self.module, self.functions)
+	fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>, TargetMachine) {
+		(self.module, self.functions, self.target_machine)
 	}
 }
 

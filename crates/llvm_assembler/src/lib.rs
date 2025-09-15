@@ -104,18 +104,9 @@ impl Assembler for LlvmAssembler {
 
 		info!("lowering into LLVM IR");
 
-		let assembler = InnerAssembler::new(&self.context)?;
+		let assembler = InnerAssembler::new(&self.context, target_machine)?;
 
-		let (module, Functions { main, .. }) = assembler.assemble(ops)?;
-
-		let data_layout = {
-			let target_data = target_machine.get_target_data();
-
-			target_data.get_data_layout()
-		};
-
-		module.set_data_layout(&data_layout);
-		module.set_triple(&target_triple);
+		let (module, Functions { main, .. }, target_machine) = assembler.assemble(ops)?;
 
 		info!("writing unoptimized LLVM IR");
 		module
