@@ -287,7 +287,7 @@ impl InnerAssembler<'_> {
 
 		let value_value = i8_type.const_int(value.into(), false);
 
-		let gep = self.gep(i8_type, start_value, "mem_set")?;
+		let gep = self.gep(i8_type, start_value, "set_range")?;
 
 		self.builder
 			.build_memset(gep, 1, value_value, range_len_value)?;
@@ -297,6 +297,10 @@ impl InnerAssembler<'_> {
 }
 
 fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
+	if !is_vector_size(values) {
+		return false;
+	}
+
 	let Some(range) = get_range(values) else {
 		return false;
 	};
@@ -309,7 +313,7 @@ fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
 
 	let len_of_values = values.len();
 
-	range.count() == len_of_values && len_of_values.is_power_of_two() && is_vector_size(values)
+	range.count() == len_of_values && len_of_values.is_power_of_two()
 }
 
 fn get_range(values: &[DuplicateCellData]) -> Option<RangeInclusive<i32>> {
