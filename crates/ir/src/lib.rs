@@ -33,6 +33,7 @@ pub enum BrainIr {
 	OutputChar(u8),
 	OutputChars(Vec<u8>),
 	MoveValueTo(MoveOptions),
+	CopyValueTo(MoveOptions),
 	TakeValueTo(MoveOptions),
 	FetchValueFrom(MoveOptions),
 	ReplaceValueFrom(MoveOptions),
@@ -107,6 +108,7 @@ impl BrainIr {
 				| Self::SubCell(..)
 				| Self::IfNotZero(..)
 				| Self::DuplicateCell { .. }
+				| Self::CopyValueTo(..)
 		)
 	}
 
@@ -202,6 +204,11 @@ impl BrainIr {
 	#[must_use]
 	pub const fn move_value_to(value: u8, offset: i32) -> Self {
 		Self::MoveValueTo(MoveOptions::new(value, offset))
+	}
+
+	#[must_use]
+	pub const fn copy_value_to(value: u8, offset: i32) -> Self {
+		Self::CopyValueTo(MoveOptions::new(value, offset))
 	}
 
 	#[must_use]

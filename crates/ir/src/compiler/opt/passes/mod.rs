@@ -230,6 +230,43 @@ pub fn optimize_replace_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
+pub fn optimize_copy_value(ops: &[BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::DuplicateCell { values },
+			BrainIr::ReplaceValueFrom(options),
+		] => {
+			if !values
+				.iter()
+				.any(|v| v.offset() == options.offset() && matches!(v.factor(), 1))
+			{
+				return None;
+			}
+
+			if !matches!(values.len(), 2) {
+				return None;
+			}
+
+			let other_move_options = {
+				let offset = values
+					.iter()
+					.position(|x| x.offset() != options.offset() && x.factor().is_positive())?;
+
+				values.get(offset).copied()?
+			};
+
+			Some(Change::swap([
+				BrainIr::copy_value_to(
+					*other_move_options.factor() as u8,
+					other_move_options.offset(),
+				),
+				BrainIr::FetchValueFrom(*options),
+			]))
+		}
+		_ => None,
+	}
+}
+
 pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
@@ -338,6 +375,14 @@ pub fn optimize_constant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 			Some(Change::swap([
 				BrainIr::clear_cell(),
 				BrainIr::set_cell_at(*a, y.get()),
+			]))
+		}
+		[BrainIr::SetCell(a, x), BrainIr::ReplaceValueFrom(options)]
+			if x.get_or_zero() == options.offset() =>
+		{
+			Some(Change::swap([
+				BrainIr::clear_cell_at(x.get_or_zero()),
+				BrainIr::set_cell(a.wrapping_mul(*options.factor())),
 			]))
 		}
 		_ => None,

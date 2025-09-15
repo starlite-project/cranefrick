@@ -170,6 +170,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::IfNotZero(ops) => self.if_not_zero(ops)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
 				BrainIr::MoveValueTo(options) => self.move_value_to(*options)?,
+				BrainIr::CopyValueTo(options) => self.copy_value_to(*options)?,
 				BrainIr::TakeValueTo(options) => self.take_value_to(*options)?,
 				BrainIr::FetchValueFrom(options) => {
 					self.fetch_value_from(*options)?;

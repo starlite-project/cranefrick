@@ -1,25 +1,44 @@
 use frick_ir::MoveOptions;
+use inkwell::values::{IntValue, PointerValue};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
-impl InnerAssembler<'_> {
+impl<'ctx> InnerAssembler<'ctx> {
 	pub fn move_value_to(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
 		let current_value = self.take(0, "move_value_to")?;
 
 		let (other_cell, gep) = self.load_from(options.offset(), "move_value_to")?;
 
+		self.duplicate_value_to(current_value, other_cell, *options.factor(), gep)
+	}
+
+	pub fn copy_value_to(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
+		let current_value = self.load(0, "copy_value_to")?;
+
+		let (other_cell, gep) = self.load_from(options.offset(), "copy_value_to")?;
+
+		self.duplicate_value_to(current_value, other_cell, *options.factor(), gep)
+	}
+
+	fn duplicate_value_to(
+		&self,
+		current_value: IntValue<'ctx>,
+		other_value: IntValue<'ctx>,
+		factor: u8,
+		gep: PointerValue<'ctx>,
+	) -> Result<(), LlvmAssemblyError> {
 		let value_to_add = {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int((*options.factor()).into(), false);
+			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(current_value, factor, "move_value_to_mul")?
+				.build_int_mul(current_value, factor, "duplicate_value_to_mul")?
 		};
 
-		let added = self
-			.builder
-			.build_int_add(other_cell, value_to_add, "move_value_to_add")?;
+		let added =
+			self.builder
+				.build_int_add(other_value, value_to_add, "duplicate_value_to_add")?;
 
 		self.store_into(added, gep)
 	}

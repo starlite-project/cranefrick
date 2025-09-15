@@ -113,6 +113,7 @@ impl Compiler {
 		*progress |= run_peephole_pass(self, passes::optimize_take_value);
 		*progress |= run_peephole_pass(self, passes::optimize_fetch_value);
 		*progress |= run_peephole_pass(self, passes::optimize_replace_value);
+		*progress |= run_peephole_pass(self, passes::optimize_copy_value);
 
 		self.pass_info("optimize write calls");
 		*progress |= run_peephole_pass(self, passes::optimize_writes);
