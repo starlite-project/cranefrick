@@ -8,7 +8,6 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-byteorder = "1"
 frick_assembler.workspace = true
 frick_ir.workspace = true
 frick_utils = { workspace = true, features = ["get_or_zero"] }

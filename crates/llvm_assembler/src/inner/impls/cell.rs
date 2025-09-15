@@ -1,8 +1,7 @@
 use std::ops::RangeInclusive;
 
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use frick_ir::DuplicateCellData;
-use inkwell::{targets::ByteOrdering, types::VectorType};
+use inkwell::types::VectorType;
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -163,7 +162,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
-		if is_int_size(values) {
+		if is_vector_size(values) {
 			tracing::info!("made it, values = {values:?}");
 
 			self.set_many_cells_vectorized(values, start)
@@ -176,72 +175,30 @@ impl InnerAssembler<'_> {
 
 	fn set_many_cells_vectorized(
 		&self,
-		mut values: &[u8],
+		values: &[u8],
 		start: i32,
 	) -> Result<(), LlvmAssemblyError> {
-		assert!(is_int_size(values));
+		assert!(is_vector_size(values));
 
-		let is_big_endian = {
-			let target_data = self.target_machine.get_target_data();
+		let i8_type = self.context().i8_type();
 
-			matches!(target_data.get_byte_ordering(), ByteOrdering::BigEndian)
+		let vector_of_values = {
+			let vec_of_values = values
+				.iter()
+				.copied()
+				.map(|v| i8_type.const_int(v.into(), false))
+				.collect::<Vec<_>>();
+
+			VectorType::const_vector(&vec_of_values)
 		};
 
-		let int_value = match values.len() {
-			2 => {
-				let i16_type = self.context().i16_type();
+		let current_offset = self.offset_ptr(start)?;
 
-				i16_type.const_int(
-					if is_big_endian {
-						values.read_u16::<BigEndian>().unwrap()
-					} else {
-						values.read_u16::<LittleEndian>().unwrap()
-					}
-					.into(),
-					false,
-				)
-			}
-			4 => {
-				let i32_type = self.context().i32_type();
+		let gep = self.gep(i8_type, current_offset, "set_many_cells_vectorized")?;
 
-				i32_type.const_int(
-					if is_big_endian {
-						values.read_u32::<BigEndian>().unwrap()
-					} else {
-						values.read_u32::<LittleEndian>().unwrap()
-					}
-					.into(),
-					false,
-				)
-			}
-			8 => {
-				let i64_type = self.context().i64_type();
+		self.builder.build_store(gep, vector_of_values)?;
 
-				i64_type.const_int(
-					if is_big_endian {
-						values.read_u64::<BigEndian>().unwrap()
-					} else {
-						values.read_u64::<LittleEndian>().unwrap()
-					},
-					false,
-				)
-			}
-			16 => {
-				let i128_type = self.context().i128_type();
-
-				i128_type.const_int(
-					if is_big_endian {
-						values.read_u128::<BigEndian>().unwrap()
-					} else {
-						values.read_u128::<LittleEndian>().unwrap()
-					} as u64,
-					false,
-				)
-			}
-			_ => unreachable!(),
-		};
-
-		self.store(int_value, start, "set_many_cells_vectorized")
+		Ok(())
 	}
 
 	fn set_many_cells_iterated(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
@@ -340,7 +297,7 @@ impl InnerAssembler<'_> {
 }
 
 fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
-	if values.len() <= 1 {
+	if !is_vector_size(values) {
 		return false;
 	}
 
@@ -371,6 +328,6 @@ fn get_range(values: &[DuplicateCellData]) -> Option<RangeInclusive<i32>> {
 	Some(first.offset()..=last.offset())
 }
 
-const fn is_int_size(values: &[u8]) -> bool {
-	matches!(values.len(), 2 | 4 | 8 | 16)
+const fn is_vector_size<T>(values: &[T]) -> bool {
+	matches!(values.len(), 2 | 4 | 8 | 16 | 32 | 64)
 }
