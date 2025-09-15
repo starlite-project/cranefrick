@@ -41,17 +41,17 @@ impl RustInterpreterModule<'_> {
 			BrainIr::DynamicLoop(ops) => Self::dynamic_loop(ops, memory, ptr),
 			BrainIr::IfNotZero(ops) => Self::if_not_zero(ops, memory, ptr),
 			BrainIr::FindZero(offset) => Self::find_zero(*offset, memory, ptr),
-			BrainIr::MoveValueTo(factor, offset) => {
-				Self::move_value_to(*factor, *offset, memory, *ptr);
+			BrainIr::MoveValueTo(options) => {
+				Self::move_value_to(*options, memory, *ptr);
 			}
-			BrainIr::TakeValueTo(factor, offset) => {
-				Self::take_value_to(*factor, *offset, memory, ptr);
+			BrainIr::TakeValueTo(options) => {
+				Self::take_value_to(*options, memory, ptr);
 			}
-			BrainIr::FetchValueFrom(factor, offset) => {
-				Self::fetch_value_from(*factor, *offset, memory, *ptr);
+			BrainIr::FetchValueFrom(options) => {
+				Self::fetch_value_from(*options, memory, *ptr);
 			}
-			BrainIr::ReplaceValueFrom(factor, offset) => {
-				Self::replace_value_from(*factor, *offset, memory, *ptr);
+			BrainIr::ReplaceValueFrom(options) => {
+				Self::replace_value_from(*options, memory, *ptr);
 			}
 			BrainIr::ScaleValue(factor) => Self::scale_value(*factor, memory, *ptr),
 			BrainIr::SetRange { value, range } => {

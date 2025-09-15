@@ -169,13 +169,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
 				BrainIr::IfNotZero(ops) => self.if_not_zero(ops)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
-				BrainIr::MoveValueTo(factor, offset) => self.move_value_to(*factor, *offset)?,
-				BrainIr::TakeValueTo(factor, offset) => self.take_value_to(*factor, *offset)?,
-				BrainIr::FetchValueFrom(factor, offset) => {
-					self.fetch_value_from(*factor, *offset)?;
+				BrainIr::MoveValueTo(options) => self.move_value_to(*options)?,
+				BrainIr::TakeValueTo(options) => self.take_value_to(*options)?,
+				BrainIr::FetchValueFrom(options) => {
+					self.fetch_value_from(*options)?;
 				}
-				BrainIr::ReplaceValueFrom(factor, offset) => {
-					self.replace_value_from(*factor, *offset)?;
+				BrainIr::ReplaceValueFrom(options) => {
+					self.replace_value_from(*options)?;
 				}
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
 				BrainIr::SetRange { value, range } => self.set_range(*value, range.clone())?,

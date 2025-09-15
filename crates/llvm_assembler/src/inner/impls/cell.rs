@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use frick_ir::DuplicateCellData;
+use frick_ir::MoveOptions;
 use inkwell::types::VectorType;
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
@@ -38,7 +38,7 @@ impl InnerAssembler<'_> {
 		self.store_into(value_to_store, gep)
 	}
 
-	pub fn duplicate_cell(&self, values: &[DuplicateCellData]) -> Result<(), LlvmAssemblyError> {
+	pub fn duplicate_cell(&self, values: &[MoveOptions<i8>]) -> Result<(), LlvmAssemblyError> {
 		if is_vectorizable(values) {
 			self.duplicate_cell_vectorized(values)
 		} else {
@@ -48,13 +48,13 @@ impl InnerAssembler<'_> {
 
 	fn duplicate_cell_iterated(
 		&self,
-		values: &[DuplicateCellData],
+		values: &[MoveOptions<i8>],
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let (value, value_gep) = self.load_from(0, "duplicate_cell_iterated")?;
 
-		for (factor, index) in values.iter().copied().map(DuplicateCellData::into_parts) {
+		for (factor, index) in values.iter().copied().map(MoveOptions::into_parts) {
 			let (other_value, gep) = self.load_from(index, "duplicate_cell_iterated")?;
 
 			let factor_value = i8_type.const_int(factor as u64, false);
@@ -77,7 +77,7 @@ impl InnerAssembler<'_> {
 
 	fn duplicate_cell_vectorized(
 		&self,
-		values: &[DuplicateCellData],
+		values: &[MoveOptions<i8>],
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 		let i64_type = self.context().i64_type();
@@ -123,7 +123,7 @@ impl InnerAssembler<'_> {
 		let vector_of_new_values = {
 			let mut vec_of_values_for_vector = Vec::with_capacity(values.len());
 
-			for factor in values.iter().copied().map(DuplicateCellData::factor) {
+			for factor in values.iter().map(MoveOptions::factor).copied() {
 				let factor = i8_type.const_int(factor as u64, false);
 
 				vec_of_values_for_vector.push(factor);
@@ -134,8 +134,8 @@ impl InnerAssembler<'_> {
 
 		let modified_vector_of_values = if values
 			.iter()
+			.map(MoveOptions::factor)
 			.copied()
-			.map(DuplicateCellData::factor)
 			.all(|x| matches!(x, 1))
 		{
 			self.builder.build_int_add(
@@ -205,7 +205,7 @@ impl InnerAssembler<'_> {
 	}
 }
 
-fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
+fn is_vectorizable(values: &[MoveOptions<i8>]) -> bool {
 	if !is_vector_size(values) {
 		return false;
 	}
@@ -214,7 +214,7 @@ fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
 		return false;
 	};
 
-	for offset in values.iter().copied().map(DuplicateCellData::offset) {
+	for offset in values.iter().map(MoveOptions::offset) {
 		if !range.contains(&offset) {
 			return false;
 		}
@@ -225,7 +225,7 @@ fn is_vectorizable(values: &[DuplicateCellData]) -> bool {
 	range.count() == len_of_values && len_of_values.is_power_of_two()
 }
 
-fn get_range(values: &[DuplicateCellData]) -> Option<RangeInclusive<i32>> {
+fn get_range(values: &[MoveOptions<i8>]) -> Option<RangeInclusive<i32>> {
 	assert!(values.len() > 1);
 
 	let first = values.first().copied()?;

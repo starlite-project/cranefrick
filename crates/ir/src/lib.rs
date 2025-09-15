@@ -1,14 +1,14 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
 mod compiler;
-mod dupe;
+mod move_options;
 
 use std::{num::NonZero, ops::RangeInclusive};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
-pub use self::{compiler::*, dupe::*};
+pub use self::{compiler::*, move_options::*};
 
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -32,10 +32,10 @@ pub enum BrainIr {
 	},
 	OutputChar(u8),
 	OutputChars(Vec<u8>),
-	MoveValueTo(u8, i32),
-	TakeValueTo(u8, i32),
-	FetchValueFrom(u8, i32),
-	ReplaceValueFrom(u8, i32),
+	MoveValueTo(MoveOptions<u8>),
+	TakeValueTo(MoveOptions<u8>),
+	FetchValueFrom(MoveOptions<u8>),
+	ReplaceValueFrom(MoveOptions<u8>),
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
@@ -48,7 +48,7 @@ pub enum BrainIr {
 		start: Option<NonZero<i32>>,
 	},
 	DuplicateCell {
-		values: Vec<DuplicateCellData>,
+		values: Vec<MoveOptions<i8>>,
 	},
 }
 
@@ -186,22 +186,22 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn fetch_value_from(value: u8, offset: i32) -> Self {
-		Self::FetchValueFrom(value, offset)
+		Self::FetchValueFrom(MoveOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn replace_value_from(value: u8, offset: i32) -> Self {
-		Self::ReplaceValueFrom(value, offset)
+		Self::ReplaceValueFrom(MoveOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn take_value_to(value: u8, offset: i32) -> Self {
-		Self::TakeValueTo(value, offset)
+		Self::TakeValueTo(MoveOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn move_value_to(value: u8, offset: i32) -> Self {
-		Self::MoveValueTo(value, offset)
+		Self::MoveValueTo(MoveOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -232,7 +232,7 @@ impl BrainIr {
 		Self::DuplicateCell {
 			values: values
 				.into_iter()
-				.map(|(factor, offset)| DuplicateCellData::new(factor, offset))
+				.map(|(factor, offset)| MoveOptions::new(factor, offset))
 				.collect(),
 		}
 	}
