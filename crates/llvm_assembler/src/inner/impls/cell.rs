@@ -162,108 +162,17 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
-		if is_vector_size(values) {
-			tracing::info!("made it, values = {values:?}");
-
-			self.set_many_cells_vectorized(values, start)
-		} else if values.len() <= 64 {
-			self.set_many_cells_scratch(values, start)
-		} else {
-			self.set_many_cells_iterated(values, start)
-		}
-	}
-
-	fn set_many_cells_vectorized(
-		&self,
-		values: &[u8],
-		start: i32,
-	) -> Result<(), LlvmAssemblyError> {
-		assert!(is_vector_size(values));
-
 		let i8_type = self.context().i8_type();
 
-		let vector_of_values = {
-			let vec_of_values = values
-				.iter()
-				.copied()
-				.map(|v| i8_type.const_int(v.into(), false))
-				.collect::<Vec<_>>();
+		let vec_of_values = values.iter().copied().map(|v| i8_type.const_int(v.into(), false)).collect::<Vec<_>>();
 
-			VectorType::const_vector(&vec_of_values)
-		};
-
-		let current_offset = self.offset_ptr(start)?;
-
-		let gep = self.gep(i8_type, current_offset, "set_many_cells_vectorized")?;
-
-		self.builder.build_store(gep, vector_of_values)?;
-
-		Ok(())
-	}
-
-	fn set_many_cells_iterated(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
-		for (i, value) in values.iter().copied().enumerate() {
-			self.store_value(
-				value,
-				start.wrapping_add_unsigned(i as u32),
-				"set_many_cells_iterated",
-			)?;
-		}
-
-		Ok(())
-	}
-
-	fn set_many_cells_scratch(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
-		assert!(
-			values.len() <= 64,
-			"too many values (this shouldn't happen)"
-		);
-
-		let i8_type = self.context().i8_type();
-		let ptr_int_type = self.ptr_int_type;
-
-		let array_len_value = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(values.len() as u64, false)
-		};
-
-		self.builder.build_call(
-			self.functions.lifetime.start,
-			&[array_len_value.into(), self.scratch_buffer.into()],
-			"",
-		)?;
-
-		for (i, value) in values.iter().copied().enumerate().map(|(i, v)| {
-			(
-				ptr_int_type.const_int(i as u64, false),
-				i8_type.const_int(v.into(), false),
-			)
-		}) {
-			let gep = unsafe {
-				self.builder.build_in_bounds_gep(
-					i8_type,
-					self.scratch_buffer,
-					&[i],
-					"set_many_cells_gep",
-				)?
-			};
-
-			self.builder.build_store(gep, value)?;
-		}
+		let constant_array = i8_type.const_array(&vec_of_values);
 
 		let current_offset = self.offset_ptr(start)?;
 
 		let gep = self.gep(i8_type, current_offset, "set_many_cells")?;
 
-		self.builder
-			.build_memcpy(gep, 1, self.scratch_buffer, 1, array_len_value)?;
-
-		self.builder.build_call(
-			self.functions.lifetime.end,
-			&[array_len_value.into(), self.scratch_buffer.into()],
-			"",
-		)?;
+		self.builder.build_store(gep, constant_array)?;
 
 		Ok(())
 	}
