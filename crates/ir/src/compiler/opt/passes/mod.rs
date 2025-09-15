@@ -502,7 +502,7 @@ pub fn optimize_mem_ops(ops: &[BrainIr; 2]) -> Option<Change> {
 				values: b,
 				start: y,
 			},
-		] if *x == *y && a.len() == b.len() => Some(Change::remove_offset(0)),
+		] if *x == *y && a.len() <= b.len() => Some(Change::remove_offset(0)),
 		_ => None,
 	}
 }
