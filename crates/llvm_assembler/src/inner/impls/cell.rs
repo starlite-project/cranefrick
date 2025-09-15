@@ -162,23 +162,7 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
-		// let i8_type = self.context().i8_type();
-
-		// let values_to_set = {
-		// 	let mut vec_of_values = Vec::with_capacity(values.len());
-
-		// 	for value in values.iter().copied() {
-		// 		vec_of_values.push(i8_type.const_int(value.into(), false));
-		// 	}
-
-		// 	VectorType::const_vector(&vec_of_values)
-		// };
-
-		// let current_offset = self.offset_ptr(start)?;
-
-		// let gep = self.gep(i8_type, current_offset, "set_many_cells")?;
-
-		// self.builder.build_store(gep, values_to_set)?;
+		assert!(values.len() <= 64, "too many values (this shouldn't happen)");
 
 		let i8_type = self.context().i8_type();
 
