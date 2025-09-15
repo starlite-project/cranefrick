@@ -14,7 +14,9 @@ impl InnerAssembler<'_> {
 
 		let other_cell = self.load(options.offset());
 
-		let value_to_add = self.ins().imul_imm(current_value, i64::from(*options.factor()));
+		let value_to_add = self
+			.ins()
+			.imul_imm(current_value, i64::from(*options.factor()));
 
 		let added = self.ins().iadd(other_cell, value_to_add);
 
@@ -35,7 +37,9 @@ impl InnerAssembler<'_> {
 
 		let other_cell = self.load(0);
 
-		let value_to_add = self.ins().imul_imm(current_value, i64::from(*options.factor()));
+		let value_to_add = self
+			.ins()
+			.imul_imm(current_value, i64::from(*options.factor()));
 
 		let added = self.ins().iadd(other_cell, value_to_add);
 
@@ -55,7 +59,9 @@ impl InnerAssembler<'_> {
 
 		let current_cell = self.load(0);
 
-		let value_to_add = self.ins().imul_imm(other_cell, i64::from(*options.factor()));
+		let value_to_add = self
+			.ins()
+			.imul_imm(other_cell, i64::from(*options.factor()));
 
 		let added = self.ins().iadd(current_cell, value_to_add);
 
@@ -72,7 +78,9 @@ impl InnerAssembler<'_> {
 		let other_cell = self.load(options.offset());
 		self.set_cell(0, options.offset());
 
-		let value_to_store = self.ins().imul_imm(other_cell, i64::from(*options.factor()));
+		let value_to_store = self
+			.ins()
+			.imul_imm(other_cell, i64::from(*options.factor()));
 
 		self.store(value_to_store, 0);
 

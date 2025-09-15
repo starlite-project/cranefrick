@@ -46,10 +46,7 @@ impl InnerAssembler<'_> {
 		}
 	}
 
-	fn duplicate_cell_iterated(
-		&self,
-		values: &[MoveOptions<i8>],
-	) -> Result<(), LlvmAssemblyError> {
+	fn duplicate_cell_iterated(&self, values: &[MoveOptions<i8>]) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let (value, value_gep) = self.load_from(0, "duplicate_cell_iterated")?;
@@ -164,7 +161,11 @@ impl InnerAssembler<'_> {
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let vec_of_values = values.iter().copied().map(|v| i8_type.const_int(v.into(), false)).collect::<Vec<_>>();
+		let vec_of_values = values
+			.iter()
+			.copied()
+			.map(|v| i8_type.const_int(v.into(), false))
+			.collect::<Vec<_>>();
 
 		let constant_array = i8_type.const_array(&vec_of_values);
 

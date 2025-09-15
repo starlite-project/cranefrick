@@ -11,18 +11,18 @@ impl<T> MoveOptions<T> {
 		Self { factor, offset }
 	}
 
-    #[must_use]
-    pub const fn factor(&self) -> &T {
-        &self.factor
-    }
+	#[must_use]
+	pub const fn factor(&self) -> &T {
+		&self.factor
+	}
 
-    #[must_use]
-    pub const fn offset(&self) -> i32 {
-        self.offset
-    }
+	#[must_use]
+	pub const fn offset(&self) -> i32 {
+		self.offset
+	}
 
-    #[must_use]
-    pub fn into_parts(self) -> (T, i32) {
-        (self.factor, self.offset)
-    }
+	#[must_use]
+	pub fn into_parts(self) -> (T, i32) {
+		(self.factor, self.offset)
+	}
 }

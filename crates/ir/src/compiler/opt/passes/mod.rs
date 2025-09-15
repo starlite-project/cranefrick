@@ -346,10 +346,7 @@ pub fn optimize_constant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 
 pub fn remove_redundant_takes(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[
-			BrainIr::TakeValueTo(options),
-			BrainIr::SetCell(value, None),
-		] => Some(Change::swap([
+		[BrainIr::TakeValueTo(options), BrainIr::SetCell(value, None)] => Some(Change::swap([
 			BrainIr::clear_cell(),
 			BrainIr::move_pointer(options.offset()),
 			BrainIr::set_cell(*value),
