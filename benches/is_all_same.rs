@@ -1,11 +1,23 @@
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use rand::Rng as _;
 
-fn setup() -> Vec<u8> {
+const ARRAY_SIZE: usize = 171;
+
+fn setup_different() -> [u8; ARRAY_SIZE] {
+	let mut array = [0; ARRAY_SIZE];
 	let mut rng = rand::rng();
 
-	let item = rng.random::<u8>();
-	vec![item; 9]
+	rng.fill(&mut array);
+
+	array
+}
+
+fn setup_same() -> [u8; ARRAY_SIZE] {
+	let mut rng = rand::rng();
+
+	let value = rng.random();
+
+	[value; ARRAY_SIZE]
 }
 
 fn is_all_same1(arr: &[u8]) -> bool {
@@ -91,109 +103,173 @@ fn is_all_same10(arr: &[u8]) -> bool {
 		.unwrap_or(true)
 }
 
-fn main_bench(c: &mut Criterion) {
-	let mut g = c.benchmark_group("is_all_same");
+fn is_all_same_different(c: &mut Criterion) {
+	let mut g = c.benchmark_group("is_all_same_different");
 
 	g.bench_function("is_all_same1", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same1(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same1(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 
 	g.bench_function("is_all_same2", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same2(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same2(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 
 	g.bench_function("is_all_same3", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same3(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same3(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 
 	g.bench_function("is_all_same4", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same4(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same4(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 
 	g.bench_function("is_all_same5", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same5(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same5(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 
 	g.bench_function("is_all_same6", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same6(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same6(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 
 	g.bench_function("is_all_same7", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same7(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same7(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 
 	g.bench_function("is_all_same8", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same8(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same8(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 
 	g.bench_function("is_all_same9", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same9(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same9(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 
 	g.bench_function("is_all_same10", |b| {
 		b.iter_batched(
-			setup,
-			|data| {
-				assert!(is_all_same10(&data));
-			},
+			setup_different,
+			|data| assert!(!is_all_same10(&data)),
 			BatchSize::SmallInput,
 		);
 	});
 }
 
-criterion_group!(benches, main_bench);
+fn is_all_same_same(c: &mut Criterion) {
+	let mut g = c.benchmark_group("is_all_same_same");
+
+	g.bench_function("is_all_same1", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same1(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+
+	g.bench_function("is_all_same2", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same2(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+
+	g.bench_function("is_all_same3", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same3(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+
+	g.bench_function("is_all_same4", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same4(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+
+	g.bench_function("is_all_same5", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same5(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+
+	g.bench_function("is_all_same6", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same6(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+
+	g.bench_function("is_all_same7", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same7(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+
+	g.bench_function("is_all_same8", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same8(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+
+	g.bench_function("is_all_same9", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same9(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+
+	g.bench_function("is_all_same10", |b| {
+		b.iter_batched(
+			setup_same,
+			|data| assert!(is_all_same10(&data)),
+			BatchSize::SmallInput,
+		);
+	});
+}
+
+criterion_group!(benches, is_all_same_different, is_all_same_same);
 criterion_main!(benches);

@@ -162,7 +162,10 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
-		assert!(values.len() <= 64, "too many values (this shouldn't happen)");
+		assert!(
+			values.len() <= 64,
+			"too many values (this shouldn't happen)"
+		);
 
 		let i8_type = self.context().i8_type();
 
