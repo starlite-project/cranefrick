@@ -49,6 +49,14 @@ pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 			value_from.clone(),
 			BrainIr::set_cell_at(*a as u8, x.get_or_zero()),
 		])),
+		[BrainIr::TakeValueTo(options), BrainIr::ChangeCell(a, x)]
+			if options.offset() == -x.get_or_zero() =>
+		{
+			Some(Change::swap([
+				BrainIr::TakeValueTo(*options),
+				BrainIr::set_cell_at(*a as u8, x.get_or_zero()),
+			]))
+		}
 		_ => None,
 	}
 }
