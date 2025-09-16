@@ -15,7 +15,7 @@ impl RustInterpreterModule<'_> {
 
 		let value = mem::take(&mut memory[current_ptr]);
 
-		let multiplied = value.wrapping_mul(*options.factor());
+		let multiplied = value.wrapping_mul(options.factor());
 
 		memory[offset_ptr] = memory[offset_ptr].wrapping_add(multiplied);
 	}
@@ -38,7 +38,7 @@ impl RustInterpreterModule<'_> {
 
 		let value = mem::take(&mut memory[offset_ptr]);
 
-		let multiplied = value.wrapping_mul(*options.factor());
+		let multiplied = value.wrapping_mul(options.factor());
 
 		memory[current_ptr] = memory[current_ptr].wrapping_add(multiplied);
 	}

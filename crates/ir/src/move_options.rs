@@ -12,7 +12,7 @@ impl<T> MoveOptions<T> {
 	}
 
 	#[must_use]
-	pub const fn factor(&self) -> &T {
+	pub const fn factor_ref(&self) -> &T {
 		&self.factor
 	}
 
@@ -24,5 +24,12 @@ impl<T> MoveOptions<T> {
 	#[must_use]
 	pub fn into_parts(self) -> (T, i32) {
 		(self.factor, self.offset)
+	}
+}
+
+impl<T: Copy> MoveOptions<T> {
+	#[must_use]
+	pub const fn factor(self) -> T {
+		self.factor
 	}
 }

@@ -120,7 +120,7 @@ impl InnerAssembler<'_> {
 		let vector_of_new_values = {
 			let mut vec_of_values_for_vector = Vec::with_capacity(values.len());
 
-			for factor in values.iter().map(MoveOptions::factor).copied() {
+			for factor in values.iter().copied().map(MoveOptions::factor) {
 				let factor = i8_type.const_int(factor as u64, false);
 
 				vec_of_values_for_vector.push(factor);
@@ -131,8 +131,8 @@ impl InnerAssembler<'_> {
 
 		let modified_vector_of_values = if values
 			.iter()
-			.map(MoveOptions::factor)
 			.copied()
+			.map(MoveOptions::factor)
 			.all(|x| matches!(x, 1))
 		{
 			self.builder.build_int_add(
