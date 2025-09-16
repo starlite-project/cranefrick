@@ -42,6 +42,13 @@ pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
 		{
 			Some(Change::remove_offset(0))
 		}
+		[
+			value_from @ (BrainIr::ReplaceValueFrom(options) | BrainIr::FetchValueFrom(options)),
+			BrainIr::ChangeCell(a, x),
+		] if options.offset() == x.get_or_zero() => Some(Change::swap([
+			value_from.clone(),
+			BrainIr::set_cell_at(*a as u8, x.get_or_zero()),
+		])),
 		_ => None,
 	}
 }
@@ -358,7 +365,7 @@ pub fn optimize_constant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 			if x.get_or_zero() == options.offset() =>
 		{
 			Some(Change::swap([
-				BrainIr::set_cell_at(0, x.get_or_zero()),
+				BrainIr::clear_cell_at(x.get_or_zero()),
 				BrainIr::set_cell(a.wrapping_mul(options.factor())),
 			]))
 		}
