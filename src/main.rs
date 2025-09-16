@@ -190,7 +190,7 @@ fn serialize_as_ron<T: Serialize>(value: &T, folder_path: &Path, file_name: &str
 	let mut serializer = ron::Serializer::with_options(
 		&mut output,
 		Some(PrettyConfig::new().separate_tuple_members(true)),
-		&ron::Options::default(),
+		&ron::Options::default().without_recursion_limit(),
 	)?;
 
 	value.serialize(&mut serializer)?;
