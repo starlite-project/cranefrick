@@ -89,36 +89,25 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub fn replace_value_from(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
 		if matches!(options.factor(), 1) {
-			return self.replace_value_from_memmove(options.offset());
+			self.replace_value_from_memmoved(options.offset())
+		} else {
+			self.replace_value_from_factorized(options)
 		}
-
-		let other_cell = self.take(options.offset(), "replace_value_from")?;
-
-		let value_to_store = {
-			let i8_type = self.context().i8_type();
-
-			let factor = i8_type.const_int((*options.factor()).into(), false);
-
-			self.builder
-				.build_int_mul(other_cell, factor, "replace_value_from_mul")
-		}?;
-
-		self.store(value_to_store, 0, "replace_value_from")
 	}
 
-	fn replace_value_from_memmove(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
+	fn replace_value_from_memmoved(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let current_cell_gep = {
 			let ptr = self.offset_ptr(0)?;
 
-			self.gep(i8_type, ptr, "replace_value_from_memmove")?
+			self.gep(i8_type, ptr, "replace_value_from_memmoved")?
 		};
 
 		let other_value_gep = {
 			let ptr = self.offset_ptr(offset)?;
 
-			self.gep(i8_type, ptr, "replace_value_from_memmove")?
+			self.gep(i8_type, ptr, "replace_value_from_memmoved")?
 		};
 
 		let one_value = {
@@ -131,6 +120,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_memmove(current_cell_gep, 1, other_value_gep, 1, one_value)?;
 
 		self.store_value_into(0, other_value_gep)
+	}
+
+	fn replace_value_from_factorized(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
+		let other_cell = self.take(options.offset(), "replace_value_from_factorized")?;
+
+		let value_to_store = {
+			let i8_type = self.context().i8_type();
+
+			let factor = i8_type.const_int((*options.factor()).into(), false);
+
+			self.builder
+				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul")?
+		};
+
+		self.store(value_to_store, 0, "replace_value_from_factorized")
 	}
 
 	pub fn scale_value(&self, factor: u8) -> Result<(), LlvmAssemblyError> {
