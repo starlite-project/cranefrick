@@ -19,7 +19,15 @@ pub fn calculate_ptr_movement(ops: &[BrainIr]) -> Option<i32> {
 			| BrainIr::InputIntoCell
 			| BrainIr::Output(..)
 			| BrainIr::MoveValueTo(..)
-			| BrainIr::FetchValueFrom(..) => {}
+			| BrainIr::FetchValueFrom(..)
+			| BrainIr::SubCellAt(..)
+			| BrainIr::SubFromCell(..)
+			| BrainIr::CopyValueTo(..)
+			| BrainIr::ReplaceValueFrom(..)
+			| BrainIr::ScaleValue(..)
+			| BrainIr::SetRange { .. }
+			| BrainIr::SetManyCells { .. }
+			| BrainIr::DuplicateCell { .. } => {}
 			_ => return None,
 		}
 	}
