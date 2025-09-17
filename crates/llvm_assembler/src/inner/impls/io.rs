@@ -25,7 +25,7 @@ impl InnerAssembler<'_> {
 		let i32_type = self.context().i32_type();
 		let loaded_value = self.load(offset, "output_current_cell")?;
 
-		let extended_loaded_value = self.builder.build_int_s_extend(
+		let extended_loaded_value = self.builder.build_int_z_extend(
 			loaded_value,
 			i32_type,
 			"output_current_cell_extend",
