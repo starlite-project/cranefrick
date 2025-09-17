@@ -23,6 +23,7 @@ pub struct InnerAssembler<'ctx> {
 	functions: Functions<'ctx>,
 	tape: PointerValue<'ctx>,
 	ptr: PointerValue<'ctx>,
+	input: PointerValue<'ctx>,
 	ptr_int_type: IntType<'ctx>,
 	target_machine: TargetMachine,
 }
@@ -79,12 +80,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_alloca
 		};
 
+		let input = builder.build_alloca(i8_type, "input")?;
+
 		Ok(Self {
 			module,
 			builder,
 			functions,
 			tape,
 			ptr,
+			input,
 			ptr_int_type,
 			target_machine,
 		})

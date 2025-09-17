@@ -75,15 +75,25 @@ impl InnerAssembler<'_> {
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let current_ptr = self.offset_ptr(0)?;
-
-		let gep = self.gep(i8_type, current_ptr, "input_into_cell")?;
-
-		self.builder.build_direct_call(
+		self.builder.build_call(
 			self.functions.getchar,
-			&[gep.into()],
+			&[self.input.into()],
 			"input_into_cell_call",
 		)?;
+
+		let gep = {
+			let current_ptr = self.offset_ptr(0)?;
+
+			self.gep(i8_type, current_ptr, "input_into_cell")?
+		};
+
+		let i8_size = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(1, false)
+		};
+
+		self.builder.build_memcpy(gep, 1, self.input, 1, i8_size)?;
 
 		Ok(())
 	}
