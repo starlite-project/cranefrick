@@ -364,6 +364,14 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::output_offset_cell_at(options.value().wrapping_add(*a), options.offset()),
 			BrainIr::change_cell_at(a.wrapping_add(*b), x.get_or_zero()),
 		])),
+		[
+			BrainIr::ChangeCell(a, None),
+			BrainIr::Output(OutputOptions::Cell(options)),
+			BrainIr::SetCell(b, None),
+		] if matches!(options.offset(), 0) => Some(Change::swap([
+			BrainIr::output_offset_cell(a.wrapping_add(options.value())),
+			BrainIr::set_cell(*b),
+		])),
 		_ => None,
 	}
 }
