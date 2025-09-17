@@ -24,7 +24,6 @@ serde = { workspace = true, default-features = false, features = [
     "derive"
 ] }
 tracing = { workspace = true, features = ["attributes"] }
-tracing-indicatif.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true

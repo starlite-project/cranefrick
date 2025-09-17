@@ -2,8 +2,6 @@ mod change;
 pub mod passes;
 mod utils;
 
-use tracing_indicatif::{span_ext::IndicatifSpanExt, style::ProgressStyle};
-
 pub use self::change::*;
 use crate::BrainIr;
 
