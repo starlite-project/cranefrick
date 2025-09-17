@@ -2,6 +2,8 @@ mod change;
 pub mod passes;
 mod utils;
 
+use tracing_indicatif::{span_ext::IndicatifSpanExt, style::ProgressStyle};
+
 pub use self::change::*;
 use crate::BrainIr;
 
@@ -28,14 +30,8 @@ where
 
 		let change = pass(&window);
 
-		let changed = if let Some(change) = change {
+		if let Some(change) = change {
 			change.apply(v, i, N);
-			true
-		} else {
-			false
-		};
-
-		if changed {
 			progress = true;
 		} else {
 			i += 1;
