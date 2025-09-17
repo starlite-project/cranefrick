@@ -11,7 +11,7 @@ pub use self::{loops::*, sort::*};
 use super::Change;
 use crate::{BrainIr, OutputOptions};
 
-pub fn optimize_consecutive_instructions(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::ChangeCell(a, x), BrainIr::ChangeCell(b, y)] if *x == *y => Some(
 			Change::replace(BrainIr::change_cell_at(a.wrapping_add(*b), x.get_or_zero())),
@@ -23,7 +23,7 @@ pub fn optimize_consecutive_instructions(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_sets(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::SetCell(.., a) | BrainIr::ChangeCell(.., a),
@@ -71,7 +71,7 @@ pub fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
-pub const fn remove_noop_instructions(ops: &[BrainIr; 1]) -> Option<Change> {
+pub const fn remove_noop_instructions(ops: [&BrainIr; 1]) -> Option<Change> {
 	match ops {
 		[BrainIr::ChangeCell(0, ..) | BrainIr::MovePointer(0)] => Some(Change::remove()),
 		_ => None,
@@ -105,7 +105,7 @@ pub fn fix_ending_instructions(ops: &mut Vec<BrainIr>) -> bool {
 	}
 }
 
-pub fn add_offsets(ops: &[BrainIr; 3]) -> Option<Change> {
+pub fn add_offsets(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::MovePointer(x),
@@ -151,7 +151,7 @@ pub fn add_offsets(ops: &[BrainIr; 3]) -> Option<Change> {
 	}
 }
 
-pub fn remove_offsets(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn remove_offsets(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetCell(a, Some(x)), BrainIr::MovePointer(y)] if x.get() == *y => {
 			Some(Change::swap([
@@ -176,7 +176,7 @@ pub fn remove_offsets(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_move_value(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_move_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::TakeValueTo(options), BrainIr::MovePointer(y)] => Some(Change::swap([
 			BrainIr::move_value_to(options.value(), options.offset()),
@@ -186,7 +186,7 @@ pub fn optimize_move_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_move_value_from_duplicate_cells(ops: &[BrainIr; 1]) -> Option<Change> {
+pub fn optimize_move_value_from_duplicate_cells(ops: [&BrainIr; 1]) -> Option<Change> {
 	match ops {
 		[BrainIr::DuplicateCell { values }] if matches!(values.len(), 1) => {
 			let data = values.first().copied()?;
@@ -207,7 +207,7 @@ pub fn optimize_move_value_from_duplicate_cells(ops: &[BrainIr; 1]) -> Option<Ch
 	}
 }
 
-pub const fn optimize_take_value(ops: &[BrainIr; 2]) -> Option<Change> {
+pub const fn optimize_take_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::MoveValueTo(options), BrainIr::MovePointer(y)] if options.offset() == *y => Some(
 			Change::replace(BrainIr::take_value_to(options.value(), options.offset())),
@@ -216,7 +216,7 @@ pub const fn optimize_take_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_fetch_value(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_fetch_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::MovePointer(x), BrainIr::TakeValueTo(options)] => Some(Change::swap([
 			BrainIr::move_pointer(x.wrapping_add(options.offset())),
@@ -232,7 +232,7 @@ pub fn optimize_fetch_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_replace_value(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_replace_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[l, BrainIr::FetchValueFrom(options)] if l.is_zeroing_cell() => Some(Change::swap([
 			l.clone(),
@@ -242,7 +242,7 @@ pub fn optimize_replace_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_copy_value(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_copy_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::DuplicateCell { values },
@@ -279,7 +279,7 @@ pub fn optimize_copy_value(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::SetCell(value, x),
@@ -314,7 +314,7 @@ pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_offset_writes(ops: &[BrainIr; 3]) -> Option<Change> {
+pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::ChangeCell(a, None),
@@ -368,7 +368,7 @@ pub fn optimize_offset_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 	}
 }
 
-pub const fn optimize_sets_and_writes(ops: &[BrainIr; 3]) -> Option<Change> {
+pub const fn optimize_sets_and_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::SetCell(.., None),
@@ -379,7 +379,7 @@ pub const fn optimize_sets_and_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_constant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_constant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetCell(a, x), BrainIr::FetchValueFrom(options)]
 			if x.get_or_zero() == options.offset() =>
@@ -416,7 +416,7 @@ pub fn optimize_constant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_sub_cell_from(ops: &[BrainIr; 3]) -> Option<Change> {
+pub fn optimize_sub_cell_from(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::MovePointer(x),
@@ -429,7 +429,7 @@ pub fn optimize_sub_cell_from(ops: &[BrainIr; 3]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_constant_sub(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_constant_sub(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetCell(a, None), BrainIr::SubCellAt(options)] => Some(Change::swap([
 			BrainIr::clear_cell(),
@@ -439,7 +439,7 @@ pub fn optimize_constant_sub(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_sub_cell_from_with_set(ops: &[BrainIr; 4]) -> Option<Change> {
+pub fn optimize_sub_cell_from_with_set(ops: [&BrainIr; 4]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::MovePointer(x),
@@ -454,7 +454,7 @@ pub fn optimize_sub_cell_from_with_set(ops: &[BrainIr; 4]) -> Option<Change> {
 	}
 }
 
-pub fn remove_redundant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn remove_redundant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::TakeValueTo(options), BrainIr::SetCell(value, None)] => Some(Change::swap([
 			BrainIr::clear_cell(),
@@ -491,7 +491,7 @@ pub fn remove_redundant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_mem_ops(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn optimize_mem_ops(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetCell(a, x), BrainIr::SetCell(b, y)] if *a == *b => {
 			let x = x.get_or_zero();

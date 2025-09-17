@@ -4,7 +4,7 @@ use frick_utils::{GetOrZero as _, IteratorExt as _};
 
 use super::{BrainIr, Change};
 
-pub fn sort_changes<const N: usize>(ops: &[BrainIr; N]) -> Option<Change> {
+pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 	if !ops.iter().all(|i| {
 		matches!(
 			i,
@@ -17,11 +17,13 @@ pub fn sort_changes<const N: usize>(ops: &[BrainIr; N]) -> Option<Change> {
 		return None;
 	}
 
-	if ops.iter().is_sorted_by_key(sorter_key) {
+	if ops.iter().is_sorted_by_key(|i| sorter_key(i)) {
 		return None;
 	}
 
-	Some(Change::swap(ops.iter().cloned().sorted_by_key(sorter_key)))
+	Some(Change::swap(
+		ops.iter().map(|i| (*i).clone()).sorted_by_key(sorter_key),
+	))
 }
 
 fn sorter_key(i: &BrainIr) -> (Priority, i32, i32) {

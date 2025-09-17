@@ -22,7 +22,7 @@ pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
-pub fn remove_unreachable_loops(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn remove_unreachable_loops(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[a, b] if a.is_zeroing_cell() && b.needs_nonzero_cell() => Some(Change::remove_offset(1)),
 		_ => None,
@@ -43,7 +43,7 @@ pub fn remove_empty_loops(ops: &[BrainIr]) -> Option<Change> {
 	ops.is_empty().then_some(Change::remove())
 }
 
-pub fn unroll_basic_dynamic_loop(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn unroll_basic_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetCell(v, None), BrainIr::DynamicLoop(l)]
 			if *v >= 1

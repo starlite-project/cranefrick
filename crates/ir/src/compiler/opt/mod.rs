@@ -9,7 +9,7 @@ pub fn run_loop_pass<F>(v: &mut Vec<BrainIr>, pass: F) -> bool
 where
 	F: Fn(&[BrainIr]) -> Option<Change> + Copy,
 {
-	run_peephole_pass(v, |ops: &[BrainIr; 1]| match &ops[0] {
+	run_peephole_pass(v, |ops: [&BrainIr; 1]| match &ops[0] {
 		BrainIr::DynamicLoop(i) => pass(i),
 		_ => None,
 	})
@@ -17,16 +17,18 @@ where
 
 pub fn run_peephole_pass<F, const N: usize>(v: &mut Vec<BrainIr>, pass: F) -> bool
 where
-	F: Fn(&[BrainIr; N]) -> Option<Change> + Copy,
+	F: Fn([&BrainIr; N]) -> Option<Change> + Copy,
 {
 	let mut i = 0;
 
 	let mut progress = false;
 
 	while v.len() >= N && i < v.len() - (N - 1) {
-		let window = core::array::from_fn(|index| v[i + index].clone());
+		let change = {
+			let window = core::array::from_fn(|index| &v[i + index]);
 
-		let change = pass(&window);
+			pass(window)
+		};
 
 		if let Some(change) = change {
 			change.apply(v, i, N);
