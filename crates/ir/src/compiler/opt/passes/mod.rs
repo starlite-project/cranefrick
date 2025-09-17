@@ -458,6 +458,25 @@ pub fn remove_redundant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 			BrainIr::clear_cell(),
 			BrainIr::set_cell_at(*value, offset.get()),
 		])),
+		[
+			BrainIr::FetchValueFrom(options) | BrainIr::ReplaceValueFrom(options),
+			BrainIr::SetCell(value, None),
+		] => Some(Change::swap([
+			BrainIr::clear_cell_at(options.offset()),
+			BrainIr::set_cell(*value),
+		])),
+		[
+			BrainIr::MoveValueTo(move_options),
+			BrainIr::ReplaceValueFrom(replace_options),
+		] if move_options.offset() == replace_options.offset()
+			&& matches!(move_options.value(), 1)
+			&& matches!(replace_options.value(), 1) =>
+		{
+			Some(Change::replace(BrainIr::fetch_value_from(
+				1,
+				move_options.offset(),
+			)))
+		}
 		_ => None,
 	}
 }
