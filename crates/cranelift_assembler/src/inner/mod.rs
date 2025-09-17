@@ -116,14 +116,7 @@ impl<'a> InnerAssembler<'a> {
 					self.change_cell(*value, offset.get_or_zero());
 				}
 				BrainIr::SubCell(offset) => self.sub_cell(*offset),
-				BrainIr::OutputCell {
-					value_offset: value,
-					offset,
-				} => {
-					self.output_current_cell(value.get_or_zero(), offset.get_or_zero());
-				}
-				BrainIr::OutputChar(c) => self.output_char(*c),
-				BrainIr::OutputChars(c) => self.output_chars(c),
+				BrainIr::Output(options) => self.output(options)?,
 				BrainIr::InputIntoCell => self.input_into_cell(),
 				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
 				BrainIr::IfNotZero(ops) => self.if_not_zero(ops)?,

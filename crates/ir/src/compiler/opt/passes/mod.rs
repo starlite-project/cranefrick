@@ -9,7 +9,7 @@ use frick_utils::GetOrZero as _;
 
 pub use self::{loops::*, sort::*};
 use super::Change;
-use crate::BrainIr;
+use crate::{BrainIr, OutputOptions};
 
 pub fn optimize_consecutive_instructions(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
@@ -166,14 +166,11 @@ pub fn remove_offsets(ops: &[BrainIr; 2]) -> Option<Change> {
 			]))
 		}
 		[
-			BrainIr::OutputCell {
-				offset,
-				value_offset,
-			},
+			BrainIr::Output(OutputOptions::Cell(options)),
 			BrainIr::MovePointer(y),
-		] if offset.get_or_zero() == *y => Some(Change::swap([
+		] if options.offset() == *y => Some(Change::swap([
 			BrainIr::move_pointer(*y),
-			BrainIr::output_offset_cell(value_offset.get_or_zero()),
+			BrainIr::output_offset_cell(options.factor()),
 		])),
 		_ => None,
 	}
@@ -286,23 +283,33 @@ pub fn optimize_writes(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::SetCell(value, x),
-			BrainIr::OutputCell {
-				value_offset,
-				offset: y,
-			},
-		] if *x == *y => Some(Change::swap([
-			BrainIr::output_char(value.wrapping_add_signed(value_offset.get_or_zero())),
+			BrainIr::Output(OutputOptions::Cell(options)),
+		] if options.offset() == x.get_or_zero() => Some(Change::swap([
+			BrainIr::output_char(value.wrapping_add_signed(options.factor())),
 			BrainIr::set_cell_at(*value, x.get_or_zero()),
 		])),
-		[BrainIr::OutputChar(x), BrainIr::OutputChar(y)] => {
-			Some(Change::replace(BrainIr::output_chars([*x, *y])))
-		}
-		[BrainIr::OutputChars(chars), BrainIr::OutputChar(c)] => Some(Change::replace(
-			BrainIr::output_chars(chars.iter().copied().chain(iter::once(*c))),
-		)),
-		[BrainIr::OutputChars(a), BrainIr::OutputChars(b)] => Some(Change::replace(
-			BrainIr::output_chars(a.iter().copied().chain(b.iter().copied())),
-		)),
+		[
+			BrainIr::Output(OutputOptions::Char(x)),
+			BrainIr::Output(OutputOptions::Char(y)),
+		] => Some(Change::replace(BrainIr::output_str([*x, *y]))),
+		[
+			BrainIr::Output(OutputOptions::Str(chars)),
+			BrainIr::Output(OutputOptions::Char(c)),
+		] => Some(Change::replace(BrainIr::output_str(
+			chars.iter().copied().chain(iter::once(*c)),
+		))),
+		[
+			BrainIr::Output(OutputOptions::Char(c)),
+			BrainIr::Output(OutputOptions::Str(chars)),
+		] => Some(Change::replace(BrainIr::output_str(
+			iter::once(*c).chain(chars.iter().copied()),
+		))),
+		[
+			BrainIr::Output(OutputOptions::Str(a)),
+			BrainIr::Output(OutputOptions::Str(b)),
+		] => Some(Change::replace(BrainIr::output_str(
+			a.iter().copied().chain(b.iter().copied()),
+		))),
 		_ => None,
 	}
 }
@@ -311,45 +318,33 @@ pub fn optimize_offset_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::ChangeCell(a, None),
-			BrainIr::OutputCell {
-				value_offset: b,
-				offset: None,
-			},
+			BrainIr::Output(OutputOptions::Cell(options)),
 			BrainIr::ChangeCell(c, None),
-		] if *a == -c => Some(Change::replace(BrainIr::output_offset_cell(
-			a.wrapping_add(b.get_or_zero()),
-		))),
+		] if *a == -c && matches!(options.offset(), 0) => Some(Change::replace(
+			BrainIr::output_offset_cell(a.wrapping_add(options.factor())),
+		)),
 		[
 			BrainIr::ChangeCell(a, None),
-			BrainIr::OutputCell {
-				value_offset: None,
-				offset: None,
-			},
+			BrainIr::Output(OutputOptions::Cell(options)),
 			BrainIr::ChangeCell(b, None),
-		] => Some(Change::swap([
+		] if options.is_default() => Some(Change::swap([
 			BrainIr::output_offset_cell(*a),
 			BrainIr::change_cell(a.wrapping_add(*b)),
 		])),
 		[
 			BrainIr::MovePointer(x),
-			BrainIr::OutputCell {
-				value_offset: None,
-				offset: None,
-			},
+			BrainIr::Output(OutputOptions::Cell(options)),
 			BrainIr::MovePointer(y),
-		] => Some(Change::swap([
+		] if options.is_default() => Some(Change::swap([
 			BrainIr::output_cell_at(*x),
 			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
 		[
 			BrainIr::ChangeCell(a, None),
-			BrainIr::OutputCell {
-				value_offset: b,
-				offset: None,
-			},
+			BrainIr::Output(OutputOptions::Cell(options)),
 			l,
-		] if l.is_zeroing_cell() => Some(Change::swap([
-			BrainIr::output_offset_cell(a.wrapping_add(b.get_or_zero())),
+		] if matches!(options.offset(), 0) && l.is_zeroing_cell() => Some(Change::swap([
+			BrainIr::output_offset_cell(a.wrapping_add(options.factor())),
 			l.clone(),
 		])),
 		_ => None,
@@ -360,7 +355,7 @@ pub const fn optimize_sets_and_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::SetCell(.., None),
-			BrainIr::OutputChars(..),
+			BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
 			BrainIr::SetCell(.., None),
 		] => Some(Change::remove_offset(0)),
 		_ => None,

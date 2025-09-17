@@ -1,9 +1,34 @@
 use cranelift_codegen::ir::{InstBuilder as _, types};
+use frick_assembler::AssemblyError;
+use frick_ir::{BrainIr, OutputOptions};
 
-use crate::inner::{InnerAssembler, SrcLoc};
+use crate::{
+	CraneliftAssemblyError,
+	inner::{InnerAssembler, SrcLoc},
+};
 
 impl InnerAssembler<'_> {
-	pub fn output_char(&mut self, c: u8) {
+	pub fn output(
+		&mut self,
+		options: &OutputOptions,
+	) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
+		match options {
+			OutputOptions::Cell(options) => {
+				self.output_current_cell(options.factor(), options.offset());
+			}
+			OutputOptions::Char(c) => self.output_char(*c),
+			OutputOptions::Str(s) => self.output_chars(s),
+			_ => {
+				return Err(AssemblyError::NotImplemented(BrainIr::Output(
+					options.clone(),
+				)));
+			}
+		}
+
+		Ok(())
+	}
+
+	fn output_char(&mut self, c: u8) {
 		self.add_srcflag(SrcLoc::OUTPUT_CHAR);
 
 		let write = self.write;

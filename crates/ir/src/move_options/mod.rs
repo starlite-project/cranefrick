@@ -28,6 +28,10 @@ impl<T: MoveOptionsInteger> MoveOptions<T> {
 	pub const fn into_parts(self) -> (T, i32) {
 		(self.factor, self.offset)
 	}
+
+	pub fn is_default(self) -> bool {
+		self.factor() == T::default() && matches!(self.offset(), 0)
+	}
 }
 
 impl<T: MoveOptionsInteger> Clone for MoveOptions<T> {
@@ -46,7 +50,7 @@ impl<T: MoveOptionsInteger> PartialEq for MoveOptions<T> {
 	}
 }
 
-pub trait MoveOptionsInteger: Copy + Eq + self::sealed::Sealed {
+pub trait MoveOptionsInteger: Copy + Default + Eq + self::sealed::Sealed {
 	const ONE: Self;
 }
 

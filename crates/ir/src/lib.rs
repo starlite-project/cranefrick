@@ -2,13 +2,14 @@
 
 mod compiler;
 mod move_options;
+mod output;
 
 use std::{num::NonZero, ops::RangeInclusive};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
-pub use self::{compiler::*, move_options::*};
+pub use self::{compiler::*, move_options::*, output::*};
 
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -26,12 +27,7 @@ pub enum BrainIr {
 	SubCell(i32),
 	FindZero(i32),
 	InputIntoCell,
-	OutputCell {
-		value_offset: Option<NonZero<i8>>,
-		offset: Option<NonZero<i32>>,
-	},
-	OutputChar(u8),
-	OutputChars(Vec<u8>),
+	Output(OutputOptions),
 	MoveValueTo(MoveOptions),
 	CopyValueTo(MoveOptions),
 	TakeValueTo(MoveOptions),
@@ -127,10 +123,7 @@ impl BrainIr {
 			return children.iter().any(Self::has_output);
 		}
 
-		matches!(
-			self,
-			Self::OutputCell { .. } | Self::OutputChar(..) | Self::OutputChars(..)
-		)
+		matches!(self, Self::Output(..))
 	}
 
 	#[must_use]
@@ -160,10 +153,7 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn output_offset_cell_at(value: i8, offset: i32) -> Self {
-		Self::OutputCell {
-			value_offset: NonZero::new(value),
-			offset: NonZero::new(offset),
-		}
+		Self::Output(OutputOptions::cell(value, offset))
 	}
 
 	#[must_use]
@@ -178,12 +168,12 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn output_char(c: u8) -> Self {
-		Self::OutputChar(c)
+		Self::Output(OutputOptions::char(c))
 	}
 
 	#[must_use]
-	pub fn output_chars(c: impl IntoIterator<Item = u8>) -> Self {
-		Self::OutputChars(c.collect_to())
+	pub fn output_str(c: impl IntoIterator<Item = u8>) -> Self {
+		Self::Output(OutputOptions::str(c))
 	}
 
 	#[must_use]

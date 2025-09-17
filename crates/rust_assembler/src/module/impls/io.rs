@@ -1,9 +1,21 @@
 use frick_assembler::{TAPE_SIZE, frick_assembler_read, frick_assembler_write};
+use frick_ir::OutputOptions;
 
 use crate::RustInterpreterModule;
 
 impl RustInterpreterModule<'_> {
-	pub(crate) fn output_current_cell(
+	pub(crate) fn output(options: &OutputOptions, memory: &[u8; TAPE_SIZE], current_ptr: usize) {
+		match options {
+			OutputOptions::Cell(options) => {
+				Self::output_current_cell(options.factor(), options.offset(), memory, current_ptr);
+			}
+			OutputOptions::Char(c) => Self::output_char(*c),
+			OutputOptions::Str(s) => Self::output_chars(s),
+			_ => unimplemented!(),
+		}
+	}
+
+	fn output_current_cell(
 		cell_offset: i8,
 		offset: i32,
 		memory: &[u8; TAPE_SIZE],
@@ -22,7 +34,7 @@ impl RustInterpreterModule<'_> {
 		}
 	}
 
-	pub(crate) fn output_char(c: u8) {
+	fn output_char(c: u8) {
 		let extended = c.into();
 
 		unsafe {
@@ -30,7 +42,7 @@ impl RustInterpreterModule<'_> {
 		}
 	}
 
-	pub(crate) fn output_chars(c: &[u8]) {
+	fn output_chars(c: &[u8]) {
 		c.iter().copied().for_each(Self::output_char);
 	}
 

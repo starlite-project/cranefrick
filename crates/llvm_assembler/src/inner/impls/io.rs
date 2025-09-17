@@ -1,18 +1,34 @@
+use frick_assembler::AssemblyError;
+use frick_ir::{BrainIr, OutputOptions};
+
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	pub fn output_current_cell(
-		&self,
-		cell_offset: i8,
-		offset: i32,
-	) -> Result<(), LlvmAssemblyError> {
+	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+		match options {
+			OutputOptions::Cell(options) => {
+				self.output_current_cell(options.factor(), options.offset())?;
+			}
+			OutputOptions::Char(c) => self.output_char(*c)?,
+			OutputOptions::Str(c) => self.output_chars(c)?,
+			_ => {
+				return Err(AssemblyError::NotImplemented(BrainIr::Output(
+					options.clone(),
+				)));
+			}
+		}
+
+		Ok(())
+	}
+
+	fn output_current_cell(&self, value_offset: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let i32_type = self.context().i32_type();
 		let char_to_put = self.load(offset, "output_current_cell")?;
 
 		let cell_offset_value = {
 			let i8_type = self.context().i8_type();
 
-			i8_type.const_int(cell_offset as u64, false)
+			i8_type.const_int(value_offset as u64, false)
 		};
 
 		let offset_char = self.builder.build_int_add(
@@ -34,14 +50,14 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn output_char(&self, c: u8) -> Result<(), LlvmAssemblyError> {
+	fn output_char(&self, c: u8) -> Result<(), LlvmAssemblyError> {
 		let char_to_put = {
 			let i32_type = self.context().i32_type();
 
 			i32_type.const_int(c.into(), false)
 		};
 
-		self.builder.build_direct_call(
+		self.builder.build_call(
 			self.functions.putchar,
 			&[char_to_put.into()],
 			"output_char_call",
@@ -50,8 +66,10 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
-		c.iter().copied().try_for_each(|c| self.output_char(c))
+	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
+		c.iter().copied().try_for_each(|c| self.output_char(c))?;
+
+		Ok(())
 	}
 
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
