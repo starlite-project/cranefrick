@@ -444,12 +444,19 @@ pub fn optimize_sub_cell_from_with_set(ops: &[BrainIr; 4]) -> Option<Change> {
 	}
 }
 
-pub fn remove_redundant_takes(ops: &[BrainIr; 2]) -> Option<Change> {
+pub fn remove_redundant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::TakeValueTo(options), BrainIr::SetCell(value, None)] => Some(Change::swap([
 			BrainIr::clear_cell(),
 			BrainIr::move_pointer(options.offset()),
 			BrainIr::set_cell(*value),
+		])),
+		[
+			BrainIr::MoveValueTo(options),
+			BrainIr::SetCell(value, Some(offset)),
+		] if options.offset() == offset.get() => Some(Change::swap([
+			BrainIr::clear_cell(),
+			BrainIr::set_cell_at(*value, offset.get()),
 		])),
 		_ => None,
 	}
