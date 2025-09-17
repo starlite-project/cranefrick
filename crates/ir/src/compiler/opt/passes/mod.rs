@@ -429,6 +429,16 @@ pub fn optimize_sub_cell_from(ops: &[BrainIr; 3]) -> Option<Change> {
 	}
 }
 
+pub fn optimize_constant_sub(ops: &[BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[BrainIr::SetCell(a, None), BrainIr::SubCellAt(options)] => Some(Change::swap([
+			BrainIr::clear_cell(),
+			BrainIr::change_cell_at(a.wrapping_mul(options.value()) as i8, options.offset()),
+		])),
+		_ => None,
+	}
+}
+
 pub fn optimize_sub_cell_from_with_set(ops: &[BrainIr; 4]) -> Option<Change> {
 	match ops {
 		[

@@ -136,6 +136,7 @@ impl Compiler {
 		*progress |= run_loop_pass(self, passes::optimize_sub_cell_at);
 		*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from);
 		*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from_with_set);
+		*progress |= run_peephole_pass(self, passes::optimize_constant_sub);
 
 		self.pass_info("optimize if_nz");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);
