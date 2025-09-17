@@ -416,15 +416,29 @@ pub fn optimize_constant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_sub_cell_from(ops: [&BrainIr; 3]) -> Option<Change> {
+pub fn optimize_sub_cell_from(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[BrainIr::SubCellAt(options), BrainIr::MovePointer(y)] if options.offset() == *y => {
+			Some(Change::swap([
+				BrainIr::move_pointer(*y),
+				BrainIr::sub_from_cell(options.value(), -y),
+			]))
+		}
+		_ => None,
+	}
+}
+
+pub fn optimize_sub_cell_from_with_set(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::MovePointer(x),
 			BrainIr::SubCellAt(options),
+			BrainIr::SetCell(a, None),
 			BrainIr::MovePointer(y),
-		] if *x == -y && options.offset() == *y => {
-			Some(Change::replace(BrainIr::sub_from_cell(options.value(), *x)))
-		}
+		] if options.offset() == *y => Some(Change::swap([
+			BrainIr::move_pointer(*y),
+			BrainIr::sub_from_cell(options.value(), -y),
+			BrainIr::set_cell_at(*a, -y),
+		])),
 		_ => None,
 	}
 }
@@ -434,21 +448,6 @@ pub fn optimize_constant_sub(ops: [&BrainIr; 2]) -> Option<Change> {
 		[BrainIr::SetCell(a, None), BrainIr::SubCellAt(options)] => Some(Change::swap([
 			BrainIr::clear_cell(),
 			BrainIr::change_cell_at(a.wrapping_mul(options.value()) as i8, options.offset()),
-		])),
-		_ => None,
-	}
-}
-
-pub fn optimize_sub_cell_from_with_set(ops: [&BrainIr; 4]) -> Option<Change> {
-	match ops {
-		[
-			BrainIr::MovePointer(x),
-			BrainIr::SubCellAt(options),
-			BrainIr::SetCell(a, None),
-			BrainIr::MovePointer(y),
-		] if *x == -y && options.offset() == *y => Some(Change::swap([
-			BrainIr::sub_from_cell(options.value(), *x),
-			BrainIr::set_cell_at(*a, *x),
 		])),
 		_ => None,
 	}
