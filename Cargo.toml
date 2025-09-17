@@ -35,8 +35,8 @@ criterion.workspace = true
 rand = "0.9"
 
 [[bench]]
-name = "is_all_same"
 harness = false
+name = "is_all_same"
 
 [features]
 cranelift = ["dep:frick_cranelift_assembler"]
