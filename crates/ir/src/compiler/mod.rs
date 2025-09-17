@@ -82,23 +82,23 @@ impl Compiler {
 		self.pass_info("optimize find zero instructions");
 		*progress |= run_loop_pass(self, passes::optimize_find_zero);
 
-		self.pass_info("removing no-op instructions");
+		self.pass_info("remove no-op instructions");
 		*progress |= run_peephole_pass(self, passes::remove_noop_instructions);
 		*progress |= run_loop_pass(self, passes::unroll_noop_loop);
 
-		self.pass_info("removing unreachable loops");
+		self.pass_info("remove unreachable loops");
 		*progress |= run_peephole_pass(self, passes::remove_unreachable_loops);
 
-		self.pass_info("removing infinite loops");
+		self.pass_info("remove infinite loops");
 		*progress |= run_loop_pass(self, passes::remove_infinite_loops);
 
-		self.pass_info("removing empty loops");
+		self.pass_info("remove empty loops");
 		*progress |= run_loop_pass(self, passes::remove_empty_loops);
 
-		self.pass_info("unrolling no-move dynamic loops");
+		self.pass_info("unroll no-move dynamic loops");
 		*progress |= run_peephole_pass(self, passes::unroll_basic_dynamic_loop);
 
-		self.pass_info("sorting cell changes");
+		self.pass_info("sort cell changes");
 		*progress |= run_peephole_pass(self, passes::sort_changes::<8>);
 		*progress |= run_peephole_pass(self, passes::sort_changes::<7>);
 		*progress |= run_peephole_pass(self, passes::sort_changes::<6>);
