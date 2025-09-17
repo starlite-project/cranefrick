@@ -27,22 +27,4 @@ impl InnerAssembler<'_> {
 
 		self.remove_srcflag(SrcLoc::SET_CELL);
 	}
-
-	pub fn sub_cell(&mut self, offset: i32) {
-		self.invalidate_loads_at([0, offset]);
-
-		self.add_srcflag(SrcLoc::SUB_CELL);
-
-		let subtractor = self.load(0);
-
-		self.set_cell(0, 0);
-
-		let other_value = self.load(offset);
-
-		let value_to_store = self.ins().isub(other_value, subtractor);
-
-		self.store(value_to_store, offset);
-
-		self.remove_srcflag(SrcLoc::SUB_CELL);
-	}
 }

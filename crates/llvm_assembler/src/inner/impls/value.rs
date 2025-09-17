@@ -1,10 +1,10 @@
-use frick_ir::MoveOptions;
+use frick_ir::CellChangeOptions;
 use inkwell::values::{IntValue, PointerValue};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn move_value_to(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
+	pub fn move_value_to(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
 		let current_value = self.take(0, "move_value_to")?;
 
 		let (other_cell, gep) = self.load_from(options.offset(), "move_value_to")?;
@@ -12,7 +12,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.duplicate_value_to(current_value, other_cell, options.value(), gep)
 	}
 
-	pub fn copy_value_to(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
+	pub fn copy_value_to(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
 		let current_value = self.load(0, "copy_value_to")?;
 
 		let (other_cell, gep) = self.load_from(options.offset(), "copy_value_to")?;
@@ -43,7 +43,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_into(added, gep)
 	}
 
-	pub fn take_value_to(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
+	pub fn take_value_to(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
 		let current_value = self.take(0, "take_value_to")?;
 
 		self.move_pointer(options.offset())?;
@@ -66,7 +66,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_into(added, gep)
 	}
 
-	pub fn fetch_value_from(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
+	pub fn fetch_value_from(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
 		let other_cell = self.take(options.offset(), "fetch_value_from")?;
 
 		let (current_cell, gep) = self.load_from(0, "fetch_value_from")?;
@@ -87,7 +87,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_into(added, gep)
 	}
 
-	pub fn replace_value_from(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
+	pub fn replace_value_from(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
 		if matches!(options.value(), 1) {
 			self.replace_value_from_memmoved(options.offset())
 		} else {
@@ -122,7 +122,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_value_into(0, other_value_gep)
 	}
 
-	fn replace_value_from_factorized(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
+	fn replace_value_from_factorized(
+		&self,
+		options: CellChangeOptions,
+	) -> Result<(), LlvmAssemblyError> {
 		let other_cell = self.take(options.offset(), "replace_value_from_factorized")?;
 
 		let value_to_store = {

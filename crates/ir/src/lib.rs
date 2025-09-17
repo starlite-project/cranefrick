@@ -1,7 +1,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
 mod compiler;
-mod move_options;
+mod options;
 mod output;
 
 use std::{num::NonZero, ops::RangeInclusive};
@@ -9,7 +9,7 @@ use std::{num::NonZero, ops::RangeInclusive};
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
-pub use self::{compiler::*, move_options::*, output::*};
+pub use self::{compiler::*, options::*, output::*};
 
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,15 +24,16 @@ pub enum BrainIr {
 		u8,
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
 	),
-	SubCell(i32),
+	SubCellAt(CellChangeOptions),
+	SubFromCell(CellChangeOptions),
 	FindZero(i32),
 	InputIntoCell,
 	Output(OutputOptions),
-	MoveValueTo(MoveOptions),
-	CopyValueTo(MoveOptions),
-	TakeValueTo(MoveOptions),
-	FetchValueFrom(MoveOptions),
-	ReplaceValueFrom(MoveOptions),
+	MoveValueTo(CellChangeOptions),
+	CopyValueTo(CellChangeOptions),
+	TakeValueTo(CellChangeOptions),
+	FetchValueFrom(CellChangeOptions),
+	ReplaceValueFrom(CellChangeOptions),
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
@@ -45,7 +46,7 @@ pub enum BrainIr {
 		start: Option<NonZero<i32>>,
 	},
 	DuplicateCell {
-		values: Vec<MoveOptions<i8>>,
+		values: Vec<CellChangeOptions<i8>>,
 	},
 }
 
@@ -76,8 +77,13 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn sub_cell(offset: i32) -> Self {
-		Self::SubCell(offset)
+	pub const fn sub_from_cell(value: u8, offset: i32) -> Self {
+		Self::SubFromCell(CellChangeOptions::new(value, offset))
+	}
+
+	#[must_use]
+	pub const fn sub_cell_at(value: u8, offset: i32) -> Self {
+		Self::SubCellAt(CellChangeOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -88,9 +94,9 @@ impl BrainIr {
 				| Self::DynamicLoop(..)
 				| Self::MoveValueTo(..)
 				| Self::FindZero(..)
-				| Self::SubCell(..)
 				| Self::IfNotZero(..)
 				| Self::DuplicateCell { .. }
+				| Self::SubCellAt(..)
 		) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
 	}
 
@@ -101,8 +107,8 @@ impl BrainIr {
 			Self::DynamicLoop(..)
 				| Self::FindZero(..)
 				| Self::MoveValueTo(..)
-				| Self::SubCell(..)
 				| Self::IfNotZero(..)
+				| Self::SubCellAt(..)
 				| Self::DuplicateCell { .. }
 				| Self::CopyValueTo(..)
 		)
@@ -178,27 +184,27 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn fetch_value_from(value: u8, offset: i32) -> Self {
-		Self::FetchValueFrom(MoveOptions::new(value, offset))
+		Self::FetchValueFrom(CellChangeOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn replace_value_from(value: u8, offset: i32) -> Self {
-		Self::ReplaceValueFrom(MoveOptions::new(value, offset))
+		Self::ReplaceValueFrom(CellChangeOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn take_value_to(value: u8, offset: i32) -> Self {
-		Self::TakeValueTo(MoveOptions::new(value, offset))
+		Self::TakeValueTo(CellChangeOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn move_value_to(value: u8, offset: i32) -> Self {
-		Self::MoveValueTo(MoveOptions::new(value, offset))
+		Self::MoveValueTo(CellChangeOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn copy_value_to(value: u8, offset: i32) -> Self {
-		Self::CopyValueTo(MoveOptions::new(value, offset))
+		Self::CopyValueTo(CellChangeOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -229,7 +235,7 @@ impl BrainIr {
 		Self::DuplicateCell {
 			values: values
 				.into_iter()
-				.map(|(factor, offset)| MoveOptions::new(factor, offset))
+				.map(|(factor, offset)| CellChangeOptions::new(factor, offset))
 				.collect(),
 		}
 	}

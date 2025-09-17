@@ -159,7 +159,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::ChangeCell(value, offset) => {
 					self.change_cell(*value, offset.get_or_zero())?;
 				}
-				BrainIr::SubCell(offset) => self.sub_cell(*offset)?,
+				BrainIr::SubCellAt(options) => self.sub_cell_at(*options)?,
+				BrainIr::SubFromCell(options) => self.sub_from_cell(*options)?,
 				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
 				BrainIr::Output(options) => self.output(options)?,
 				BrainIr::InputIntoCell => self.input_into_cell()?,

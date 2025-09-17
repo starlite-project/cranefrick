@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use frick_ir::MoveOptions;
+use frick_ir::CellChangeOptions;
 use inkwell::types::VectorType;
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
@@ -26,19 +26,52 @@ impl InnerAssembler<'_> {
 		self.store_into(added, gep)
 	}
 
-	pub fn sub_cell(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let subtractor = self.take(0, "sub_cell")?;
+	pub fn sub_cell_at(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
+		let subtractor = {
+			let i8_type = self.context().i8_type();
 
-		let (other_value, gep) = self.load_from(offset, "sub_cell")?;
+			let current_cell = self.take(0, "sub_cell_at")?;
 
-		let value_to_store = self
-			.builder
-			.build_int_sub(other_value, subtractor, "sub_cell_sub")?;
+			let factor_value = i8_type.const_int(options.value().into(), false);
+
+			self.builder
+				.build_int_mul(current_cell, factor_value, "sub_cell_at_mul")?
+		};
+
+		let (other_value, gep) = self.load_from(options.offset(), "sub_cell_at")?;
+
+		let value_to_store =
+			self.builder
+				.build_int_sub(other_value, subtractor, "sub_cell_at_sub")?;
 
 		self.store_into(value_to_store, gep)
 	}
 
-	pub fn duplicate_cell(&self, values: &[MoveOptions<i8>]) -> Result<(), LlvmAssemblyError> {
+	pub fn sub_from_cell(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
+		let subtractor = {
+			let i8_type = self.context().i8_type();
+
+			let current_cell = self.take(options.offset(), "sub_from_cell")?;
+
+			let factor_value = i8_type.const_int(options.value().into(), false);
+
+			self.builder
+				.build_int_mul(current_cell, factor_value, "sub_from_cell_mul")?
+		};
+
+		let (other_value, gep) = self.load_from(0, "sub_from_cell")?;
+
+		let value_to_store =
+			self.builder
+				.build_int_sub(other_value, subtractor, "sub_from_cell_sub")?;
+
+		self.store_into(value_to_store, gep)
+	}
+
+	pub fn duplicate_cell(
+		&self,
+		values: &[CellChangeOptions<i8>],
+	) -> Result<(), LlvmAssemblyError> {
 		if is_vectorizable(values) {
 			self.duplicate_cell_vectorized(values)
 		} else {
@@ -46,12 +79,15 @@ impl InnerAssembler<'_> {
 		}
 	}
 
-	fn duplicate_cell_iterated(&self, values: &[MoveOptions<i8>]) -> Result<(), LlvmAssemblyError> {
+	fn duplicate_cell_iterated(
+		&self,
+		values: &[CellChangeOptions<i8>],
+	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let (value, value_gep) = self.load_from(0, "duplicate_cell_iterated")?;
 
-		for (factor, index) in values.iter().copied().map(MoveOptions::into_parts) {
+		for (factor, index) in values.iter().copied().map(CellChangeOptions::into_parts) {
 			let (other_value, gep) = self.load_from(index, "duplicate_cell_iterated")?;
 
 			let factor_value = i8_type.const_int(factor as u64, false);
@@ -74,7 +110,7 @@ impl InnerAssembler<'_> {
 
 	fn duplicate_cell_vectorized(
 		&self,
-		values: &[MoveOptions<i8>],
+		values: &[CellChangeOptions<i8>],
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 		let i64_type = self.context().i64_type();
@@ -120,7 +156,7 @@ impl InnerAssembler<'_> {
 		let vector_of_new_values = {
 			let mut vec_of_values_for_vector = Vec::with_capacity(values.len());
 
-			for factor in values.iter().copied().map(MoveOptions::value) {
+			for factor in values.iter().copied().map(CellChangeOptions::value) {
 				let factor = i8_type.const_int(factor as u64, false);
 
 				vec_of_values_for_vector.push(factor);
@@ -132,7 +168,7 @@ impl InnerAssembler<'_> {
 		let modified_vector_of_values = if values
 			.iter()
 			.copied()
-			.map(MoveOptions::value)
+			.map(CellChangeOptions::value)
 			.all(|x| matches!(x, 1))
 		{
 			self.builder.build_int_add(
@@ -206,7 +242,7 @@ impl InnerAssembler<'_> {
 	}
 }
 
-fn is_vectorizable(values: &[MoveOptions<i8>]) -> bool {
+fn is_vectorizable(values: &[CellChangeOptions<i8>]) -> bool {
 	if !is_vector_size(values) {
 		return false;
 	}
@@ -215,7 +251,7 @@ fn is_vectorizable(values: &[MoveOptions<i8>]) -> bool {
 		return false;
 	};
 
-	for offset in values.iter().map(MoveOptions::offset) {
+	for offset in values.iter().map(CellChangeOptions::offset) {
 		if !range.contains(&offset) {
 			return false;
 		}
@@ -226,7 +262,7 @@ fn is_vectorizable(values: &[MoveOptions<i8>]) -> bool {
 	range.count() == len_of_values && len_of_values.is_power_of_two()
 }
 
-fn get_range(values: &[MoveOptions<i8>]) -> Option<RangeInclusive<i32>> {
+fn get_range(values: &[CellChangeOptions<i8>]) -> Option<RangeInclusive<i32>> {
 	assert!(values.len() > 1);
 
 	let first = values.first().copied()?;

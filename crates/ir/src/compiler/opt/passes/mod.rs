@@ -416,6 +416,34 @@ pub fn optimize_constant_shifts(ops: &[BrainIr; 2]) -> Option<Change> {
 	}
 }
 
+pub fn optimize_sub_cell_from(ops: &[BrainIr; 3]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::MovePointer(x),
+			BrainIr::SubCellAt(options),
+			BrainIr::MovePointer(y),
+		] if *x == -y && options.offset() == *y => {
+			Some(Change::replace(BrainIr::sub_from_cell(options.value(), *x)))
+		}
+		_ => None,
+	}
+}
+
+pub fn optimize_sub_cell_from_with_set(ops: &[BrainIr; 4]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::MovePointer(x),
+			BrainIr::SubCellAt(options),
+			BrainIr::SetCell(a, None),
+			BrainIr::MovePointer(y),
+		] if *x == -y && options.offset() == *y => Some(Change::swap([
+			BrainIr::sub_from_cell(options.value(), *x),
+			BrainIr::set_cell_at(*a, *x),
+		])),
+		_ => None,
+	}
+}
+
 pub fn remove_redundant_takes(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::TakeValueTo(options), BrainIr::SetCell(value, None)] => Some(Change::swap([
@@ -423,20 +451,6 @@ pub fn remove_redundant_takes(ops: &[BrainIr; 2]) -> Option<Change> {
 			BrainIr::move_pointer(options.offset()),
 			BrainIr::set_cell(*value),
 		])),
-		_ => None,
-	}
-}
-
-pub const fn optimize_sub_cell(ops: &[BrainIr]) -> Option<Change> {
-	match ops {
-		[
-			BrainIr::ChangeCell(-1, None),
-			BrainIr::ChangeCell(-1, Some(offset)),
-		]
-		| [
-			BrainIr::ChangeCell(-1, Some(offset)),
-			BrainIr::ChangeCell(-1, None),
-		] => Some(Change::replace(BrainIr::sub_cell(offset.get()))),
 		_ => None,
 	}
 }

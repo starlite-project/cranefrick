@@ -3,12 +3,12 @@ mod sealed;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MoveOptions<T: MoveOptionsInteger = u8> {
+pub struct CellChangeOptions<T: CellChangeOptionsInteger = u8> {
 	value: T,
 	offset: i32,
 }
 
-impl<T: MoveOptionsInteger> MoveOptions<T> {
+impl<T: CellChangeOptionsInteger> CellChangeOptions<T> {
 	pub(crate) const fn new(value: T, offset: i32) -> Self {
 		Self { value, offset }
 	}
@@ -34,32 +34,32 @@ impl<T: MoveOptionsInteger> MoveOptions<T> {
 	}
 }
 
-impl<T: MoveOptionsInteger> Clone for MoveOptions<T> {
+impl<T: CellChangeOptionsInteger> Clone for CellChangeOptions<T> {
 	fn clone(&self) -> Self {
 		*self
 	}
 }
 
-impl<T: MoveOptionsInteger> Copy for MoveOptions<T> {}
+impl<T: CellChangeOptionsInteger> Copy for CellChangeOptions<T> {}
 
-impl<T: MoveOptionsInteger> Eq for MoveOptions<T> {}
+impl<T: CellChangeOptionsInteger> Eq for CellChangeOptions<T> {}
 
-impl<T: MoveOptionsInteger> PartialEq for MoveOptions<T> {
+impl<T: CellChangeOptionsInteger> PartialEq for CellChangeOptions<T> {
 	fn eq(&self, other: &Self) -> bool {
 		PartialEq::eq(&self.value, &other.value) && PartialEq::eq(&self.offset, &other.offset)
 	}
 }
 
-pub trait MoveOptionsInteger: Copy + Default + Eq + self::sealed::Sealed {}
+pub trait CellChangeOptionsInteger: Copy + Default + Eq + self::sealed::Sealed {}
 
 macro_rules! impl_move_options_integer {
 	($($ty:ty)*) => {
 		$(
-			impl $crate::move_options::sealed::Sealed for $ty {}
+			impl $crate::options::sealed::Sealed for $ty {}
 
-			impl $crate::move_options::MoveOptionsInteger for $ty {}
+			impl $crate::options::CellChangeOptionsInteger for $ty {}
 		)*
 	};
 }
 
-impl_move_options_integer!(i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize);
+impl_move_options_integer!(i8 u8);

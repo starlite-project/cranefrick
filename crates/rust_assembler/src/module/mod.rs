@@ -30,7 +30,6 @@ impl RustInterpreterModule<'_> {
 			BrainIr::ChangeCell(value, offset) => {
 				Self::change_cell(*value, offset.get_or_zero(), memory, *ptr);
 			}
-			BrainIr::SubCell(offset) => Self::sub_cell(*offset, memory, *ptr),
 			BrainIr::Output(options) => Self::output(options, memory, *ptr),
 			BrainIr::InputIntoCell => Self::input_into_cell(memory, *ptr),
 			BrainIr::DynamicLoop(ops) => Self::dynamic_loop(ops, memory, ptr),

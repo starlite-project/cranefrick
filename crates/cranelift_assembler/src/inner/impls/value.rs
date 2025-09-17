@@ -1,10 +1,10 @@
 use cranelift_codegen::ir::InstBuilder as _;
-use frick_ir::MoveOptions;
+use frick_ir::CellChangeOptions;
 
 use crate::inner::{InnerAssembler, SrcLoc};
 
 impl InnerAssembler<'_> {
-	pub fn move_value_to(&mut self, options: MoveOptions) {
+	pub fn move_value_to(&mut self, options: CellChangeOptions) {
 		self.invalidate_loads_at([0, options.offset()]);
 
 		self.add_srcflag(SrcLoc::MOVE_VALUE);
@@ -25,7 +25,7 @@ impl InnerAssembler<'_> {
 		self.remove_srcflag(SrcLoc::MOVE_VALUE);
 	}
 
-	pub fn take_value_to(&mut self, options: MoveOptions) {
+	pub fn take_value_to(&mut self, options: CellChangeOptions) {
 		self.invalidate_loads_at([0, options.offset()]);
 
 		self.add_srcflag(SrcLoc::TAKE_VALUE);
@@ -48,7 +48,7 @@ impl InnerAssembler<'_> {
 		self.remove_srcflag(SrcLoc::TAKE_VALUE);
 	}
 
-	pub fn fetch_value_from(&mut self, options: MoveOptions) {
+	pub fn fetch_value_from(&mut self, options: CellChangeOptions) {
 		self.invalidate_loads_at([0, options.offset()]);
 
 		self.add_srcflag(SrcLoc::FETCH_VALUE);
@@ -68,7 +68,7 @@ impl InnerAssembler<'_> {
 		self.remove_srcflag(SrcLoc::FETCH_VALUE);
 	}
 
-	pub fn replace_value_from(&mut self, options: MoveOptions) {
+	pub fn replace_value_from(&mut self, options: CellChangeOptions) {
 		self.invalidate_loads_at([0, options.offset()]);
 
 		self.add_srcflag(SrcLoc::REPLACE_VALUE);

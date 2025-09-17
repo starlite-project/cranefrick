@@ -79,7 +79,7 @@ impl Compiler {
 		self.pass_info("optimize set-based instructions");
 		*progress |= run_peephole_pass(self, passes::optimize_sets);
 
-		self.pass_info("optimize find-zere instructions");
+		self.pass_info("optimize find-zero instructions");
 		*progress |= run_loop_pass(self, passes::optimize_find_zero);
 
 		self.pass_info("removing no-op instructions");
@@ -133,7 +133,9 @@ impl Compiler {
 		*progress |= run_peephole_pass(self, passes::remove_offsets);
 
 		self.pass_info("optimize sub cell");
-		*progress |= run_loop_pass(self, passes::optimize_sub_cell);
+		*progress |= run_loop_pass(self, passes::optimize_sub_cell_at);
+		*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from);
+		*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from_with_set);
 
 		self.pass_info("optimize if_nz");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);

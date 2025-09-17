@@ -5,6 +5,23 @@ use frick_utils::GetOrZero as _;
 use super::{BrainIr, Change};
 use crate::compiler::opt::utils::calculate_ptr_movement;
 
+pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::ChangeCell(-1, None),
+			BrainIr::ChangeCell(factor @ i8::MIN..0, Some(offset)),
+		]
+		| [
+			BrainIr::ChangeCell(factor @ i8::MIN..0, Some(offset)),
+			BrainIr::ChangeCell(-1, None),
+		] => Some(Change::replace(BrainIr::sub_cell_at(
+			factor.unsigned_abs(),
+			offset.get(),
+		))),
+		_ => None,
+	}
+}
+
 pub fn remove_unreachable_loops(ops: &[BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[a, b] if a.is_zeroing_cell() && b.needs_nonzero_cell() => Some(Change::remove_offset(1)),

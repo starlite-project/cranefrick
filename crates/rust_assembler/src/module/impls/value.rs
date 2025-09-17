@@ -1,13 +1,13 @@
 use std::mem;
 
 use frick_assembler::TAPE_SIZE;
-use frick_ir::MoveOptions;
+use frick_ir::CellChangeOptions;
 
 use crate::RustInterpreterModule;
 
 impl RustInterpreterModule<'_> {
 	pub(crate) fn move_value_to(
-		options: MoveOptions,
+		options: CellChangeOptions,
 		memory: &mut [u8; TAPE_SIZE],
 		current_ptr: usize,
 	) {
@@ -21,7 +21,7 @@ impl RustInterpreterModule<'_> {
 	}
 
 	pub(crate) fn take_value_to(
-		options: MoveOptions,
+		options: CellChangeOptions,
 		memory: &mut [u8; TAPE_SIZE],
 		current_ptr: &mut usize,
 	) {
@@ -30,7 +30,7 @@ impl RustInterpreterModule<'_> {
 	}
 
 	pub(crate) fn fetch_value_from(
-		options: MoveOptions,
+		options: CellChangeOptions,
 		memory: &mut [u8; TAPE_SIZE],
 		current_ptr: usize,
 	) {
@@ -44,7 +44,7 @@ impl RustInterpreterModule<'_> {
 	}
 
 	pub(crate) fn replace_value_from(
-		options: MoveOptions,
+		options: CellChangeOptions,
 		memory: &mut [u8; TAPE_SIZE],
 		current_ptr: usize,
 	) {
