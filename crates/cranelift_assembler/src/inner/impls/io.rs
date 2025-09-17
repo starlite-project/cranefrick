@@ -14,7 +14,7 @@ impl InnerAssembler<'_> {
 	) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
 		match options {
 			OutputOptions::Cell(options) => {
-				self.output_current_cell(options.factor(), options.offset());
+				self.output_current_cell(options.value(), options.offset());
 			}
 			OutputOptions::Char(c) => self.output_char(*c),
 			OutputOptions::Str(s) => self.output_chars(s),

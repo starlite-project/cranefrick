@@ -7,7 +7,7 @@ impl RustInterpreterModule<'_> {
 	pub(crate) fn output(options: &OutputOptions, memory: &[u8; TAPE_SIZE], current_ptr: usize) {
 		match options {
 			OutputOptions::Cell(options) => {
-				Self::output_current_cell(options.factor(), options.offset(), memory, current_ptr);
+				Self::output_current_cell(options.value(), options.offset(), memory, current_ptr);
 			}
 			OutputOptions::Char(c) => Self::output_char(*c),
 			OutputOptions::Str(s) => Self::output_chars(s),

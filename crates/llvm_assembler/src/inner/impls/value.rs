@@ -9,7 +9,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (other_cell, gep) = self.load_from(options.offset(), "move_value_to")?;
 
-		self.duplicate_value_to(current_value, other_cell, options.factor(), gep)
+		self.duplicate_value_to(current_value, other_cell, options.value(), gep)
 	}
 
 	pub fn copy_value_to(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
@@ -17,7 +17,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (other_cell, gep) = self.load_from(options.offset(), "copy_value_to")?;
 
-		self.duplicate_value_to(current_value, other_cell, options.factor(), gep)
+		self.duplicate_value_to(current_value, other_cell, options.value(), gep)
 	}
 
 	fn duplicate_value_to(
@@ -53,7 +53,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value_to_add = {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int((options.factor()).into(), false);
+			let factor = i8_type.const_int((options.value()).into(), false);
 
 			self.builder
 				.build_int_mul(current_value, factor, "take_value_to_mul")
@@ -74,7 +74,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value_to_add = {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int((options.factor()).into(), false);
+			let factor = i8_type.const_int((options.value()).into(), false);
 
 			self.builder
 				.build_int_mul(other_cell, factor, "fetch_value_from_mul")
@@ -88,7 +88,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn replace_value_from(&self, options: MoveOptions) -> Result<(), LlvmAssemblyError> {
-		if matches!(options.factor(), 1) {
+		if matches!(options.value(), 1) {
 			self.replace_value_from_memmoved(options.offset())
 		} else {
 			self.replace_value_from_factorized(options)
@@ -128,7 +128,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value_to_store = {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int((options.factor()).into(), false);
+			let factor = i8_type.const_int((options.value()).into(), false);
 
 			self.builder
 				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul")?
