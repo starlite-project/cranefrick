@@ -50,7 +50,7 @@ impl<T: MoveOptionsInteger> PartialEq for MoveOptions<T> {
 	}
 }
 
-pub trait MoveOptionsInteger: Copy + Default + Eq {}
+pub trait MoveOptionsInteger: Copy + Default + Eq + self::sealed::Sealed {}
 
 macro_rules! impl_move_options_integer {
 	($($ty:ty)*) => {
