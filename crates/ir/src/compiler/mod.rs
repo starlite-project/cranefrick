@@ -73,17 +73,18 @@ impl Compiler {
 		*progress |= passes::fix_beginning_instructions(self);
 		*progress |= passes::fix_ending_instructions(self);
 
-		self.pass_info("optimize clear-cell instructions");
+		self.pass_info("optimize clear cell instructions");
 		*progress |= run_loop_pass(self, passes::clear_cell);
 
 		self.pass_info("optimize set-based instructions");
 		*progress |= run_peephole_pass(self, passes::optimize_sets);
 
-		self.pass_info("optimize find-zero instructions");
+		self.pass_info("optimize find zero instructions");
 		*progress |= run_loop_pass(self, passes::optimize_find_zero);
 
 		self.pass_info("removing no-op instructions");
 		*progress |= run_peephole_pass(self, passes::remove_noop_instructions);
+		*progress |= run_loop_pass(self, passes::unroll_noop_loop);
 
 		self.pass_info("removing unreachable loops");
 		*progress |= run_peephole_pass(self, passes::remove_unreachable_loops);
@@ -120,9 +121,6 @@ impl Compiler {
 		*progress |= run_peephole_pass(self, passes::optimize_sets_and_writes);
 		*progress |= run_peephole_pass(self, passes::optimize_offset_writes);
 
-		self.pass_info("optimize no-op loop");
-		*progress |= run_loop_pass(self, passes::unroll_noop_loop);
-
 		self.pass_info("remove redundant take instructions");
 		*progress |= run_peephole_pass(self, passes::remove_redundant_shifts);
 
@@ -138,7 +136,7 @@ impl Compiler {
 		*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from_with_set);
 		*progress |= run_peephole_pass(self, passes::optimize_constant_sub);
 
-		self.pass_info("optimize if_nz");
+		self.pass_info("optimize if not zero");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);
 
 		self.pass_info("optimize duplicate cell");
