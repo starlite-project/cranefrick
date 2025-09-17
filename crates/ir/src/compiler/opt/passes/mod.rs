@@ -80,7 +80,7 @@ pub const fn remove_noop_instructions(ops: &[BrainIr; 1]) -> Option<Change> {
 
 pub fn fix_beginning_instructions(ops: &mut Vec<BrainIr>) -> bool {
 	match ops.first_mut() {
-		Some(BrainIr::DynamicLoop(..)) => {
+		Some(l) if l.needs_nonzero_cell() => {
 			ops.remove(0);
 			true
 		}
@@ -332,6 +332,14 @@ pub fn optimize_offset_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 			BrainIr::change_cell(a.wrapping_add(*b)),
 		])),
 		[
+			BrainIr::ChangeCell(a, None),
+			BrainIr::Output(OutputOptions::Cell(options)),
+			BrainIr::ChangeCell(b, None),
+		] if matches!(options.offset(), 0) => Some(Change::swap([
+			BrainIr::change_cell(a.wrapping_add(*b)),
+			BrainIr::output_offset_cell(options.factor().wrapping_sub(*b)),
+		])),
+		[
 			BrainIr::MovePointer(x),
 			BrainIr::Output(OutputOptions::Cell(options)),
 			BrainIr::MovePointer(y),
@@ -340,12 +348,12 @@ pub fn optimize_offset_writes(ops: &[BrainIr; 3]) -> Option<Change> {
 			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
 		[
-			BrainIr::ChangeCell(a, None),
-			BrainIr::Output(OutputOptions::Cell(options)),
-			l,
-		] if matches!(options.offset(), 0) && l.is_zeroing_cell() => Some(Change::swap([
-			BrainIr::output_offset_cell(a.wrapping_add(options.factor())),
-			l.clone(),
+			BrainIr::MovePointer(x),
+			out @ BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
+			BrainIr::MovePointer(y),
+		] => Some(Change::swap([
+			out.clone(),
+			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
 		_ => None,
 	}
