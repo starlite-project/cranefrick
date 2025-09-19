@@ -130,34 +130,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	{
 		let basic_type = ty.as_basic_type_enum();
 
-		// assert!(basic_type.is_array_type() || basic_type.is_int_type());
-
-		// Ok(if basic_type.is_array_type() {
-		// 	let zero = {
-		// 		let ptr_int_type = self.ptr_int_type;
-
-		// 		ptr_int_type.const_zero()
-		// 	};
-
-		// 	unsafe {
-		// 		self.builder.build_in_bounds_gep(
-		// 			basic_type.into_array_type(),
-		// 			self.pointers.tape,
-		// 			&[zero, offset],
-		// 			&format!("{name}_array_gep"),
-		// 		)?
-		// 	}
-		// } else {
-		// 	unsafe {
-		// 		self.builder.build_in_bounds_gep(
-		// 			basic_type.into_int_type(),
-		// 			self.pointers.tape,
-		// 			&[offset],
-		// 			&format!("{name}_gep"),
-		// 		)?
-		// 	}
-		// })
-
 		match basic_type {
 			BasicTypeEnum::IntType(ty) => Ok(unsafe {
 				self.builder.build_in_bounds_gep(
