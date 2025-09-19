@@ -31,6 +31,10 @@ impl InnerAssembler<'_> {
 			"output_current_cell_extend",
 		)?;
 
+		if let Some(extended_instr) = extended_loaded_value.as_instruction() {
+			extended_instr.set_non_negative_flag(true);
+		}
+
 		let offset_loaded_value = {
 			let offset_value = i32_type.const_int(value_offset as u64, false);
 
