@@ -362,6 +362,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonnull"), 0);
 		let dead_on_unwind_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("dead_on_unwind"), 0);
+		let sret_attr = context.create_type_attribute(
+			Attribute::get_named_enum_kind_id("sret"),
+			context.i8_type().into(),
+		);
 
 		for attribute in [
 			writeonly_attr,
@@ -370,6 +374,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			nofree_attr,
 			nonnull_attr,
 			dead_on_unwind_attr,
+			sret_attr,
 		] {
 			self.getchar
 				.add_attribute(AttributeLoc::Param(0), attribute);
