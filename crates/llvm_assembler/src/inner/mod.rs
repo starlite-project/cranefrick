@@ -380,6 +380,14 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	}
 
 	fn setup_putchar_attributes(self, context: &'ctx Context) -> Self {
+		let memory_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 1);
+
+		for attribute in std::iter::once(memory_attr) {
+			self.putchar
+				.add_attribute(AttributeLoc::Function, attribute);
+		}
+
 		let zeroext_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
 
