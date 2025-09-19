@@ -257,5 +257,5 @@ fn is_vectorizable(values: &[CellChangeOptions<i8>]) -> bool {
 }
 
 const fn is_vector_size<T>(values: &[T]) -> bool {
-	matches!(values.len(), 2 | 4 | 8 | 16 | 32 | 64)
+	values.len() >= 2
 }
