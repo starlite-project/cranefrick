@@ -9,7 +9,7 @@ use frick_utils::GetOrZero as _;
 
 pub use self::{loops::*, sort::*};
 use super::Change;
-use crate::{BrainIr, OutputOptions};
+use crate::{BrainIr, CellChangeOptions, OutputOptions, get_range, is_range};
 
 pub fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
@@ -602,6 +602,36 @@ pub fn optimize_mem_ops(ops: [&BrainIr; 2]) -> Option<Change> {
 				start: y,
 			},
 		] if *x == *y && a.len() <= b.len() => Some(Change::remove_offset(0)),
+		_ => None,
+	}
+}
+
+pub fn optimize_duplicate_cell_vectorization(ops: [&BrainIr; 1]) -> Option<Change> {
+	match ops {
+		[BrainIr::DuplicateCell { values }] => {
+			if is_range(values) {
+				return None;
+			}
+
+			let mut out = Vec::new();
+
+			for w in values.windows(2) {
+				let a = w[0];
+				let b = w[1];
+
+				out.push(a);
+
+				for missing_offset in (a.offset() + 1)..b.offset() {
+					out.push(CellChangeOptions::new(0, missing_offset));
+				}
+			}
+
+			if let Some(last) = values.last() {
+				out.push(*last);
+			}
+
+			Some(Change::replace(BrainIr::DuplicateCell { values: out }))
+		}
 		_ => None,
 	}
 }

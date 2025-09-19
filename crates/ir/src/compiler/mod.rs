@@ -141,6 +141,7 @@ impl Compiler {
 
 		self.pass_info("optimize duplicate cell");
 		*progress |= run_loop_pass(self, passes::optimize_duplicate_cell);
+		*progress |= run_peephole_pass(self, passes::optimize_duplicate_cell_vectorization);
 
 		self.pass_info("optimize memory operations");
 		*progress |= run_peephole_pass(self, passes::optimize_mem_ops);
