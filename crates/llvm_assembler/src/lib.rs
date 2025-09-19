@@ -23,7 +23,8 @@ use inkwell::{
 	passes::PassBuilderOptions,
 	support::LLVMString,
 	targets::{
-		CodeModel, InitializationConfig, RelocMode, Target, TargetMachine, TargetMachineOptions,
+		CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine,
+		TargetMachineOptions,
 	},
 };
 use inner::AssemblerFunctions;
@@ -129,11 +130,20 @@ impl Assembler for LlvmAssembler {
 			.print_to_file(output_path.join("unoptimized.ll"))
 			.map_err(AssemblyError::backend)?;
 
+		info!("writing unoptimized object file");
+		target_machine
+			.write_to_file(
+				&module,
+				FileType::Object,
+				&output_path.join("unoptimized.obj"),
+			)
+			.map_err(AssemblyError::backend)?;
+
 		info!("writing unoptimized asm");
 		target_machine
 			.write_to_file(
 				&module,
-				inkwell::targets::FileType::Assembly,
+				FileType::Assembly,
 				&output_path.join("unoptimized.asm"),
 			)
 			.map_err(AssemblyError::backend)?;
@@ -165,11 +175,20 @@ impl Assembler for LlvmAssembler {
 			.print_to_file(output_path.join("optimized.ll"))
 			.map_err(AssemblyError::backend)?;
 
+		info!("writing optimized object file");
+		target_machine
+			.write_to_file(
+				&module,
+				FileType::Object,
+				&output_path.join("optimized.obj"),
+			)
+			.map_err(AssemblyError::backend)?;
+
 		info!("writing optimized asm");
 		target_machine
 			.write_to_file(
 				&module,
-				inkwell::targets::FileType::Assembly,
+				FileType::Assembly,
 				&output_path.join("optimized.asm"),
 			)
 			.map_err(AssemblyError::backend)?;
