@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use inkwell::{
-	types::BasicType,
+	types::{BasicType, BasicTypeEnum},
 	values::{IntValue, PointerValue},
 };
 
@@ -130,32 +130,68 @@ impl<'ctx> InnerAssembler<'ctx> {
 	{
 		let basic_type = ty.as_basic_type_enum();
 
-		assert!(basic_type.is_array_type() || basic_type.is_int_type());
+		// assert!(basic_type.is_array_type() || basic_type.is_int_type());
 
-		Ok(if basic_type.is_array_type() {
-			let zero = {
-				let ptr_int_type = self.ptr_int_type;
+		// Ok(if basic_type.is_array_type() {
+		// 	let zero = {
+		// 		let ptr_int_type = self.ptr_int_type;
 
-				ptr_int_type.const_zero()
-			};
+		// 		ptr_int_type.const_zero()
+		// 	};
 
-			unsafe {
+		// 	unsafe {
+		// 		self.builder.build_in_bounds_gep(
+		// 			basic_type.into_array_type(),
+		// 			self.pointers.tape,
+		// 			&[zero, offset],
+		// 			&format!("{name}_array_gep"),
+		// 		)?
+		// 	}
+		// } else {
+		// 	unsafe {
+		// 		self.builder.build_in_bounds_gep(
+		// 			basic_type.into_int_type(),
+		// 			self.pointers.tape,
+		// 			&[offset],
+		// 			&format!("{name}_gep"),
+		// 		)?
+		// 	}
+		// })
+
+		match basic_type {
+			BasicTypeEnum::IntType(ty) => Ok(unsafe {
 				self.builder.build_in_bounds_gep(
-					basic_type.into_array_type(),
-					self.pointers.tape,
-					&[zero, offset],
-					&format!("{name}_array_gep"),
-				)?
-			}
-		} else {
-			unsafe {
-				self.builder.build_in_bounds_gep(
-					basic_type.into_int_type(),
+					ty,
 					self.pointers.tape,
 					&[offset],
-					&format!("{name}_gep"),
+					&format!("{name}_int_gep"),
 				)?
+			}),
+			BasicTypeEnum::VectorType(ty) => {
+				let zero = self.ptr_int_type.const_zero();
+
+				Ok(unsafe {
+					self.builder.build_in_bounds_gep(
+						ty,
+						self.pointers.tape,
+						&[zero, offset],
+						&format!("{name}_vector_gep"),
+					)?
+				})
 			}
-		})
+			BasicTypeEnum::ArrayType(ty) => {
+				let zero = self.ptr_int_type.const_zero();
+
+				Ok(unsafe {
+					self.builder.build_in_bounds_gep(
+						ty,
+						self.pointers.tape,
+						&[zero, offset],
+						&format!("{name}_array_gep"),
+					)?
+				})
+			}
+			other => Err(LlvmAssemblyError::InvalidGEPType(other.to_string())),
+		}
 	}
 }

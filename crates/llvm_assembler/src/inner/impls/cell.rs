@@ -1,7 +1,6 @@
 use std::ops::RangeInclusive;
 
 use frick_ir::CellChangeOptions;
-use inkwell::types::{ScalableVectorType, VectorType};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -130,7 +129,7 @@ impl InnerAssembler<'_> {
 
 		let current_offset = self.offset_pointer(range_start)?;
 
-		let gep = self.gep(i8_type, current_offset, "duplicate_cell_vectorized")?;
+		let gep = self.gep(i8_vector_type, current_offset, "duplicate_cell_vectorized")?;
 
 		let loaded_values = self
 			.builder

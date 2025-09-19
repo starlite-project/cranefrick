@@ -231,6 +231,7 @@ pub enum LlvmAssemblyError {
 	NoTargetMachine,
 	InvalidMetadata,
 	IntrinsicNotFound(Cow<'static, str>),
+	InvalidGEPType(String),
 	Inkwell(inkwell::Error),
 }
 
@@ -255,6 +256,11 @@ impl Display for LlvmAssemblyError {
 				f.write_str(intrinsic)?;
 				f.write_str("' was not found")
 			}
+			Self::InvalidGEPType(ty) => {
+				f.write_str("type ")?;
+				f.write_str(ty)?;
+				f.write_str(" is invalid for GEP")
+			}
 		}
 	}
 }
@@ -266,7 +272,8 @@ impl StdError for LlvmAssemblyError {
 			Self::NoTargetMachine
 			| Self::Llvm(..)
 			| Self::InvalidMetadata
-			| Self::IntrinsicNotFound(..) => None,
+			| Self::IntrinsicNotFound(..)
+			| Self::InvalidGEPType(..) => None,
 		}
 	}
 }
