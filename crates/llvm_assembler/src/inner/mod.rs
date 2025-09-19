@@ -1,5 +1,7 @@
 mod impls;
 
+use std::path::{Path, PathBuf};
+
 use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use frick_utils::GetOrZero as _;
@@ -7,8 +9,9 @@ use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	builder::Builder,
 	context::{Context, ContextRef},
+	debug_info::{DICompileUnit, DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder},
 	intrinsics::Intrinsic,
-	module::{Linkage, Module},
+	module::{FlagBehavior, Linkage, Module},
 	targets::TargetMachine,
 	types::IntType,
 	values::{FunctionValue, PointerValue},
@@ -16,7 +19,6 @@ use inkwell::{
 
 use super::{ContextExt, LlvmAssemblyError};
 
-#[allow(dead_code)]
 pub struct InnerAssembler<'ctx> {
 	module: Module<'ctx>,
 	builder: Builder<'ctx>,
@@ -24,12 +26,15 @@ pub struct InnerAssembler<'ctx> {
 	pointers: AssemblerPointers<'ctx>,
 	ptr_int_type: IntType<'ctx>,
 	target_machine: TargetMachine,
+	di_builder: DebugInfoBuilder<'ctx>,
+	compile_unit: DICompileUnit<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn new(
 		context: &'ctx Context,
 		target_machine: TargetMachine,
+		path: Option<&Path>,
 	) -> Result<Self, LlvmAssemblyError> {
 		let module = context.create_module("frick");
 		let functions = AssemblerFunctions::new(context, &module)?;
@@ -40,6 +45,55 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (pointers, ptr_int_type) = AssemblerPointers::new(&module, functions, &builder)?;
 
+		let debug_metadata_version = {
+			let i32_type = context.i32_type();
+
+			i32_type.const_int(inkwell::debug_info::debug_metadata_version().into(), false)
+		};
+
+		module.add_basic_value_flag(
+			"Debug Info Version",
+			FlagBehavior::Warning,
+			debug_metadata_version,
+		);
+
+		let (file_name, directory) = if let Some(path) = path {
+			assert!(path.is_file());
+
+			let file_name = path
+				.file_name()
+				.map(|s| s.to_string_lossy().into_owned())
+				.unwrap_or_default();
+
+			let directory = path
+				.parent()
+				.and_then(|s| s.canonicalize().ok())
+				.map(|s| s.to_string_lossy().into_owned())
+				.unwrap_or_default();
+
+			(file_name, directory)
+		} else {
+			("frick_source_file.bf".to_owned(), "/".to_owned())
+		};
+
+		let (di_builder, compile_unit) = module.create_debug_info_builder(
+			true,
+			DWARFSourceLanguage::C,
+			&file_name,
+			&directory,
+			"frick",
+			true,
+			"",
+			0,
+			"",
+			DWARFEmissionKind::Full,
+			0,
+			false,
+			false,
+			"",
+			"",
+		);
+
 		Ok(Self {
 			module,
 			builder,
@@ -47,6 +101,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			pointers,
 			ptr_int_type,
 			target_machine,
+			di_builder,
+			compile_unit,
 		})
 	}
 
@@ -104,6 +160,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.module.set_data_layout(&data_layout);
 		self.module.set_triple(&target_triple);
+
+		self.di_builder.finalize();
 
 		Ok(self.into_parts())
 	}

@@ -78,7 +78,7 @@ fn main() -> Result<()> {
 		}
 		#[cfg(feature = "llvm")]
 		Args::Llvm { passes_path, .. } => {
-			let assembler = match passes_path {
+			let mut assembler = match passes_path {
 				None => LlvmAssembler::default(),
 				Some(passes_path) => {
 					let passes = fs::read_to_string(passes_path)?;
@@ -92,6 +92,8 @@ fn main() -> Result<()> {
 					)
 				}
 			};
+
+			assembler.set_path(args.file_path().to_owned());
 
 			let module = assembler.assemble(&compiler, args.output_path())?;
 

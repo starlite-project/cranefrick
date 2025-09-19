@@ -9,7 +9,7 @@ use std::{
 	error::Error as StdError,
 	ffi::CStr,
 	fmt::{Display, Formatter, Result as FmtResult},
-	path::Path,
+	path::{Path, PathBuf},
 };
 
 use frick_assembler::{
@@ -36,6 +36,7 @@ pub use self::module::LlvmAssembledModule;
 pub struct LlvmAssembler {
 	context: Context,
 	passes: String,
+	file_path: Option<PathBuf>,
 }
 
 impl LlvmAssembler {
@@ -51,7 +52,21 @@ impl LlvmAssembler {
 		Self {
 			context: Context::create(),
 			passes,
+			file_path: None,
 		}
+	}
+
+	pub fn set_path(&mut self, path: PathBuf) {
+		self.file_path = Some(path);
+	}
+
+	#[must_use]
+	pub fn with_path(passes: String, path: PathBuf) -> Self {
+		let mut this = Self::new(passes);
+
+		this.set_path(path);
+
+		this
 	}
 }
 
@@ -104,7 +119,8 @@ impl Assembler for LlvmAssembler {
 
 		info!("lowering into LLVM IR");
 
-		let assembler = InnerAssembler::new(&self.context, target_machine)?;
+		let assembler =
+			InnerAssembler::new(&self.context, target_machine, self.file_path.as_deref())?;
 
 		let (module, AssemblerFunctions { main, .. }, target_machine) = assembler.assemble(ops)?;
 
