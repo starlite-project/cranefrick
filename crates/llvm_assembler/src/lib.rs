@@ -231,7 +231,7 @@ pub enum LlvmAssemblyError {
 	NoTargetMachine,
 	InvalidMetadata,
 	IntrinsicNotFound(Cow<'static, str>),
-	Builder(BuilderError),
+	Inkwell(inkwell::Error),
 }
 
 impl LlvmAssemblyError {
@@ -248,7 +248,7 @@ impl Display for LlvmAssemblyError {
 				f.write_str(l)
 			}
 			Self::NoTargetMachine => f.write_str("unable to get target machine"),
-			Self::Builder(..) => f.write_str("an error occurred building an instruction"),
+			Self::Inkwell(..) => f.write_str("an error occurred during translation"),
 			Self::InvalidMetadata => f.write_str("invalid metadata type"),
 			Self::IntrinsicNotFound(intrinsic) => {
 				f.write_str("instrinsic '")?;
@@ -262,7 +262,7 @@ impl Display for LlvmAssemblyError {
 impl StdError for LlvmAssemblyError {
 	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
-			Self::Builder(e) => Some(e),
+			Self::Inkwell(e) => Some(e),
 			Self::NoTargetMachine
 			| Self::Llvm(..)
 			| Self::InvalidMetadata
@@ -279,7 +279,13 @@ impl From<LLVMString> for LlvmAssemblyError {
 
 impl From<BuilderError> for LlvmAssemblyError {
 	fn from(value: BuilderError) -> Self {
-		Self::Builder(value)
+		Self::Inkwell(value.into())
+	}
+}
+
+impl From<inkwell::Error> for LlvmAssemblyError {
+	fn from(value: inkwell::Error) -> Self {
+		Self::Inkwell(value)
 	}
 }
 

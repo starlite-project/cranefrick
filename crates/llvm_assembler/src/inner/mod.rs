@@ -6,6 +6,7 @@ use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use frick_utils::GetOrZero as _;
 use inkwell::{
+	AddressSpace,
 	attributes::{Attribute, AttributeLoc},
 	builder::Builder,
 	context::{Context, ContextRef},
@@ -108,12 +109,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			compile_unit,
 		};
 
-		this.setup_debug_info();
+		this.setup_debug_info()?;
 
 		Ok(this)
 	}
 
-	fn setup_debug_info(&self) {
+	fn setup_debug_info(&self) -> Result<(), LlvmAssemblyError> {
 		let subroutine_type = self.di_builder.create_subroutine_type(
 			self.compile_unit.get_file(),
 			None,
@@ -136,6 +137,69 @@ impl<'ctx> InnerAssembler<'ctx> {
 		);
 
 		self.functions.main.set_subprogram(func_scope);
+
+		let i32_di_type = self
+			.di_builder
+			.create_basic_type("u32", 4, 7, i32::PUBLIC)?
+			.as_type();
+
+		let putchar_subroutine_type = self.di_builder.create_subroutine_type(
+			self.compile_unit.get_file(),
+			None,
+			&[i32_di_type],
+			i32::PUBLIC,
+		);
+
+		let putchar_func_scope = self.di_builder.create_function(
+			self.compile_unit.as_debug_info_scope(),
+			"putchar",
+			Some("frick_assembler_write"),
+			self.compile_unit.get_file(),
+			0,
+			putchar_subroutine_type,
+			false,
+			false,
+			0,
+			i32::PUBLIC,
+			true,
+		);
+
+		self.functions.putchar.set_subprogram(putchar_func_scope);
+
+		let i8_di_type = self
+			.di_builder
+			.create_basic_type("u8", 1, 7, i32::PUBLIC)?
+			.as_type();
+
+		let i8_ptr_di_type = self
+			.di_builder
+			.create_pointer_type("u8*", i8_di_type, 8, 4, AddressSpace::default())
+			.as_type();
+
+		let getchar_subroutine_type = self.di_builder.create_subroutine_type(
+			self.compile_unit.get_file(),
+			None,
+			&[i8_ptr_di_type],
+			i32::PUBLIC,
+		);
+
+		let getchar_func_scope = self.di_builder.create_function(
+			self.compile_unit.as_debug_info_scope(),
+			"getchar",
+			Some("frick_assembler_read"),
+			self.compile_unit.get_file(),
+			0,
+			getchar_subroutine_type,
+			false,
+			false,
+			0,
+			i32::PUBLIC,
+			true,
+		);
+
+		self.functions.getchar.set_subprogram(getchar_func_scope);
+
+		Ok(())
 	}
 
 	pub fn context(&self) -> ContextRef<'ctx> {
