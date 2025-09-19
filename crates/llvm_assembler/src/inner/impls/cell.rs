@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use frick_ir::CellChangeOptions;
+use frick_ir::{CellChangeOptions, get_range, is_range};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -253,29 +253,7 @@ fn is_vectorizable(values: &[CellChangeOptions<i8>]) -> bool {
 		return false;
 	}
 
-	let Some(range) = get_range(values) else {
-		return false;
-	};
-
-	for offset in values.iter().map(CellChangeOptions::offset) {
-		if !range.contains(&offset) {
-			return false;
-		}
-	}
-
-	let len_of_values = values.len();
-
-	range.count() == len_of_values && len_of_values.is_power_of_two()
-}
-
-fn get_range(values: &[CellChangeOptions<i8>]) -> Option<RangeInclusive<i32>> {
-	assert!(values.len() > 1);
-
-	let first = values.first().copied()?;
-
-	let last = values.last().copied()?;
-
-	Some(first.offset()..=last.offset())
+	is_range(values) && values.len().is_power_of_two()
 }
 
 const fn is_vector_size<T>(values: &[T]) -> bool {

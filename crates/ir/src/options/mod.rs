@@ -1,5 +1,7 @@
 mod sealed;
 
+use std::ops::RangeInclusive;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -63,3 +65,31 @@ macro_rules! impl_move_options_integer {
 }
 
 impl_move_options_integer!(i8 u8);
+
+pub fn is_range<T: CellChangeOptionsInteger>(values: &[CellChangeOptions<T>]) -> bool {
+	let Some(range) = get_range(values) else {
+		return false;
+	};
+
+	for offset in values.iter().map(CellChangeOptions::offset) {
+		if !range.contains(&offset) {
+			return false;
+		}
+	}
+
+	let len_of_values = values.len();
+
+	range.count() == len_of_values
+}
+
+pub fn get_range<T: CellChangeOptionsInteger>(
+	values: &[CellChangeOptions<T>],
+) -> Option<RangeInclusive<i32>> {
+	assert!(values.len() > 1);
+
+	let first = values.first().copied()?;
+
+	let last = values.last().copied()?;
+
+	Some(first.offset()..=last.offset())
+}
