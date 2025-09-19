@@ -327,8 +327,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("willreturn"), 0);
 		let nosync_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nosync"), 0);
-		let speculatable_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("speculatable"), 0);
 
 		for attribute in [
 			nofree_attr,
@@ -338,7 +336,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			norecurse_attr,
 			willreturn_attr,
 			nosync_attr,
-			speculatable_attr,
 		] {
 			self.getchar
 				.add_attribute(AttributeLoc::Function, attribute);
@@ -351,7 +348,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 	fn setup_getchar_attributes(self, context: &'ctx Context) -> Self {
 		let memory_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 2);
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 6);
 
 		self.getchar
 			.add_attribute(AttributeLoc::Function, memory_attr);
@@ -386,7 +383,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 	fn setup_putchar_attributes(self, context: &'ctx Context) -> Self {
 		let memory_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 1);
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 9);
 
 		for attribute in iter::once(memory_attr) {
 			self.putchar
