@@ -1,7 +1,7 @@
 use std::ops::RangeInclusive;
 
 use frick_ir::CellChangeOptions;
-use inkwell::types::VectorType;
+use inkwell::types::{ScalableVectorType, VectorType};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -154,15 +154,22 @@ impl InnerAssembler<'_> {
 		};
 
 		let vector_of_new_values = {
-			let mut vec_of_values_for_vector = Vec::with_capacity(values.len());
+			let mut vec = i8_vector_type.const_zero();
 
-			for factor in values.iter().copied().map(CellChangeOptions::value) {
+			for (i, factor) in values
+				.iter()
+				.copied()
+				.map(CellChangeOptions::value)
+				.enumerate()
+			{
+				let index = i64_type.const_int(i as u64, false);
+
 				let factor = i8_type.const_int(factor as u64, false);
 
-				vec_of_values_for_vector.push(factor);
+				vec = vec.const_insert_element(index, factor).into_vector_value();
 			}
 
-			VectorType::const_vector(&vec_of_values_for_vector)
+			vec
 		};
 
 		let modified_vector_of_values = if values
