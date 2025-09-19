@@ -1,6 +1,6 @@
 mod impls;
 
-use std::path::Path;
+use std::{iter, path::Path};
 
 use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
@@ -306,10 +306,12 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let noundef_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
 
-		self.putchar
-			.add_attribute(AttributeLoc::Param(0), noundef_attr);
-		self.getchar
-			.add_attribute(AttributeLoc::Param(0), noundef_attr);
+		for attribute in iter::once(noundef_attr) {
+			self.putchar
+				.add_attribute(AttributeLoc::Param(0), attribute);
+			self.getchar
+				.add_attribute(AttributeLoc::Param(0), attribute);
+		}
 
 		let nofree_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
@@ -325,6 +327,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("willreturn"), 0);
 		let nosync_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nosync"), 0);
+		let speculatable_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("speculatable"), 0);
 
 		for attribute in [
 			nofree_attr,
@@ -334,6 +338,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			norecurse_attr,
 			willreturn_attr,
 			nosync_attr,
+			speculatable_attr,
 		] {
 			self.getchar
 				.add_attribute(AttributeLoc::Function, attribute);
@@ -383,7 +388,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let memory_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 1);
 
-		for attribute in std::iter::once(memory_attr) {
+		for attribute in iter::once(memory_attr) {
 			self.putchar
 				.add_attribute(AttributeLoc::Function, attribute);
 		}
@@ -391,7 +396,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let zeroext_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
 
-		for attribute in std::iter::once(zeroext_attr) {
+		for attribute in iter::once(zeroext_attr) {
 			self.putchar
 				.add_attribute(AttributeLoc::Param(0), attribute);
 		}
