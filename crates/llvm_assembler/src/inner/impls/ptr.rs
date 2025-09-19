@@ -5,7 +5,7 @@ use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn move_pointer(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let wrapped_ptr = self.offset_ptr(offset)?;
+		let wrapped_ptr = self.offset_pointer(offset)?;
 
 		self.builder
 			.build_store(self.pointers.pointer, wrapped_ptr)?;
@@ -13,7 +13,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub fn offset_ptr(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+	pub fn offset_pointer(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
 		let ptr_type = self.ptr_int_type;
 		let offset_value = ptr_type.const_int(offset as u64, false);
 

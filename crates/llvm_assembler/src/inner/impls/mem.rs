@@ -25,7 +25,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(IntValue<'ctx>, PointerValue<'ctx>), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let current_offset = self.offset_ptr(offset)?;
+		let current_offset = self.offset_pointer(offset)?;
 
 		let gep = self.gep(i8_type, current_offset, format!("{fn_name}_load_from"))?;
 
@@ -113,7 +113,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let current_offset = self.offset_ptr(offset)?;
+		let current_offset = self.offset_pointer(offset)?;
 
 		let gep = self.gep(i8_type, current_offset, fn_name)?;
 		self.store_into_inner(value, gep)

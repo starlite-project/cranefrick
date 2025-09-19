@@ -99,13 +99,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = self.context().i8_type();
 
 		let current_cell_gep = {
-			let ptr = self.offset_ptr(0)?;
+			let ptr = self.offset_pointer(0)?;
 
 			self.gep(i8_type, ptr, "replace_value_from_memmoved")?
 		};
 
 		let other_value_gep = {
-			let ptr = self.offset_ptr(offset)?;
+			let ptr = self.offset_pointer(offset)?;
 
 			self.gep(i8_type, ptr, "replace_value_from_memmoved")?
 		};

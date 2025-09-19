@@ -86,7 +86,7 @@ impl InnerAssembler<'_> {
 		)?;
 
 		let gep = {
-			let current_ptr = self.offset_ptr(0)?;
+			let current_ptr = self.offset_pointer(0)?;
 
 			self.gep(i8_type, current_ptr, "input_into_cell")?
 		};

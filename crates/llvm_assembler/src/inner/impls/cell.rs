@@ -128,7 +128,7 @@ impl InnerAssembler<'_> {
 			*range.start()
 		};
 
-		let current_offset = self.offset_ptr(range_start)?;
+		let current_offset = self.offset_pointer(range_start)?;
 
 		let gep = self.gep(i8_type, current_offset, "duplicate_cell_vectorized")?;
 
@@ -205,7 +205,7 @@ impl InnerAssembler<'_> {
 
 		let constant_array = i8_type.const_array(&vec_of_values);
 
-		let current_offset = self.offset_ptr(start)?;
+		let current_offset = self.offset_pointer(start)?;
 
 		let gep = self.gep(i8_type, current_offset, "set_many_cells")?;
 
@@ -229,7 +229,7 @@ impl InnerAssembler<'_> {
 			ptr_int_type.const_int(range_len as u64, false)
 		};
 
-		let start_value = self.offset_ptr(start)?;
+		let start_value = self.offset_pointer(start)?;
 
 		let value_value = i8_type.const_int(value.into(), false);
 
