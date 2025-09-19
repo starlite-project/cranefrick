@@ -97,14 +97,35 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"",
 		);
 
-		let subroutine_type =
-			di_builder.create_subroutine_type(compile_unit.get_file(), None, &[], i32::PUBLIC);
+		let this = Self {
+			module,
+			builder,
+			functions,
+			pointers,
+			ptr_int_type,
+			target_machine,
+			di_builder,
+			compile_unit,
+		};
 
-		let func_scope = di_builder.create_function(
-			compile_unit.as_debug_info_scope(),
+		this.setup_debug_info();
+
+		Ok(this)
+	}
+
+	fn setup_debug_info(&self) {
+		let subroutine_type = self.di_builder.create_subroutine_type(
+			self.compile_unit.get_file(),
+			None,
+			&[],
+			i32::PUBLIC,
+		);
+
+		let func_scope = self.di_builder.create_function(
+			self.compile_unit.as_debug_info_scope(),
 			"main",
 			None,
-			compile_unit.get_file(),
+			self.compile_unit.get_file(),
 			0,
 			subroutine_type,
 			true,
@@ -114,18 +135,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			false,
 		);
 
-		functions.main.set_subprogram(func_scope);
-
-		Ok(Self {
-			module,
-			builder,
-			functions,
-			pointers,
-			ptr_int_type,
-			target_machine,
-			di_builder,
-			compile_unit,
-		})
+		self.functions.main.set_subprogram(func_scope);
 	}
 
 	pub fn context(&self) -> ContextRef<'ctx> {
