@@ -132,7 +132,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		assert!(basic_type.is_array_type() || basic_type.is_int_type());
 
-		let gep = if basic_type.is_array_type() {
+		Ok(if basic_type.is_array_type() {
 			let zero = {
 				let ptr_int_type = self.ptr_int_type;
 
@@ -156,8 +156,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 					&format!("{name}_gep"),
 				)?
 			}
-		};
-
-		Ok(gep)
+		})
 	}
 }
