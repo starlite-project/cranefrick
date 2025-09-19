@@ -9,7 +9,7 @@ use frick_utils::GetOrZero as _;
 
 pub use self::{loops::*, sort::*};
 use super::Change;
-use crate::{BrainIr, CellChangeOptions, OutputOptions, get_range, is_range};
+use crate::{BrainIr, CellChangeOptions, OutputOptions, is_range};
 
 pub fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
