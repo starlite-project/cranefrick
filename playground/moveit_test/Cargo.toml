@@ -1,0 +1,11 @@
+[package]
+name = "moveit_test"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

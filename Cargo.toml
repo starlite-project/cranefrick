@@ -53,7 +53,7 @@ members = [
     "crates/ir",
     "crates/llvm_assembler",
     "crates/rust_assembler",
-    "crates/utils",
+    "crates/utils", "playground/moveit_test",
     "tools/pattern_finder"
 ]
 resolver = "3"
