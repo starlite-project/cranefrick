@@ -1,6 +1,6 @@
 mod impls;
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
@@ -9,7 +9,10 @@ use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	builder::Builder,
 	context::{Context, ContextRef},
-	debug_info::{DICompileUnit, DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder},
+	debug_info::{
+		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DWARFEmissionKind,
+		DWARFSourceLanguage, DebugInfoBuilder,
+	},
 	intrinsics::Intrinsic,
 	module::{FlagBehavior, Linkage, Module},
 	targets::TargetMachine,
@@ -93,6 +96,25 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"",
 			"",
 		);
+
+		let subroutine_type =
+			di_builder.create_subroutine_type(compile_unit.get_file(), None, &[], i32::PUBLIC);
+
+		let func_scope = di_builder.create_function(
+			compile_unit.as_debug_info_scope(),
+			"main",
+			None,
+			compile_unit.get_file(),
+			0,
+			subroutine_type,
+			true,
+			true,
+			0,
+			i32::PUBLIC,
+			false,
+		);
+
+		functions.main.set_subprogram(func_scope);
 
 		Ok(Self {
 			module,
@@ -390,10 +412,10 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let ptr_int_type = context.i64_type();
 
 		let tape = {
-			let i8_array_size = i8_type.array_type(TAPE_SIZE as u32);
+			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
 			let array_size_value = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
-			let tape_alloca = builder.build_alloca(i8_array_size, "tape")?;
+			let tape_alloca = builder.build_alloca(i8_array_type, "tape")?;
 
 			builder.build_call(
 				functions.lifetime.start,
