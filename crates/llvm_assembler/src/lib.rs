@@ -26,7 +26,7 @@ use inkwell::{
 		CodeModel, InitializationConfig, RelocMode, Target, TargetMachine, TargetMachineOptions,
 	},
 };
-use inner::Functions;
+use inner::AssemblerFunctions;
 use tracing::info;
 
 pub(crate) use self::ext::ContextExt;
@@ -106,7 +106,7 @@ impl Assembler for LlvmAssembler {
 
 		let assembler = InnerAssembler::new(&self.context, target_machine)?;
 
-		let (module, Functions { main, .. }, target_machine) = assembler.assemble(ops)?;
+		let (module, AssemblerFunctions { main, .. }, target_machine) = assembler.assemble(ops)?;
 
 		info!("writing unoptimized LLVM IR");
 		module

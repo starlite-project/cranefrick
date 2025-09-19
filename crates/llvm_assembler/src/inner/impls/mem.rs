@@ -142,7 +142,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			unsafe {
 				self.builder.build_in_bounds_gep(
 					basic_type.into_array_type(),
-					self.tape,
+					self.pointers.tape,
 					&[zero, offset],
 					&format!("{name}_array_gep"),
 				)?
@@ -151,7 +151,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			unsafe {
 				self.builder.build_in_bounds_gep(
 					basic_type.into_int_type(),
-					self.tape,
+					self.pointers.tape,
 					&[offset],
 					&format!("{name}_gep"),
 				)?

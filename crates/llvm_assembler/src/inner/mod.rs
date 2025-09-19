@@ -20,10 +20,8 @@ use super::{ContextExt, LlvmAssemblyError};
 pub struct InnerAssembler<'ctx> {
 	module: Module<'ctx>,
 	builder: Builder<'ctx>,
-	functions: Functions<'ctx>,
-	tape: PointerValue<'ctx>,
-	ptr: PointerValue<'ctx>,
-	input: PointerValue<'ctx>,
+	functions: AssemblerFunctions<'ctx>,
+	pointers: AssemblerPointers<'ctx>,
 	ptr_int_type: IntType<'ctx>,
 	target_machine: TargetMachine,
 }
@@ -34,61 +32,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 		target_machine: TargetMachine,
 	) -> Result<Self, LlvmAssemblyError> {
 		let module = context.create_module("frick");
-		let functions = Functions::new(context, &module)?;
+		let functions = AssemblerFunctions::new(context, &module)?;
 		let builder = context.create_builder();
 
 		let basic_block = context.append_basic_block(functions.main, "entry");
 		builder.position_at_end(basic_block);
 
-		let i8_type = context.i8_type();
-		let ptr_int_type = context.i64_type();
-
-		let tape = {
-			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
-			let array_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
-
-			let tape_alloca = builder.build_alloca(i8_array_type, "tape")?;
-
-			builder.build_call(
-				functions.lifetime.start,
-				&[array_size.into(), tape_alloca.into()],
-				"",
-			)?;
-
-			builder.build_memset(tape_alloca, 1, i8_type.const_zero(), array_size)?;
-
-			tape_alloca
-		};
-
-		let ptr = {
-			let ptr_alloca = builder.build_alloca(ptr_int_type, "ptr")?;
-
-			let i64_size = {
-				let i64_type = context.i64_type();
-
-				i64_type.const_int(8, false)
-			};
-
-			builder.build_call(
-				functions.lifetime.start,
-				&[i64_size.into(), ptr_alloca.into()],
-				"",
-			)?;
-
-			builder.build_store(ptr_alloca, ptr_int_type.const_zero())?;
-
-			ptr_alloca
-		};
-
-		let input = builder.build_alloca(i8_type, "input")?;
+		let (pointers, ptr_int_type) = AssemblerPointers::new(&module, functions, &builder)?;
 
 		Ok(Self {
 			module,
 			builder,
 			functions,
-			tape,
-			ptr,
-			input,
+			pointers,
 			ptr_int_type,
 			target_machine,
 		})
@@ -101,7 +57,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn assemble(
 		self,
 		ops: &[BrainIr],
-	) -> Result<(Module<'ctx>, Functions<'ctx>, TargetMachine), AssemblyError<LlvmAssemblyError>> {
+	) -> Result<
+		(Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine),
+		AssemblyError<LlvmAssemblyError>,
+	> {
 		self.ops(ops)?;
 
 		let i64_size = {
@@ -119,14 +78,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder
 			.build_call(
 				self.functions.lifetime.end,
-				&[tape_size.into(), self.tape.into()],
+				&[tape_size.into(), self.pointers.tape.into()],
 				"",
 			)
 			.map_err(AssemblyError::backend)?;
 		self.builder
 			.build_call(
 				self.functions.lifetime.end,
-				&[i64_size.into(), self.ptr.into()],
+				&[i64_size.into(), self.pointers.pointer.into()],
 				"",
 			)
 			.map_err(AssemblyError::backend)?;
@@ -188,21 +147,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn into_parts(self) -> (Module<'ctx>, Functions<'ctx>, TargetMachine) {
+	fn into_parts(self) -> (Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine) {
 		(self.module, self.functions, self.target_machine)
 	}
 }
 
 #[derive(Clone, Copy)]
-pub struct Functions<'ctx> {
+pub struct AssemblerFunctions<'ctx> {
 	#[allow(dead_code)]
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
-	pub lifetime: IntrinsicSet<'ctx>,
+	pub lifetime: IntrinsicFunctionSet<'ctx>,
 }
 
-impl<'ctx> Functions<'ctx> {
+impl<'ctx> AssemblerFunctions<'ctx> {
 	fn new(context: &'ctx Context, module: &Module<'ctx>) -> Result<Self, LlvmAssemblyError> {
 		let ptr_type = context.default_ptr_type();
 		let void_type = context.void_type();
@@ -234,7 +193,7 @@ impl<'ctx> Functions<'ctx> {
 				.get_declaration(module, &[ptr_type.into()])
 				.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.end"))?;
 
-			IntrinsicSet::new(lifetime_start, lifetime_end)
+			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
 		};
 
 		let this = Self {
@@ -344,13 +303,80 @@ impl<'ctx> Functions<'ctx> {
 }
 
 #[derive(Clone, Copy)]
-pub struct IntrinsicSet<'ctx> {
+pub struct IntrinsicFunctionSet<'ctx> {
 	start: FunctionValue<'ctx>,
 	end: FunctionValue<'ctx>,
 }
 
-impl<'ctx> IntrinsicSet<'ctx> {
-	pub const fn new(start: FunctionValue<'ctx>, end: FunctionValue<'ctx>) -> Self {
+impl<'ctx> IntrinsicFunctionSet<'ctx> {
+	const fn new(start: FunctionValue<'ctx>, end: FunctionValue<'ctx>) -> Self {
 		Self { start, end }
+	}
+}
+
+#[derive(Clone, Copy)]
+pub struct AssemblerPointers<'ctx> {
+	pub tape: PointerValue<'ctx>,
+	pub pointer: PointerValue<'ctx>,
+	pub input: PointerValue<'ctx>,
+}
+
+impl<'ctx> AssemblerPointers<'ctx> {
+	fn new(
+		module: &Module<'ctx>,
+		functions: AssemblerFunctions<'ctx>,
+		builder: &Builder<'ctx>,
+	) -> Result<(Self, IntType<'ctx>), LlvmAssemblyError> {
+		let context = module.get_context();
+		let i8_type = context.i8_type();
+		let ptr_int_type = context.i64_type();
+
+		let tape = {
+			let i8_array_size = i8_type.array_type(TAPE_SIZE as u32);
+			let array_size_value = ptr_int_type.const_int(TAPE_SIZE as u64, false);
+
+			let tape_alloca = builder.build_alloca(i8_array_size, "tape")?;
+
+			builder.build_call(
+				functions.lifetime.start,
+				&[array_size_value.into(), tape_alloca.into()],
+				"",
+			)?;
+
+			builder.build_memset(tape_alloca, 1, i8_type.const_zero(), array_size_value)?;
+
+			tape_alloca
+		};
+
+		let pointer = {
+			let pointer_alloca = builder.build_alloca(ptr_int_type, "pointer")?;
+
+			let i64_size = {
+				let i64_type = context.i64_type();
+
+				i64_type.const_int(8, false)
+			};
+
+			builder.build_call(
+				functions.lifetime.start,
+				&[i64_size.into(), pointer_alloca.into()],
+				"",
+			)?;
+
+			builder.build_store(pointer_alloca, ptr_int_type.const_zero())?;
+
+			pointer_alloca
+		};
+
+		let input = builder.build_alloca(i8_type, "input")?;
+
+		Ok((
+			Self {
+				tape,
+				pointer,
+				input,
+			},
+			ptr_int_type,
+		))
 	}
 }

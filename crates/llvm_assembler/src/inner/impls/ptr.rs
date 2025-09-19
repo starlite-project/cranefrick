@@ -7,7 +7,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn move_pointer(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let wrapped_ptr = self.offset_ptr(offset)?;
 
-		self.builder.build_store(self.ptr, wrapped_ptr)?;
+		self.builder
+			.build_store(self.pointers.pointer, wrapped_ptr)?;
 
 		Ok(())
 	}
@@ -18,7 +19,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_ptr = self
 			.builder
-			.build_load(ptr_type, self.ptr, "offset_ptr_load")?
+			.build_load(ptr_type, self.pointers.pointer, "offset_ptr_load")?
 			.into_int_value();
 
 		if matches!(offset, 0) {

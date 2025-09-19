@@ -77,7 +77,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.build_call(
 			self.functions.getchar,
-			&[self.input.into()],
+			&[self.pointers.input.into()],
 			"input_into_cell_call",
 		)?;
 
@@ -93,7 +93,8 @@ impl InnerAssembler<'_> {
 			i64_type.const_int(1, false)
 		};
 
-		self.builder.build_memcpy(gep, 1, self.input, 1, i8_size)?;
+		self.builder
+			.build_memcpy(gep, 1, self.pointers.input, 1, i8_size)?;
 
 		Ok(())
 	}
