@@ -132,7 +132,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			true,
 			0,
 			i32::PUBLIC,
-			false,
+			true,
 		);
 
 		self.functions.main.set_subprogram(func_scope);
