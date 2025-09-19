@@ -317,8 +317,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
 		let nonlazybind_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 0);
-		let uwtable_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 2);
 		let nocallback_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocallback"), 0);
 		let norecurse_attr =
@@ -331,7 +329,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		for attribute in [
 			nofree_attr,
 			nonlazybind_attr,
-			uwtable_attr,
 			nocallback_attr,
 			norecurse_attr,
 			willreturn_attr,
