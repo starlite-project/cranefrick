@@ -6,12 +6,30 @@ use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	pub fn if_not_zero(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+		let preheader_block = self
+			.context()
+			.append_basic_block(self.functions.main, "if_not_zero.preheader");
+		let header_block = self
+			.context()
+			.append_basic_block(self.functions.main, "if_not_zero.header");
 		let body_block = self
 			.context()
 			.append_basic_block(self.functions.main, "if_not_zero.body");
-		let next_block = self
+		let exit_block = self
 			.context()
-			.append_basic_block(self.functions.main, "if_not_zero.next");
+			.append_basic_block(self.functions.main, "if_not_zero.exit");
+
+		self.builder
+			.build_unconditional_branch(preheader_block)
+			.map_err(AssemblyError::backend)?;
+
+		self.builder.position_at_end(preheader_block);
+
+		self.builder
+			.build_unconditional_branch(header_block)
+			.map_err(AssemblyError::backend)?;
+
+		self.builder.position_at_end(header_block);
 
 		let value = self.load(0, "if_not_zero")?;
 
@@ -27,7 +45,7 @@ impl InnerAssembler<'_> {
 			.map_err(AssemblyError::backend)?;
 
 		self.builder
-			.build_conditional_branch(cmp, body_block, next_block)
+			.build_conditional_branch(cmp, body_block, exit_block)
 			.map_err(AssemblyError::backend)?;
 
 		self.builder.position_at_end(body_block);
@@ -35,10 +53,10 @@ impl InnerAssembler<'_> {
 		self.ops(ops)?;
 
 		self.builder
-			.build_unconditional_branch(next_block)
+			.build_unconditional_branch(exit_block)
 			.map_err(AssemblyError::backend)?;
 
-		self.builder.position_at_end(next_block);
+		self.builder.position_at_end(exit_block);
 
 		Ok(())
 	}
