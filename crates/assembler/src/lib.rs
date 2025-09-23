@@ -1,5 +1,4 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
-#![feature(const_trait_impl)]
 
 use std::{
 	error::Error as StdError,
