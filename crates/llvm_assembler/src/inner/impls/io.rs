@@ -1,9 +1,13 @@
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, OutputOptions};
+use inkwell::{
+	attributes::{Attribute, AttributeLoc},
+	values::CallSiteValue,
+};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
-impl InnerAssembler<'_> {
+impl<'ctx> InnerAssembler<'ctx> {
 	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		match options {
 			OutputOptions::Cell(options) => {
@@ -81,11 +85,13 @@ impl InnerAssembler<'_> {
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		self.builder.build_call(
+		let call = self.builder.build_call(
 			self.functions.getchar,
 			&[self.pointers.input.into()],
 			"input_into_cell_call",
 		)?;
+
+		self.add_input_call_attributes(call);
 
 		let gep = {
 			let current_ptr = self.offset_pointer(0)?;
@@ -103,5 +109,18 @@ impl InnerAssembler<'_> {
 			.build_memcpy(gep, 1, self.pointers.input, 1, i8_size)?;
 
 		Ok(())
+	}
+
+	fn add_input_call_attributes(&self, call: CallSiteValue<'ctx>) {
+		let noundef_attr = self
+			.context()
+			.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
+		let noalias_attr = self
+			.context()
+			.create_enum_attribute(Attribute::get_named_enum_kind_id("noalias"), 0);
+
+		for attribute in [noundef_attr, noalias_attr] {
+			call.add_attribute(AttributeLoc::Param(0), attribute);
+		}
 	}
 }
