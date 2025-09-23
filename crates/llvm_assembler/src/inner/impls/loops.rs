@@ -62,9 +62,6 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn dynamic_loop(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
-		let preheader_block = self
-			.context()
-			.append_basic_block(self.functions.main, "dynamic_loop.preheader");
 		let header_block = self
 			.context()
 			.append_basic_block(self.functions.main, "dynamic_loop.header");
@@ -74,12 +71,6 @@ impl InnerAssembler<'_> {
 		let exit_block = self
 			.context()
 			.append_basic_block(self.functions.main, "dynamic_loop.exit");
-
-		self.builder
-			.build_unconditional_branch(preheader_block)
-			.map_err(AssemblyError::backend)?;
-
-		self.builder.position_at_end(preheader_block);
 
 		self.builder
 			.build_unconditional_branch(header_block)
@@ -118,9 +109,6 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn find_zero(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let preheader_block = self
-			.context()
-			.append_basic_block(self.functions.main, "find_zero.preheader");
 		let header_block = self
 			.context()
 			.append_basic_block(self.functions.main, "find_zero.header");
@@ -130,10 +118,6 @@ impl InnerAssembler<'_> {
 		let exit_block = self
 			.context()
 			.append_basic_block(self.functions.main, "find_zero.exit");
-
-		self.builder.build_unconditional_branch(preheader_block)?;
-
-		self.builder.position_at_end(preheader_block);
 
 		self.builder.build_unconditional_branch(header_block)?;
 
