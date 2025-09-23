@@ -26,6 +26,7 @@ use inkwell::{
 		CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine,
 		TargetMachineOptions,
 	},
+	values::InstructionValueError,
 };
 use inner::AssemblerFunctions;
 use tracing::info;
@@ -293,6 +294,12 @@ impl From<BuilderError> for LlvmAssemblyError {
 impl From<inkwell::Error> for LlvmAssemblyError {
 	fn from(value: inkwell::Error) -> Self {
 		Self::Inkwell(value)
+	}
+}
+
+impl From<InstructionValueError> for LlvmAssemblyError {
+	fn from(value: InstructionValueError) -> Self {
+		Self::Inkwell(value.into())
 	}
 }
 

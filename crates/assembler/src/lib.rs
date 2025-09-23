@@ -20,7 +20,10 @@ pub enum AssemblyError<E> {
 }
 
 impl<E> AssemblyError<E> {
-	pub fn backend(e: impl Into<E>) -> Self {
+	pub fn backend<N>(e: N) -> Self
+	where
+		E: From<N>,
+	{
 		Self::Backend(e.into())
 	}
 }
