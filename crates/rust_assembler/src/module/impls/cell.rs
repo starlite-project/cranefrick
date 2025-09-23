@@ -1,5 +1,3 @@
-use std::mem;
-
 use frick_assembler::TAPE_SIZE;
 
 use crate::RustInterpreterModule;
