@@ -85,6 +85,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
+		let i8_size = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(1, false)
+		};
+
+		self.builder.build_call(
+			self.functions.lifetime.start,
+			&[i8_size.into(), self.pointers.input.into()],
+			"",
+		)?;
+
 		let call = self.builder.build_call(
 			self.functions.getchar,
 			&[self.pointers.input.into()],
@@ -108,6 +120,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder
 			.build_memcpy(gep, 1, self.pointers.input, 1, i8_size)?;
 
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[i8_size.into(), self.pointers.input.into()],
+			"",
+		)?;
+
 		Ok(())
 	}
 
@@ -115,11 +133,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let noundef_attr = self
 			.context()
 			.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
-		let noalias_attr = self
+		let nonnull_attr = self
 			.context()
-			.create_enum_attribute(Attribute::get_named_enum_kind_id("noalias"), 0);
+			.create_enum_attribute(Attribute::get_named_enum_kind_id("nonnull"), 0);
+		let align_attr = self
+			.context()
+			.create_enum_attribute(Attribute::get_named_enum_kind_id("align"), 1);
 
-		for attribute in [noundef_attr, noalias_attr] {
+		for attribute in [noundef_attr, nonnull_attr, align_attr] {
 			call.add_attribute(AttributeLoc::Param(0), attribute);
 		}
 	}
