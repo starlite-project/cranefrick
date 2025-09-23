@@ -1,4 +1,5 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
+#![feature(const_trait_impl)]
 
 use std::{
 	error::Error as StdError,
@@ -20,10 +21,7 @@ pub enum AssemblyError<E> {
 }
 
 impl<E> AssemblyError<E> {
-	pub fn backend<N>(e: N) -> Self
-	where
-		E: From<N>,
-	{
+	pub fn backend(e: impl Into<E>) -> Self {
 		Self::Backend(e.into())
 	}
 }
