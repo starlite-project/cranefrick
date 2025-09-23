@@ -35,7 +35,9 @@ impl InnerAssembler<'_> {
 			extended_instr.set_non_negative_flag(true);
 		}
 
-		let offset_loaded_value = {
+		let offset_loaded_value = if matches!(value_offset, 0) {
+			extended_loaded_value
+		} else {
 			let offset_value = i32_type.const_int(value_offset as u64, false);
 
 			self.builder.build_int_add(
