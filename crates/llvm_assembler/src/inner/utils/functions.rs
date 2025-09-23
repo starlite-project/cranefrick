@@ -5,6 +5,7 @@ use inkwell::{
 	context::Context,
 	intrinsics::Intrinsic,
 	module::{Linkage, Module},
+	types::BasicTypeEnum,
 	values::FunctionValue,
 };
 
@@ -33,18 +34,14 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
 
-		let lifetime_start_intrinsic = Intrinsic::find("llvm.lifetime.start")
-			.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.start"))?;
-		let lifetime_end_intrinsic = Intrinsic::find("llvm.lifetime.end")
-			.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.end"))?;
-
 		let lifetime = {
-			let lifetime_start = lifetime_start_intrinsic
-				.get_declaration(module, &[ptr_type.into()])
-				.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.start"))?;
-			let lifetime_end = lifetime_end_intrinsic
-				.get_declaration(module, &[ptr_type.into()])
-				.ok_or_else(|| LlvmAssemblyError::intrinsic("llvm.lifetime.end"))?;
+			let lifetime_start = get_intrinsic_function_from_name(
+				"llvm.lifetime.start",
+				module,
+				&[ptr_type.into()],
+			)?;
+			let lifetime_end =
+				get_intrinsic_function_from_name("llvm.lifetime.end", module, &[ptr_type.into()])?;
 
 			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
 		};
@@ -179,4 +176,19 @@ impl<'ctx> IntrinsicFunctionSet<'ctx> {
 	const fn new(start: FunctionValue<'ctx>, end: FunctionValue<'ctx>) -> Self {
 		Self { start, end }
 	}
+}
+
+fn get_intrinsic_function_from_name<'ctx>(
+	name: &'static str,
+	module: &Module<'ctx>,
+	types: &[BasicTypeEnum<'ctx>],
+) -> Result<FunctionValue<'ctx>, LlvmAssemblyError> {
+	let intrinsic =
+		Intrinsic::find(name).ok_or_else(|| LlvmAssemblyError::intrinsic_not_found(name))?;
+
+	let declaration = intrinsic
+		.get_declaration(module, types)
+		.ok_or_else(|| LlvmAssemblyError::invalid_intrinsic_declaration(name))?;
+
+	Ok(declaration)
 }

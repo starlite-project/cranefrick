@@ -8,7 +8,7 @@ use std::{
 	borrow::Cow,
 	error::Error as StdError,
 	ffi::CStr,
-	fmt::{Display, Formatter, Result as FmtResult},
+	fmt::{Display, Formatter, Result as FmtResult, Write as _},
 	path::{Path, PathBuf},
 };
 
@@ -232,13 +232,18 @@ pub enum LlvmAssemblyError {
 	NoTargetMachine,
 	InvalidMetadata,
 	IntrinsicNotFound(Cow<'static, str>),
+	InvalidIntrinsicDeclaration(Cow<'static, str>),
 	InvalidGEPType(String),
 	Inkwell(inkwell::Error),
 }
 
 impl LlvmAssemblyError {
-	pub(crate) const fn intrinsic(s: &'static str) -> Self {
+	pub(crate) const fn intrinsic_not_found(s: &'static str) -> Self {
 		Self::IntrinsicNotFound(Cow::Borrowed(s))
+	}
+
+	pub(crate) const fn invalid_intrinsic_declaration(s: &'static str) -> Self {
+		Self::InvalidIntrinsicDeclaration(Cow::Borrowed(s))
 	}
 }
 
@@ -257,6 +262,11 @@ impl Display for LlvmAssemblyError {
 				f.write_str(intrinsic)?;
 				f.write_str("' was not found")
 			}
+			Self::InvalidIntrinsicDeclaration(intrinsic) => {
+				f.write_str("invalid declaration for intrinsic '")?;
+				f.write_str(intrinsic)?;
+				f.write_char('\'')
+			}
 			Self::InvalidGEPType(ty) => {
 				f.write_str("type ")?;
 				f.write_str(ty)?;
@@ -274,7 +284,8 @@ impl StdError for LlvmAssemblyError {
 			| Self::Llvm(..)
 			| Self::InvalidMetadata
 			| Self::IntrinsicNotFound(..)
-			| Self::InvalidGEPType(..) => None,
+			| Self::InvalidGEPType(..)
+			| Self::InvalidIntrinsicDeclaration(..) => None,
 		}
 	}
 }
