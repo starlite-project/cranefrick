@@ -139,8 +139,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let align_attr = self
 			.context()
 			.create_enum_attribute(Attribute::get_named_enum_kind_id("align"), 1);
+		let dereferenceable_attr = self
+			.context()
+			.create_enum_attribute(Attribute::get_named_enum_kind_id("dereferenceable"), 1);
 
-		for attribute in [noundef_attr, nonnull_attr, align_attr] {
+		for attribute in [noundef_attr, nonnull_attr, align_attr, dereferenceable_attr] {
 			call.add_attribute(AttributeLoc::Param(0), attribute);
 		}
 	}
