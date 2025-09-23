@@ -19,27 +19,27 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_ptr = self
 			.builder
-			.build_load(ptr_type, self.pointers.pointer, "offset_ptr_load")?
+			.build_load(ptr_type, self.pointers.pointer, "offset_pointer_load")?
 			.into_int_value();
 
 		if matches!(offset, 0) {
 			return Ok(current_ptr);
 		}
 
-		let offset_ptr = self
-			.builder
-			.build_int_add(current_ptr, offset_value, "offset_ptr_add")?;
+		let offset_ptr =
+			self.builder
+				.build_int_add(current_ptr, offset_value, "offset_pointer_add")?;
 
 		let wrapped_offset_ptr = if offset > 0 {
-			self.wrap_ptr_positive(offset_ptr)
+			self.wrap_pointer_positive(offset_ptr)?
 		} else {
-			self.wrap_ptr_negative(offset_ptr)
-		}?;
+			self.wrap_pointer_negative(offset_ptr)?
+		};
 
 		Ok(wrapped_offset_ptr)
 	}
 
-	fn wrap_ptr_positive(
+	fn wrap_pointer_positive(
 		&self,
 		offset_ptr: IntValue<'ctx>,
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
@@ -48,13 +48,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let ptr_offset = self.builder.build_int_unsigned_rem(
 			offset_ptr,
 			ptr_int_type.const_int(TAPE_SIZE as u64, false),
-			"wrap_ptr_positive_urem",
+			"wrap_pointer_positive_urem",
 		)?;
 
 		Ok(ptr_offset)
 	}
 
-	fn wrap_ptr_negative(
+	fn wrap_pointer_negative(
 		&self,
 		offset_ptr: IntValue<'ctx>,
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
@@ -62,24 +62,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
-		let tmp =
-			self.builder
-				.build_int_signed_rem(offset_ptr, tape_size, "wrap_ptr_negative_srem")?;
+		let tmp = self.builder.build_int_signed_rem(
+			offset_ptr,
+			tape_size,
+			"wrap_pointer_negative_srem",
+		)?;
 
-		let added_offset = self
-			.builder
-			.build_int_add(tmp, tape_size, "wrap_ptr_negative_add")?;
+		let added_offset =
+			self.builder
+				.build_int_add(tmp, tape_size, "wrap_pointer_negative_add")?;
 
 		let cmp = self.builder.build_int_compare(
 			IntPredicate::SLT,
 			tmp,
 			ptr_int_type.const_zero(),
-			"wrap_ptr_negative_cmp",
+			"wrap_pointer_negative_cmp",
 		)?;
 
 		let ptr_offset = self
 			.builder
-			.build_select(cmp, added_offset, tmp, "wrap_ptr_negative_select")?
+			.build_select(cmp, added_offset, tmp, "wrap_pointer_negative_select")?
 			.into_int_value();
 
 		Ok(ptr_offset)
