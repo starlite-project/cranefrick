@@ -75,6 +75,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("willreturn"), 0);
 		let nosync_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nosync"), 0);
+		let nounwind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
 
 		for attribute in [
 			nofree_attr,
@@ -83,6 +85,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			norecurse_attr,
 			willreturn_attr,
 			nosync_attr,
+			nounwind_attr,
 		] {
 			self.getchar
 				.add_attribute(AttributeLoc::Function, attribute);
