@@ -12,9 +12,7 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use frick_assembler::{
-	Assembler, AssemblyError, InnerAssemblyError, frick_assembler_read, frick_assembler_write,
-};
+use frick_assembler::{Assembler, AssemblyError, InnerAssemblyError};
 use frick_ir::BrainIr;
 use inkwell::{
 	OptimizationLevel,
@@ -206,11 +204,11 @@ impl Assembler for LlvmAssembler {
 			.map_err(AssemblyError::backend)?;
 
 		if let Some(getchar) = module.get_function("getchar") {
-			execution_engine.add_global_mapping(&getchar, frick_assembler_read as usize);
+			execution_engine.add_global_mapping(&getchar, frick_interop::getchar as usize);
 		}
 
 		if let Some(putchar) = module.get_function("putchar") {
-			execution_engine.add_global_mapping(&putchar, frick_assembler_write as usize);
+			execution_engine.add_global_mapping(&putchar, frick_interop::putchar as usize);
 		}
 
 		Ok(LlvmAssembledModule {

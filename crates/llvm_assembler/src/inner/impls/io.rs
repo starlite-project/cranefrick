@@ -1,13 +1,9 @@
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, OutputOptions};
-use inkwell::{
-	attributes::{Attribute, AttributeLoc},
-	values::CallSiteValue,
-};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
-impl<'ctx> InnerAssembler<'ctx> {
+impl InnerAssembler<'_> {
 	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		match options {
 			OutputOptions::Cell(options) => {
@@ -85,66 +81,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let i8_size = {
-			let i64_type = self.context().i64_type();
+		let getchar_call = self
+			.builder
+			.build_call(self.functions.getchar, &[], "input_into_cell_call")?
+			.try_as_basic_value()
+			.left()
+			.unwrap()
+			.into_int_value();
 
-			i64_type.const_int(1, false)
-		};
+		let truncated_value =
+			self.builder
+				.build_int_truncate(getchar_call, i8_type, "input_into_cell_truncate")?;
 
-		self.builder.build_call(
-			self.functions.lifetime.start,
-			&[i8_size.into(), self.pointers.input.into()],
-			"",
-		)?;
-
-		let call = self.builder.build_call(
-			self.functions.getchar,
-			&[self.pointers.input.into()],
-			"input_into_cell_call",
-		)?;
-
-		self.add_input_call_attributes(call);
-
-		let gep = {
-			let current_ptr = self.offset_pointer(0)?;
-
-			self.gep(i8_type, current_ptr, "input_into_cell")?
-		};
-
-		let i8_size = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(1, false)
-		};
-
-		self.builder
-			.build_memcpy(gep, 1, self.pointers.input, 1, i8_size)?;
-
-		self.builder.build_call(
-			self.functions.lifetime.end,
-			&[i8_size.into(), self.pointers.input.into()],
-			"",
-		)?;
-
-		Ok(())
-	}
-
-	fn add_input_call_attributes(&self, call: CallSiteValue<'ctx>) {
-		let noundef_attr = self
-			.context()
-			.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
-		let nonnull_attr = self
-			.context()
-			.create_enum_attribute(Attribute::get_named_enum_kind_id("nonnull"), 0);
-		let align_attr = self
-			.context()
-			.create_enum_attribute(Attribute::get_named_enum_kind_id("align"), 1);
-		let dereferenceable_attr = self
-			.context()
-			.create_enum_attribute(Attribute::get_named_enum_kind_id("dereferenceable"), 1);
-
-		for attribute in [noundef_attr, nonnull_attr, align_attr, dereferenceable_attr] {
-			call.add_attribute(AttributeLoc::Param(0), attribute);
-		}
+		self.store(truncated_value, 0, "input_into_cell")
 	}
 }

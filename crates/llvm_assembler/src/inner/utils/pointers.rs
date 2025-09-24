@@ -8,7 +8,6 @@ use crate::LlvmAssemblyError;
 pub struct AssemblerPointers<'ctx> {
 	pub tape: PointerValue<'ctx>,
 	pub pointer: PointerValue<'ctx>,
-	pub input: PointerValue<'ctx>,
 }
 
 impl<'ctx> AssemblerPointers<'ctx> {
@@ -58,15 +57,6 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			pointer_alloca
 		};
 
-		let input = builder.build_alloca(i8_type, "input")?;
-
-		Ok((
-			Self {
-				tape,
-				pointer,
-				input,
-			},
-			ptr_int_type,
-		))
+		Ok((Self { tape, pointer }, ptr_int_type))
 	}
 }

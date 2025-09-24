@@ -7,9 +7,6 @@ name = "frick_assembler"
 rust-version.workspace = true
 version.workspace = true
 
-[lib]
-crate-type = ["lib", "cdylib"]
-
 [dependencies]
 frick_ir.workspace = true
 tracing.workspace = true

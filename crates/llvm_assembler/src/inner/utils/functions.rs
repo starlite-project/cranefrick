@@ -25,7 +25,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let void_type = context.void_type();
 		let i32_type = context.i32_type();
 
-		let getchar_ty = void_type.fn_type(&[ptr_type.into()], false);
+		let getchar_ty = i32_type.fn_type(&[], false);
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
 
 		let putchar_ty = void_type.fn_type(&[i32_type.into()], false);
@@ -63,16 +63,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	}
 
 	fn setup_common_attributes(self, context: &'ctx Context) -> Self {
-		let noundef_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
-
-		for attribute in iter::once(noundef_attr) {
-			self.putchar
-				.add_attribute(AttributeLoc::Param(0), attribute);
-			self.getchar
-				.add_attribute(AttributeLoc::Param(0), attribute);
-		}
-
 		let nofree_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
 		let nonlazybind_attr =
@@ -112,36 +102,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				.add_attribute(AttributeLoc::Function, attribute);
 		}
 
-		let writeonly_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("writeonly"), 0);
-		let nocapture_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocapture"), 0);
-		let noalias_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noalias"), 0);
-		let nofree_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
-		let nonnull_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonnull"), 0);
-		let dead_on_unwind_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("dead_on_unwind"), 0);
-		let sret_attr = context.create_type_attribute(
-			Attribute::get_named_enum_kind_id("sret"),
-			context.i8_type().into(),
-		);
-
-		for attribute in [
-			writeonly_attr,
-			nocapture_attr,
-			noalias_attr,
-			nofree_attr,
-			nonnull_attr,
-			dead_on_unwind_attr,
-			sret_attr,
-		] {
-			self.getchar
-				.add_attribute(AttributeLoc::Param(0), attribute);
-		}
-
 		self
 	}
 
@@ -156,8 +116,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 		let zeroext_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
+		let noundef_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
 
-		for attribute in iter::once(zeroext_attr) {
+		for attribute in [zeroext_attr, noundef_attr] {
 			self.putchar
 				.add_attribute(AttributeLoc::Param(0), attribute);
 		}

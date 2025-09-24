@@ -678,6 +678,7 @@ name = "frick_llvm_assembler"
 version = "0.1.0"
 dependencies = [
  "frick_assembler",
+ "frick_interop",
  "frick_ir",
  "frick_utils",
  "inkwell",

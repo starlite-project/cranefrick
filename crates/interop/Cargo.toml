@@ -1,4 +1,4 @@
-lib.crate-type = ["cdylib"]
+lib.crate-type = ["lib", "cdylib"]
 lints.workspace = true
 
 [package]

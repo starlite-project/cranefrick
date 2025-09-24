@@ -49,7 +49,8 @@ llvm = ["dep:frick_llvm_assembler"]
 [workspace]
 members = [
     "crates/assembler",
-    "crates/cranelift_assembler", "crates/interop",
+    "crates/cranelift_assembler",
+    "crates/interop",
     "crates/ir",
     "crates/llvm_assembler",
     "crates/rust_assembler",
@@ -76,10 +77,9 @@ cranelift-jit = { git = "https://github.com/bytecodealliance/wasmtime.git", rev 
 cranelift-module = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "76cd1acacd90bd35cb887b97ed702fe0e312cb06" }
 cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "76cd1acacd90bd35cb887b97ed702fe0e312cb06" }
 cranelift-object = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "76cd1acacd90bd35cb887b97ed702fe0e312cb06" }
-cranium_isle = { path = "cranium/isle/isle" }
-cranium_srcgen = { path = "cranium/srcgen" }
 criterion = "0.7"
 frick_assembler = { path = "crates/assembler" }
+frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
 frick_utils = { path = "crates/utils" }
 inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "075db5c0f535c500f9e801313e570206ab28f613", features = [
