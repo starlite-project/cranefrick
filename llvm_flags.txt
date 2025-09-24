@@ -90,4 +90,5 @@ select-optimize
 simplifycfg
 aggressive-instcombine
 scalarizer
+strip-dead-debug-info
 default<O3>
