@@ -89,6 +89,22 @@ impl InnerAssembler<'_> {
 			.unwrap()
 			.into_int_value();
 
+		if let Some(getchar_instr) = getchar_call.as_instruction() {
+			let i32_type = self.context().i32_type();
+
+			let i32_i8_min = i32_type.const_zero();
+
+			let i32_i8_max = i32_type.const_int(255, false);
+
+			let range_metadata_id = self.context().get_kind_id("range");
+
+			let range_metadata_node = self
+				.context()
+				.metadata_node(&[i32_i8_min.into(), i32_i8_max.into()]);
+
+			getchar_instr.set_metadata(range_metadata_node, range_metadata_id)?;
+		}
+
 		let truncated_value =
 			self.builder
 				.build_int_truncate(getchar_call, i8_type, "input_into_cell_truncate")?;
