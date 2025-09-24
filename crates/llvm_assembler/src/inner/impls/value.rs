@@ -27,7 +27,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		factor: u8,
 		gep: PointerValue<'ctx>,
 	) -> Result<(), LlvmAssemblyError> {
-		let value_to_add = {
+		let value_to_add = if matches!(factor, 1) {
+			current_value
+		} else {
 			let i8_type = self.context().i8_type();
 
 			let factor = i8_type.const_int(factor.into(), false);
