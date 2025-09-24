@@ -49,7 +49,7 @@ pub unsafe extern "C" fn getchar() -> u32 {
 			continue;
 		}
 
-		break value as char
+		break value as char;
 	};
 
 	c as u32

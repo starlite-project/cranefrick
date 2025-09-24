@@ -152,8 +152,5 @@ lto = "fat"
 [workspace.metadata.docs.rs]
 all-features = true
 
-[profile.dev.package.frick_assembler]
-opt-level = 3
-
 [profile.dev.package.frick_interop]
 opt-level = 3
