@@ -9,14 +9,11 @@ use frick_utils::GetOrZero as _;
 use inkwell::{
 	builder::Builder,
 	context::{Context, ContextRef},
-	debug_info::{
-		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DWARFEmissionKind,
-		DWARFSourceLanguage, DebugInfoBuilder,
-	},
 	module::{FlagBehavior, Module},
 	targets::TargetMachine,
 	types::IntType,
 };
+use utils::AssemblerDebugBuilder;
 
 pub use self::utils::AssemblerFunctions;
 use self::utils::AssemblerPointers;
@@ -29,8 +26,7 @@ pub struct InnerAssembler<'ctx> {
 	pointers: AssemblerPointers<'ctx>,
 	ptr_int_type: IntType<'ctx>,
 	target_machine: TargetMachine,
-	di_builder: DebugInfoBuilder<'ctx>,
-	compile_unit: DICompileUnit<'ctx>,
+	debug_builder: AssemblerDebugBuilder<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -79,116 +75,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 			("frick_source_file.bf".to_owned(), "/".to_owned())
 		};
 
-		let (di_builder, compile_unit) = module.create_debug_info_builder(
-			true,
-			DWARFSourceLanguage::C,
-			&file_name,
-			&directory,
-			"frick",
-			true,
-			"",
-			0,
-			"",
-			DWARFEmissionKind::Full,
-			0,
-			false,
-			false,
-			"",
-			"",
-		);
+		let debug_builder = AssemblerDebugBuilder::new(&module, &file_name, &directory)?
+			.setup(functions, pointers)?;
 
-		let this = Self {
+		Ok(Self {
 			module,
 			builder,
 			functions,
 			pointers,
 			ptr_int_type,
 			target_machine,
-			di_builder,
-			compile_unit,
-		};
-
-		this.setup_debug_info()?;
-
-		Ok(this)
-	}
-
-	fn setup_debug_info(&self) -> Result<(), LlvmAssemblyError> {
-		let subroutine_type = self.di_builder.create_subroutine_type(
-			self.compile_unit.get_file(),
-			None,
-			&[],
-			i32::PUBLIC,
-		);
-
-		let func_scope = self.di_builder.create_function(
-			self.compile_unit.as_debug_info_scope(),
-			"main",
-			None,
-			self.compile_unit.get_file(),
-			0,
-			subroutine_type,
-			true,
-			true,
-			0,
-			i32::PUBLIC,
-			true,
-		);
-
-		self.functions.main.set_subprogram(func_scope);
-
-		let i32_di_type = self
-			.di_builder
-			.create_basic_type("u32", 4, 7, i32::PUBLIC)?
-			.as_type();
-
-		let putchar_subroutine_type = self.di_builder.create_subroutine_type(
-			self.compile_unit.get_file(),
-			None,
-			&[i32_di_type],
-			i32::PUBLIC,
-		);
-
-		let putchar_func_scope = self.di_builder.create_function(
-			self.compile_unit.as_debug_info_scope(),
-			"putchar",
-			Some("putchar"),
-			self.compile_unit.get_file(),
-			0,
-			putchar_subroutine_type,
-			false,
-			false,
-			0,
-			i32::PUBLIC,
-			true,
-		);
-
-		self.functions.putchar.set_subprogram(putchar_func_scope);
-
-		let getchar_subroutine_type = self.di_builder.create_subroutine_type(
-			self.compile_unit.get_file(),
-			Some(i32_di_type),
-			&[],
-			i32::PUBLIC,
-		);
-
-		let getchar_func_scope = self.di_builder.create_function(
-			self.compile_unit.as_debug_info_scope(),
-			"getchar",
-			Some("getchar"),
-			self.compile_unit.get_file(),
-			0,
-			getchar_subroutine_type,
-			false,
-			false,
-			0,
-			i32::PUBLIC,
-			true,
-		);
-
-		self.functions.getchar.set_subprogram(getchar_func_scope);
-
-		Ok(())
+			debug_builder,
+		})
 	}
 
 	pub fn context(&self) -> ContextRef<'ctx> {
@@ -246,7 +144,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.module.set_data_layout(&data_layout);
 		self.module.set_triple(&target_triple);
 
-		self.di_builder.finalize();
+		self.debug_builder.di_builder.finalize();
 
 		Ok(self.into_parts())
 	}
