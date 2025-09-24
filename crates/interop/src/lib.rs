@@ -6,6 +6,7 @@ use std::{
 	slice,
 };
 
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn putchar(c: u32) {
 	if cfg!(target_os = "windows") && c >= 128 {
 		return;
@@ -31,6 +32,7 @@ pub unsafe extern "C" fn putchar(c: u32) {
 }
 
 #[must_use]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn getchar() -> u32 {
 	let mut stdin = io::stdin().lock();
 	let c = loop {
