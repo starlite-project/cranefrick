@@ -112,14 +112,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.gep(i8_type, ptr, "replace_value_from_memmoved")?
 		};
 
-		let one_value = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(1, false)
-		};
+		let i8_size = i8_type.size_of();
 
 		self.builder
-			.build_memmove(current_cell_gep, 1, other_value_gep, 1, one_value)?;
+			.build_memmove(current_cell_gep, 1, other_value_gep, 1, i8_size)?;
 
 		self.store_value_into(0, other_value_gep)
 	}
