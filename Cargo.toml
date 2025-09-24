@@ -49,7 +49,7 @@ llvm = ["dep:frick_llvm_assembler"]
 [workspace]
 members = [
     "crates/assembler",
-    "crates/cranelift_assembler",
+    "crates/cranelift_assembler", "crates/interop",
     "crates/ir",
     "crates/llvm_assembler",
     "crates/rust_assembler",
@@ -153,4 +153,7 @@ lto = "fat"
 all-features = true
 
 [profile.dev.package.frick_assembler]
+opt-level = 3
+
+[profile.dev.package.frick_interop]
 opt-level = 3

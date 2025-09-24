@@ -658,6 +658,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "frick_interop"
+version = "0.1.0"
+
+[[package]]
 name = "frick_ir"
 version = "0.1.0"
 dependencies = [
