@@ -7,7 +7,6 @@ use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use frick_utils::GetOrZero as _;
 use inkwell::{
-	AddressSpace,
 	builder::Builder,
 	context::{Context, ContextRef},
 	debug_info::{
@@ -153,7 +152,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let putchar_func_scope = self.di_builder.create_function(
 			self.compile_unit.as_debug_info_scope(),
 			"putchar",
-			Some("frick_assembler_write"),
+			Some("putchar"),
 			self.compile_unit.get_file(),
 			0,
 			putchar_subroutine_type,
@@ -166,27 +165,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.functions.putchar.set_subprogram(putchar_func_scope);
 
-		let i8_di_type = self
-			.di_builder
-			.create_basic_type("u8", 1, 7, i32::PUBLIC)?
-			.as_type();
-
-		let i8_ptr_di_type = self
-			.di_builder
-			.create_pointer_type("u8*", i8_di_type, 8, 4, AddressSpace::default())
-			.as_type();
-
 		let getchar_subroutine_type = self.di_builder.create_subroutine_type(
 			self.compile_unit.get_file(),
-			None,
-			&[i8_ptr_di_type],
+			Some(i32_di_type),
+			&[],
 			i32::PUBLIC,
 		);
 
 		let getchar_func_scope = self.di_builder.create_function(
 			self.compile_unit.as_debug_info_scope(),
 			"getchar",
-			Some("frick_assembler_read"),
+			Some("getchar"),
 			self.compile_unit.get_file(),
 			0,
 			getchar_subroutine_type,

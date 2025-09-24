@@ -95,11 +95,18 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 	fn setup_getchar_attributes(self, context: &'ctx Context) -> Self {
 		let memory_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 6);
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 4);
 
 		for attribute in iter::once(memory_attr) {
 			self.getchar
 				.add_attribute(AttributeLoc::Function, attribute);
+		}
+
+		let zeroext_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
+
+		for attribute in iter::once(zeroext_attr) {
+			self.getchar.add_attribute(AttributeLoc::Return, attribute);
 		}
 
 		self
