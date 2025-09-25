@@ -226,7 +226,7 @@ impl Default for LlvmAssembler {
 
 #[derive(Debug)]
 pub enum LlvmAssemblyError {
-	Llvm(String),
+	Llvm(LLVMString),
 	NoTargetMachine,
 	InvalidMetadata,
 	IntrinsicNotFound(Cow<'static, str>),
@@ -250,7 +250,7 @@ impl Display for LlvmAssemblyError {
 		match self {
 			Self::Llvm(l) => {
 				f.write_str("an error occurred from LLVM: ")?;
-				f.write_str(l)
+				f.write_str(&l.to_string())
 			}
 			Self::NoTargetMachine => f.write_str("unable to get target machine"),
 			Self::Inkwell(..) => f.write_str("an error occurred during translation"),
@@ -278,8 +278,8 @@ impl StdError for LlvmAssemblyError {
 	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			Self::Inkwell(e) => Some(e),
+			Self::Llvm(e) => Some(e),
 			Self::NoTargetMachine
-			| Self::Llvm(..)
 			| Self::InvalidMetadata
 			| Self::IntrinsicNotFound(..)
 			| Self::InvalidGEPType(..)
@@ -290,7 +290,7 @@ impl StdError for LlvmAssemblyError {
 
 impl From<LLVMString> for LlvmAssemblyError {
 	fn from(value: LLVMString) -> Self {
-		Self::Llvm(value.to_string())
+		Self::Llvm(value)
 	}
 }
 
