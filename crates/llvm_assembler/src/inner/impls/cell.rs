@@ -87,21 +87,24 @@ impl InnerAssembler<'_> {
 		let (value, value_gep) = self.load_from(0, "duplicate_cell_iterated")?;
 
 		for (factor, index) in values.iter().copied().map(CellChangeOptions::into_parts) {
-			let (other_value, gep) = self.load_from(index, "duplicate_cell_iterated")?;
+			let (other_value, other_value_gep) =
+				self.load_from(index, "duplicate_cell_iterated")?;
 
-			let factor_value = i8_type.const_int(factor as u64, false);
+			let modified_value = {
+				let factor = i8_type.const_int(factor as u64, false);
 
-			let factored_value =
-				self.builder
-					.build_int_mul(value, factor_value, "duplicate_cell_iterated_mul")?;
+				let factored_value =
+					self.builder
+						.build_int_mul(value, factor, "duplicate_cell_iterated_mul")?;
 
-			let modified_other_value = self.builder.build_int_add(
-				other_value,
-				factored_value,
-				"duplicate_cell_iterated_add",
-			)?;
+				self.builder.build_int_add(
+					other_value,
+					factored_value,
+					"duplicate_cell_iterated_add",
+				)?
+			};
 
-			self.store_into(modified_other_value, gep)?;
+			self.store_into(modified_value, other_value_gep)?;
 		}
 
 		self.store_value_into(0, value_gep)
