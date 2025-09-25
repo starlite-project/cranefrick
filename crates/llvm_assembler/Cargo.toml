@@ -9,8 +9,8 @@ version.workspace = true
 
 [dependencies]
 frick_assembler.workspace = true
-frick_interop.workspace = true
 frick_ir.workspace = true
 frick_utils = { workspace = true, features = ["get_or_zero"] }
 inkwell.workspace = true
 tracing.workspace = true
+libc = "0.2"

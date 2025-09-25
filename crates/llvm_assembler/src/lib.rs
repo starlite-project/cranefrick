@@ -204,11 +204,11 @@ impl Assembler for LlvmAssembler {
 			.map_err(AssemblyError::backend)?;
 
 		if let Some(getchar) = module.get_function("getchar") {
-			execution_engine.add_global_mapping(&getchar, frick_interop::getchar as usize);
+			execution_engine.add_global_mapping(&getchar, libc::getchar as usize);
 		}
 
 		if let Some(putchar) = module.get_function("putchar") {
-			execution_engine.add_global_mapping(&putchar, frick_interop::putchar as usize);
+			execution_engine.add_global_mapping(&putchar, libc::putchar as usize);
 		}
 
 		Ok(LlvmAssembledModule {
