@@ -138,6 +138,7 @@ impl Compiler {
 
 		self.pass_info("optimize if not zero");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);
+		*progress |= run_loop_pass(self, passes::optimize_loop_one_op);
 
 		self.pass_info("optimize duplicate cell");
 		*progress |= run_loop_pass(self, passes::optimize_duplicate_cell);

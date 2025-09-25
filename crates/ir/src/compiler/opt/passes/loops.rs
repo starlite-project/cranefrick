@@ -174,3 +174,10 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub const fn optimize_loop_one_op(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
+		[BrainIr::FindZero(offset)] => Some(Change::replace(BrainIr::find_zero(*offset))),
+		_ => None,
+	}
+}
