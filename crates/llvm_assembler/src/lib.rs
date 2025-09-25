@@ -212,6 +212,10 @@ impl Assembler for LlvmAssembler {
 			execution_engine.add_global_mapping(&putchar, libc::putchar as usize);
 		}
 
+		if let Some(puts) = module.get_function("puts") {
+			execution_engine.add_global_mapping(&puts, libc::puts as usize);
+		}
+
 		Ok(LlvmAssembledModule {
 			execution_engine,
 			main,

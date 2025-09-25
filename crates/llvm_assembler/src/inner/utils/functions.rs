@@ -15,6 +15,7 @@ use crate::{ContextExt as _, LlvmAssemblyError};
 pub struct AssemblerFunctions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
+	pub puts: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 }
@@ -30,6 +31,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 		let putchar_ty = i32_type.fn_type(&[i32_type.into()], false);
 		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
+
+		let puts_ty = i32_type.fn_type(&[ptr_type.into()], false);
+		let puts = module.add_function("puts", puts_ty, Some(Linkage::External));
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
@@ -49,6 +53,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let this = Self {
 			getchar,
 			putchar,
+			puts,
 			main,
 			lifetime,
 		};

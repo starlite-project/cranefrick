@@ -88,7 +88,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
-		c.iter().copied().try_for_each(|c| self.output_char(c))?;
+		let constant_initializer = self.context().const_string(c, true);
+
+		let constant_s_ty = constant_initializer.get_type();
+
+		let global_constant = self.module.add_global(constant_s_ty, None, "output_chars");
+
+		global_constant.set_initializer(&constant_initializer);
+
+		self.builder.build_call(
+			self.functions.puts,
+			&[global_constant.as_pointer_value().into()],
+			"output_chars_call",
+		)?;
 
 		Ok(())
 	}
