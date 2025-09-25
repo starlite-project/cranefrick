@@ -13,6 +13,5 @@ frick_ir.workspace = true
 frick_utils = { workspace = true, features = ["get_or_zero"] }
 inkwell.workspace = true
 libc = "0.2"
-ordered-parallel-iterator = "0.2"
 send_wrapper = "0.6"
 tracing.workspace = true
