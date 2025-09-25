@@ -90,18 +90,27 @@ impl InnerAssembler<'_> {
 			let (other_value, other_value_gep) =
 				self.load_from(index, "duplicate_cell_iterated")?;
 
-			let modified_value = {
-				let factor = i8_type.const_int(factor as u64, false);
-
-				let factored_value =
+			let modified_value = match factor {
+				0 => {
+					continue;
+				}
+				1 => {
 					self.builder
-						.build_int_mul(value, factor, "duplicate_cell_iterated_mul")?;
+						.build_int_add(other_value, value, "duplicate_cell_iterated_add")?
+				}
+				x => {
+					let factor = i8_type.const_int(x as u64, false);
 
-				self.builder.build_int_add(
-					other_value,
-					factored_value,
-					"duplicate_cell_iterated_add",
-				)?
+					let factored_value =
+						self.builder
+							.build_int_mul(value, factor, "duplicate_cell_iterated_mul")?;
+
+					self.builder.build_int_add(
+						other_value,
+						factored_value,
+						"duplicate_cell_iterated_add",
+					)?
+				}
 			};
 
 			self.store_into(modified_value, other_value_gep)?;
