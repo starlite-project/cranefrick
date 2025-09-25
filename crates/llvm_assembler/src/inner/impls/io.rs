@@ -51,18 +51,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 			)?
 		};
 
-		let putchar_call = self
-			.builder
-			.build_call(
-				self.functions.putchar,
-				&[offset_loaded_value.into()],
-				"output_current_cell_call",
-			)?
+		let putchar_call = self.builder.build_call(
+			self.functions.putchar,
+			&[offset_loaded_value.into()],
+			"output_current_cell_call",
+		)?;
+
+		putchar_call.set_tail_call(true);
+
+		let putchar_value = putchar_call
 			.try_as_basic_value()
 			.unwrap_left()
 			.into_int_value();
 
-		self.add_range_io_metadata(putchar_call, u8::MIN.into(), u8::MAX.into())?;
+		self.add_range_io_metadata(putchar_value, u8::MIN.into(), u8::MAX.into())?;
 
 		Ok(())
 	}
@@ -74,18 +76,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i32_type.const_int(c.into(), false)
 		};
 
-		let putchar_call = self
-			.builder
-			.build_call(
-				self.functions.putchar,
-				&[char_to_put.into()],
-				"output_char_call",
-			)?
+		let putchar_call = self.builder.build_call(
+			self.functions.putchar,
+			&[char_to_put.into()],
+			"output_char_call",
+		)?;
+
+		putchar_call.set_tail_call(true);
+
+		let putchar_value = putchar_call
 			.try_as_basic_value()
 			.unwrap_left()
 			.into_int_value();
 
-		self.add_range_io_metadata(putchar_call, c.into(), c.into())?;
+		self.add_range_io_metadata(putchar_value, c.into(), c.into())?;
 
 		Ok(())
 	}
@@ -105,6 +109,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			&[global_constant.as_pointer_value().into()],
 			"output_chars_call",
 		)?;
+
+		puts_call.set_tail_call(true);
 
 		let puts_value = puts_call
 			.try_as_basic_value()
@@ -160,18 +166,22 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let getchar_call = self
-			.builder
-			.build_call(self.functions.getchar, &[], "input_into_cell_call")?
+		let getchar_call =
+			self.builder
+				.build_call(self.functions.getchar, &[], "input_into_cell_call")?;
+
+		getchar_call.set_tail_call(true);
+
+		let getchar_value = getchar_call
 			.try_as_basic_value()
 			.unwrap_left()
 			.into_int_value();
 
-		self.add_range_io_metadata(getchar_call, u8::MIN.into(), u8::MAX.into())?;
+		self.add_range_io_metadata(getchar_value, u8::MIN.into(), u8::MAX.into())?;
 
 		let truncated_value =
 			self.builder
-				.build_int_truncate(getchar_call, i8_type, "input_into_cell_truncate")?;
+				.build_int_truncate(getchar_value, i8_type, "input_into_cell_truncate")?;
 
 		self.store(truncated_value, 0, "input_into_cell")
 	}
