@@ -175,9 +175,9 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
-pub const fn optimize_loop_one_op(ops: &[BrainIr]) -> Option<Change> {
+pub fn optimize_loop_one_op(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[BrainIr::FindZero(offset)] => Some(Change::replace(BrainIr::find_zero(*offset))),
+		[l] if l.needs_nonzero_cell() && l.is_zeroing_cell() => Some(Change::replace(l.clone())),
 		_ => None,
 	}
 }
