@@ -52,14 +52,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (other_cell, gep) = self.load_from(0, "take_value_to")?;
 
-		let value_to_add = {
+		let factor = options.value();
+		let value_to_add = if matches!(factor, 1) {
+			current_value
+		} else {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int((options.value()).into(), false);
+			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(current_value, factor, "take_value_to_mul")
-		}?;
+				.build_int_mul(current_value, factor, "take_value_to_mul")?
+		};
 
 		let added = self
 			.builder
