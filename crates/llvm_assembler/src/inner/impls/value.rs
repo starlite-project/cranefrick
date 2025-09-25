@@ -91,31 +91,30 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub fn replace_value_from(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
 		if matches!(options.value(), 1) {
-			self.replace_value_from_memmoved(options.offset())
+			self.replace_value_from_memcpyed(options.offset())
 		} else {
 			self.replace_value_from_factorized(options)
 		}
 	}
 
-	fn replace_value_from_memmoved(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
+	fn replace_value_from_memcpyed(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
+		let i8_size = i8_type.size_of();
 
 		let current_cell_gep = {
 			let ptr = self.offset_pointer(0)?;
 
-			self.gep(i8_type, ptr, "replace_value_from_memmoved")?
+			self.gep(i8_type, ptr, "replace_value_from_memcpyed")?
 		};
 
 		let other_value_gep = {
 			let ptr = self.offset_pointer(offset)?;
 
-			self.gep(i8_type, ptr, "replace_value_from_memmoved")?
+			self.gep(i8_type, ptr, "replace_value_from_memcpyed")?
 		};
 
-		let i8_size = i8_type.size_of();
-
 		self.builder
-			.build_memmove(current_cell_gep, 1, other_value_gep, 1, i8_size)?;
+			.build_memcpy(current_cell_gep, 1, other_value_gep, 1, i8_size)?;
 
 		self.store_value_into(0, other_value_gep)
 	}
