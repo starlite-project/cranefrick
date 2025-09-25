@@ -116,7 +116,7 @@ impl InnerAssembler<'_> {
 
 		let current_pointer_value = self
 			.builder
-			.build_load(ptr_int_type, self.pointers.pointer, "find_zero_load")?
+			.build_load(ptr_int_type, self.pointers.pointer, "find_zero_load_pointer")?
 			.into_int_value();
 
 		let header_block = self
