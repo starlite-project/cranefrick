@@ -14,3 +14,4 @@ frick_utils = { workspace = true, features = ["get_or_zero"] }
 inkwell.workspace = true
 tracing.workspace = true
 libc = "0.2"
+send_wrapper = "0.6"

@@ -27,6 +27,7 @@ use inkwell::{
 	values::InstructionValueError,
 };
 use inner::AssemblerFunctions;
+use send_wrapper::SendWrapper;
 use tracing::info;
 
 pub(crate) use self::ext::ContextExt;
@@ -226,7 +227,7 @@ impl Default for LlvmAssembler {
 
 #[derive(Debug)]
 pub enum LlvmAssemblyError {
-	Llvm(LLVMString),
+	Llvm(SendWrapper<LLVMString>),
 	NoTargetMachine,
 	InvalidMetadata,
 	IntrinsicNotFound(Cow<'static, str>),
@@ -248,10 +249,7 @@ impl LlvmAssemblyError {
 impl Display for LlvmAssemblyError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match self {
-			Self::Llvm(l) => {
-				f.write_str("an error occurred from LLVM: ")?;
-				f.write_str(&l.to_string())
-			}
+			Self::Llvm(..) => f.write_str("an error occurred from LLVM"),
 			Self::NoTargetMachine => f.write_str("unable to get target machine"),
 			Self::Inkwell(..) => f.write_str("an error occurred during translation"),
 			Self::InvalidMetadata => f.write_str("invalid metadata type"),
@@ -278,7 +276,7 @@ impl StdError for LlvmAssemblyError {
 	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			Self::Inkwell(e) => Some(e),
-			Self::Llvm(e) => Some(e),
+			Self::Llvm(e) => Some(&**e),
 			Self::NoTargetMachine
 			| Self::InvalidMetadata
 			| Self::IntrinsicNotFound(..)
@@ -290,7 +288,7 @@ impl StdError for LlvmAssemblyError {
 
 impl From<LLVMString> for LlvmAssemblyError {
 	fn from(value: LLVMString) -> Self {
-		Self::Llvm(value)
+		Self::Llvm(SendWrapper::new(value))
 	}
 }
 
@@ -313,7 +311,3 @@ impl From<InstructionValueError> for LlvmAssemblyError {
 }
 
 impl InnerAssemblyError for LlvmAssemblyError {}
-
-#[allow(clippy::non_send_fields_in_send_ty)]
-unsafe impl Send for LlvmAssemblyError {}
-unsafe impl Sync for LlvmAssemblyError {}
