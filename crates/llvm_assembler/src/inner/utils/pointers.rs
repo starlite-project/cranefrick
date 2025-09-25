@@ -1,5 +1,5 @@
 use frick_assembler::TAPE_SIZE;
-use inkwell::{builder::Builder, module::Module, types::IntType, values::PointerValue};
+use inkwell::{builder::Builder, module::Module, targets::TargetData, types::IntType, values::PointerValue};
 
 use super::AssemblerFunctions;
 use crate::LlvmAssemblyError;
@@ -15,10 +15,11 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		module: &Module<'ctx>,
 		functions: AssemblerFunctions<'ctx>,
 		builder: &Builder<'ctx>,
+		target_data: &TargetData
 	) -> Result<(Self, IntType<'ctx>), LlvmAssemblyError> {
 		let context = module.get_context();
 		let i8_type = context.i8_type();
-		let ptr_int_type = context.i64_type();
+		let ptr_int_type = context.ptr_sized_int_type(target_data, None);
 
 		let tape = {
 			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);

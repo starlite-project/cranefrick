@@ -313,3 +313,6 @@ impl From<InstructionValueError> for LlvmAssemblyError {
 }
 
 impl InnerAssemblyError for LlvmAssemblyError {}
+
+unsafe impl Send for LlvmAssemblyError {}
+unsafe impl Sync for LlvmAssemblyError {}

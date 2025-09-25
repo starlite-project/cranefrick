@@ -39,10 +39,24 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let functions = AssemblerFunctions::new(context, &module)?;
 		let builder = context.create_builder();
 
+		let target_data = target_machine.get_target_data();
+
+		let data_layout = target_data.get_data_layout();
+
+		let target_triple = {
+			let default_target = TargetMachine::get_default_triple();
+
+			TargetMachine::normalize_triple(&default_target)
+		};
+
+		module.set_data_layout(&data_layout);
+		module.set_triple(&target_triple);
+
 		let basic_block = context.append_basic_block(functions.main, "entry");
 		builder.position_at_end(basic_block);
 
-		let (pointers, ptr_int_type) = AssemblerPointers::new(&module, functions, &builder)?;
+		let (pointers, ptr_int_type) =
+			AssemblerPointers::new(&module, functions, &builder, &target_data)?;
 
 		let debug_metadata_version = {
 			let i32_type = context.i32_type();
@@ -132,17 +146,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder
 			.build_return(None)
 			.map_err(AssemblyError::backend)?;
-
-		let data_layout = self.target_machine.get_target_data().get_data_layout();
-
-		let target_triple = {
-			let default_target = TargetMachine::get_default_triple();
-
-			TargetMachine::normalize_triple(&default_target)
-		};
-
-		self.module.set_data_layout(&data_layout);
-		self.module.set_triple(&target_triple);
 
 		self.debug_builder.di_builder.finalize();
 
