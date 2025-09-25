@@ -153,7 +153,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn ops(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
-		for op in ops {
+		ops.iter().try_for_each(|op| {
 			match op {
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::SetCell(value, offset) => {
@@ -186,9 +186,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 				}
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
-		}
 
-		Ok(())
+			Ok(())
+		})
 	}
 
 	fn into_parts(self) -> (Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine) {
