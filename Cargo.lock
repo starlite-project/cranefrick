@@ -614,6 +614,7 @@ dependencies = [
  "frick_cranelift_assembler",
  "frick_ir",
  "frick_llvm_assembler",
+ "frick_optimizer",
  "frick_rust_assembler",
  "indicatif",
  "jemallocator",
@@ -679,6 +680,16 @@ dependencies = [
  "inkwell",
  "libc",
  "send_wrapper",
+ "tracing",
+]
+
+[[package]]
+name = "frick_optimizer"
+version = "0.1.0"
+dependencies = [
+ "frick_ir",
+ "frick_utils",
+ "serde",
  "tracing",
 ]
 

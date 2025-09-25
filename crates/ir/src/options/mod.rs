@@ -11,7 +11,7 @@ pub struct CellChangeOptions<T: CellChangeOptionsInteger = u8> {
 }
 
 impl<T: CellChangeOptionsInteger> CellChangeOptions<T> {
-	pub(crate) const fn new(value: T, offset: i32) -> Self {
+	pub const fn new(value: T, offset: i32) -> Self {
 		Self { value, offset }
 	}
 

@@ -1,7 +1,6 @@
+use frick_ir::BrainIr;
 use frick_utils::{InsertOrPush as _, IntoIteratorExt as _};
 use tracing::trace;
-
-use crate::BrainIr;
 
 #[derive(Debug, Clone)]
 pub enum Change {
@@ -24,11 +23,10 @@ impl Change {
 		Self::Swap(instrs.collect_to())
 	}
 
-	pub const fn replace(i: BrainIr) -> Self {
-		Self::Replace(i)
+	pub const fn replace(instr: BrainIr) -> Self {
+		Self::Replace(instr)
 	}
 
-	#[tracing::instrument(skip(self, ops, size))]
 	pub fn apply(self, ops: &mut Vec<BrainIr>, i: usize, size: usize) {
 		match self {
 			Self::Remove => {

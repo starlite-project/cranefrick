@@ -1,26 +1,23 @@
-mod opt;
-mod parse;
+#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
-use std::{
-	ops::{Deref, DerefMut},
-	slice,
-};
+mod impls;
 
+use std::ops::{Deref, DerefMut};
+
+use frick_ir::BrainIr;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
-use self::opt::{passes, run_loop_pass, run_peephole_pass};
-pub use self::parse::*;
-use super::BrainIr;
+use self::impls::{passes, run_loop_pass, run_peephole_pass};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(transparent)]
 #[serde(transparent)]
-pub struct Compiler {
+pub struct Optimizer {
 	inner: Vec<BrainIr>,
 }
 
-impl Compiler {
+impl Optimizer {
 	#[must_use]
 	pub const fn new() -> Self {
 		Self { inner: Vec::new() }
@@ -33,13 +30,9 @@ impl Compiler {
 		}
 	}
 
-	pub fn push(&mut self, i: BrainIr) {
-		self.inner.push(i);
-	}
-
 	#[tracing::instrument("optimize mlir", skip(self))]
-	pub fn optimize(&mut self) {
-		let mut iteration = 0usize;
+	pub fn run(&mut self) {
+		let mut iteration = 0;
 
 		let mut progress = self.optimization_pass(iteration);
 
@@ -48,7 +41,7 @@ impl Compiler {
 			progress = self.optimization_pass(iteration);
 		}
 
-		info!(iterations = iteration, "finished optimize mlir");
+		info!(iterations = iteration, "finished optimizing mlir");
 	}
 
 	#[tracing::instrument("run passes", skip(self))]
@@ -189,13 +182,13 @@ impl Compiler {
 	}
 }
 
-impl Default for Compiler {
+impl Default for Optimizer {
 	fn default() -> Self {
 		Self::new()
 	}
 }
 
-impl Deref for Compiler {
+impl Deref for Optimizer {
 	type Target = Vec<BrainIr>;
 
 	fn deref(&self) -> &Self::Target {
@@ -203,55 +196,16 @@ impl Deref for Compiler {
 	}
 }
 
-impl DerefMut for Compiler {
+impl DerefMut for Optimizer {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.inner
 	}
 }
 
-impl Extend<BrainIr> for Compiler {
-	fn extend<T>(&mut self, iter: T)
-	where
-		T: IntoIterator<Item = BrainIr>,
-	{
-		self.inner.extend(iter);
-	}
-}
-
-impl FromIterator<BrainIr> for Compiler {
-	fn from_iter<T>(iter: T) -> Self
-	where
-		T: IntoIterator<Item = BrainIr>,
-	{
+impl FromIterator<BrainIr> for Optimizer {
+	fn from_iter<T: IntoIterator<Item = BrainIr>>(iter: T) -> Self {
 		Self {
 			inner: Vec::from_iter(iter),
 		}
-	}
-}
-
-impl<'a> IntoIterator for &'a Compiler {
-	type IntoIter = slice::Iter<'a, BrainIr>;
-	type Item = &'a BrainIr;
-
-	fn into_iter(self) -> Self::IntoIter {
-		self.inner.iter()
-	}
-}
-
-impl<'a> IntoIterator for &'a mut Compiler {
-	type IntoIter = slice::IterMut<'a, BrainIr>;
-	type Item = &'a mut BrainIr;
-
-	fn into_iter(self) -> Self::IntoIter {
-		self.inner.iter_mut()
-	}
-}
-
-impl IntoIterator for Compiler {
-	type IntoIter = std::vec::IntoIter<BrainIr>;
-	type Item = BrainIr;
-
-	fn into_iter(self) -> Self::IntoIter {
-		self.inner.into_iter()
 	}
 }

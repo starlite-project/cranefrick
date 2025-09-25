@@ -7,9 +7,10 @@ use color_eyre::Result;
 use frick_assembler::{AssembledModule as _, Assembler as _};
 #[cfg(feature = "cranelift")]
 use frick_cranelift_assembler::{AssemblerFlags, CraneliftAssembler};
-use frick_ir::{Compiler, parse};
+use frick_ir::parse;
 #[cfg(feature = "llvm")]
 use frick_llvm_assembler::LlvmAssembler;
+use frick_optimizer::Optimizer;
 #[cfg(feature = "interpret")]
 use frick_rust_assembler::RustInterpreterAssembler;
 use ron::ser::PrettyConfig;
@@ -54,13 +55,13 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	let mut compiler = Compiler::from_iter(parsed.clone());
+	let mut optimizer = parsed.iter().cloned().collect::<Optimizer>();
 
-	serialize(&compiler, args.output_path(), "unoptimized")?;
+	serialize(&optimizer, args.output_path(), "unoptimized")?;
 
-	compiler.optimize();
+	optimizer.run();
 
-	serialize(&compiler, args.output_path(), "optimized")?;
+	serialize(&optimizer, args.output_path(), "optimized")?;
 
 	#[allow(unreachable_patterns)]
 	match &args {
@@ -70,7 +71,7 @@ fn main() -> Result<()> {
 
 			let assembler = CraneliftAssembler::with_flags(flags);
 
-			let module = assembler.assemble(&compiler, args.output_path())?;
+			let module = assembler.assemble(&optimizer, args.output_path())?;
 
 			tracing::info!("finished assembling with cranelift");
 
@@ -95,7 +96,7 @@ fn main() -> Result<()> {
 
 			assembler.set_path(args.file_path().to_owned());
 
-			let module = assembler.assemble(&compiler, args.output_path())?;
+			let module = assembler.assemble(&optimizer, args.output_path())?;
 
 			tracing::info!("finished assembling with LLVM");
 
@@ -105,7 +106,7 @@ fn main() -> Result<()> {
 		Args::Interpret { .. } => {
 			let assembler = RustInterpreterAssembler;
 
-			let module = assembler.assemble(&compiler, args.output_path())?;
+			let module = assembler.assemble(&optimizer, args.output_path())?;
 
 			tracing::info!("finished assembling with Rust");
 

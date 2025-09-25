@@ -4,7 +4,7 @@ use ariadne::{Color, Label, Report, ReportKind, Source};
 use chumsky::{input::ValueInput, prelude::*};
 use tracing::{info, trace};
 
-use crate::BrainIr;
+use super::BrainIr;
 
 #[tracing::instrument(skip_all)]
 pub fn parse(file_data: String) -> io::Result<Vec<BrainIr>> {

@@ -1,15 +1,18 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
-mod compiler;
 mod options;
 mod output;
+#[cfg(feature = "parse")]
+mod parse;
 
 use std::{num::NonZero, ops::RangeInclusive};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
-pub use self::{compiler::*, options::*, output::*};
+#[cfg(feature = "parse")]
+pub use self::parse::*;
+pub use self::{options::*, output::*};
 
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

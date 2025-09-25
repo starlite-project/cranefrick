@@ -8,11 +8,11 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-ariadne = "0.5"
+ariadne = { version = "0.5", optional = true }
 chumsky = { workspace = true, default-features = false, features = [
     "stacker",
     "std"
-] }
+], optional = true }
 frick_utils = { workspace = true, features = [
     "alloc",
     "get_or_zero",
@@ -27,6 +27,9 @@ tracing = { workspace = true, features = ["attributes"] }
 
 [dev-dependencies]
 criterion.workspace = true
+
+[features]
+parse = ["dep:ariadne", "dep:chumsky"]
 
 [[bench]]
 harness = false

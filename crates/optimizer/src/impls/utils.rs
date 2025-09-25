@@ -1,4 +1,4 @@
-use crate::BrainIr;
+use frick_ir::BrainIr;
 
 pub fn calculate_ptr_movement(ops: &[BrainIr]) -> Option<i32> {
 	let mut sum = 0i32;
