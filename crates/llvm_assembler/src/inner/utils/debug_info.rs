@@ -5,6 +5,7 @@ use inkwell::{
 		DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
+	values::BasicValue,
 };
 
 use super::{AssemblerFunctions, AssemblerPointers};
@@ -153,6 +154,16 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			None,
 		);
 
+		let i8_array_value = pointers.tape.as_basic_value_enum();
+
+		self.di_builder.insert_dbg_value_before(
+			i8_array_value,
+			tape_variable,
+			None,
+			debug_loc,
+			pointers.tape.as_instruction().unwrap(),
+		);
+
 		self.di_builder.insert_declare_before_instruction(
 			pointers.tape,
 			Some(tape_variable),
@@ -175,6 +186,16 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			false,
 			i32::PRIVATE,
 			8,
+		);
+
+		let pointer_value = pointers.pointer.as_basic_value_enum();
+
+		self.di_builder.insert_dbg_value_before(
+			pointer_value,
+			pointer_variable,
+			None,
+			debug_loc,
+			pointers.pointer.as_instruction().unwrap(),
 		);
 
 		self.di_builder.insert_declare_before_instruction(
