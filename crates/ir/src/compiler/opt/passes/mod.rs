@@ -310,6 +310,37 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 		] => Some(Change::replace(BrainIr::output_str(
 			a.iter().copied().chain(b.iter().copied()),
 		))),
+		[
+			BrainIr::Output(OutputOptions::Cell(x)),
+			BrainIr::Output(OutputOptions::Cell(y)),
+		] => Some(Change::replace(BrainIr::output_cells([*x, *y]))),
+		[
+			BrainIr::Output(OutputOptions::Cell(x)),
+			BrainIr::Output(OutputOptions::Cells(other)),
+		] => Some(Change::replace(BrainIr::output_cells(
+			iter::once(*x).chain(other.iter().copied()),
+		))),
+		[
+			BrainIr::Output(OutputOptions::Cells(other)),
+			BrainIr::Output(OutputOptions::Cell(x)),
+		] => Some(Change::replace(BrainIr::output_cells(
+			other.iter().copied().chain(iter::once(*x)),
+		))),
+		[
+			BrainIr::SetCell(value, None),
+			BrainIr::Output(OutputOptions::Cells(options)),
+		] if options.iter().all(|x| matches!(x.offset(), 0)) => {
+			let mut chars = Vec::with_capacity(options.len());
+
+			for value_offset in options.iter().map(|x| x.value()) {
+				chars.push(value.wrapping_add_signed(value_offset));
+			}
+
+			Some(Change::swap([
+				BrainIr::output_str(chars),
+				BrainIr::set_cell(*value),
+			]))
+		}
 		_ => None,
 	}
 }

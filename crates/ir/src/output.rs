@@ -7,6 +7,7 @@ use super::CellChangeOptions;
 #[non_exhaustive]
 pub enum OutputOptions {
 	Cell(CellChangeOptions<i8>),
+	Cells(Vec<CellChangeOptions<i8>>),
 	Char(u8),
 	Str(Vec<u8>),
 }
@@ -15,6 +16,11 @@ impl OutputOptions {
 	#[must_use]
 	pub const fn cell(value_offset: i8, offset: i32) -> Self {
 		Self::Cell(CellChangeOptions::new(value_offset, offset))
+	}
+
+	#[must_use]
+	pub fn cells(values: impl IntoIterator<Item = CellChangeOptions<i8>>) -> Self {
+		Self::Cells(values.collect_to())
 	}
 
 	#[must_use]

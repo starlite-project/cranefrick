@@ -122,6 +122,11 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub fn output_cells(c: impl IntoIterator<Item = CellChangeOptions<i8>>) -> Self {
+		Self::Output(OutputOptions::cells(c))
+	}
+
+	#[must_use]
 	pub const fn output_char(c: u8) -> Self {
 		Self::Output(OutputOptions::char(c))
 	}
@@ -220,7 +225,7 @@ impl BrainIr {
 	#[must_use]
 	pub fn has_io(&self) -> bool {
 		if let Some(children) = self.child_ops() {
-			return children.iter().any(Self::has_io)
+			return children.iter().any(Self::has_io);
 		}
 
 		self.has_input() || self.has_output()

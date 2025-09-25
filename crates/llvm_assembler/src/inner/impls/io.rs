@@ -1,5 +1,5 @@
 use frick_assembler::AssemblyError;
-use frick_ir::{BrainIr, OutputOptions};
+use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	values::{InstructionValueError, IntValue},
@@ -13,6 +13,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			OutputOptions::Cell(options) => {
 				self.output_current_cell(options.value(), options.offset())?;
 			}
+			OutputOptions::Cells(options) => self.output_cells(options)?,
 			OutputOptions::Char(c) => self.output_char(*c)?,
 			OutputOptions::Str(c) => self.output_chars(c)?,
 			_ => {
@@ -23,6 +24,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 		}
 
 		Ok(())
+	}
+
+	fn output_cells(&self, options: &[CellChangeOptions<i8>]) -> Result<(), LlvmAssemblyError> {
+		options
+			.iter()
+			.copied()
+			.try_for_each(|x| self.output_current_cell(x.value(), x.offset()))
 	}
 
 	fn output_current_cell(&self, value_offset: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
