@@ -26,10 +26,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let i32_type = context.i32_type();
 
 		let getchar_ty = i32_type.fn_type(&[], false);
-		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
+		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::ExternalWeak));
 
 		let putchar_ty = void_type.fn_type(&[i32_type.into()], false);
-		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
+		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::ExternalWeak));
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
