@@ -1,6 +1,9 @@
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, OutputOptions};
-use inkwell::values::{InstructionValueError, IntValue};
+use inkwell::{
+	attributes::{Attribute, AttributeLoc},
+	values::{InstructionValueError, IntValue},
+};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -96,11 +99,34 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		global_constant.set_initializer(&constant_initializer);
 
-		self.builder.build_call(
+		let puts_call = self.builder.build_call(
 			self.functions.puts,
 			&[global_constant.as_pointer_value().into()],
 			"output_chars_call",
 		)?;
+
+		let puts_value = puts_call
+			.try_as_basic_value()
+			.unwrap_left()
+			.into_int_value();
+
+		let last = c.last().copied().unwrap();
+
+		self.add_range_io_metadata(puts_value, last.into(), last.into())?;
+
+		let byref_attribute = self.context().create_type_attribute(
+			Attribute::get_named_enum_kind_id("byref"),
+			constant_s_ty.into(),
+		);
+
+		puts_call.add_attribute(AttributeLoc::Param(0), byref_attribute);
+
+		let dereferenceable_attribute = self.context().create_enum_attribute(
+			Attribute::get_named_enum_kind_id("dereferenceable"),
+			c.len() as u64 + 1,
+		);
+
+		puts_call.add_attribute(AttributeLoc::Param(0), dereferenceable_attribute);
 
 		Ok(())
 	}

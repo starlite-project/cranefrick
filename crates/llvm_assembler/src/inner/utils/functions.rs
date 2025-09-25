@@ -64,7 +64,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	fn setup(self, context: &'ctx Context) -> Self {
 		self.setup_common_attributes(context)
 			.setup_getchar_attributes(context)
+			.setup_put_attributes(context)
 			.setup_putchar_attributes(context)
+			.setup_puts_attributes(context)
 	}
 
 	fn setup_common_attributes(self, context: &'ctx Context) -> Self {
@@ -90,6 +92,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				.add_attribute(AttributeLoc::Function, attribute);
 			self.putchar
 				.add_attribute(AttributeLoc::Function, attribute);
+			self.puts.add_attribute(AttributeLoc::Function, attribute);
 		}
 
 		self
@@ -114,15 +117,37 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		self
 	}
 
-	fn setup_putchar_attributes(self, context: &'ctx Context) -> Self {
+	fn setup_put_attributes(self, context: &'ctx Context) -> Self {
 		let memory_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 9);
 
 		for attribute in iter::once(memory_attr) {
 			self.putchar
 				.add_attribute(AttributeLoc::Function, attribute);
+			self.puts.add_attribute(AttributeLoc::Function, attribute);
 		}
 
+		self
+	}
+
+	fn setup_puts_attributes(self, context: &'ctx Context) -> Self {
+		let noalias_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noalias"), 0);
+		let nofree_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
+		let nonnull_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonnull"), 0);
+		let readonly_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("readonly"), 0);
+
+		for attribute in [noalias_attr, nofree_attr, nonnull_attr, readonly_attr] {
+			self.puts.add_attribute(AttributeLoc::Param(0), attribute);
+		}
+
+		self
+	}
+
+	fn setup_putchar_attributes(self, context: &'ctx Context) -> Self {
 		let zeroext_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
 		let noundef_attr =

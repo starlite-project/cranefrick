@@ -1,5 +1,6 @@
 use frick_assembler::TAPE_SIZE;
 use inkwell::{
+	AddressSpace,
 	debug_info::{
 		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DWARFEmissionKind,
 		DWARFSourceLanguage, DebugInfoBuilder,
@@ -129,6 +130,34 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			.di_builder
 			.create_basic_type("u8", 1, 7, i32::PRIVATE)?
 			.as_type();
+
+		let i8_ptr_di_type = self
+			.di_builder
+			.create_pointer_type("*u8", i8_di_type, 8, 4, AddressSpace::default())
+			.as_type();
+
+		let puts_subroutine_type = self.di_builder.create_subroutine_type(
+			self.compile_unit.get_file(),
+			Some(i32_di_type),
+			&[i8_ptr_di_type],
+			i32::PRIVATE,
+		);
+
+		let puts_subprogram = self.di_builder.create_function(
+			self.compile_unit.as_debug_info_scope(),
+			"puts",
+			Some("puts"),
+			self.compile_unit.get_file(),
+			0,
+			puts_subroutine_type,
+			false,
+			false,
+			0,
+			i32::PRIVATE,
+			true,
+		);
+
+		functions.puts.set_subprogram(puts_subprogram);
 
 		let i8_array_di_type = self
 			.di_builder
