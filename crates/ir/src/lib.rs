@@ -87,57 +87,6 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub fn is_zeroing_cell(&self) -> bool {
-		matches!(
-			self,
-			Self::SetCell(0, None)
-				| Self::DynamicLoop(..)
-				| Self::MoveValueTo(..)
-				| Self::FindZero(..)
-				| Self::IfNotZero(..)
-				| Self::DuplicateCell { .. }
-				| Self::SubCellAt(..)
-		) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
-	}
-
-	#[must_use]
-	pub const fn needs_nonzero_cell(&self) -> bool {
-		matches!(
-			self,
-			Self::DynamicLoop(..)
-				| Self::FindZero(..)
-				| Self::MoveValueTo(..)
-				| Self::IfNotZero(..)
-				| Self::SubCellAt(..)
-				| Self::DuplicateCell { .. }
-				| Self::CopyValueTo(..)
-		)
-	}
-
-	#[must_use]
-	pub fn has_input(&self) -> bool {
-		if let Some(children) = self.child_ops() {
-			return children.iter().any(Self::has_input);
-		}
-
-		matches!(self, Self::InputIntoCell)
-	}
-
-	#[must_use]
-	pub fn has_output(&self) -> bool {
-		if let Some(children) = self.child_ops() {
-			return children.iter().any(Self::has_output);
-		}
-
-		matches!(self, Self::Output(..))
-	}
-
-	#[must_use]
-	pub fn has_io(&self) -> bool {
-		self.has_output() || self.has_input()
-	}
-
-	#[must_use]
 	pub const fn clear_cell() -> Self {
 		Self::clear_cell_at(0)
 	}
@@ -241,12 +190,46 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub fn dynamic_loop(instrs: impl IntoIterator<Item = Self>) -> Self {
+		Self::DynamicLoop(instrs.collect_to())
+	}
+
+	#[must_use]
+	pub fn if_not_zero(instrs: impl IntoIterator<Item = Self>) -> Self {
+		Self::IfNotZero(instrs.collect_to())
+	}
+
+	#[must_use]
+	pub fn has_input(&self) -> bool {
+		if let Some(children) = self.child_ops() {
+			return children.iter().any(Self::has_input);
+		}
+
+		matches!(self, Self::InputIntoCell)
+	}
+
+	#[must_use]
+	pub fn has_output(&self) -> bool {
+		if let Some(children) = self.child_ops() {
+			return children.iter().any(Self::has_output);
+		}
+
+		matches!(self, Self::Output(..))
+	}
+
+	#[must_use]
+	pub fn has_io(&self) -> bool {
+		self.has_output() || self.has_input()
+	}
+
+	#[must_use]
 	pub const fn offset(&self) -> Option<i32> {
 		match self {
 			Self::ChangeCell(.., offset) | Self::SetCell(.., offset) => match offset {
 				None => Some(0),
 				Some(i) => Some(i.get()),
 			},
+			Self::Output(OutputOptions::Cell(options)) => Some(options.offset()),
 			_ => None,
 		}
 	}
@@ -267,12 +250,30 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub fn dynamic_loop(instrs: impl IntoIterator<Item = Self>) -> Self {
-		Self::DynamicLoop(instrs.collect_to())
+	pub fn is_zeroing_cell(&self) -> bool {
+		matches!(
+			self,
+			Self::SetCell(0, None)
+				| Self::DynamicLoop(..)
+				| Self::MoveValueTo(..)
+				| Self::FindZero(..)
+				| Self::IfNotZero(..)
+				| Self::DuplicateCell { .. }
+				| Self::SubCellAt(..)
+		) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
 	}
 
 	#[must_use]
-	pub fn if_not_zero(instrs: impl IntoIterator<Item = Self>) -> Self {
-		Self::IfNotZero(instrs.collect_to())
+	pub const fn needs_nonzero_cell(&self) -> bool {
+		matches!(
+			self,
+			Self::DynamicLoop(..)
+				| Self::FindZero(..)
+				| Self::MoveValueTo(..)
+				| Self::IfNotZero(..)
+				| Self::SubCellAt(..)
+				| Self::DuplicateCell { .. }
+				| Self::CopyValueTo(..)
+		)
 	}
 }
