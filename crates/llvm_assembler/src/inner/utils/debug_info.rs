@@ -76,14 +76,14 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i32_di_type = self
 			.di_builder
-			.create_basic_type("u32", 4, 7, i32::PUBLIC)?
+			.create_basic_type("u32", 4, 7, i32::PRIVATE)?
 			.as_type();
 
 		let putchar_subroutine_type = self.di_builder.create_subroutine_type(
 			self.compile_unit.get_file(),
 			None,
 			&[i32_di_type],
-			i32::PUBLIC,
+			i32::PRIVATE,
 		);
 
 		let putchar_subprogram = self.di_builder.create_function(
@@ -96,7 +96,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			false,
 			false,
 			0,
-			i32::PUBLIC,
+			i32::PRIVATE,
 			true,
 		);
 
@@ -106,7 +106,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			self.compile_unit.get_file(),
 			Some(i32_di_type),
 			&[],
-			i32::PUBLIC,
+			i32::PRIVATE,
 		);
 
 		let getchar_subprogram = self.di_builder.create_function(
@@ -119,7 +119,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			false,
 			false,
 			0,
-			i32::PUBLIC,
+			i32::PRIVATE,
 			true,
 		);
 
@@ -127,7 +127,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_di_type = self
 			.di_builder
-			.create_basic_type("u8", 1, 7, i32::PUBLIC)?
+			.create_basic_type("u8", 1, 7, i32::PRIVATE)?
 			.as_type();
 
 		let i8_array_di_type = self
