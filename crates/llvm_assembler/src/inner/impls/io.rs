@@ -94,7 +94,7 @@ impl InnerAssembler<'_> {
 
 			let i32_i8_min = i32_type.const_zero();
 
-			let i32_i8_max = i32_type.const_int(255, false);
+			let i32_i8_max = i32_type.const_int(256, false);
 
 			let range_metadata_id = self.context().get_kind_id("range");
 
