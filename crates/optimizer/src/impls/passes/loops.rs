@@ -174,10 +174,3 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 		_ => None,
 	}
 }
-
-pub fn optimize_loop_one_op(ops: &[BrainIr]) -> Option<Change> {
-	match ops {
-		[l] if l.needs_nonzero_cell() && l.is_zeroing_cell() => Some(Change::replace(l.clone())),
-		_ => None,
-	}
-}
