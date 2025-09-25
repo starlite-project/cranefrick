@@ -98,6 +98,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let global_constant = self.module.add_global(constant_s_ty, None, "output_chars");
 
 		global_constant.set_initializer(&constant_initializer);
+		global_constant.set_constant(true);
 
 		let puts_call = self.builder.build_call(
 			self.functions.puts,
