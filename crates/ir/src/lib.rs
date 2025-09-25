@@ -19,11 +19,11 @@ pub enum BrainIr {
 		i8,
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
 	),
-	MovePointer(i32),
 	SetCell(
 		u8,
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
 	),
+	MovePointer(i32),
 	SubCellAt(CellChangeOptions),
 	SubFromCell(CellChangeOptions),
 	FindZero(i32),
