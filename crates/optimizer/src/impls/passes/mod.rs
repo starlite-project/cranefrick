@@ -669,7 +669,7 @@ pub fn optimize_duplicate_cell_vectorization(ops: [&BrainIr; 1]) -> Option<Chang
 
 pub fn optimize_if_nz_when_zeroing(ops: [&BrainIr; 1]) -> Option<Change> {
 	match ops {
-		[BrainIr::IfNotZero(ops)] => match &**ops {
+		[BrainIr::IfNotZero(ops) | BrainIr::DynamicLoop(ops)] => match &**ops {
 			[x] if x.needs_nonzero_cell() && x.is_zeroing_cell() => {
 				Some(Change::replace(x.clone()))
 			}
