@@ -1,9 +1,10 @@
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, OutputOptions};
+use inkwell::values::{InstructionValueError, IntValue};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
-impl InnerAssembler<'_> {
+impl<'ctx> InnerAssembler<'ctx> {
 	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		match options {
 			OutputOptions::Cell(options) => {
@@ -47,11 +48,18 @@ impl InnerAssembler<'_> {
 			)?
 		};
 
-		self.builder.build_call(
-			self.functions.putchar,
-			&[offset_loaded_value.into()],
-			"output_current_cell_call",
-		)?;
+		let putchar_call = self
+			.builder
+			.build_call(
+				self.functions.putchar,
+				&[offset_loaded_value.into()],
+				"output_current_cell_call",
+			)?
+			.try_as_basic_value()
+			.unwrap_left()
+			.into_int_value();
+
+		self.add_range_io_metadata(putchar_call, u8::MIN.into(), u8::MAX.into())?;
 
 		Ok(())
 	}
@@ -63,11 +71,18 @@ impl InnerAssembler<'_> {
 			i32_type.const_int(c.into(), false)
 		};
 
-		self.builder.build_call(
-			self.functions.putchar,
-			&[char_to_put.into()],
-			"output_char_call",
-		)?;
+		let putchar_call = self
+			.builder
+			.build_call(
+				self.functions.putchar,
+				&[char_to_put.into()],
+				"output_char_call",
+			)?
+			.try_as_basic_value()
+			.unwrap_left()
+			.into_int_value();
+
+		self.add_range_io_metadata(putchar_call, c.into(), c.into())?;
 
 		Ok(())
 	}
@@ -78,6 +93,31 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
+	fn add_range_io_metadata(
+		&self,
+		char_call: IntValue<'ctx>,
+		min_inclusive: u64,
+		max_inclusive: u64,
+	) -> Result<(), InstructionValueError> {
+		let Some(char_instr) = char_call.as_instruction() else {
+			return Ok(());
+		};
+
+		let i32_type = self.context().i32_type();
+
+		let i32_i8_min = i32_type.const_int(min_inclusive, false);
+
+		let i32_i8_max = i32_type.const_int(max_inclusive + 1, false);
+
+		let range_metadata_id = self.context().get_kind_id("range");
+
+		let range_metadata_node = self
+			.context()
+			.metadata_node(&[i32_i8_min.into(), i32_i8_max.into()]);
+
+		char_instr.set_metadata(range_metadata_node, range_metadata_id)
+	}
+
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
@@ -85,25 +125,10 @@ impl InnerAssembler<'_> {
 			.builder
 			.build_call(self.functions.getchar, &[], "input_into_cell_call")?
 			.try_as_basic_value()
-			.left()
-			.unwrap()
+			.unwrap_left()
 			.into_int_value();
 
-		if let Some(getchar_instr) = getchar_call.as_instruction() {
-			let i32_type = self.context().i32_type();
-
-			let i32_i8_min = i32_type.const_zero();
-
-			let i32_i8_max = i32_type.const_int(256, false);
-
-			let range_metadata_id = self.context().get_kind_id("range");
-
-			let range_metadata_node = self
-				.context()
-				.metadata_node(&[i32_i8_min.into(), i32_i8_max.into()]);
-
-			getchar_instr.set_metadata(range_metadata_node, range_metadata_id)?;
-		}
+		self.add_range_io_metadata(getchar_call, u8::MIN.into(), u8::MAX.into())?;
 
 		let truncated_value =
 			self.builder
