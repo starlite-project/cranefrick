@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use frick_assembler::TAPE_SIZE;
 use inkwell::{
 	AddressSpace,
@@ -163,18 +165,11 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		functions.puts.set_subprogram(puts_subprogram);
 
-		let lexical_block = self.di_builder.create_lexical_block(
-			main_subprogram.as_debug_info_scope(),
-			self.compile_unit.get_file(),
-			0,
-			0,
-		);
-
 		let debug_loc = self.di_builder.create_debug_location(
 			functions.main.get_type().get_context(),
 			0,
 			0,
-			lexical_block.as_debug_info_scope(),
+			main_subprogram.as_debug_info_scope(),
 			None,
 		);
 
@@ -258,5 +253,19 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		builder.set_current_debug_location(debug_loc);
 
 		Ok(self)
+	}
+}
+
+impl<'ctx> Deref for AssemblerDebugBuilder<'ctx> {
+	type Target = DebugInfoBuilder<'ctx>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.di_builder
+	}
+}
+
+impl DerefMut for AssemblerDebugBuilder<'_> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.di_builder
 	}
 }

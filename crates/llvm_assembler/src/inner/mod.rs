@@ -9,6 +9,7 @@ use frick_utils::GetOrZero as _;
 use inkwell::{
 	builder::Builder,
 	context::{Context, ContextRef},
+	debug_info::AsDIScope,
 	module::{FlagBehavior, Module},
 	targets::TargetMachine,
 	types::IntType,
@@ -116,7 +117,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	> {
 		assert!(TAPE_SIZE.is_power_of_two());
 
-		self.ops(ops)?;
+		self.ops(ops, 1)?;
 
 		let i64_size = {
 			let i64_type = self.context().i64_type();
@@ -154,8 +155,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(self.into_parts())
 	}
 
-	fn ops(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
-		ops.iter().try_for_each(|op| {
+	fn ops(
+		&self,
+		ops: &[BrainIr],
+		mut op_count: usize,
+	) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+		for op in ops {
+			let debug_loc = self.debug_builder.create_debug_location(
+				self.context(),
+				0,
+				op_count as u32,
+				self.functions
+					.main
+					.get_subprogram()
+					.unwrap()
+					.as_debug_info_scope(),
+				None,
+			);
+
+			self.builder.set_current_debug_location(debug_loc);
+
 			match op {
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::SetCell(value, offset) => {
@@ -169,8 +188,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
 				BrainIr::Output(options) => self.output(options)?,
 				BrainIr::InputIntoCell => self.input_into_cell()?,
-				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
-				BrainIr::IfNotZero(ops) => self.if_not_zero(ops)?,
+				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops, op_count)?,
+				BrainIr::IfNotZero(ops) => self.if_not_zero(ops, op_count)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
 				BrainIr::MoveValueTo(options) => self.move_value_to(*options)?,
 				BrainIr::CopyValueTo(options) => self.copy_value_to(*options)?,
@@ -189,8 +208,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 
-			Ok(())
-		})
+			op_count += 1;
+		}
+
+		Ok(())
 	}
 
 	fn into_parts(self) -> (Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine) {

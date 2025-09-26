@@ -5,7 +5,7 @@ use inkwell::IntPredicate;
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	pub fn if_not_zero(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+	pub fn if_not_zero(&self, ops: &[BrainIr], ops_count: usize) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let preheader_block = self
 			.context()
 			.append_basic_block(self.functions.main, "if_not_zero.preheader");
@@ -50,7 +50,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(body_block);
 
-		self.ops(ops)?;
+		self.ops(ops, ops_count + 1)?;
 
 		self.builder
 			.build_unconditional_branch(exit_block)
@@ -61,7 +61,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn dynamic_loop(&self, ops: &[BrainIr]) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+	pub fn dynamic_loop(&self, ops: &[BrainIr], ops_count: usize) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let header_block = self
 			.context()
 			.append_basic_block(self.functions.main, "dynamic_loop.header");
@@ -97,7 +97,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(body_block);
 
-		self.ops(ops)?;
+		self.ops(ops, ops_count + 1)?;
 
 		self.builder
 			.build_unconditional_branch(header_block)
