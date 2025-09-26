@@ -1,6 +1,7 @@
 use frick_assembler::TAPE_SIZE;
 use inkwell::{
 	AddressSpace,
+	builder::Builder,
 	debug_info::{
 		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DWARFEmissionKind,
 		DWARFSourceLanguage, DebugInfoBuilder,
@@ -49,6 +50,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 	#[allow(clippy::single_range_in_vec_init)]
 	pub fn setup(
 		self,
+		builder: &Builder<'ctx>,
 		functions: AssemblerFunctions<'ctx>,
 		pointers: AssemblerPointers<'ctx>,
 	) -> Result<Self, LlvmAssemblyError> {
@@ -161,11 +163,18 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		functions.puts.set_subprogram(puts_subprogram);
 
+		let lexical_block = self.di_builder.create_lexical_block(
+			main_subprogram.as_debug_info_scope(),
+			self.compile_unit.get_file(),
+			0,
+			0,
+		);
+
 		let debug_loc = self.di_builder.create_debug_location(
 			functions.main.get_type().get_context(),
 			0,
 			0,
-			main_subprogram.as_debug_info_scope(),
+			lexical_block.as_debug_info_scope(),
 			None,
 		);
 
@@ -198,14 +207,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			entry_block,
 		);
 
-		let debug_loc = self.di_builder.create_debug_location(
-			functions.main.get_type().get_context(),
-			1,
-			0,
-			main_subprogram.as_debug_info_scope(),
-			None,
-		);
-
 		let i64_di_type = self
 			.di_builder
 			.create_basic_type("u64", 64, 7, i32::PUBLIC)?
@@ -228,14 +229,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			None,
 			debug_loc,
 			entry_block,
-		);
-
-		let debug_loc = self.di_builder.create_debug_location(
-			functions.main.get_type().get_context(),
-			2,
-			0,
-			main_subprogram.as_debug_info_scope(),
-			None,
 		);
 
 		let i8_array_di_type = self
@@ -261,6 +254,8 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			debug_loc,
 			entry_block,
 		);
+
+		builder.set_current_debug_location(debug_loc);
 
 		Ok(self)
 	}

@@ -90,7 +90,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		let debug_builder = AssemblerDebugBuilder::new(&module, &file_name, &directory)?
-			.setup(functions, pointers)?;
+			.setup(&builder, functions, pointers)?;
 
 		Ok(Self {
 			module,
