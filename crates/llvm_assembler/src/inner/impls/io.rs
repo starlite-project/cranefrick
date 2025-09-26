@@ -2,7 +2,8 @@ use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
-	values::{InstructionValueError, IntValue},
+	types::ArrayType,
+	values::{CallSiteValue, InstructionValueError, IntValue},
 };
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
@@ -93,11 +94,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.build_store(last_index_gep, zero)?;
 
-		self.builder.build_call(
+		let puts_call = self.builder.build_call(
 			self.functions.puts,
 			&[self.pointers.output.into()],
 			"output_cells_puts_call",
 		)?;
+
+		puts_call.set_tail_call(false);
+
+		self.add_puts_io_attributes(
+			puts_call,
+			i8_type.array_type(options.len() as u32 + 1),
+			options.len() as u64,
+		);
 
 		self.builder.build_call(
 			self.functions.lifetime.end,
@@ -213,19 +222,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.add_range_io_metadata(puts_value, last.into(), last.into())?;
 
-		let byref_attribute = self.context().create_type_attribute(
-			Attribute::get_named_enum_kind_id("byref"),
-			constant_s_ty.into(),
-		);
-
-		puts_call.add_attribute(AttributeLoc::Param(0), byref_attribute);
-
-		let dereferenceable_attribute = self.context().create_enum_attribute(
-			Attribute::get_named_enum_kind_id("dereferenceable"),
-			c.len() as u64 + 1,
-		);
-
-		puts_call.add_attribute(AttributeLoc::Param(0), dereferenceable_attribute);
+		self.add_puts_io_attributes(puts_call, constant_s_ty, c.len() as u64);
 
 		Ok(())
 	}
@@ -253,6 +250,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.metadata_node(&[i32_i8_min.into(), i32_i8_max.into()]);
 
 		char_instr.set_metadata(range_metadata_node, range_metadata_id)
+	}
+
+	fn add_puts_io_attributes(
+		&self,
+		call: CallSiteValue<'ctx>,
+		array_ty: ArrayType<'ctx>,
+		array_len: u64,
+	) {
+		let byref_attr = self
+			.context()
+			.create_type_attribute(Attribute::get_named_enum_kind_id("byref"), array_ty.into());
+
+		let deref_attr = self.context().create_enum_attribute(
+			Attribute::get_named_enum_kind_id("dereferenceable"),
+			array_len + 1,
+		);
+
+		for attribute in [byref_attr, deref_attr] {
+			call.add_attribute(AttributeLoc::Param(0), attribute);
+		}
 	}
 
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
