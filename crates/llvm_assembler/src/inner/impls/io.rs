@@ -100,11 +100,41 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"output_cells_puts_call",
 		)?;
 
+		let puts_value = puts_call
+			.try_as_basic_value()
+			.unwrap_left()
+			.into_int_value();
+
 		self.add_puts_io_attributes(
 			puts_call,
 			i8_type.array_type(options.len() as u32 + 1),
 			options.len() as u64,
 		);
+
+		let last_cell = {
+			let i32_type = self.context().i32_type();
+
+			let last_options = options.last().copied().unwrap();
+
+			let loaded_value = self.load(0, "output_cells_puts")?;
+
+			let extended_value = self.builder.build_int_s_extend(
+				loaded_value,
+				i32_type,
+				"output_cells_puts_extend",
+			)?;
+
+			let offset_to_add = i32_type.const_int(last_options.value() as u64, false);
+
+			self.builder
+				.build_int_add(extended_value, offset_to_add, "output_cells_puts_add")?
+		};
+
+		self.builder.build_call(
+			self.functions.expect,
+			&[puts_value.into(), last_cell.into()],
+			"",
+		)?;
 
 		self.builder.build_call(
 			self.functions.lifetime.end,
@@ -165,6 +195,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.add_range_io_metadata(putchar_value, u8::MIN.into(), u8::MAX.into())?;
 
+		self.builder.build_call(
+			self.functions.expect,
+			&[offset_loaded_value.into(), putchar_value.into()],
+			"",
+		)?;
+
 		Ok(())
 	}
 
@@ -189,6 +225,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.into_int_value();
 
 		self.add_range_io_metadata(putchar_value, c.into(), c.into())?;
+
+		self.builder.build_call(
+			self.functions.expect,
+			&[putchar_value.into(), char_to_put.into()],
+			"",
+		)?;
 
 		Ok(())
 	}
