@@ -18,6 +18,7 @@ pub struct AssemblerFunctions<'ctx> {
 	pub puts: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
+	pub expect: FunctionValue<'ctx>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -50,12 +51,15 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
 		};
 
+		let expect = get_intrinsic_function_from_name("llvm.expect", module, &[i32_type.into()])?;
+
 		let this = Self {
 			getchar,
 			putchar,
 			puts,
 			main,
 			lifetime,
+			expect,
 		};
 
 		Ok(this.setup(context))

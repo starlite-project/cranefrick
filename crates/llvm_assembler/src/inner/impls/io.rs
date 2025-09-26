@@ -203,9 +203,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		global_constant.set_initializer(&constant_initializer);
 		global_constant.set_constant(true);
 
+		let global_constant_pointer = global_constant.as_pointer_value();
+
 		let puts_call = self.builder.build_call(
 			self.functions.puts,
-			&[global_constant.as_pointer_value().into()],
+			&[global_constant_pointer.into()],
 			"output_chars_call",
 		)?;
 
@@ -215,6 +217,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.into_int_value();
 
 		let last = c.last().copied().unwrap();
+
+		let last_value = {
+			let i32_type = self.context().i32_type();
+
+			i32_type.const_int(last.into(), false)
+		};
+
+		self.builder.build_call(
+			self.functions.expect,
+			&[puts_value.into(), last_value.into()],
+			"",
+		)?;
 
 		self.add_range_io_metadata(puts_value, last.into(), last.into())?;
 
