@@ -7,7 +7,6 @@ use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use frick_utils::GetOrZero as _;
 use inkwell::{
-	IntPredicate,
 	builder::Builder,
 	context::{Context, ContextRef},
 	debug_info::AsDIScope,
@@ -20,7 +19,6 @@ use utils::AssemblerDebugBuilder;
 pub use self::utils::AssemblerFunctions;
 use self::utils::AssemblerPointers;
 use super::LlvmAssemblyError;
-use crate::ContextExt;
 
 pub struct InnerAssembler<'ctx> {
 	module: Module<'ctx>,
@@ -110,136 +108,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.module.get_context()
 	}
 
-	fn write_puts(&self) -> Result<(), LlvmAssemblyError> {
-		let context = self.context();
-		let i8_type = context.i8_type();
-		let i32_type = context.i32_type();
-		let i64_type = context.i64_type();
-		let ptr_type = context.default_ptr_type();
-
-		let debug_location = self.debug_builder.create_debug_location(
-			self.context(),
-			0,
-			0,
-			self.functions
-				.puts
-				.get_subprogram()
-				.unwrap()
-				.as_debug_info_scope(),
-			None,
-		);
-
-		self.builder.set_current_debug_location(debug_location);
-
-		let entry_block = context.append_basic_block(self.functions.puts, "entry");
-		let body_block = context.append_basic_block(self.functions.puts, "body");
-		let exit_block = context.append_basic_block(self.functions.puts, "exit");
-
-		self.builder.position_at_end(entry_block);
-
-		let pointer_param = self
-			.functions
-			.puts
-			.get_first_param()
-			.unwrap()
-			.into_pointer_value();
-
-		let string_len = self
-			.builder
-			.build_call(self.functions.strlen, &[pointer_param.into()], "string_len")?
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_int_value();
-
-		let end_of_string = unsafe {
-			self.builder.build_in_bounds_gep(
-				i8_type,
-				pointer_param,
-				&[string_len],
-				"end_of_string_gep",
-			)?
-		};
-
-		let i64_zero = i64_type.const_zero();
-
-		let is_string_len_zero = self.builder.build_int_compare(
-			IntPredicate::EQ,
-			string_len,
-			i64_zero,
-			"is_string_len_zero",
-		)?;
-
-		self.builder
-			.build_conditional_branch(is_string_len_zero, exit_block, body_block)?;
-
-		self.builder.position_at_end(body_block);
-
-		let body_block_phi = self.builder.build_phi(ptr_type, "body_phi")?;
-
-		body_block_phi.add_incoming(&[(&pointer_param, entry_block)]);
-
-		let i64_one = i64_type.const_int(1, false);
-
-		let next_index_gep = unsafe {
-			self.builder.build_in_bounds_gep(
-				i8_type,
-				body_block_phi.as_basic_value().into_pointer_value(),
-				&[i64_one],
-				"next_string_index",
-			)?
-		};
-
-		body_block_phi.add_incoming(&[(&next_index_gep, body_block)]);
-
-		let actual_value = self
-			.builder
-			.build_load(
-				i8_type,
-				body_block_phi.as_basic_value().into_pointer_value(),
-				"loaded_char",
-			)?
-			.into_int_value();
-
-		let extended_character =
-			self.builder
-				.build_int_z_extend(actual_value, i32_type, "extend_for_putchar")?;
-
-		let putchar_call = self.builder.build_call(
-			self.functions.putchar,
-			&[extended_character.into()],
-			"putchar_call",
-		)?;
-
-		let putchar_value = putchar_call
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_int_value();
-
-		let check_if_at_end = self.builder.build_int_compare(
-			IntPredicate::EQ,
-			next_index_gep,
-			end_of_string,
-			"check_if_at_end_of_string",
-		)?;
-
-		self.builder
-			.build_conditional_branch(check_if_at_end, exit_block, body_block)?;
-
-		self.builder.position_at_end(exit_block);
-
-		let end_value = self.builder.build_phi(i32_type, "exit_value")?;
-
-		end_value.add_incoming(&[
-			(&i32_type.const_zero(), entry_block),
-			(&putchar_value, body_block),
-		]);
-
-		self.builder
-			.build_return(Some(&end_value.as_basic_value()))?;
-
-		Ok(())
-	}
-
 	pub fn assemble(
 		self,
 		ops: &[BrainIr],
@@ -283,6 +151,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.map_err(AssemblyError::backend)?;
 
 		self.write_puts()?;
+		self.write_find_zero()?;
 
 		self.debug_builder.di_builder.finalize();
 

@@ -20,6 +20,7 @@ pub struct AssemblerFunctions<'ctx> {
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 	pub expect: FunctionValue<'ctx>,
 	pub strlen: FunctionValue<'ctx>,
+	pub find_zero: FunctionValue<'ctx>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -44,6 +45,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let puts_ty = i32_type.fn_type(&[ptr_type.into()], false);
 		let puts = module.add_function("puts", puts_ty, Some(Linkage::Private));
 
+		let find_zero_ty = i64_type.fn_type(&[ptr_type.into(), i64_type.into(), i64_type.into()], false);
+		let find_zero = module.add_function("find_zero", find_zero_ty, Some(Linkage::Private));
+
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(
 				"llvm.lifetime.start",
@@ -66,6 +70,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			lifetime,
 			expect,
 			strlen,
+			find_zero,
 		};
 
 		Ok(this.setup(context))
