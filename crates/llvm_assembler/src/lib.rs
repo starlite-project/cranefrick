@@ -135,7 +135,7 @@ impl Assembler for LlvmAssembler {
 			.write_to_file(
 				&module,
 				FileType::Object,
-				&output_path.join("unoptimized.obj"),
+				&output_path.join("unoptimized.o"),
 			)
 			.map_err(AssemblyError::backend)?;
 
@@ -180,7 +180,7 @@ impl Assembler for LlvmAssembler {
 			.write_to_file(
 				&module,
 				FileType::Object,
-				&output_path.join("optimized.obj"),
+				&output_path.join("optimized.o"),
 			)
 			.map_err(AssemblyError::backend)?;
 
