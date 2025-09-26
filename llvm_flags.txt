@@ -1,6 +1,7 @@
 default<O3>
 inferattrs
 simplifycfg
+argpromotion
 sroa<modify-cfg>
 early-cse<memssa>
 aggressive-instcombine

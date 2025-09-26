@@ -19,6 +19,7 @@ pub struct AssemblerFunctions<'ctx> {
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 	pub expect: FunctionValue<'ctx>,
+	pub strlen: FunctionValue<'ctx>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -26,6 +27,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let ptr_type = context.default_ptr_type();
 		let void_type = context.void_type();
 		let i32_type = context.i32_type();
+		let i64_type = context.i64_type();
 
 		let getchar_ty = i32_type.fn_type(&[], false);
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
@@ -33,11 +35,14 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let putchar_ty = i32_type.fn_type(&[i32_type.into()], false);
 		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
 
-		let puts_ty = i32_type.fn_type(&[ptr_type.into()], false);
-		let puts = module.add_function("puts", puts_ty, Some(Linkage::External));
+		let strlen_ty = i64_type.fn_type(&[ptr_type.into()], false);
+		let strlen = module.add_function("strlen", strlen_ty, Some(Linkage::External));
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
+
+		let puts_ty = i32_type.fn_type(&[ptr_type.into()], false);
+		let puts = module.add_function("puts", puts_ty, Some(Linkage::Internal));
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(
@@ -60,6 +65,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			main,
 			lifetime,
 			expect,
+			strlen,
 		};
 
 		Ok(this.setup(context))
