@@ -78,7 +78,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i32_di_type = self
 			.di_builder
-			.create_basic_type("u32", 4, 7, i32::ZERO)?
+			.create_basic_type("u32", 32, 7, i32::ZERO)?
 			.as_type();
 
 		let putchar_subroutine_type = self.di_builder.create_subroutine_type(
@@ -129,12 +129,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_di_type = self
 			.di_builder
-			.create_basic_type("u8", 1, 7, i32::ZERO)?
+			.create_basic_type("u8", 8, 7, i32::ZERO)?
 			.as_type();
 
 		let i8_ptr_di_type = self
 			.di_builder
-			.create_pointer_type("*u8", i8_di_type, 8, 4, AddressSpace::default())
+			.create_pointer_type("*u8", i8_di_type, 32, 32, AddressSpace::default())
 			.as_type();
 
 		let puts_subroutine_type = self.di_builder.create_subroutine_type(
@@ -194,7 +194,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i64_di_type = self
 			.di_builder
-			.create_basic_type("u64", 8, 7, i32::PUBLIC)?
+			.create_basic_type("u64", 64, 7, i32::PUBLIC)?
 			.as_type();
 
 		let pointer_variable = self.di_builder.create_auto_variable(
