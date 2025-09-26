@@ -6,7 +6,7 @@ use inkwell::{
 		DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
-	values::BasicValue,
+	values::{BasicValue, InstructionValue, PointerValue},
 };
 
 use super::{AssemblerFunctions, AssemblerPointers};
@@ -162,6 +162,14 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		functions.puts.set_subprogram(puts_subprogram);
 
+		let debug_loc = self.di_builder.create_debug_location(
+			functions.main.get_type().get_context(),
+			0,
+			0,
+			main_subprogram.as_debug_info_scope(),
+			None,
+		);
+
 		let i8_array_di_type = self
 			.di_builder
 			.create_array_type(i8_di_type, TAPE_SIZE as u64 * 8, 1, &[])
@@ -178,20 +186,35 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			1,
 		);
 
-		let debug_loc = self.di_builder.create_debug_location(
-			functions.main.get_type().get_context(),
-			0,
-			0,
-			main_subprogram.as_debug_info_scope(),
-			None,
-		);
+		let tape_value = {
+			let i8_type = context.i8_type();
+			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
 
-		self.di_builder.insert_declare_before_instruction(
+			i8_array_type.const_zero()
+		};
+
+		// self.di_builder.insert_declare_before_instruction(
+		// 	pointers.tape,
+		// 	Some(tape_variable),
+		// 	None,
+		// 	debug_loc,
+		// 	pointers.tape.as_instruction().unwrap(),
+		// );
+
+		self.di_builder.insert_declare_at_end(
 			pointers.tape,
 			Some(tape_variable),
 			None,
 			debug_loc,
-			pointers.tape.as_instruction().unwrap(),
+			entry_block,
+		);
+
+		self.di_builder.insert_dbg_value_before(
+			tape_value.as_basic_value_enum(),
+			tape_variable,
+			None,
+			debug_loc,
+			get_next_instruction(pointers.tape).unwrap(),
 		);
 
 		let i64_di_type = self
@@ -229,7 +252,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			pointer_variable,
 			None,
 			debug_loc,
-			pointers.pointer.as_instruction().unwrap(),
+			get_next_instruction(pointers.pointer).unwrap(),
 		);
 
 		let i8_array_di_type = self
@@ -253,9 +276,15 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			Some(output_variable),
 			None,
 			debug_loc,
-			pointers.output.as_instruction().unwrap(),
+			get_next_instruction(pointers.output).unwrap(),
 		);
 
 		Ok(self)
 	}
+}
+
+fn get_next_instruction(ptr: PointerValue<'_>) -> Option<InstructionValue<'_>> {
+	let current_instruction = ptr.as_instruction()?;
+
+	current_instruction.get_next_instruction()
 }
