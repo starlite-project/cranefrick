@@ -51,6 +51,7 @@ llvm = ["dep:frick_llvm_assembler"]
 members = [
     "crates/assembler",
     "crates/cranelift_assembler",
+    "crates/interop",
     "crates/ir",
     "crates/llvm_assembler",
     "crates/optimizer",
@@ -85,6 +86,7 @@ frick_utils = { path = "crates/utils" }
 inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "075db5c0f535c500f9e801313e570206ab28f613", features = [
     "llvm18-1"
 ] }
+libc = "0.2"
 serde = { version = "1", default-features = false }
 target-lexicon = "0.13"
 tracing = "0.1"
@@ -148,6 +150,10 @@ version = "0.1.0"
 [profile.release]
 codegen-units = 1
 lto = "fat"
+panic = "abort"
 
 [workspace.metadata.docs.rs]
 all-features = true
+
+[profile.dev.package.frick_interop]
+opt-level = 3

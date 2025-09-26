@@ -10,6 +10,7 @@ use crate::LlvmAssemblyError;
 pub struct AssemblerPointers<'ctx> {
 	pub tape: PointerValue<'ctx>,
 	pub pointer: PointerValue<'ctx>,
+	pub output: PointerValue<'ctx>,
 }
 
 impl<'ctx> AssemblerPointers<'ctx> {
@@ -65,6 +66,19 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			pointer_alloca
 		};
 
-		Ok((Self { tape, pointer }, ptr_int_type))
+		let output = {
+			let i8_array_type = i8_type.array_type(8);
+
+			builder.build_alloca(i8_array_type, "output")?
+		};
+
+		Ok((
+			Self {
+				tape,
+				pointer,
+				output,
+			},
+			ptr_int_type,
+		))
 	}
 }

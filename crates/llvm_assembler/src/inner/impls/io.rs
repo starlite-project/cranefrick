@@ -27,9 +27,93 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn output_cells(&self, options: &[CellChangeOptions<i8>]) -> Result<(), LlvmAssemblyError> {
+		if options.len() < 8 {
+			self.output_cells_puts(options)
+		} else {
+			self.output_cells_iterated(options)
+		}
+	}
+
+	fn output_cells_puts(
+		&self,
+		options: &[CellChangeOptions<i8>],
+	) -> Result<(), LlvmAssemblyError> {
+		assert!(options.len() < 8);
+
+		let i8_type = self.context().i8_type();
+		let i64_type = self.context().i64_type();
+		let ptr_int_type = self.ptr_int_type;
+
+		let lifetime_array_len = i64_type.const_int(options.len() as u64 + 1, false);
+
+		let array_len = i64_type.const_int(options.len() as u64, false);
+
+		self.builder.build_call(
+			self.functions.lifetime.start,
+			&[lifetime_array_len.into(), self.pointers.output.into()],
+			"",
+		)?;
+
+		for (i, char) in options.iter().copied().enumerate() {
+			let loaded_char = self.load(char.offset(), "output_cells_puts")?;
+
+			let offset_value = if matches!(char.value(), 0) {
+				loaded_char
+			} else {
+				let offset_value = i8_type.const_int(char.value() as u64, false);
+
+				self.builder
+					.build_int_add(loaded_char, offset_value, "output_cells_puts_add")?
+			};
+
+			let array_offset = ptr_int_type.const_int(i as u64, false);
+
+			let output_array_gep = unsafe {
+				self.builder.build_in_bounds_gep(
+					i8_type,
+					self.pointers.output,
+					&[array_offset],
+					"output_cells_puts_gep",
+				)?
+			};
+
+			self.builder.build_store(output_array_gep, offset_value)?;
+		}
+
+		let zero = i8_type.const_zero();
+
+		let last_index_gep = unsafe {
+			self.builder.build_in_bounds_gep(
+				i8_type,
+				self.pointers.output,
+				&[array_len],
+				"output_cells_puts_gep",
+			)?
+		};
+
+		self.builder.build_store(last_index_gep, zero)?;
+
+		self.builder.build_call(
+			self.functions.puts,
+			&[self.pointers.output.into()],
+			"output_cells_puts_call",
+		)?;
+
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[lifetime_array_len.into(), self.pointers.output.into()],
+			"",
+		)?;
+
+		Ok(())
+	}
+
+	fn output_cells_iterated(
+		&self,
+		options: &[CellChangeOptions<i8>],
+	) -> Result<(), LlvmAssemblyError> {
 		options
 			.iter()
-			.copied()
 			.try_for_each(|x| self.output_current_cell(x.value(), x.offset()))
 	}
 

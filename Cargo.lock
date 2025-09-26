@@ -659,6 +659,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "frick_interop"
+version = "0.1.0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "frick_ir"
 version = "0.1.0"
 dependencies = [
@@ -675,6 +682,7 @@ name = "frick_llvm_assembler"
 version = "0.1.0"
 dependencies = [
  "frick_assembler",
+ "frick_interop",
  "frick_ir",
  "frick_utils",
  "inkwell",

@@ -427,6 +427,19 @@ pub fn optimize_changes_and_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			),
 			BrainIr::set_cell(*value_to_set),
 		])),
+		[
+			BrainIr::ChangeCell(value, None),
+			BrainIr::Output(OutputOptions::Cells(options)),
+			BrainIr::ChangeCell(second_value, None),
+		] if options.iter().all(|x| matches!(x.offset(), 0)) => Some(Change::swap([
+			BrainIr::output_cells(
+				options
+					.iter()
+					.copied()
+					.map(|x| CellChangeOptions::new(x.value().wrapping_add(*value), 0)),
+			),
+			BrainIr::change_cell(value.wrapping_add(*second_value)),
+		])),
 		_ => None,
 	}
 }

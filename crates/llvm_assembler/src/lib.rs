@@ -209,7 +209,7 @@ impl Assembler for LlvmAssembler {
 		}
 
 		if let Some(puts) = module.get_function("puts") {
-			execution_engine.add_global_mapping(&puts, self::puts as usize);
+			execution_engine.add_global_mapping(&puts, frick_interop::puts as usize);
 		}
 
 		Ok(LlvmAssembledModule {
@@ -311,15 +311,3 @@ impl From<InstructionValueError> for LlvmAssemblyError {
 }
 
 impl InnerAssemblyError for LlvmAssemblyError {}
-
-unsafe extern "C" fn puts(ptr: *const libc::c_char) -> i32 {
-	let mut last = 0;
-
-	let s = unsafe { CStr::from_ptr(ptr) };
-
-	for c in s.to_bytes().iter().copied() {
-		last = unsafe { libc::putchar(c.into()) };
-	}
-
-	last
-}
