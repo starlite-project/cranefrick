@@ -46,6 +46,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		})
 	}
 
+	#[allow(clippy::single_range_in_vec_init)]
 	pub fn setup(
 		self,
 		functions: AssemblerFunctions<'ctx>,
@@ -170,7 +171,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_array_di_type = self
 			.di_builder
-			.create_array_type(i8_di_type, TAPE_SIZE as u64 * 8, 1, &[])
+			.create_array_type(
+				i8_di_type,
+				TAPE_SIZE as u64 * 8,
+				1,
+				&[0..(TAPE_SIZE as i64)],
+			)
 			.as_type();
 
 		let tape_variable = self.di_builder.create_auto_variable(
@@ -190,6 +196,14 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			None,
 			debug_loc,
 			entry_block,
+		);
+
+		let debug_loc = self.di_builder.create_debug_location(
+			functions.main.get_type().get_context(),
+			1,
+			0,
+			main_subprogram.as_debug_info_scope(),
+			None,
 		);
 
 		let i64_di_type = self
@@ -216,9 +230,17 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			entry_block,
 		);
 
+		let debug_loc = self.di_builder.create_debug_location(
+			functions.main.get_type().get_context(),
+			2,
+			0,
+			main_subprogram.as_debug_info_scope(),
+			None,
+		);
+
 		let i8_array_di_type = self
 			.di_builder
-			.create_array_type(i8_di_type, 64, 1, &[])
+			.create_array_type(i8_di_type, 64, 1, &[0..8])
 			.as_type();
 
 		let output_variable = self.di_builder.create_auto_variable(
