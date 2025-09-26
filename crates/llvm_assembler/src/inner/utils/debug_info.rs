@@ -6,6 +6,7 @@ use inkwell::{
 		DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
+	values::BasicValue,
 };
 
 use super::{AssemblerFunctions, AssemblerPointers};
@@ -51,6 +52,9 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		functions: AssemblerFunctions<'ctx>,
 		pointers: AssemblerPointers<'ctx>,
 	) -> Result<Self, LlvmAssemblyError> {
+		let context = functions.main.get_type().get_context();
+		let entry_block = functions.main.get_first_basic_block().unwrap();
+
 		let main_subroutine_type = self.di_builder.create_subroutine_type(
 			self.compile_unit.get_file(),
 			None,
@@ -169,7 +173,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			self.compile_unit.get_file(),
 			0,
 			i8_array_di_type,
-			false,
+			true,
 			i32::ZERO,
 			1,
 		);
@@ -201,14 +205,28 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			self.compile_unit.get_file(),
 			1,
 			i64_di_type,
-			false,
+			true,
 			i32::ZERO,
 			8,
 		);
 
-		self.di_builder.insert_declare_before_instruction(
+		let pointer_value = {
+			let ptr_int_type = context.i64_type();
+
+			ptr_int_type.const_zero()
+		};
+
+		self.di_builder.insert_declare_at_end(
 			pointers.pointer,
 			Some(pointer_variable),
+			None,
+			debug_loc,
+			entry_block,
+		);
+
+		self.di_builder.insert_dbg_value_before(
+			pointer_value.as_basic_value_enum(),
+			pointer_variable,
 			None,
 			debug_loc,
 			pointers.pointer.as_instruction().unwrap(),
@@ -225,7 +243,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			self.compile_unit.get_file(),
 			0,
 			i8_array_di_type,
-			false,
+			true,
 			i32::ZERO,
 			1,
 		);
