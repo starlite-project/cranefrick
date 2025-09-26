@@ -134,7 +134,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_ptr_di_type = self
 			.di_builder
-			.create_pointer_type("*u8", i8_di_type, 32, 32, AddressSpace::default())
+			.create_pointer_type("*u8", i8_di_type, 64, 64, AddressSpace::default())
 			.as_type();
 
 		let puts_subroutine_type = self.di_builder.create_subroutine_type(
