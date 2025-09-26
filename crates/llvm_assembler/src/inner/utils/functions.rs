@@ -42,7 +42,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let main = module.add_function("main", main_ty, None);
 
 		let puts_ty = i32_type.fn_type(&[ptr_type.into()], false);
-		let puts = module.add_function("puts", puts_ty, Some(Linkage::Internal));
+		let puts = module.add_function("puts", puts_ty, Some(Linkage::Private));
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(
