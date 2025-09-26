@@ -111,7 +111,7 @@ impl Optimizer {
 
 		self.pass_info("optimize write calls");
 		*progress |= run_peephole_pass(self, passes::optimize_writes);
-		*progress |= run_peephole_pass(self, passes::optimize_sets_and_writes);
+		*progress |= run_peephole_pass(self, passes::optimize_changes_and_writes);
 		*progress |= run_peephole_pass(self, passes::optimize_offset_writes);
 
 		self.pass_info("remove redundant take instructions");

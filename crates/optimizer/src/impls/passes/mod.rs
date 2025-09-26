@@ -407,13 +407,28 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 	}
 }
 
-pub const fn optimize_sets_and_writes(ops: [&BrainIr; 3]) -> Option<Change> {
+pub fn optimize_changes_and_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::SetCell(.., None),
 			BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
 			BrainIr::SetCell(.., None),
 		] => Some(Change::remove_offset(0)),
+		[
+			BrainIr::ChangeCell(value, None),
+			BrainIr::Output(OutputOptions::Cells(options)),
+			BrainIr::SetCell(value_to_set, None),
+		] if options.iter().all(|x| matches!(x.offset(), 0)) => {
+			Some(Change::swap([
+				BrainIr::output_cells(
+					options
+						.iter()
+						.copied()
+						.map(|x| CellChangeOptions::new(x.value().wrapping_add(*value), 0)),
+				),
+				BrainIr::set_cell(*value_to_set),
+			]))
+		}
 		_ => None,
 	}
 }
