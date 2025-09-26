@@ -116,7 +116,11 @@ impl InnerAssembler<'_> {
 
 		let current_pointer_value = self
 			.builder
-			.build_load(ptr_int_type, self.pointers.pointer, "find_zero_load_pointer")?
+			.build_load(
+				ptr_int_type,
+				self.pointers.pointer,
+				"find_zero_load_pointer",
+			)?
 			.into_int_value();
 
 		let header_block = self
@@ -170,7 +174,8 @@ impl InnerAssembler<'_> {
 		let wrapped_pointer_value = {
 			let tape_len = ptr_int_type.const_int(TAPE_SIZE as u64 - 1, false);
 
-			self.builder.build_and(new_pointer_value, tape_len, "find_zero_and")?
+			self.builder
+				.build_and(new_pointer_value, tape_len, "find_zero_and")?
 		};
 
 		self.builder.build_unconditional_branch(header_block)?;

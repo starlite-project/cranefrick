@@ -177,11 +177,7 @@ impl Assembler for LlvmAssembler {
 
 		info!("writing optimized object file");
 		target_machine
-			.write_to_file(
-				&module,
-				FileType::Object,
-				&output_path.join("optimized.o"),
-			)
+			.write_to_file(&module, FileType::Object, &output_path.join("optimized.o"))
 			.map_err(AssemblyError::backend)?;
 
 		info!("writing optimized asm");
