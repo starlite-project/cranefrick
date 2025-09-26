@@ -77,14 +77,14 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i32_di_type = self
 			.di_builder
-			.create_basic_type("u32", 4, 7, i32::PRIVATE)?
+			.create_basic_type("u32", 4, 7, i32::ZERO)?
 			.as_type();
 
 		let putchar_subroutine_type = self.di_builder.create_subroutine_type(
 			self.compile_unit.get_file(),
-			None,
+			Some(i32_di_type),
 			&[i32_di_type],
-			i32::PRIVATE,
+			i32::ZERO,
 		);
 
 		let putchar_subprogram = self.di_builder.create_function(
@@ -97,7 +97,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			false,
 			false,
 			0,
-			i32::PRIVATE,
+			i32::ZERO,
 			true,
 		);
 
@@ -107,7 +107,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			self.compile_unit.get_file(),
 			Some(i32_di_type),
 			&[],
-			i32::PRIVATE,
+			i32::ZERO,
 		);
 
 		let getchar_subprogram = self.di_builder.create_function(
@@ -120,7 +120,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			false,
 			false,
 			0,
-			i32::PRIVATE,
+			i32::ZERO,
 			true,
 		);
 
@@ -128,7 +128,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_di_type = self
 			.di_builder
-			.create_basic_type("u8", 1, 7, i32::PRIVATE)?
+			.create_basic_type("u8", 1, 7, i32::ZERO)?
 			.as_type();
 
 		let i8_ptr_di_type = self
@@ -140,7 +140,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			self.compile_unit.get_file(),
 			Some(i32_di_type),
 			&[i8_ptr_di_type],
-			i32::PRIVATE,
+			i32::ZERO,
 		);
 
 		let puts_subprogram = self.di_builder.create_function(
@@ -153,7 +153,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			false,
 			false,
 			0,
-			i32::PRIVATE,
+			i32::ZERO,
 			true,
 		);
 
@@ -161,7 +161,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_array_di_type = self
 			.di_builder
-			.create_array_type(i8_di_type, TAPE_SIZE as u64, 1, &[])
+			.create_array_type(i8_di_type, TAPE_SIZE as u64 * 8, 1, &[])
 			.as_type();
 
 		let tape_variable = self.di_builder.create_auto_variable(
@@ -171,7 +171,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			0,
 			i8_array_di_type,
 			false,
-			i32::PRIVATE,
+			i32::ZERO,
 			1,
 		);
 
@@ -213,7 +213,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			1,
 			i64_di_type,
 			false,
-			i32::PRIVATE,
+			i32::ZERO,
 			8,
 		);
 
@@ -237,7 +237,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_array_di_type = self
 			.di_builder
-			.create_array_type(i8_di_type, 8, 1, &[])
+			.create_array_type(i8_di_type, 64, 1, &[])
 			.as_type();
 
 		let output_variable = self.di_builder.create_auto_variable(
@@ -247,7 +247,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			0,
 			i8_array_di_type,
 			false,
-			i32::PRIVATE,
+			i32::ZERO,
 			1,
 		);
 
