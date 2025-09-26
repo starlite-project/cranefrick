@@ -2,6 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use frick_assembler::TAPE_SIZE;
 use inkwell::{
+	AddressSpace,
 	builder::Builder,
 	debug_info::{
 		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DWARFEmissionKind,
@@ -88,10 +89,43 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			None,
 		);
 
+		let i8_di_type = self
+			.di_builder
+			.create_basic_type("u8", 8, 7, i32::ZERO)?
+			.as_type();
+
+		let i8_di_ptr_type = self
+			.di_builder
+			.create_pointer_type("*u8", i8_di_type, 64, 64, AddressSpace::default())
+			.as_type();
+
 		let i32_di_type = self
 			.di_builder
 			.create_basic_type("u32", 32, 7, i32::ZERO)?
 			.as_type();
+
+		let puts_subroutine_type = self.di_builder.create_subroutine_type(
+			self.compile_unit.get_file(),
+			Some(i32_di_type),
+			&[i8_di_ptr_type],
+			i32::ZERO,
+		);
+
+		let puts_subprogram = self.di_builder.create_function(
+			self.compile_unit.as_debug_info_scope(),
+			"puts",
+			None,
+			self.compile_unit.get_file(),
+			0,
+			puts_subroutine_type,
+			true,
+			true,
+			0,
+			i32::PRIVATE,
+			true,
+		);
+
+		functions.puts.set_subprogram(puts_subprogram);
 
 		let putchar_subroutine_type = self.di_builder.create_subroutine_type(
 			self.compile_unit.get_file(),
@@ -138,11 +172,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		);
 
 		functions.getchar.set_subprogram(getchar_subprogram);
-
-		let i8_di_type = self
-			.di_builder
-			.create_basic_type("u8", 8, 7, i32::ZERO)?
-			.as_type();
 
 		let i8_array_di_type = self
 			.di_builder

@@ -122,7 +122,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			0,
 			0,
 			self.functions
-				.main
+				.puts
 				.get_subprogram()
 				.unwrap()
 				.as_debug_info_scope(),
