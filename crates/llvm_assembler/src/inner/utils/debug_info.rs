@@ -235,6 +235,40 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			pointers.pointer.as_instruction().unwrap(),
 		);
 
+		let i8_array_di_type = self
+			.di_builder
+			.create_array_type(i8_di_type, 8, 1, &[])
+			.as_type();
+
+		let output_variable = self.di_builder.create_auto_variable(
+			main_subprogram.as_debug_info_scope(),
+			"output",
+			self.compile_unit.get_file(),
+			0,
+			i8_array_di_type,
+			false,
+			i32::PRIVATE,
+			1,
+		);
+
+		let i8_array_value = pointers.output.as_basic_value_enum();
+
+		self.di_builder.insert_dbg_value_before(
+			i8_array_value,
+			output_variable,
+			None,
+			debug_loc,
+			pointers.output.as_instruction().unwrap(),
+		);
+
+		self.di_builder.insert_declare_before_instruction(
+			pointers.output,
+			Some(output_variable),
+			None,
+			debug_loc,
+			pointers.output.as_instruction().unwrap(),
+		);
+
 		Ok(self)
 	}
 }

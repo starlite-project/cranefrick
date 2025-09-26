@@ -1,10 +1,6 @@
 use frick_assembler::TAPE_SIZE;
 use inkwell::{
-	builder::Builder,
-	context::{Context, ContextRef},
-	module::Module,
-	targets::TargetData,
-	types::IntType,
+	builder::Builder, context::ContextRef, module::Module, targets::TargetData, types::IntType,
 	values::PointerValue,
 };
 
