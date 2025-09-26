@@ -139,8 +139,16 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonnull"), 0);
 		let readonly_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("readonly"), 0);
+		let align_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("align"), 1);
 
-		for attribute in [noalias_attr, nofree_attr, nonnull_attr, readonly_attr] {
+		for attribute in [
+			noalias_attr,
+			nofree_attr,
+			nonnull_attr,
+			readonly_attr,
+			align_attr,
+		] {
 			self.puts.add_attribute(AttributeLoc::Param(0), attribute);
 		}
 

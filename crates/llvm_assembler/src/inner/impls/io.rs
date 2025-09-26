@@ -100,8 +100,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"output_cells_puts_call",
 		)?;
 
-		puts_call.set_tail_call(false);
-
 		self.add_puts_io_attributes(
 			puts_call,
 			i8_type.array_type(options.len() as u32 + 1),
@@ -211,8 +209,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"output_chars_call",
 		)?;
 
-		puts_call.set_tail_call(true);
-
 		let puts_value = puts_call
 			.try_as_basic_value()
 			.unwrap_left()
@@ -258,6 +254,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		array_ty: ArrayType<'ctx>,
 		array_len: u64,
 	) {
+		call.set_tail_call(false);
+
 		let byref_attr = self
 			.context()
 			.create_type_attribute(Attribute::get_named_enum_kind_id("byref"), array_ty.into());
@@ -267,7 +265,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			array_len + 1,
 		);
 
-		for attribute in [byref_attr, deref_attr] {
+		let align_attr = self
+			.context()
+			.create_enum_attribute(Attribute::get_named_enum_kind_id("align"), 1);
+
+		for attribute in [byref_attr, deref_attr, align_attr] {
 			call.add_attribute(AttributeLoc::Param(0), attribute);
 		}
 	}
