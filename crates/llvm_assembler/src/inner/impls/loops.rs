@@ -1,4 +1,4 @@
-use frick_assembler::AssemblyError;
+use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use inkwell::IntPredicate;
 
@@ -109,6 +109,8 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn find_zero(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
+		assert!(TAPE_SIZE.is_power_of_two());
+
 		let current_block = self.builder.get_insert_block().unwrap();
 
 		let ptr_int_type = self.ptr_int_type;
@@ -167,9 +169,15 @@ impl InnerAssembler<'_> {
 			"find_zero_add",
 		)?;
 
+		let wrapped_pointer_value = {
+			let tape_len = ptr_int_type.const_int(TAPE_SIZE as u64 - 1, false);
+
+			self.builder.build_and(new_pointer_value, tape_len, "find_zero_and")?
+		};
+
 		self.builder.build_unconditional_branch(header_block)?;
 
-		header_phi_value.add_incoming(&[(&new_pointer_value, body_block)]);
+		header_phi_value.add_incoming(&[(&wrapped_pointer_value, body_block)]);
 
 		self.builder.position_at_end(exit_block);
 
