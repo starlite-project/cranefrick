@@ -114,6 +114,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		(Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine),
 		AssemblyError<LlvmAssemblyError>,
 	> {
+		assert!(TAPE_SIZE.is_power_of_two());
+
 		self.ops(ops)?;
 
 		let i64_size = {

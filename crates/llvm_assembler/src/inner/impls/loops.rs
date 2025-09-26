@@ -109,8 +109,6 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn find_zero(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		assert!(TAPE_SIZE.is_power_of_two());
-
 		let current_block = self.builder.get_insert_block().unwrap();
 
 		let ptr_int_type = self.ptr_int_type;
