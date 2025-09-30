@@ -67,6 +67,7 @@ impl Optimizer {
 
 		self.pass_info("fix boundary instructions");
 		*progress |= run_peephole_pass(self, passes::fix_boundary_instructions);
+		*progress |= run_peephole_pass(self, passes::optimize_initial_sets);
 
 		self.pass_info("optimize clear cell instructions");
 		*progress |= run_loop_pass(self, passes::clear_cell);

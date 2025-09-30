@@ -92,6 +92,21 @@ pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	}
 }
 
+pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::Boundary,
+			set @ BrainIr::SetCell(.., x),
+			BrainIr::ChangeCell(b, y),
+		] if *x != *y => Some(Change::swap([
+			BrainIr::boundary(),
+			set.clone(),
+			BrainIr::set_cell_at(*b as u8, y.get_or_zero()),
+		])),
+		_ => None,
+	}
+}
+
 pub fn add_offsets(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
@@ -738,6 +753,25 @@ pub fn optimize_mem_ops(ops: [&BrainIr; 2]) -> Option<Change> {
 				start: y,
 			},
 		] if *x == *y && a.len() <= b.len() => Some(Change::remove_offset(0)),
+		[
+			BrainIr::SetManyCells {
+				values: a,
+				start: x,
+			},
+			BrainIr::SetManyCells {
+				values: b,
+				start: y,
+			},
+		] if x.get_or_zero().wrapping_add_unsigned(a.len() as u32) == y.get_or_zero() => {
+			tracing::info!("made it");
+
+			// None
+
+			Some(Change::replace(BrainIr::set_many_cells(
+				a.iter().copied().chain(b.iter().copied()),
+				x.get_or_zero(),
+			)))
+		}
 		_ => None,
 	}
 }
@@ -787,7 +821,9 @@ pub fn optimize_if_nz_when_zeroing(ops: [&BrainIr; 1]) -> Option<Change> {
 pub fn unroll_constant_duplicate_cell(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetCell(a, None), BrainIr::DuplicateCell { values }] => {
-			let mut output = Vec::new();
+			let mut output = Vec::with_capacity(values.len() + 1);
+
+			output.push(BrainIr::clear_cell());
 
 			for option in values {
 				let factored_value = option.value().wrapping_mul(*a as i8);
