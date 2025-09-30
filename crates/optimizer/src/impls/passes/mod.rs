@@ -783,3 +783,20 @@ pub fn optimize_if_nz_when_zeroing(ops: [&BrainIr; 1]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn unroll_constant_duplicate_cell(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[BrainIr::SetCell(a, None), BrainIr::DuplicateCell { values }] => {
+			let mut output = Vec::new();
+
+			for option in values {
+				let factored_value = option.value().wrapping_mul(*a as i8);
+
+				output.push(BrainIr::change_cell_at(factored_value, option.offset()));
+			}
+
+			Some(Change::swap(output))
+		}
+		_ => None,
+	}
+}
