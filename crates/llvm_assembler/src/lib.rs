@@ -280,7 +280,7 @@ impl Display for LlvmAssemblyError {
 				alloca_name,
 				looking_after: true,
 			} => {
-				f.write_str("instruction for alloca '")?;
+				f.write_str("instruction after alloca '")?;
 				f.write_str(alloca_name)?;
 				f.write_str("' was not found")
 			}

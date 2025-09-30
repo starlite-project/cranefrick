@@ -221,17 +221,19 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			8,
 		);
 
-		self.di_builder.insert_declare_at_end(
+		let right_after_pointer_alloca = get_instruction_after_alloca(pointers.pointer)?;
+
+		self.di_builder.insert_declare_before_instruction(
 			pointers.pointer,
 			Some(pointer_variable),
 			None,
 			debug_loc,
-			entry_block,
+			right_after_pointer_alloca,
 		);
 
 		let i8_array_di_type = self
 			.di_builder
-			.create_array_type(i8_di_type, 64, 1, &[0..8])
+			.create_array_type(i8_di_type, 8 * 256, 1, &[0..8])
 			.as_type();
 
 		let output_variable = self.di_builder.create_auto_variable(
