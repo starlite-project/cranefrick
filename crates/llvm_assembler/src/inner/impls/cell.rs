@@ -230,6 +230,8 @@ impl InnerAssembler<'_> {
 			self.module
 				.add_global(constant_array_ty, None, "set_many_cells_global_value");
 
+		global_constant.set_thread_local(false);
+		global_constant.set_unnamed_addr(true);
 		global_constant.set_linkage(Linkage::Private);
 		global_constant.set_initializer(&constant_initializer);
 		global_constant.set_constant(true);

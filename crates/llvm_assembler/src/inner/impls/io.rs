@@ -200,27 +200,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
 		let i64_type = self.context().i64_type();
 
-		let global_constant = if let Some(duplicate_value) = self.constant_strings.borrow().get(c) {
-			*duplicate_value
-		} else {
-			let constant_initializer = self.context().const_string(c, true);
+		let constant_initializer = self.context().const_string(c, true);
 
-			let constant_string_ty = constant_initializer.get_type();
+		let constant_string_ty = constant_initializer.get_type();
 
-			let global_constant =
-				self.module
-					.add_global(constant_string_ty, None, "output_chars_global_value");
+		let global_constant =
+			self.module
+				.add_global(constant_string_ty, None, "output_chars_global_value");
 
-			global_constant.set_linkage(Linkage::Private);
-			global_constant.set_initializer(&constant_initializer);
-			global_constant.set_constant(true);
-
-			self.constant_strings
-				.borrow_mut()
-				.insert(c.to_owned(), global_constant);
-
-			global_constant
-		};
+		global_constant.set_thread_local(false);
+		global_constant.set_unnamed_addr(true);
+		global_constant.set_linkage(Linkage::Private);
+		global_constant.set_initializer(&constant_initializer);
+		global_constant.set_constant(true);
 
 		let global_constant_pointer = global_constant.as_pointer_value();
 
