@@ -341,6 +341,12 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 				BrainIr::set_cell(*value),
 			]))
 		}
+		[
+			BrainIr::Output(OutputOptions::Cells(a)),
+			BrainIr::Output(OutputOptions::Cells(b)),
+		] => Some(Change::replace(BrainIr::output_cells(
+			a.iter().copied().chain(b.iter().copied()),
+		))),
 		_ => None,
 	}
 }
