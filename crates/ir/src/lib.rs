@@ -18,6 +18,7 @@ pub use self::{options::*, output::*};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum BrainIr {
+	Boundary,
 	ChangeCell(
 		i8,
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
@@ -26,9 +27,9 @@ pub enum BrainIr {
 		u8,
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
 	),
-	MovePointer(i32),
 	SubCellAt(CellChangeOptions),
 	SubFromCell(CellChangeOptions),
+	MovePointer(i32),
 	FindZero(i32),
 	InputIntoCell,
 	Output(OutputOptions),
@@ -54,6 +55,11 @@ pub enum BrainIr {
 }
 
 impl BrainIr {
+	#[must_use]
+	pub const fn boundary() -> Self {
+		Self::Boundary
+	}
+
 	#[must_use]
 	pub const fn change_cell(value: i8) -> Self {
 		Self::change_cell_at(value, 0)

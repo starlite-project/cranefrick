@@ -2,7 +2,10 @@
 
 mod impls;
 
-use std::ops::{Deref, DerefMut};
+use std::{
+	iter,
+	ops::{Deref, DerefMut},
+};
 
 use frick_ir::BrainIr;
 use serde::{Deserialize, Serialize};
@@ -63,8 +66,7 @@ impl Optimizer {
 		*progress |= run_peephole_pass(self, passes::add_offsets);
 
 		self.pass_info("fix boundary instructions");
-		*progress |= passes::fix_beginning_instructions(self);
-		*progress |= passes::fix_ending_instructions(self);
+		*progress |= run_peephole_pass(self, passes::fix_boundary_instructions);
 
 		self.pass_info("optimize clear cell instructions");
 		*progress |= run_loop_pass(self, passes::clear_cell);
@@ -203,9 +205,15 @@ impl DerefMut for Optimizer {
 }
 
 impl FromIterator<BrainIr> for Optimizer {
-	fn from_iter<T: IntoIterator<Item = BrainIr>>(iter: T) -> Self {
+	fn from_iter<T>(iter: T) -> Self
+	where
+		T: IntoIterator<Item = BrainIr>,
+	{
 		Self {
-			inner: Vec::from_iter(iter),
+			inner: iter::once(BrainIr::boundary())
+				.chain(iter)
+				.chain(iter::once(BrainIr::boundary()))
+				.collect(),
 		}
 	}
 }

@@ -78,30 +78,17 @@ pub const fn remove_noop_instructions(ops: [&BrainIr; 1]) -> Option<Change> {
 	}
 }
 
-pub fn fix_beginning_instructions(ops: &mut Vec<BrainIr>) -> bool {
-	match ops.first_mut() {
-		Some(l) if l.needs_nonzero_cell() => {
-			ops.remove(0);
-			true
+pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[BrainIr::Boundary, l] if l.needs_nonzero_cell() => {
+			Some(Change::replace(BrainIr::boundary()))
 		}
-		Some(instr @ &mut BrainIr::ChangeCell(i, x)) => {
-			*instr = BrainIr::set_cell_at(i as u8, x.get_or_zero());
-			true
-		}
-		_ => false,
-	}
-}
-
-pub fn fix_ending_instructions(ops: &mut Vec<BrainIr>) -> bool {
-	let Some(last) = ops.last() else {
-		return false;
-	};
-
-	if last.has_output() {
-		false
-	} else {
-		ops.remove(ops.len() - 1);
-		true
+		[BrainIr::Boundary, BrainIr::ChangeCell(a, x)] => Some(Change::swap([
+			BrainIr::boundary(),
+			BrainIr::set_cell_at(*a as u8, x.get_or_zero()),
+		])),
+		[l, BrainIr::Boundary] if !l.has_output() => Some(Change::remove_offset(0)),
+		_ => None,
 	}
 }
 

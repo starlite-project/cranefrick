@@ -178,6 +178,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder.set_current_debug_location(debug_loc);
 
 			match op {
+				BrainIr::Boundary => continue,
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::SetCell(value, offset) => {
 					self.set_cell(*value, offset.get_or_zero())?;
