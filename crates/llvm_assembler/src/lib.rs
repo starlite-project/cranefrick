@@ -230,6 +230,10 @@ pub enum LlvmAssemblyError {
 	InvalidIntrinsicDeclaration(Cow<'static, str>),
 	InvalidGEPType(String),
 	Inkwell(inkwell::Error),
+	MissingPointerInstruction {
+		alloca_name: String,
+		looking_after: bool,
+	},
 }
 
 impl LlvmAssemblyError {
@@ -264,6 +268,22 @@ impl Display for LlvmAssemblyError {
 				f.write_str(ty)?;
 				f.write_str(" is invalid for GEP")
 			}
+			Self::MissingPointerInstruction {
+				alloca_name,
+				looking_after: false,
+			} => {
+				f.write_str("alloca for '")?;
+				f.write_str(alloca_name)?;
+				f.write_str("' could not be found")
+			}
+			Self::MissingPointerInstruction {
+				alloca_name,
+				looking_after: true,
+			} => {
+				f.write_str("instruction for alloca '")?;
+				f.write_str(alloca_name)?;
+				f.write_str("' was not found")
+			}
 		}
 	}
 }
@@ -277,7 +297,8 @@ impl StdError for LlvmAssemblyError {
 			| Self::InvalidMetadata
 			| Self::IntrinsicNotFound(..)
 			| Self::InvalidGEPType(..)
-			| Self::InvalidIntrinsicDeclaration(..) => None,
+			| Self::InvalidIntrinsicDeclaration(..)
+			| Self::MissingPointerInstruction { .. } => None,
 		}
 	}
 }

@@ -9,6 +9,7 @@ use inkwell::{
 		DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
+	values::{InstructionValue, PointerValue},
 };
 
 use super::{AssemblerFunctions, AssemblerPointers};
@@ -194,12 +195,14 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			1,
 		);
 
-		self.di_builder.insert_declare_at_end(
+		let right_after_tape_alloca = get_instruction_after_alloca(pointers.tape)?;
+
+		self.di_builder.insert_declare_before_instruction(
 			pointers.tape,
 			Some(tape_variable),
 			None,
 			debug_loc,
-			entry_block,
+			right_after_tape_alloca,
 		);
 
 		let i64_di_type = self
@@ -224,20 +227,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			None,
 			debug_loc,
 			entry_block,
-		);
-
-		let i64_type = functions.main.get_type().get_context().i64_type();
-
-		let default_pointer_value = i64_type.const_zero();
-
-		let pointer_expr = self.create_expression(vec![0x06]);
-
-		self.insert_dbg_value_before(
-			default_pointer_value.into(),
-			pointer_variable,
-			Some(pointer_expr),
-			debug_loc,
-			pointers.pointer.as_instruction().unwrap(),
 		);
 
 		let i8_array_di_type = self
@@ -282,4 +271,24 @@ impl DerefMut for AssemblerDebugBuilder<'_> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.di_builder
 	}
+}
+
+fn get_instruction_after_alloca(
+	alloca: PointerValue<'_>,
+) -> Result<InstructionValue<'_>, LlvmAssemblyError> {
+	let alloca_name = || alloca.get_name().to_string_lossy().into_owned();
+	let alloca_instr =
+		alloca
+			.as_instruction()
+			.ok_or_else(|| LlvmAssemblyError::MissingPointerInstruction {
+				alloca_name: alloca_name(),
+				looking_after: false,
+			})?;
+
+	alloca_instr.get_next_instruction().ok_or_else(|| {
+		LlvmAssemblyError::MissingPointerInstruction {
+			alloca_name: alloca_name(),
+			looking_after: true,
+		}
+	})
 }
