@@ -147,8 +147,6 @@ impl InnerAssembler<'_> {
 
 		let header_phi_value = self.builder.build_phi(ptr_int_type, "find_zero_phi")?;
 
-		header_phi_value.add_incoming(&[(&current_pointer_value, current_block)]);
-
 		let gep = self.gep(
 			i8_type,
 			header_phi_value.as_basic_value().into_int_value(),
@@ -188,7 +186,10 @@ impl InnerAssembler<'_> {
 
 		self.builder.build_unconditional_branch(header_block)?;
 
-		header_phi_value.add_incoming(&[(&wrapped_pointer_value, body_block)]);
+		header_phi_value.add_incoming(&[
+			(&current_pointer_value, current_block),
+			(&wrapped_pointer_value, body_block),
+		]);
 
 		self.builder.position_at_end(exit_block);
 
