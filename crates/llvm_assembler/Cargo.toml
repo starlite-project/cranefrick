@@ -9,7 +9,6 @@ version.workspace = true
 
 [dependencies]
 frick_assembler.workspace = true
-frick_interop = { path = "../interop" }
 frick_ir.workspace = true
 frick_utils = { workspace = true, features = ["get_or_zero"] }
 inkwell.workspace = true

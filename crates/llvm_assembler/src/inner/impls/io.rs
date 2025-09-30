@@ -1,3 +1,5 @@
+use std::slice;
+
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
@@ -12,7 +14,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		match options {
 			OutputOptions::Cell(options) => {
-				self.output_current_cell(options.value(), options.offset())?;
+				self.output_cells(slice::from_ref(options))?;
 			}
 			OutputOptions::Cells(options) => self.output_cells(options)?,
 			OutputOptions::Char(c) => self.output_char(*c)?,
@@ -141,10 +143,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), LlvmAssemblyError> {
 		options
 			.iter()
-			.try_for_each(|x| self.output_current_cell(x.value(), x.offset()))
+			.try_for_each(|x| self.output_cell(x.value(), x.offset()))
 	}
 
-	fn output_current_cell(&self, value_offset: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
+	fn output_cell(&self, value_offset: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let i32_type = self.context().i32_type();
 		let loaded_value = self.load(offset, "output_current_cell")?;
 
