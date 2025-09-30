@@ -1,6 +1,6 @@
 use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
-use inkwell::IntPredicate;
+use inkwell::{IntPredicate, debug_info::AsDIScope as _};
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -10,9 +10,6 @@ impl InnerAssembler<'_> {
 		ops: &[BrainIr],
 		ops_count: usize,
 	) -> Result<(), AssemblyError<LlvmAssemblyError>> {
-		let preheader_block = self
-			.context()
-			.append_basic_block(self.functions.main, "if_not_zero.preheader");
 		let header_block = self
 			.context()
 			.append_basic_block(self.functions.main, "if_not_zero.header");
@@ -22,12 +19,6 @@ impl InnerAssembler<'_> {
 		let exit_block = self
 			.context()
 			.append_basic_block(self.functions.main, "if_not_zero.exit");
-
-		self.builder
-			.build_unconditional_branch(preheader_block)
-			.map_err(AssemblyError::backend)?;
-
-		self.builder.position_at_end(preheader_block);
 
 		self.builder
 			.build_unconditional_branch(header_block)
@@ -55,6 +46,20 @@ impl InnerAssembler<'_> {
 		self.builder.position_at_end(body_block);
 
 		self.ops(ops, ops_count + 1)?;
+
+		let debug_loc = self.debug_builder.create_debug_location(
+			self.context(),
+			0,
+			ops_count as u32 + 2,
+			self.functions
+				.main
+				.get_subprogram()
+				.unwrap()
+				.as_debug_info_scope(),
+			None,
+		);
+
+		self.builder.set_current_debug_location(debug_loc);
 
 		self.builder
 			.build_unconditional_branch(exit_block)
@@ -106,6 +111,20 @@ impl InnerAssembler<'_> {
 		self.builder.position_at_end(body_block);
 
 		self.ops(ops, ops_count + 1)?;
+
+		let debug_loc = self.debug_builder.create_debug_location(
+			self.context(),
+			0,
+			ops_count as u32 + 2,
+			self.functions
+				.main
+				.get_subprogram()
+				.unwrap()
+				.as_debug_info_scope(),
+			None,
+		);
+
+		self.builder.set_current_debug_location(debug_loc);
 
 		self.builder
 			.build_unconditional_branch(header_block)
