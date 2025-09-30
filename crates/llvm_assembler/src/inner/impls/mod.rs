@@ -18,19 +18,7 @@ impl InnerAssembler<'_> {
 		let i64_type = context.i64_type();
 		let ptr_type = context.default_ptr_type();
 
-		let debug_location = self.debug_builder.create_debug_location(
-			self.context(),
-			0,
-			0,
-			self.functions
-				.puts
-				.get_subprogram()
-				.unwrap()
-				.as_debug_info_scope(),
-			None,
-		);
-
-		self.builder.set_current_debug_location(debug_location);
+		self.builder.unset_current_debug_location();
 
 		let entry_block = context.append_basic_block(self.functions.puts, "entry");
 		let body_block = context.append_basic_block(self.functions.puts, "body");
