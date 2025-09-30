@@ -4,6 +4,7 @@ use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
+	module::Linkage,
 	types::ArrayType,
 	values::{CallSiteValue, InstructionValueError, IntValue},
 };
@@ -206,10 +207,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let constant_string_ty = constant_initializer.get_type();
 
-			let global_constant = self
-				.module
-				.add_global(constant_string_ty, None, "output_chars");
+			let global_constant =
+				self.module
+					.add_global(constant_string_ty, None, "output_chars_global_value");
 
+			global_constant.set_linkage(Linkage::Private);
 			global_constant.set_initializer(&constant_initializer);
 			global_constant.set_constant(true);
 

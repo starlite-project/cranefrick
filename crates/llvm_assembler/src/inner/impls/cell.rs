@@ -1,6 +1,7 @@
 use std::ops::RangeInclusive;
 
 use frick_ir::{CellChangeOptions, get_range, is_range};
+use inkwell::module::Linkage;
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -215,19 +216,30 @@ impl InnerAssembler<'_> {
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let vec_of_values = values
-			.iter()
-			.copied()
-			.map(|v| i8_type.const_int(v.into(), false))
-			.collect::<Vec<_>>();
+		let array_len = {
+			let i64_type = self.context().i64_type();
 
-		let constant_array = i8_type.const_array(&vec_of_values);
+			i64_type.const_int(values.len() as u64, false)
+		};
+
+		let constant_initializer = self.context().const_string(values, false);
+
+		let constant_array_ty = constant_initializer.get_type();
+
+		let global_constant =
+			self.module
+				.add_global(constant_array_ty, None, "set_many_cells_global_value");
+
+		global_constant.set_linkage(Linkage::Private);
+		global_constant.set_initializer(&constant_initializer);
+		global_constant.set_constant(true);
 
 		let current_offset = self.offset_pointer(start)?;
 
 		let gep = self.gep(i8_type, current_offset, "set_many_cells")?;
 
-		self.builder.build_store(gep, constant_array)?;
+		self.builder
+			.build_memcpy(gep, 1, global_constant.as_pointer_value(), 1, array_len)?;
 
 		Ok(())
 	}
