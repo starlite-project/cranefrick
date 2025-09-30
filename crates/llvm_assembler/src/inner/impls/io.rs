@@ -196,37 +196,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn output_char(&self, c: u8) -> Result<(), LlvmAssemblyError> {
-		let char_to_put = {
-			let i32_type = self.context().i32_type();
-
-			i32_type.const_int(c.into(), false)
-		};
-
-		let putchar_call = self.builder.build_call(
-			self.functions.putchar,
-			&[char_to_put.into()],
-			"output_char_call",
-		)?;
-
-		putchar_call.set_tail_call(true);
-
-		let putchar_value = putchar_call
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_int_value();
-
-		self.add_range_io_metadata(putchar_value, c.into(), c.into())?;
-
-		self.builder.build_call(
-			self.functions.i32_expect,
-			&[putchar_value.into(), char_to_put.into()],
-			"",
-		)?;
-
-		Ok(())
-	}
-
 	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
 		let constant_initializer = self.context().const_string(c, true);
 
@@ -244,6 +213,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			i64_type.const_int(c.len() as u64, false)
 		};
+
+		let lifetime_len = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(c.len() as u64 + 1, false)
+		};
+
+		let _lifetime = self.start_lifetime(lifetime_len, global_constant_pointer)?;
 
 		let puts_call = self.builder.build_call(
 			self.functions.puts,
