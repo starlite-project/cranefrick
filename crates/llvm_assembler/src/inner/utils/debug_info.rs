@@ -202,6 +202,18 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			entry_block,
 		);
 
+		let i64_type = functions.main.get_type().get_context().i64_type();
+
+		let default_pointer_value = i64_type.const_zero();
+
+		self.insert_dbg_value_before(
+			default_pointer_value.into(),
+			tape_variable,
+			None,
+			debug_loc,
+			pointers.pointer.as_instruction().unwrap(),
+		);
+
 		let i64_di_type = self
 			.di_builder
 			.create_basic_type("u64", 64, 7, i32::PUBLIC)?
