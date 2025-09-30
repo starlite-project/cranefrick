@@ -142,7 +142,7 @@ impl Optimizer {
 		*progress |= run_peephole_pass(self, passes::unroll_constant_duplicate_cell);
 
 		self.pass_info("optimize memory operations");
-		*progress |= run_peephole_pass(self, passes::optimize_mem_ops);
+		*progress |= run_peephole_pass(self, passes::optimize_mem_sets);
 	}
 
 	fn pass_info(&self, pass: &str) {

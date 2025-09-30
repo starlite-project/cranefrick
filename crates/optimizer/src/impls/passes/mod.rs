@@ -88,6 +88,11 @@ pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::set_cell_at(*a as u8, x.get_or_zero()),
 		])),
 		[l, BrainIr::Boundary] if !l.has_output() => Some(Change::remove_offset(0)),
+		[BrainIr::Boundary, BrainIr::Output(OutputOptions::Cell(..))] => Some(Change::swap([
+			BrainIr::boundary(),
+			BrainIr::output_char(0),
+			BrainIr::set_cell(0),
+		])),
 		_ => None,
 	}
 }
@@ -649,7 +654,7 @@ pub fn remove_redundant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_mem_ops(ops: [&BrainIr; 2]) -> Option<Change> {
+pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetCell(a, x), BrainIr::SetCell(b, y)] if *a == *b => {
 			let x = x.get_or_zero();
@@ -763,10 +768,6 @@ pub fn optimize_mem_ops(ops: [&BrainIr; 2]) -> Option<Change> {
 				start: y,
 			},
 		] if x.get_or_zero().wrapping_add_unsigned(a.len() as u32) == y.get_or_zero() => {
-			tracing::info!("made it");
-
-			// None
-
 			Some(Change::replace(BrainIr::set_many_cells(
 				a.iter().copied().chain(b.iter().copied()),
 				x.get_or_zero(),
