@@ -430,6 +430,28 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			]))
 		}
 		[
+			BrainIr::ChangeCell(a, x),
+			BrainIr::Output(OutputOptions::Cells(options)),
+			BrainIr::ChangeCell(b, y),
+		] if x.get_or_zero() == -(y.get_or_zero()) => {
+			let x = x.get_or_zero();
+
+			let mut output = Vec::with_capacity(options.len());
+
+			for option in options {
+				if option.offset() == x {
+					output.push(CellChangeOptions::new(option.value().wrapping_add(*a), x));
+				} else {
+					output.push(*option);
+				}
+			}
+
+			Some(Change::swap([
+				BrainIr::output_cells(output),
+				BrainIr::change_cell_at(a.wrapping_add(*b), x),
+			]))
+		}
+		[
 			BrainIr::MovePointer(x),
 			BrainIr::Output(OutputOptions::Cells(options)),
 			BrainIr::MovePointer(y),
@@ -439,6 +461,23 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			})),
 			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
+		[
+			BrainIr::ChangeCell(x, None),
+			BrainIr::Output(OutputOptions::Cells(options)),
+			l,
+		] if l.is_zeroing_cell() => {
+			let mut output = Vec::with_capacity(options.len());
+
+			for option in options {
+				if matches!(option.offset(), 0) {
+					output.push(CellChangeOptions::new(option.value().wrapping_add(*x), 0));
+				} else {
+					output.push(*option);
+				}
+			}
+
+			Some(Change::swap([BrainIr::output_cells(output), l.clone()]))
+		}
 		_ => None,
 	}
 }
