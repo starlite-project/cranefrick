@@ -129,7 +129,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		self.builder.build_call(
-			self.functions.expect,
+			self.functions.i32_expect,
 			&[puts_value.into(), last_cell.into()],
 			"",
 		)?;
@@ -188,7 +188,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.add_range_io_metadata(putchar_value, u8::MIN.into(), u8::MAX.into())?;
 
 		self.builder.build_call(
-			self.functions.expect,
+			self.functions.i32_expect,
 			&[offset_loaded_value.into(), putchar_value.into()],
 			"",
 		)?;
@@ -219,7 +219,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.add_range_io_metadata(putchar_value, c.into(), c.into())?;
 
 		self.builder.build_call(
-			self.functions.expect,
+			self.functions.i32_expect,
 			&[putchar_value.into(), char_to_put.into()],
 			"",
 		)?;
@@ -265,7 +265,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		self.builder.build_call(
-			self.functions.expect,
+			self.functions.i32_expect,
 			&[puts_value.into(), last_value.into()],
 			"",
 		)?;

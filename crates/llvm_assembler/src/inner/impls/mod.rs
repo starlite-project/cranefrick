@@ -102,6 +102,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"is_string_len_zero",
 		)?;
 
+		let bool_false = {
+			let bool_type = context.bool_type();
+
+			bool_type.const_zero()
+		};
+
+		self.builder.build_call(
+			self.functions.bool_expect,
+			&[is_string_len_zero.into(), bool_false.into()],
+			"",
+		)?;
+
 		self.builder
 			.build_conditional_branch(is_string_len_zero, exit_block, body_block)?;
 

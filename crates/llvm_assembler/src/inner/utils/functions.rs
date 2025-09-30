@@ -18,13 +18,15 @@ pub struct AssemblerFunctions<'ctx> {
 	pub puts: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
-	pub expect: FunctionValue<'ctx>,
+	pub i32_expect: FunctionValue<'ctx>,
+	pub bool_expect: FunctionValue<'ctx>,
 	pub assume: FunctionValue<'ctx>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
 	pub fn new(context: &'ctx Context, module: &Module<'ctx>) -> Result<Self, LlvmAssemblyError> {
 		let void_type = context.void_type();
+		let bool_type = context.bool_type();
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
 		let ptr_type = context.default_ptr_type();
@@ -53,7 +55,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
 		};
 
-		let expect = get_intrinsic_function_from_name("llvm.expect", module, &[i32_type.into()])?;
+		let i32_expect = get_intrinsic_function_from_name("llvm.expect", module, &[i32_type.into()])?;
+
+		let bool_expect = get_intrinsic_function_from_name("llvm.expect", module, &[bool_type.into()])?;
 
 		let assume = get_intrinsic_function_from_name("llvm.assume", module, &[])?;
 
@@ -63,7 +67,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			puts,
 			main,
 			lifetime,
-			expect,
+			i32_expect,
+			bool_expect,
 			assume,
 		};
 
