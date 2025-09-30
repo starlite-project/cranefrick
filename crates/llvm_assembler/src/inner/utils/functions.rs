@@ -55,9 +55,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
 		};
 
-		let i32_expect = get_intrinsic_function_from_name("llvm.expect", module, &[i32_type.into()])?;
+		let i32_expect =
+			get_intrinsic_function_from_name("llvm.expect", module, &[i32_type.into()])?;
 
-		let bool_expect = get_intrinsic_function_from_name("llvm.expect", module, &[bool_type.into()])?;
+		let bool_expect =
+			get_intrinsic_function_from_name("llvm.expect", module, &[bool_type.into()])?;
 
 		let assume = get_intrinsic_function_from_name("llvm.assume", module, &[])?;
 

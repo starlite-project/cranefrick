@@ -409,6 +409,36 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::output_offset_cell(a.wrapping_add(options.value())),
 			BrainIr::set_cell(*b),
 		])),
+		[
+			BrainIr::ChangeCell(a, None),
+			BrainIr::Output(OutputOptions::Cells(options)),
+			BrainIr::ChangeCell(b, None),
+		] => {
+			let mut output = Vec::with_capacity(options.len());
+
+			for option in options.iter().copied() {
+				if matches!(option.offset(), 0) {
+					output.push(CellChangeOptions::new(option.value().wrapping_add(*a), 0));
+				} else {
+					output.push(option);
+				}
+			}
+
+			Some(Change::swap([
+				BrainIr::output_cells(output),
+				BrainIr::change_cell(a.wrapping_add(*b)),
+			]))
+		}
+		[
+			BrainIr::MovePointer(x),
+			BrainIr::Output(OutputOptions::Cells(options)),
+			BrainIr::MovePointer(y),
+		] => Some(Change::swap([
+			BrainIr::output_cells(options.iter().map(|option| {
+				CellChangeOptions::new(option.value(), option.offset().wrapping_add(*x))
+			})),
+			BrainIr::move_pointer(x.wrapping_add(*y)),
+		])),
 		_ => None,
 	}
 }
