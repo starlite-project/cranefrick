@@ -5,7 +5,7 @@ mod mem;
 mod pointer;
 mod value;
 
-use inkwell::{IntPredicate, debug_info::AsDIScope as _};
+use inkwell::IntPredicate;
 
 use super::{InnerAssembler, LlvmAssemblyError};
 use crate::ContextExt as _;
@@ -65,8 +65,6 @@ impl InnerAssembler<'_> {
 
 		let body_block_phi = self.builder.build_phi(ptr_type, "body_phi")?;
 
-		body_block_phi.add_incoming(&[(&pointer_param, entry_block)]);
-
 		let i64_one = i64_type.const_int(1, false);
 
 		let next_index_gep = unsafe {
@@ -78,7 +76,8 @@ impl InnerAssembler<'_> {
 			)?
 		};
 
-		body_block_phi.add_incoming(&[(&next_index_gep, body_block)]);
+		body_block_phi
+			.add_incoming(&[(&pointer_param, entry_block), (&next_index_gep, body_block)]);
 
 		let actual_value = self
 			.builder
