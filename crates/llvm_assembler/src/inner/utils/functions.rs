@@ -147,13 +147,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	}
 
 	fn setup_puts_attributes(self, context: &'ctx Context) -> Self {
-		let alwaysinline_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("alwaysinline"), 0);
-
-		for attribute in iter::once(alwaysinline_attr) {
-			self.puts.add_attribute(AttributeLoc::Function, attribute);
-		}
-
 		let noalias_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noalias"), 0);
 		let nofree_attr =
