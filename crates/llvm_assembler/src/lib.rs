@@ -9,6 +9,7 @@ use std::{
 	error::Error as StdError,
 	ffi::CStr,
 	fmt::{Display, Formatter, Result as FmtResult, Write as _},
+	io::Write,
 	path::{Path, PathBuf},
 };
 
@@ -205,7 +206,7 @@ impl Assembler for LlvmAssembler {
 		}
 
 		if let Some(putchar) = module.get_function("putchar") {
-			execution_engine.add_global_mapping(&putchar, libc::putchar as usize);
+			execution_engine.add_global_mapping(&putchar, self::putchar as usize);
 		}
 
 		Ok(LlvmAssembledModule {
@@ -328,3 +329,16 @@ impl From<InstructionValueError> for LlvmAssemblyError {
 }
 
 impl InnerAssemblyError for LlvmAssemblyError {}
+
+#[unsafe(no_mangle)]
+#[must_use]
+extern "C" fn putchar(c: libc::c_int) -> libc::c_int {
+	let mut stdout = std::io::stdout();
+
+	stdout
+		.write(&[c as u8])
+		.and_then(|_| stdout.flush())
+		.unwrap();
+
+	c
+}
