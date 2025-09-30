@@ -1,4 +1,4 @@
-use std::cmp;
+use std::cmp::{self, Ordering};
 
 use frick_utils::{GetOrZero as _, IteratorExt as _};
 
@@ -26,12 +26,12 @@ pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 	))
 }
 
-fn sorter_key(i: &BrainIr) -> (Priority, i32, i32) {
+fn sorter_key(i: &BrainIr) -> Priority {
 	match i {
 		BrainIr::ChangeCell(.., offset) | BrainIr::SetCell(.., offset) => {
 			let offset = offset.get_or_zero();
 
-			(Priority::High, offset.abs(), offset)
+			Priority::High(offset)
 		}
 		BrainIr::SetRange { range, .. } => {
 			let start = *range.start();
@@ -39,19 +39,37 @@ fn sorter_key(i: &BrainIr) -> (Priority, i32, i32) {
 
 			let min = cmp::min(start, end);
 
-			(Priority::Low, min.abs(), min)
+			Priority::Low(min)
 		}
 		BrainIr::SetManyCells { start, .. } => {
 			let start = start.get_or_zero();
 
-			(Priority::Low, start.abs(), start)
+			Priority::Low(start)
 		}
 		_ => unreachable!(),
 	}
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum Priority {
-	High,
-	Low,
+	High(i32),
+	Low(i32),
+}
+
+impl Ord for Priority {
+	fn cmp(&self, other: &Self) -> Ordering {
+		match (self, other) {
+			(Self::High(..), Self::Low(..)) => Ordering::Less,
+			(Self::Low(..), Self::High(..)) => Ordering::Greater,
+			(Self::Low(lhs), Self::Low(rhs)) | (Self::High(lhs), Self::High(rhs)) => {
+				lhs.abs().cmp(&rhs.abs()).then_with(|| lhs.cmp(rhs))
+			}
+		}
+	}
+}
+
+impl PartialOrd for Priority {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.cmp(other))
+	}
 }
