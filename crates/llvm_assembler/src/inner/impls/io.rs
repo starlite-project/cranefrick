@@ -17,7 +17,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				self.output_cells(slice::from_ref(options))?;
 			}
 			OutputOptions::Cells(options) => self.output_cells(options)?,
-			OutputOptions::Char(c) => self.output_char(*c)?,
+			OutputOptions::Char(c) => self.output_chars(slice::from_ref(c))?,
 			OutputOptions::Str(c) => self.output_chars(c)?,
 			_ => {
 				return Err(AssemblyError::NotImplemented(BrainIr::Output(
