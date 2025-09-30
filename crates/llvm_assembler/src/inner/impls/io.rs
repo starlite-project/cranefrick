@@ -208,11 +208,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.module
 				.add_global(constant_string_ty, None, "output_chars_global_value");
 
-		global_constant.set_thread_local(false);
-		global_constant.set_unnamed_addr(true);
-		global_constant.set_linkage(Linkage::Private);
-		global_constant.set_initializer(&constant_initializer);
-		global_constant.set_constant(true);
+		self.setup_global_value(global_constant, &constant_initializer);
 
 		let global_constant_pointer = global_constant.as_pointer_value();
 

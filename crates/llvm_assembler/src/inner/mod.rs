@@ -10,9 +10,10 @@ use inkwell::{
 	builder::Builder,
 	context::{Context, ContextRef},
 	debug_info::AsDIScope,
-	module::{FlagBehavior, Module},
+	module::{FlagBehavior, Linkage, Module},
 	targets::TargetMachine,
 	types::IntType,
+	values::{BasicValue, GlobalValue},
 };
 use utils::AssemblerDebugBuilder;
 
@@ -219,5 +220,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn into_parts(self) -> (Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine) {
 		(self.module, self.functions, self.target_machine)
+	}
+
+	#[allow(clippy::unused_self)]
+	fn setup_global_value<T>(&self, global: GlobalValue<'ctx>, initializer: &T)
+	where
+		T: BasicValue<'ctx>,
+	{
+		global.set_thread_local(false);
+		global.set_unnamed_addr(true);
+		global.set_linkage(Linkage::Private);
+		global.set_initializer(initializer);
+		global.set_constant(true);
 	}
 }
