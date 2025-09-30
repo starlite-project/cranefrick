@@ -1,7 +1,7 @@
 mod impls;
 mod utils;
 
-use std::path::Path;
+use std::{cell::RefCell, collections::HashMap, path::Path, rc::Rc};
 
 use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
@@ -13,6 +13,7 @@ use inkwell::{
 	module::{FlagBehavior, Module},
 	targets::TargetMachine,
 	types::IntType,
+	values::GlobalValue,
 };
 use utils::AssemblerDebugBuilder;
 
@@ -28,6 +29,7 @@ pub struct InnerAssembler<'ctx> {
 	ptr_int_type: IntType<'ctx>,
 	target_machine: TargetMachine,
 	debug_builder: AssemblerDebugBuilder<'ctx>,
+	constant_strings: Rc<RefCell<HashMap<Vec<u8>, GlobalValue<'ctx>>>>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -101,6 +103,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_int_type,
 			target_machine,
 			debug_builder,
+			constant_strings: Rc::default(),
 		})
 	}
 

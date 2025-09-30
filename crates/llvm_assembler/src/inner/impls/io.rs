@@ -197,28 +197,34 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
-		let constant_initializer = self.context().const_string(c, true);
+		let i64_type = self.context().i64_type();
 
-		let constant_s_ty = constant_initializer.get_type();
+		let global_constant = if let Some(duplicate_value) = self.constant_strings.borrow().get(c) {
+			*duplicate_value
+		} else {
+			let constant_initializer = self.context().const_string(c, true);
 
-		let global_constant = self.module.add_global(constant_s_ty, None, "output_chars");
+			let constant_string_ty = constant_initializer.get_type();
 
-		global_constant.set_initializer(&constant_initializer);
-		global_constant.set_constant(true);
+			let global_constant = self
+				.module
+				.add_global(constant_string_ty, None, "output_chars");
+
+			global_constant.set_initializer(&constant_initializer);
+			global_constant.set_constant(true);
+
+			self.constant_strings
+				.borrow_mut()
+				.insert(c.to_owned(), global_constant);
+
+			global_constant
+		};
 
 		let global_constant_pointer = global_constant.as_pointer_value();
 
-		let array_len = {
-			let i64_type = self.context().i64_type();
+		let array_len = i64_type.const_int(c.len() as u64, false);
 
-			i64_type.const_int(c.len() as u64, false)
-		};
-
-		let lifetime_len = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(c.len() as u64 + 1, false)
-		};
+		let lifetime_len = i64_type.const_int(c.len() as u64 + 1, false);
 
 		let _lifetime = self.start_lifetime(lifetime_len, global_constant_pointer)?;
 
@@ -248,8 +254,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		)?;
 
 		self.add_range_io_metadata(puts_value, last.into(), last.into())?;
-
-		self.add_puts_io_attributes(puts_call, constant_s_ty, c.len() as u64);
 
 		Ok(())
 	}
