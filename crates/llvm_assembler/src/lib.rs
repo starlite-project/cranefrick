@@ -9,8 +9,8 @@ use std::{
 	error::Error as StdError,
 	ffi::CStr,
 	fmt::{Display, Formatter, Result as FmtResult, Write as _},
-	io::Write,
-	path::{Path, PathBuf},
+	io::{self, prelude::*},
+	path::{Path, PathBuf}, slice,
 };
 
 use frick_assembler::{Assembler, AssemblyError, InnerAssemblyError};
@@ -333,12 +333,15 @@ impl InnerAssemblyError for LlvmAssemblyError {}
 #[unsafe(no_mangle)]
 #[must_use]
 extern "C" fn putchar(c: libc::c_int) -> libc::c_int {
-	let mut stdout = std::io::stdout();
+	let mut stdout = io::stdout().lock();
 
-	stdout
-		.write(&[c as u8])
-		.and_then(|_| stdout.flush())
-		.unwrap();
+	let c_truncated = c as u8;
+
+	let res = stdout.write_all(slice::from_ref(&c_truncated)).and_then(|()| stdout.flush());
+
+	if res.is_err() {
+		std::process::abort();
+	}
 
 	c
 }
