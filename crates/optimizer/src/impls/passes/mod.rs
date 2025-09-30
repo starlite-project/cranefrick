@@ -288,6 +288,11 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::output_char(value.wrapping_add_signed(options.value())),
 			BrainIr::set_cell_at(*value, x.get_or_zero()),
 		])),
+		[l, BrainIr::Output(OutputOptions::Cell(options))]
+			if l.is_zeroing_cell() && matches!(options.offset(), 0) =>
+		{
+			Some(Change::swap([l.clone(), BrainIr::output_char(0)]))
+		}
 		[
 			BrainIr::Output(OutputOptions::Char(x)),
 			BrainIr::Output(OutputOptions::Char(y)),
@@ -347,6 +352,18 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 		] => Some(Change::replace(BrainIr::output_cells(
 			a.iter().copied().chain(b.iter().copied()),
 		))),
+		[
+			BrainIr::SetCell(a, x),
+			BrainIr::Output(OutputOptions::Cells(options)),
+		] if options
+			.iter()
+			.all(|option| option.offset() != x.get_or_zero()) =>
+		{
+			Some(Change::swap([
+				BrainIr::output_cells(options.iter().copied()),
+				BrainIr::set_cell_at(*a, x.get_or_zero()),
+			]))
+		}
 		_ => None,
 	}
 }
