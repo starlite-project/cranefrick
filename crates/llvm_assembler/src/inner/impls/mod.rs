@@ -5,12 +5,52 @@ mod mem;
 mod pointer;
 mod value;
 
-use inkwell::IntPredicate;
+use inkwell::{
+	IntPredicate,
+	builder::Builder,
+	values::{FunctionValue, IntValue, PointerValue},
+};
 
 use super::{InnerAssembler, LlvmAssemblyError};
 use crate::ContextExt as _;
 
-impl InnerAssembler<'_> {
+impl<'ctx> InnerAssembler<'ctx> {
+	fn start_lifetime(
+		&self,
+		alloc_len: IntValue<'ctx>,
+		pointer: PointerValue<'ctx>,
+	) -> Result<impl Drop, LlvmAssemblyError> {
+		struct LifetimeEnd<'builder, 'ctx> {
+			builder: &'builder Builder<'ctx>,
+			end: FunctionValue<'ctx>,
+			pointer: PointerValue<'ctx>,
+			alloc_len: IntValue<'ctx>,
+		}
+
+		impl Drop for LifetimeEnd<'_, '_> {
+			fn drop(&mut self) {
+				self.builder
+					.build_call(self.end, &[self.alloc_len.into(), self.pointer.into()], "")
+					.unwrap();
+			}
+		}
+
+		self.builder.build_call(
+			self.functions.lifetime.start,
+			&[alloc_len.into(), pointer.into()],
+			"",
+		)?;
+
+		let lifetime_end = LifetimeEnd {
+			builder: &self.builder,
+			end: self.functions.lifetime.end,
+			pointer,
+			alloc_len,
+		};
+
+		Ok(lifetime_end)
+	}
+
 	pub fn write_puts(&self) -> Result<(), LlvmAssemblyError> {
 		let context = self.context();
 		let i8_type = context.i8_type();
@@ -26,19 +66,6 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(entry_block);
 
-		// let pointer_param = self
-		// 	.functions
-		// 	.puts
-		// 	.get_first_param()
-		// 	.unwrap()
-		// 	.into_pointer_value();
-
-		// let string_len = self
-		// 	.builder
-		// 	.build_call(self.functions.strlen, &[pointer_param.into()], "string_len")?
-		// 	.try_as_basic_value()
-		// 	.unwrap_left()
-		// 	.into_int_value();
 		let (pointer_param, string_len) = {
 			let params = self.functions.puts.get_params();
 

@@ -49,11 +49,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let array_len = i64_type.const_int(options.len() as u64, false);
 
-		self.builder.build_call(
-			self.functions.lifetime.start,
-			&[lifetime_array_len.into(), self.pointers.output.into()],
-			"",
-		)?;
+		let _lifetime = self.start_lifetime(lifetime_array_len, self.pointers.output)?;
 
 		for (i, char) in options.iter().copied().enumerate() {
 			let loaded_char = self.load(char.offset(), "output_cells_puts")?;
@@ -133,12 +129,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder.build_call(
 			self.functions.expect,
 			&[puts_value.into(), last_cell.into()],
-			"",
-		)?;
-
-		self.builder.build_call(
-			self.functions.lifetime.end,
-			&[lifetime_array_len.into(), self.pointers.output.into()],
 			"",
 		)?;
 
