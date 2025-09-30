@@ -127,31 +127,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		functions.puts.set_subprogram(puts_subprogram);
 
-		let i64_di_type = self.create_basic_type("u64", 64, 7, i32::ZERO)?.as_type();
-
-		let strlen_subroutine_type = self.create_subroutine_type(
-			self.compile_unit.get_file(),
-			Some(i64_di_type),
-			&[i8_di_ptr_type],
-			i32::ZERO,
-		);
-
-		let strlen_subprogram = self.create_function(
-			self.compile_unit.as_debug_info_scope(),
-			"strlen",
-			Some("strlen"),
-			self.compile_unit.get_file(),
-			0,
-			strlen_subroutine_type,
-			false,
-			false,
-			0,
-			i32::ZERO,
-			true,
-		);
-
-		functions.strlen.set_subprogram(strlen_subprogram);
-
 		let putchar_subroutine_type = self.di_builder.create_subroutine_type(
 			self.compile_unit.get_file(),
 			Some(i32_di_type),

@@ -19,7 +19,6 @@ pub struct AssemblerFunctions<'ctx> {
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 	pub expect: FunctionValue<'ctx>,
-	pub strlen: FunctionValue<'ctx>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -35,13 +34,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let putchar_ty = i32_type.fn_type(&[i32_type.into()], false);
 		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
 
-		let strlen_ty = i64_type.fn_type(&[ptr_type.into()], false);
-		let strlen = module.add_function("strlen", strlen_ty, Some(Linkage::External));
-
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
 
-		let puts_ty = i32_type.fn_type(&[ptr_type.into()], false);
+		let puts_ty = i32_type.fn_type(&[ptr_type.into(), i64_type.into()], false);
 		let puts = module.add_function("puts", puts_ty, Some(Linkage::Private));
 
 		let lifetime = {
@@ -65,7 +61,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			main,
 			lifetime,
 			expect,
-			strlen,
 		};
 
 		Ok(this.setup(context))
@@ -77,7 +72,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			.setup_put_attributes(context)
 			.setup_putchar_attributes(context)
 			.setup_puts_attributes(context)
-			.setup_strlen_attributes(context)
 	}
 
 	fn setup_common_attributes(self, context: &'ctx Context) -> Self {
@@ -104,7 +98,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			self.putchar
 				.add_attribute(AttributeLoc::Function, attribute);
 			self.puts.add_attribute(AttributeLoc::Function, attribute);
-			self.strlen.add_attribute(AttributeLoc::Function, attribute);
 		}
 
 		self
@@ -178,26 +171,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		for attribute in [zeroext_attr, noundef_attr, returned_attr] {
 			self.putchar
 				.add_attribute(AttributeLoc::Param(0), attribute);
-		}
-
-		self
-	}
-
-	fn setup_strlen_attributes(self, context: &'ctx Context) -> Self {
-		let memory_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 1);
-
-		for attribute in iter::once(memory_attr) {
-			self.strlen.add_attribute(AttributeLoc::Function, attribute);
-		}
-
-		let noundef_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
-		let nocapture_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocapture"), 0);
-
-		for attribute in [noundef_attr, nocapture_attr] {
-			self.strlen.add_attribute(AttributeLoc::Param(0), attribute);
 		}
 
 		self

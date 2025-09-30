@@ -26,19 +26,24 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(entry_block);
 
-		let pointer_param = self
-			.functions
-			.puts
-			.get_first_param()
-			.unwrap()
-			.into_pointer_value();
+		// let pointer_param = self
+		// 	.functions
+		// 	.puts
+		// 	.get_first_param()
+		// 	.unwrap()
+		// 	.into_pointer_value();
 
-		let string_len = self
-			.builder
-			.build_call(self.functions.strlen, &[pointer_param.into()], "string_len")?
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_int_value();
+		// let string_len = self
+		// 	.builder
+		// 	.build_call(self.functions.strlen, &[pointer_param.into()], "string_len")?
+		// 	.try_as_basic_value()
+		// 	.unwrap_left()
+		// 	.into_int_value();
+		let (pointer_param, string_len) = {
+			let params = self.functions.puts.get_params();
+
+			(params[0].into_pointer_value(), params[1].into_int_value())
+		};
 
 		let end_of_string = unsafe {
 			self.builder.build_in_bounds_gep(

@@ -96,7 +96,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let puts_call = self.builder.build_call(
 			self.functions.puts,
-			&[self.pointers.output.into()],
+			&[self.pointers.output.into(), array_len.into()],
 			"output_cells_puts_call",
 		)?;
 
