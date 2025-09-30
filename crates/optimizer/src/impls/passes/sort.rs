@@ -52,8 +52,8 @@ fn sorter_key(i: &BrainIr) -> Priority {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Priority {
-	High(i32),
 	Low(i32),
+	High(i32),
 }
 
 impl Ord for Priority {
