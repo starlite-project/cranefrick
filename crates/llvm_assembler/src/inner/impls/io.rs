@@ -247,9 +247,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let global_constant_pointer = global_constant.as_pointer_value();
 
+		let array_len = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(c.len() as u64, false)
+		};
+
 		let puts_call = self.builder.build_call(
 			self.functions.puts,
-			&[global_constant_pointer.into()],
+			&[global_constant_pointer.into(), array_len.into()],
 			"output_chars_call",
 		)?;
 
