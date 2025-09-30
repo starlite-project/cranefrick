@@ -308,7 +308,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		array_ty: ArrayType<'ctx>,
 		array_len: u64,
 	) {
-		call.set_tail_call(false);
+		call.set_tail_call(true);
 
 		let byref_attr = self
 			.context()

@@ -19,14 +19,15 @@ pub struct AssemblerFunctions<'ctx> {
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 	pub expect: FunctionValue<'ctx>,
+	pub assume: FunctionValue<'ctx>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
 	pub fn new(context: &'ctx Context, module: &Module<'ctx>) -> Result<Self, LlvmAssemblyError> {
-		let ptr_type = context.default_ptr_type();
 		let void_type = context.void_type();
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
+		let ptr_type = context.default_ptr_type();
 
 		let getchar_ty = i32_type.fn_type(&[], false);
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
@@ -54,6 +55,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 		let expect = get_intrinsic_function_from_name("llvm.expect", module, &[i32_type.into()])?;
 
+		let assume = get_intrinsic_function_from_name("llvm.assume", module, &[])?;
+
 		let this = Self {
 			getchar,
 			putchar,
@@ -61,6 +64,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			main,
 			lifetime,
 			expect,
+			assume,
 		};
 
 		Ok(this.setup(context))

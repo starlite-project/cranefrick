@@ -72,6 +72,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 			(params[0].into_pointer_value(), params[1].into_int_value())
 		};
 
+		let null_pointer = ptr_type.const_null();
+
+		let is_ptr_null = self.builder.build_int_compare(
+			IntPredicate::NE,
+			pointer_param,
+			null_pointer,
+			"is_ptr_null",
+		)?;
+
+		self.builder
+			.build_call(self.functions.assume, &[is_ptr_null.into()], "")?;
+
 		let end_of_string = unsafe {
 			self.builder.build_in_bounds_gep(
 				i8_type,
