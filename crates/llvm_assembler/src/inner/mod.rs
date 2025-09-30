@@ -151,7 +151,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.map_err(AssemblyError::backend)?;
 
 		self.write_puts()?;
-		self.write_find_zero()?;
 
 		self.debug_builder.di_builder.finalize();
 

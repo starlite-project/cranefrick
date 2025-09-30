@@ -5,13 +5,12 @@ mod mem;
 mod pointer;
 mod value;
 
-use frick_assembler::TAPE_SIZE;
 use inkwell::{IntPredicate, debug_info::AsDIScope as _};
 
 use super::{InnerAssembler, LlvmAssemblyError};
 use crate::ContextExt as _;
 
-impl<'ctx> InnerAssembler<'ctx> {
+impl InnerAssembler<'_> {
 	pub fn write_puts(&self) -> Result<(), LlvmAssemblyError> {
 		let context = self.context();
 		let i8_type = context.i8_type();
@@ -138,65 +137,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder
 			.build_return(Some(&end_value.as_basic_value()))?;
-
-		Ok(())
-	}
-
-	pub fn write_find_zero(&self) -> Result<(), LlvmAssemblyError> {
-		let context = self.context();
-		let i8_type = context.i8_type();
-		let ptr_int_type = self.ptr_int_type;
-
-		let entry_block = context.append_basic_block(self.functions.find_zero, "entry");
-		let body_block = context.append_basic_block(self.functions.find_zero, "body");
-		let exit_block = context.append_basic_block(self.functions.find_zero, "exit");
-
-		self.builder.position_at_end(entry_block);
-
-		let (tape_pointer, current_pointer_value, offset_value) = {
-			let params = self.functions.find_zero.get_params();
-
-			(params[0].into_pointer_value(), params[1].into_int_value(), params[2].into_int_value())
-		};
-
-		let header_phi_value = self.builder.build_phi(ptr_int_type, "find_zero_value")?;
-
-		header_phi_value.add_incoming(&[(&current_pointer_value, entry_block)]);
-
-		let gep = unsafe {
-			self.builder.build_gep(
-				i8_type,
-				tape_pointer,
-				&[header_phi_value.as_basic_value().into_int_value()],
-				"find_zero_index_into_tape",
-			)?
-		};
-
-        let value = self.builder.build_load(i8_type, gep, "find_zero_load")?.into_int_value();
-
-        let i8_zero = i8_type.const_zero();
-
-        let cmp  =self.builder.build_int_compare(IntPredicate::NE, value, i8_zero, "find_zero_cmp")?;
-
-        self.builder.build_conditional_branch(cmp, body_block, exit_block)?;
-
-        self.builder.position_at_end(body_block);
-
-        let new_pointer_value = self.builder.build_int_add(header_phi_value.as_basic_value().into_int_value(), offset_value, "find_zero_add")?;
-
-        let wrapped_pointer_value = {
-            let tape_len = ptr_int_type.const_int(TAPE_SIZE as u64 - 1, false);
-
-            self.builder.build_and(new_pointer_value, tape_len, "find_zero_wrap_pointer")?
-        };
-
-        self.builder.build_unconditional_branch(entry_block)?;
-
-        header_phi_value.add_incoming(&[(&wrapped_pointer_value ,body_block)]);
-
-        self.builder.position_at_end(exit_block);
-
-        self.builder.build_return(Some(&header_phi_value.as_basic_value()))?;
 
 		Ok(())
 	}
