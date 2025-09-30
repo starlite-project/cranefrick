@@ -1,7 +1,6 @@
 use std::ops::RangeInclusive;
 
 use frick_ir::{CellChangeOptions, get_range, is_range};
-use inkwell::module::Linkage;
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 

@@ -4,7 +4,6 @@ use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
-	module::Linkage,
 	types::ArrayType,
 	values::{CallSiteValue, InstructionValueError, IntValue},
 };
