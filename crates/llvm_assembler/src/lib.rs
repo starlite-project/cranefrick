@@ -204,7 +204,7 @@ impl Assembler for LlvmAssembler {
 				OptimizationLevel::Aggressive,
 				CodeModel::JITDefault,
 				false,
-				false,
+				true,
 			)
 			.map_err(AssemblyError::backend)?;
 
