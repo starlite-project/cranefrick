@@ -623,7 +623,6 @@ dependencies = [
  "ron",
  "serde",
  "serde-lexpr",
- "serde_json",
  "toml",
  "tracing",
  "tracing-error",
