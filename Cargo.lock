@@ -611,6 +611,7 @@ dependencies = [
  "color-eyre",
  "criterion",
  "frick_assembler",
+ "frick_async_runtime",
  "frick_cranelift_assembler",
  "frick_ir",
  "frick_llvm_assembler",
@@ -638,6 +639,10 @@ dependencies = [
  "frick_ir",
  "tracing",
 ]
+
+[[package]]
+name = "frick_async_runtime"
+version = "0.1.0"
 
 [[package]]
 name = "frick_cranelift_assembler"

@@ -5,6 +5,7 @@ use std::{fs, path::Path};
 use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::{AssembledModule as _, Assembler as _};
+use frick_async_runtime::block_on;
 #[cfg(feature = "cranelift")]
 use frick_cranelift_assembler::{AssemblerFlags, CraneliftAssembler};
 use frick_ir::parse;
@@ -44,6 +45,10 @@ fn main() -> Result<()> {
 	install_tracing(args.output_path());
 	color_eyre::install()?;
 
+	block_on(run(args))
+}
+
+async fn run(args: Args) -> Result<()> {
 	let raw_data = fs::read_to_string(args.file_path())?
 		.chars()
 		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
@@ -52,10 +57,12 @@ fn main() -> Result<()> {
 	let parsed = parse(raw_data)?;
 
 	if parsed.is_empty() {
+		tracing::warn!("no program parsed");
+
 		return Ok(());
 	}
 
-	let mut optimizer = parsed.iter().cloned().collect::<Optimizer>();
+	let mut optimizer = parsed.into_iter().collect::<Optimizer>();
 
 	serialize(&optimizer, args.output_path(), "unoptimized")?;
 
