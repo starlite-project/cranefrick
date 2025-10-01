@@ -6,7 +6,3 @@ license.workspace = true
 name = "frick_async_runtime"
 rust-version.workspace = true
 version.workspace = true
-
-[dependencies]
-io-uring = "0.7"
-libc.workspace = true
