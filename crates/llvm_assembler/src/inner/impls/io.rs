@@ -55,8 +55,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let _lifetime = self.start_lifetime(lifetime_array_len, self.pointers.output)?;
 
-		if options.iter().all(|x| x.is_default()) {
-			self.setup_output_cells_puts_memset(i64_type, options.len() as u64)
+		if options.windows(2).all(|w| w[0] == w[1]) {
+			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
 		} else {
 			self.setup_output_cells_puts_iterated(i8_type, options)
 		}?;
@@ -121,15 +121,29 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn setup_output_cells_puts_memset(
 		&self,
+		i8_type: IntType<'ctx>,
 		i64_type: IntType<'ctx>,
+		options: CellChangeOptions<i8>,
 		length: u64,
 	) -> Result<(), LlvmAssemblyError> {
-		let current_value = self.load(0, "setup_output_cells_puts_memset")?;
+		let current_value = self.load(options.offset(), "setup_output_cells_puts_memset")?;
+
+		let value_to_memset = if matches!(options.value(), 0) {
+			current_value
+		} else {
+			let offset = i8_type.const_int(options.value() as u64, false);
+
+			self.builder.build_int_add(
+				current_value,
+				offset,
+				"setup_output_cells_puts_memset_add",
+			)?
+		};
 
 		let array_len = i64_type.const_int(length, false);
 
 		self.builder
-			.build_memset(self.pointers.output, 1, current_value, array_len)?;
+			.build_memset(self.pointers.output, 1, value_to_memset, array_len)?;
 
 		Ok(())
 	}
