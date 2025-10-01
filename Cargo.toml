@@ -15,6 +15,7 @@ frick_ir = { workspace = true, features = ["parse"] }
 frick_llvm_assembler = { path = "crates/llvm_assembler", optional = true }
 frick_optimizer = { path = "crates/optimizer" }
 frick_rust_assembler = { path = "crates/rust_assembler", optional = true }
+futures-util = { version = "0.3", features = ["io"] }
 indicatif = "0.18"
 ron = "0.11"
 serde.workspace = true

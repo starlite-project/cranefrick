@@ -14,6 +14,7 @@ use frick_llvm_assembler::LlvmAssembler;
 use frick_optimizer::Optimizer;
 #[cfg(feature = "interpret")]
 use frick_rust_assembler::RustInterpreterAssembler;
+use futures_util::{AsyncReadExt as _, io::AllowStdIo};
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
@@ -49,10 +50,20 @@ fn main() -> Result<()> {
 }
 
 async fn run(args: Args) -> Result<()> {
-	let raw_data = fs::read_to_string(args.file_path())?
-		.chars()
-		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
-		.collect::<String>();
+	let raw_data = {
+		let file = fs::OpenOptions::new().read(true).open(args.file_path())?;
+
+		let mut async_file = AllowStdIo::new(file);
+
+		let mut output = String::new();
+
+		async_file.read_to_string(&mut output).await?;
+
+		output
+	}
+	.chars()
+	.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
+	.collect::<String>();
 
 	let parsed = parse(raw_data)?;
 
@@ -191,7 +202,6 @@ fn install_tracing(folder_path: &Path) {
 fn env_filter() -> EnvFilter {
 	EnvFilter::new("info,cranelift_jit=warn")
 }
-
 fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
 	serialize_as_ron(value, folder_path, file_name)?;
 

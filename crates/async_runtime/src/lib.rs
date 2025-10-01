@@ -9,6 +9,7 @@ use std::{
 };
 
 pub fn block_on<T>(fut: impl Future<Output = T>) -> T {
+
 	let mut fut = pin!(fut);
 
 	let t = thread::current();
@@ -16,6 +17,7 @@ pub fn block_on<T>(fut: impl Future<Output = T>) -> T {
 	let mut cx = Context::from_waker(&waker);
 
 	loop {
+		tracing::info!(target: "test::waker", op = "poll");
 		match fut.as_mut().poll(&mut cx) {
 			Poll::Ready(res) => return res,
 			Poll::Pending => thread::park(),
