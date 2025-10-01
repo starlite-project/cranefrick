@@ -10,7 +10,8 @@ use std::{
 	ffi::CStr,
 	fmt::{Display, Formatter, Result as FmtResult, Write as _},
 	io::{self, prelude::*},
-	path::{Path, PathBuf}, slice,
+	path::{Path, PathBuf},
+	slice,
 };
 
 use frick_assembler::{Assembler, AssemblyError, InnerAssemblyError};
@@ -337,7 +338,9 @@ extern "C" fn putchar(c: libc::c_int) -> libc::c_int {
 
 	let c_truncated = c as u8;
 
-	let res = stdout.write_all(slice::from_ref(&c_truncated)).and_then(|()| stdout.flush());
+	let res = stdout
+		.write_all(slice::from_ref(&c_truncated))
+		.and_then(|()| stdout.flush());
 
 	if res.is_err() {
 		std::process::abort();

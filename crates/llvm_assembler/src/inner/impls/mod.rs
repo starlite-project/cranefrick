@@ -142,6 +142,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_call(self.functions.putchar, &[extended_character.into()], "")?;
 
+		putchar_call.set_tail_call(true);
+
 		let putchar_value = putchar_call
 			.try_as_basic_value()
 			.unwrap_left()
