@@ -199,7 +199,15 @@ impl Assembler for LlvmAssembler {
 		info!("creating JIT execution engine");
 
 		let execution_engine = module
-			.create_jit_execution_engine(OptimizationLevel::Aggressive)
+			// .create_jit_execution_engine(OptimizationLevel::Aggressive)
+			// .map_err(AssemblyError::backend)?;
+			.create_mcjit_execution_engine_with_memory_manager(
+				self::module::MemoryManager::default(),
+				OptimizationLevel::None,
+				CodeModel::JITDefault,
+				false,
+				false,
+			)
 			.map_err(AssemblyError::backend)?;
 
 		if let Some(getchar) = module.get_function("getchar") {

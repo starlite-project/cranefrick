@@ -1,6 +1,9 @@
+mod memory;
+
 use frick_assembler::AssembledModule;
 use inkwell::{execution_engine::ExecutionEngine, values::FunctionValue};
 
+pub use self::memory::*;
 use super::LlvmAssemblyError;
 
 pub struct LlvmAssembledModule<'ctx> {
