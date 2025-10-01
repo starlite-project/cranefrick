@@ -1,7 +1,10 @@
 use frick_assembler::TAPE_SIZE;
 use inkwell::{IntPredicate, values::IntValue};
 
-use crate::{LlvmAssemblyError, inner::InnerAssembler};
+use crate::{
+	LlvmAssemblyError,
+	inner::{InnerAssembler, utils::CalculatedOffset},
+};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn move_pointer(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
@@ -11,6 +14,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_store(self.pointers.pointer, wrapped_ptr)?;
 
 		Ok(())
+	}
+
+	pub fn resolve_offset(
+		&self,
+		offset: CalculatedOffset<'ctx>,
+	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+		match offset {
+			CalculatedOffset::Calculated(offset) => Ok(offset),
+			CalculatedOffset::Raw(offset) => self.offset_pointer(offset),
+		}
 	}
 
 	pub fn offset_pointer(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {

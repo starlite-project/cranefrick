@@ -1,11 +1,15 @@
 use std::fmt::Display;
 
 use inkwell::{
+	builder::BuilderError,
 	types::{BasicType, BasicTypeEnum},
-	values::{IntValue, PointerValue},
+	values::{BasicValue, IntValue, PointerValue},
 };
 
-use crate::{LlvmAssemblyError, inner::InnerAssembler};
+use crate::{
+	LlvmAssemblyError,
+	inner::{InnerAssembler, utils::CalculatedOffset},
+};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn load(
@@ -25,9 +29,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(IntValue<'ctx>, PointerValue<'ctx>), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let current_offset = self.offset_pointer(offset)?;
-
-		let gep = self.gep(i8_type, current_offset, format!("{fn_name}_load_from"))?;
+		let gep = self.tape_gep(i8_type, offset, format!("{fn_name}_load_from"))?;
 
 		let loaded_value = self
 			.builder
@@ -48,22 +50,24 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i8_type.const_int(value.into(), false)
 		};
 
-		self.store_into_inner(value, gep)
+		self.store_into(value, gep)
 	}
 
 	pub fn store_into(
 		&self,
-		value: IntValue<'ctx>,
+		value: impl BasicValue<'ctx>,
 		gep: PointerValue<'ctx>,
 	) -> Result<(), LlvmAssemblyError> {
-		self.store_into_inner(value, gep)
+		self.store_into_inner(value, gep)?;
+
+		Ok(())
 	}
 
 	fn store_into_inner(
 		&self,
-		value: IntValue<'ctx>,
+		value: impl BasicValue<'ctx>,
 		gep: PointerValue<'ctx>,
-	) -> Result<(), LlvmAssemblyError> {
+	) -> Result<(), BuilderError> {
 		self.builder.build_store(gep, value)?;
 
 		Ok(())
@@ -98,7 +102,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub fn store(
 		&self,
-		value: IntValue<'ctx>,
+		value: impl BasicValue<'ctx>,
 		offset: i32,
 		fn_name: impl Display,
 	) -> Result<(), LlvmAssemblyError> {
@@ -107,27 +111,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn store_inner(
 		&self,
-		value: IntValue<'ctx>,
+		value: impl BasicValue<'ctx>,
 		offset: i32,
 		fn_name: String,
 	) -> Result<(), LlvmAssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let current_offset = self.offset_pointer(offset)?;
+		let gep = self.tape_gep(i8_type, offset, fn_name)?;
+		self.store_into_inner(value, gep)?;
 
-		let gep = self.gep(i8_type, current_offset, fn_name)?;
-		self.store_into_inner(value, gep)
+		Ok(())
 	}
 
-	pub fn gep<T>(
+	pub fn tape_gep(
 		&self,
-		ty: T,
-		offset: IntValue<'ctx>,
+		ty: impl BasicType<'ctx>,
+		offset: impl Into<CalculatedOffset<'ctx>>,
 		name: impl Display,
-	) -> Result<PointerValue<'ctx>, LlvmAssemblyError>
-	where
-		T: BasicType<'ctx>,
-	{
+	) -> Result<PointerValue<'ctx>, LlvmAssemblyError> {
+		let offset = self.resolve_offset(offset.into())?;
+
 		let basic_type = ty.as_basic_type_enum();
 
 		match basic_type {

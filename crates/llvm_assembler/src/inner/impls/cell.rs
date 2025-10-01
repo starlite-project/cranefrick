@@ -123,8 +123,10 @@ impl InnerAssembler<'_> {
 		&self,
 		values: &[CellChangeOptions<i8>],
 	) -> Result<(), LlvmAssemblyError> {
-		let i8_type = self.context().i8_type();
-		let i64_type = self.context().i64_type();
+		let context = self.context();
+
+		let i8_type = context.i8_type();
+		let i64_type = context.i64_type();
 		let i8_vector_type = i8_type.vec_type(values.len() as u32);
 
 		let (current_cell_value, current_cell_gep) =
@@ -139,9 +141,7 @@ impl InnerAssembler<'_> {
 			*range.start()
 		};
 
-		let current_offset = self.offset_pointer(range_start)?;
-
-		let gep = self.gep(i8_vector_type, current_offset, "duplicate_cell_vectorized")?;
+		let gep = self.tape_gep(i8_vector_type, range_start, "duplicate_cell_vectorized")?;
 
 		let loaded_values = self
 			.builder
@@ -213,15 +213,17 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {
-		let i8_type = self.context().i8_type();
+		let context = self.context();
+
+		let i8_type = context.i8_type();
 
 		let array_len = {
-			let i64_type = self.context().i64_type();
+			let i64_type = context.i64_type();
 
 			i64_type.const_int(values.len() as u64, false)
 		};
 
-		let constant_initializer = self.context().const_string(values, false);
+		let constant_initializer = context.const_string(values, false);
 
 		let constant_array_ty = constant_initializer.get_type();
 
@@ -231,9 +233,7 @@ impl InnerAssembler<'_> {
 
 		self.setup_global_value(global_constant, &constant_initializer);
 
-		let current_offset = self.offset_pointer(start)?;
-
-		let gep = self.gep(i8_type, current_offset, "set_many_cells")?;
+		let gep = self.tape_gep(i8_type, start, "set_many_cells")?;
 
 		self.builder
 			.build_memcpy(gep, 1, global_constant.as_pointer_value(), 1, array_len)?;
@@ -256,11 +256,9 @@ impl InnerAssembler<'_> {
 			ptr_int_type.const_int(range_len as u64, false)
 		};
 
-		let start_value = self.offset_pointer(start)?;
-
 		let value_value = i8_type.const_int(value.into(), false);
 
-		let gep = self.gep(i8_type, start_value, "set_range")?;
+		let gep = self.tape_gep(i8_type, start, "set_range")?;
 
 		self.builder
 			.build_memset(gep, 1, value_value, range_len_value)?;

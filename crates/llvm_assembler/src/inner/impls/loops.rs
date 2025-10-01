@@ -10,15 +10,11 @@ impl InnerAssembler<'_> {
 		ops: &[BrainIr],
 		ops_count: usize,
 	) -> Result<(), AssemblyError<LlvmAssemblyError>> {
-		let header_block = self
-			.context()
-			.append_basic_block(self.functions.main, "if_not_zero.header");
-		let body_block = self
-			.context()
-			.append_basic_block(self.functions.main, "if_not_zero.body");
-		let exit_block = self
-			.context()
-			.append_basic_block(self.functions.main, "if_not_zero.exit");
+		let context = self.context();
+
+		let header_block = context.append_basic_block(self.functions.main, "if_not_zero.header");
+		let body_block = context.append_basic_block(self.functions.main, "if_not_zero.body");
+		let exit_block = context.append_basic_block(self.functions.main, "if_not_zero.exit");
 
 		self.builder
 			.build_unconditional_branch(header_block)
@@ -29,7 +25,7 @@ impl InnerAssembler<'_> {
 		let value = self.load(0, "if_not_zero")?;
 
 		let zero = {
-			let i8_type = self.context().i8_type();
+			let i8_type = context.i8_type();
 
 			i8_type.const_zero()
 		};
@@ -48,7 +44,7 @@ impl InnerAssembler<'_> {
 		self.ops(ops, ops_count + 1)?;
 
 		let debug_loc = self.debug_builder.create_debug_location(
-			self.context(),
+			context,
 			0,
 			ops_count as u32 + 2,
 			self.functions
@@ -75,15 +71,11 @@ impl InnerAssembler<'_> {
 		ops: &[BrainIr],
 		ops_count: usize,
 	) -> Result<(), AssemblyError<LlvmAssemblyError>> {
-		let header_block = self
-			.context()
-			.append_basic_block(self.functions.main, "dynamic_loop.header");
-		let body_block = self
-			.context()
-			.append_basic_block(self.functions.main, "dynamic_loop.body");
-		let exit_block = self
-			.context()
-			.append_basic_block(self.functions.main, "dynamic_loop.exit");
+		let context = self.context();
+
+		let header_block = context.append_basic_block(self.functions.main, "dynamic_loop.header");
+		let body_block = context.append_basic_block(self.functions.main, "dynamic_loop.body");
+		let exit_block = context.append_basic_block(self.functions.main, "dynamic_loop.exit");
 
 		self.builder
 			.build_unconditional_branch(header_block)
@@ -94,7 +86,7 @@ impl InnerAssembler<'_> {
 		let value = self.load(0, "dynamic_loop")?;
 
 		let zero = {
-			let i8_type = self.context().i8_type();
+			let i8_type = context.i8_type();
 
 			i8_type.const_zero()
 		};
@@ -113,7 +105,7 @@ impl InnerAssembler<'_> {
 		self.ops(ops, ops_count + 1)?;
 
 		let debug_loc = self.debug_builder.create_debug_location(
-			self.context(),
+			context,
 			0,
 			ops_count as u32 + 2,
 			self.functions
@@ -136,10 +128,12 @@ impl InnerAssembler<'_> {
 	}
 
 	pub fn find_zero(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
+		let context = self.context();
+
 		let current_block = self.builder.get_insert_block().unwrap();
 
 		let ptr_int_type = self.ptr_int_type;
-		let i8_type = self.context().i8_type();
+		let i8_type = context.i8_type();
 
 		let current_pointer_value = self
 			.builder
@@ -150,15 +144,9 @@ impl InnerAssembler<'_> {
 			)?
 			.into_int_value();
 
-		let header_block = self
-			.context()
-			.append_basic_block(self.functions.main, "find_zero.header");
-		let body_block = self
-			.context()
-			.append_basic_block(self.functions.main, "find_zero.body");
-		let exit_block = self
-			.context()
-			.append_basic_block(self.functions.main, "find_zero.exit");
+		let header_block = context.append_basic_block(self.functions.main, "find_zero.header");
+		let body_block = context.append_basic_block(self.functions.main, "find_zero.body");
+		let exit_block = context.append_basic_block(self.functions.main, "find_zero.exit");
 
 		self.builder.build_unconditional_branch(header_block)?;
 
@@ -166,7 +154,7 @@ impl InnerAssembler<'_> {
 
 		let header_phi_value = self.builder.build_phi(ptr_int_type, "find_zero_phi")?;
 
-		let gep = self.gep(
+		let gep = self.tape_gep(
 			i8_type,
 			header_phi_value.as_basic_value().into_int_value(),
 			"find_zero",

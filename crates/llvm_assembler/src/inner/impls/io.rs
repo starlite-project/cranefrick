@@ -4,6 +4,7 @@ use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
+	context::ContextRef,
 	types::ArrayType,
 	values::{CallSiteValue, InstructionValueError, IntValue},
 };
@@ -43,8 +44,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), LlvmAssemblyError> {
 		assert!(options.len() < 256);
 
-		let i8_type = self.context().i8_type();
-		let i64_type = self.context().i64_type();
+		let context = self.context();
+
+		let i8_type = context.i8_type();
+		let i64_type = context.i64_type();
 		let ptr_int_type = self.ptr_int_type;
 
 		let lifetime_array_len = i64_type.const_int(options.len() as u64 + 1, false);
@@ -147,7 +150,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn output_cell(&self, value_offset: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let i32_type = self.context().i32_type();
+		let context = self.context();
+
+		let i32_type = context.i32_type();
 		let loaded_value = self.load(offset, "output_current_cell")?;
 
 		let extended_loaded_value = self.builder.build_int_z_extend(
@@ -185,7 +190,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.unwrap_left()
 			.into_int_value();
 
-		self.add_range_io_metadata(putchar_value, u8::MIN.into(), u8::MAX.into())?;
+		self.add_range_io_metadata(context, putchar_value, u8::MIN.into(), u8::MAX.into())?;
 
 		self.builder.build_call(
 			self.functions.i32_expect,
@@ -197,9 +202,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
-		let i64_type = self.context().i64_type();
+		let context = self.context();
 
-		let constant_initializer = self.context().const_string(c, true);
+		let i64_type = context.i64_type();
+
+		let constant_initializer = context.const_string(c, true);
 
 		let constant_string_ty = constant_initializer.get_type();
 
@@ -242,13 +249,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"",
 		)?;
 
-		self.add_range_io_metadata(puts_value, last.into(), last.into())?;
+		self.add_range_io_metadata(context, puts_value, last.into(), last.into())?;
 
 		Ok(())
 	}
 
 	fn add_range_io_metadata(
 		&self,
+		context: ContextRef<'ctx>,
 		char_call: IntValue<'ctx>,
 		min_inclusive: u64,
 		max_inclusive: u64,
@@ -257,13 +265,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 			return Ok(());
 		};
 
-		let i32_type = self.context().i32_type();
+		let i32_type = context.i32_type();
 
 		let i32_i8_min = i32_type.const_int(min_inclusive, false);
 
 		let i32_i8_max = i32_type.const_int(max_inclusive + 1, false);
 
-		let range_metadata_id = self.context().get_kind_id("range");
+		let range_metadata_id = context.get_kind_id("range");
 
 		let range_metadata_node = self
 			.context()
@@ -299,7 +307,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
-		let i8_type = self.context().i8_type();
+		let context = self.context();
+
+		let i8_type = context.i8_type();
 
 		let getchar_call =
 			self.builder
@@ -312,7 +322,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.unwrap_left()
 			.into_int_value();
 
-		self.add_range_io_metadata(getchar_value, u8::MIN.into(), u8::MAX.into())?;
+		self.add_range_io_metadata(context, getchar_value, u8::MIN.into(), u8::MAX.into())?;
 
 		let truncated_value =
 			self.builder

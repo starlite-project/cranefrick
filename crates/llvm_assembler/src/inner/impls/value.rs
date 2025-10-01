@@ -107,17 +107,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = self.context().i8_type();
 		let i8_size = i8_type.size_of();
 
-		let current_cell_gep = {
-			let ptr = self.offset_pointer(0)?;
+		let current_cell_gep = self.tape_gep(i8_type, 0, "replace_value_from_memcpyed")?;
 
-			self.gep(i8_type, ptr, "replace_value_from_memcpyed")?
-		};
-
-		let other_value_gep = {
-			let ptr = self.offset_pointer(offset)?;
-
-			self.gep(i8_type, ptr, "replace_value_from_memcpyed")?
-		};
+		let other_value_gep = self.tape_gep(i8_type, offset, "replace_value_from_memcpyed")?;
 
 		self.builder
 			.build_memcpy(current_cell_gep, 1, other_value_gep, 1, i8_size)?;
