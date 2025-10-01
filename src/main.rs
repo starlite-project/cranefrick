@@ -188,7 +188,21 @@ fn env_filter() -> EnvFilter {
 fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
 	serialize_as_ron(value, folder_path, file_name)?;
 
+	serialize_as_json(value, folder_path, file_name)?;
+
 	serialize_as_s_expr(value, folder_path, file_name)
+}
+
+fn serialize_as_json<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
+	let mut output = Vec::new();
+
+	let mut serializer = serde_json::Serializer::pretty(&mut output);
+
+	value.serialize(&mut serializer)?;
+
+	fs::write(folder_path.join(format!("{file_name}.json")), output)?;
+
+	Ok(())
 }
 
 fn serialize_as_ron<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
