@@ -217,28 +217,15 @@ impl InnerAssembler<'_> {
 
 		let i8_type = context.i8_type();
 
-		let array_len = {
-			let i64_type = context.i64_type();
+		let values_values = values
+			.iter()
+			.copied()
+			.map(|x| i8_type.const_int(x.into(), false))
+			.collect::<Vec<_>>();
 
-			i64_type.const_int(values.len() as u64, false)
-		};
+		let array = i8_type.const_array(&values_values);
 
-		let constant_initializer = context.const_string(values, false);
-
-		let constant_array_ty = constant_initializer.get_type();
-
-		let global_constant =
-			self.module
-				.add_global(constant_array_ty, None, "set_many_cells_global_value");
-
-		self.setup_global_value(global_constant, &constant_initializer);
-
-		let gep = self.tape_gep(i8_type, start, "set_many_cells")?;
-
-		self.builder
-			.build_memcpy(gep, 1, global_constant.as_pointer_value(), 1, array_len)?;
-
-		Ok(())
+		self.store(array, start, "set_many_cells")
 	}
 
 	pub fn set_range(
