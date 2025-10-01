@@ -9,7 +9,6 @@ use std::{
 };
 
 pub fn block_on<T>(fut: impl Future<Output = T>) -> T {
-
 	let mut fut = pin!(fut);
 
 	let t = thread::current();

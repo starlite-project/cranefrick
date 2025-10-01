@@ -14,7 +14,7 @@ use frick_llvm_assembler::LlvmAssembler;
 use frick_optimizer::Optimizer;
 #[cfg(feature = "interpret")]
 use frick_rust_assembler::RustInterpreterAssembler;
-use futures_util::{AsyncReadExt as _, io::AllowStdIo};
+use futures_util::{AsyncReadExt as _, AsyncWriteExt as _, io::AllowStdIo, stream::All};
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
@@ -75,11 +75,11 @@ async fn run(args: Args) -> Result<()> {
 
 	let mut optimizer = parsed.into_iter().collect::<Optimizer>();
 
-	serialize(&optimizer, args.output_path(), "unoptimized")?;
+	serialize(&optimizer, args.output_path(), "unoptimized").await?;
 
 	optimizer.run();
 
-	serialize(&optimizer, args.output_path(), "optimized")?;
+	serialize(&optimizer, args.output_path(), "optimized").await?;
 
 	#[allow(unreachable_patterns)]
 	match &args {
@@ -202,13 +202,18 @@ fn install_tracing(folder_path: &Path) {
 fn env_filter() -> EnvFilter {
 	EnvFilter::new("info,cranelift_jit=warn")
 }
-fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
-	serialize_as_ron(value, folder_path, file_name)?;
 
-	serialize_as_s_expr(value, folder_path, file_name)
+async fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
+	serialize_as_ron(value, folder_path, file_name).await?;
+
+	serialize_as_s_expr(value, folder_path, file_name).await
 }
 
-fn serialize_as_ron<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
+async fn serialize_as_ron<T: Serialize>(
+	value: &T,
+	folder_path: &Path,
+	file_name: &str,
+) -> Result<()> {
 	let mut output = String::new();
 	let mut serializer = ron::Serializer::with_options(
 		&mut output,
@@ -220,21 +225,49 @@ fn serialize_as_ron<T: Serialize>(value: &T, folder_path: &Path, file_name: &str
 
 	drop(serializer);
 
-	fs::write(folder_path.join(format!("{file_name}.ron")), output)?;
+	write_file(
+		folder_path.join(format!("{file_name}.ron")),
+		output.as_bytes(),
+	)
+	.await?;
 
 	Ok(())
 }
 
-fn serialize_as_s_expr<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
-	let file = fs::OpenOptions::new()
-		.create(true)
-		.truncate(true)
-		.write(true)
-		.open(folder_path.join(format!("{file_name}.s-expr")))?;
+async fn serialize_as_s_expr<T: Serialize>(
+	value: &T,
+	folder_path: &Path,
+	file_name: &str,
+) -> Result<()> {
+	// let file = fs::OpenOptions::new()
+	// 	.create(true)
+	// 	.truncate(true)
+	// 	.write(true)
+	// 	.open(folder_path.join(format!("{file_name}.s-expr")))?;
 
 	let options = serde_lexpr::print::Options::elisp();
 
-	serde_lexpr::to_writer_custom(file, value, options)?;
+	// serde_lexpr::to_writer_custom(file, value, options)?;
+
+	// Ok(())
+
+	let serialized = serde_lexpr::to_string_custom(value, options)?;
+
+	write_file(folder_path.join(format!("{file_name}.s-expr")), serialized).await?;
+
+	Ok(())
+}
+
+async fn write_file(file_path: impl AsRef<Path>, contents: impl AsRef<[u8]>) -> Result<()> {
+	let file = fs::OpenOptions::new()
+		.write(true)
+		.truncate(true)
+		.create(true)
+		.open(file_path)?;
+
+	let mut async_file = AllowStdIo::new(file);
+
+	async_file.write_all(contents.as_ref()).await?;
 
 	Ok(())
 }
