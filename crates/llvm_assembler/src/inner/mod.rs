@@ -120,17 +120,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.ops(ops, 1)?;
 
-		let i64_size = {
-			let i64_type = self.context().i64_type();
+		let i64_type = self.context().i64_type();
 
-			i64_type.const_int(8, false)
-		};
+		let i64_size = i64_type.const_int(8, false);
 
-		let tape_size = {
-			let ptr_int_type = self.ptr_int_type;
-
-			ptr_int_type.const_int(TAPE_SIZE as u64, false)
-		};
+		let tape_size = i64_type.const_int(TAPE_SIZE as u64, false);
 
 		self.builder
 			.build_call(
