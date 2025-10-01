@@ -108,6 +108,8 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 			set.clone(),
 			BrainIr::set_cell_at(*b as u8, y.get_or_zero()),
 		])),
+		[BrainIr::Boundary, BrainIr::SetCell(0, ..), ..] => Some(Change::remove_offset(1)),
+		[BrainIr::Boundary, .., BrainIr::SetCell(0, ..)] => Some(Change::remove_offset(2)),
 		_ => None,
 	}
 }
