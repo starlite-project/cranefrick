@@ -1,6 +1,7 @@
 use std::{
 	alloc::{self, Layout},
-	mem, ptr,
+	mem,
+	ptr::{self, NonNull},
 };
 
 use inkwell::memory_manager::McjitMemoryManager;
@@ -15,15 +16,11 @@ impl MemoryManager {
 		&mut self,
 		ptr: *mut libc::c_void,
 		layout: Layout,
-		readable: bool,
 		writable: bool,
 		executable: bool,
+		section_name: String,
 	) -> *mut u8 {
-		let mut prot = 0;
-
-		if readable {
-			prot |= libc::PROT_READ;
-		}
+		let mut prot = libc::PROT_READ;
 
 		if writable {
 			prot |= libc::PROT_WRITE;
@@ -49,7 +46,12 @@ impl MemoryManager {
 		}
 
 		let ptr = ptr.cast::<u8>();
-		self.allocs.push(MemoryRecord { ptr, layout });
+
+		let Some(record) = MemoryRecord::new(ptr, layout, executable, section_name) else {
+			return ptr::null_mut();
+		};
+
+		self.allocs.push(record);
 
 		ptr
 	}
@@ -70,7 +72,7 @@ impl McjitMemoryManager for MemoryManager {
 
 		let ptr = unsafe { alloc::alloc(layout) };
 
-		self.alloc_memory_segment(ptr.cast(), layout, true, true, true)
+		self.alloc_memory_segment(ptr.cast(), layout, true, true, section_name.to_owned())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -88,22 +90,72 @@ impl McjitMemoryManager for MemoryManager {
 
 		let ptr = unsafe { alloc::alloc(layout) };
 
-		self.alloc_memory_segment(ptr.cast(), layout, true, !is_read_only, false)
+		self.alloc_memory_segment(
+			ptr.cast(),
+			layout,
+			!is_read_only,
+			false,
+			section_name.to_owned(),
+		)
 	}
 
+	#[tracing::instrument]
 	fn destroy(&mut self) {
+		tracing::trace!("deallocating memory");
+
 		for record in mem::take(&mut self.allocs) {
-			unsafe { alloc::dealloc(record.ptr, record.layout) }
+			unsafe { libc::munmap(record.ptr.as_ptr().cast(), record.layout.size()) };
+
+			unsafe { alloc::dealloc(record.ptr.as_ptr(), record.layout) }
 		}
 	}
 
+	#[tracing::instrument]
 	fn finalize_memory(&mut self) -> Result<(), String> {
+		tracing::trace!("finalizing memory");
+
+		for record in &self.allocs {
+			let mut prot = libc::PROT_READ;
+
+			if record.executable {
+				prot |= libc::PROT_EXEC;
+			}
+
+			let res =
+				unsafe { libc::mprotect(record.ptr.as_ptr().cast(), record.layout.size(), prot) };
+
+			if !matches!(res, 0) {
+				return Err(format!(
+					"failed to protect memory for section {}",
+					record.section_name
+				));
+			}
+		}
+
 		Ok(())
 	}
 }
 
 #[derive(Debug)]
 struct MemoryRecord {
-	ptr: *mut u8,
+	ptr: NonNull<u8>,
 	layout: Layout,
+	executable: bool,
+	section_name: String,
+}
+
+impl MemoryRecord {
+	pub fn new(
+		ptr: *mut u8,
+		layout: Layout,
+		executable: bool,
+		section_name: String,
+	) -> Option<Self> {
+		Some(Self {
+			ptr: NonNull::new(ptr)?,
+			layout,
+			executable,
+			section_name,
+		})
+	}
 }
