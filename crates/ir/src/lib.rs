@@ -4,6 +4,7 @@ mod options;
 mod output;
 #[cfg(feature = "parse")]
 mod parse;
+mod sub;
 
 use std::{num::NonZero, ops::RangeInclusive};
 
@@ -12,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "parse")]
 pub use self::parse::*;
-pub use self::{options::*, output::*};
+pub use self::{options::*, output::*, sub::*};
 
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -27,8 +28,7 @@ pub enum BrainIr {
 		u8,
 		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
 	),
-	SubCellAt(CellChangeOptions),
-	SubFromCell(CellChangeOptions),
+	SubCell(SubType),
 	MovePointer(i32),
 	FindZero(i32),
 	InputIntoCell,
@@ -87,12 +87,12 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn sub_from_cell(value: u8, offset: i32) -> Self {
-		Self::SubFromCell(CellChangeOptions::new(value, offset))
+		Self::SubCell(SubType::FromCell(CellChangeOptions::new(value, offset)))
 	}
 
 	#[must_use]
 	pub const fn sub_cell_at(value: u8, offset: i32) -> Self {
-		Self::SubCellAt(CellChangeOptions::new(value, offset))
+		Self::SubCell(SubType::CellAt(CellChangeOptions::new(value, offset)))
 	}
 
 	#[must_use]
@@ -277,7 +277,7 @@ impl BrainIr {
 				| Self::FindZero(..)
 				| Self::IfNotZero(..)
 				| Self::DuplicateCell { .. }
-				| Self::SubCellAt(..)
+				| Self::SubCell(SubType::CellAt(..))
 		) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
 	}
 
@@ -289,7 +289,7 @@ impl BrainIr {
 				| Self::FindZero(..)
 				| Self::MoveValueTo(..)
 				| Self::IfNotZero(..)
-				| Self::SubCellAt(..)
+				| Self::SubCell(SubType::CellAt(..))
 				| Self::DuplicateCell { .. }
 				| Self::CopyValueTo(..)
 		)

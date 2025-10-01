@@ -4,7 +4,7 @@ mod utils;
 use std::path::Path;
 
 use frick_assembler::{AssemblyError, TAPE_SIZE};
-use frick_ir::BrainIr;
+use frick_ir::{BrainIr, SubType};
 use frick_utils::GetOrZero as _;
 use inkwell::{
 	builder::Builder,
@@ -187,8 +187,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::ChangeCell(value, offset) => {
 					self.change_cell(*value, offset.get_or_zero())?;
 				}
-				BrainIr::SubCellAt(options) => self.sub_cell_at(*options)?,
-				BrainIr::SubFromCell(options) => self.sub_from_cell(*options)?,
+				BrainIr::SubCell(SubType::CellAt(options)) => self.sub_cell_at(*options)?,
+				BrainIr::SubCell(SubType::FromCell(options)) => self.sub_from_cell(*options)?,
 				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
 				BrainIr::Output(options) => self.output(options)?,
 				BrainIr::InputIntoCell => self.input_into_cell()?,
