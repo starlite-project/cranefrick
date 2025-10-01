@@ -779,6 +779,24 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				x.get_or_zero(),
 			)))
 		}
+		[
+			BrainIr::SetManyCells {
+				values: a,
+				start: x,
+			},
+			BrainIr::SetRange { value: b, range },
+		] if x.get_or_zero().wrapping_add_unsigned(a.len() as u32) == *range.start() => {
+			let mut new_values = a.to_owned();
+
+			for _ in range.clone() {
+				new_values.push(*b);
+			}
+
+			Some(Change::replace(BrainIr::set_many_cells(
+				new_values,
+				x.get_or_zero(),
+			)))
+		}
 		_ => None,
 	}
 }
