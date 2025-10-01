@@ -5,7 +5,7 @@ use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	context::ContextRef,
-	types::ArrayType,
+	types::{ArrayType, IntType},
 	values::{CallSiteValue, InstructionValueError, IntValue},
 };
 
@@ -15,7 +15,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		match options {
 			OutputOptions::Cell(options) => {
-				self.output_cells(slice::from_ref(options))?;
+				self.output_cell(options.value(), options.offset())?;
 			}
 			OutputOptions::Cells(options) => self.output_cells(options)?,
 			OutputOptions::Char(c) => self.output_chars(slice::from_ref(c))?,
@@ -48,7 +48,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
-		let ptr_int_type = self.ptr_int_type;
 
 		let lifetime_array_len = i64_type.const_int(options.len() as u64 + 1, false);
 
@@ -56,31 +55,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let _lifetime = self.start_lifetime(lifetime_array_len, self.pointers.output)?;
 
-		for (i, char) in options.iter().copied().enumerate() {
-			let loaded_char = self.load(char.offset(), "output_cells_puts")?;
-
-			let offset_value = if matches!(char.value(), 0) {
-				loaded_char
-			} else {
-				let offset_value = i8_type.const_int(char.value() as u64, false);
-
-				self.builder
-					.build_int_add(loaded_char, offset_value, "output_cells_puts_add")?
-			};
-
-			let array_offset = ptr_int_type.const_int(i as u64, false);
-
-			let output_array_gep = unsafe {
-				self.builder.build_in_bounds_gep(
-					i8_type,
-					self.pointers.output,
-					&[array_offset],
-					"output_cells_puts_gep",
-				)?
-			};
-
-			self.builder.build_store(output_array_gep, offset_value)?;
-		}
+		if options.iter().all(|x| x.is_default()) {
+			self.setup_output_cells_puts_memset(i64_type, options.len() as u64)
+		} else {
+			self.setup_output_cells_puts_iterated(i8_type, options)
+		}?;
 
 		let zero = i8_type.const_zero();
 
@@ -136,6 +115,60 @@ impl<'ctx> InnerAssembler<'ctx> {
 			&[puts_value.into(), last_cell.into()],
 			"",
 		)?;
+
+		Ok(())
+	}
+
+	fn setup_output_cells_puts_memset(
+		&self,
+		i64_type: IntType<'ctx>,
+		length: u64,
+	) -> Result<(), LlvmAssemblyError> {
+		let current_value = self.load(0, "setup_output_cells_puts_memset")?;
+
+		let array_len = i64_type.const_int(length, false);
+
+		self.builder
+			.build_memset(self.pointers.output, 1, current_value, array_len)?;
+
+		Ok(())
+	}
+
+	fn setup_output_cells_puts_iterated(
+		&self,
+		i8_type: IntType<'ctx>,
+		options: &[CellChangeOptions<i8>],
+	) -> Result<(), LlvmAssemblyError> {
+		let ptr_int_type = self.ptr_int_type;
+
+		for (i, char) in options.iter().copied().enumerate() {
+			let loaded_char = self.load(char.offset(), "setup_output_cells_puts_iterated")?;
+
+			let offset_char = if matches!(char.value(), 0) {
+				loaded_char
+			} else {
+				let offset_value = i8_type.const_int(char.value() as u64, false);
+
+				self.builder.build_int_add(
+					loaded_char,
+					offset_value,
+					"setup_output_cells_puts_iterated_add",
+				)?
+			};
+
+			let array_offset = ptr_int_type.const_int(i as u64, false);
+
+			let output_array_gep = unsafe {
+				self.builder.build_in_bounds_gep(
+					i8_type,
+					self.pointers.output,
+					&[array_offset],
+					"setup_output_cells_puts_iterated_gep",
+				)?
+			};
+
+			self.store_into(offset_char, output_array_gep)?;
+		}
 
 		Ok(())
 	}
