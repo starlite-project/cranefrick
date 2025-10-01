@@ -58,7 +58,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		};
 
 		let output = {
-			let i8_array_type = i8_type.array_type(256);
+			let i8_array_type = i8_type.array_type(8);
 
 			builder.build_alloca(i8_array_type, "output")?
 		};

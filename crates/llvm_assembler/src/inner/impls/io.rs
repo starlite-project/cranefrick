@@ -31,7 +31,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn output_cells(&self, options: &[CellChangeOptions<i8>]) -> Result<(), LlvmAssemblyError> {
-		if options.len() < 256 {
+		if options.len() < 8 {
 			self.output_cells_puts(options)
 		} else {
 			self.output_cells_iterated(options)
@@ -42,7 +42,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		options: &[CellChangeOptions<i8>],
 	) -> Result<(), LlvmAssemblyError> {
-		assert!(options.len() < 256);
+		assert!(options.len() < 8);
 
 		let context = self.context();
 
