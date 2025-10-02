@@ -74,7 +74,6 @@ pub const fn remove_noop_instructions(ops: [&BrainIr; 1]) -> Option<Change> {
 
 pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::Boundary, l] if l.needs_nonzero_cell() => Some(Change::remove_offset(1)),
 		[BrainIr::Boundary, BrainIr::ChangeCell(a, x)] => Some(Change::swap([
 			BrainIr::boundary(),
 			BrainIr::set_cell_at(*a as u8, x.get_or_zero()),
@@ -939,6 +938,18 @@ pub fn unroll_constant_duplicate_cell(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::swap(output))
 		}
+		_ => None,
+	}
+}
+
+pub fn unroll_constant_if_nz(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::SetCell(x @ 1..=u8::MAX, None),
+			BrainIr::IfNotZero(ops),
+		] => Some(Change::swap(
+			iter::once(BrainIr::set_cell(*x)).chain(ops.iter().cloned()),
+		)),
 		_ => None,
 	}
 }

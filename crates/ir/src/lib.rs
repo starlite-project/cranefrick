@@ -8,7 +8,7 @@ mod sub;
 
 use std::{num::NonZero, ops::RangeInclusive};
 
-use frick_utils::IntoIteratorExt as _;
+use frick_utils::{GetOrZero as _, IntoIteratorExt as _};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "parse")]
@@ -269,16 +269,34 @@ impl BrainIr {
 
 	#[must_use]
 	pub fn is_zeroing_cell(&self) -> bool {
-		matches!(
-			self,
-			Self::SetCell(0, None)
-				| Self::DynamicLoop(..)
-				| Self::MoveValueTo(..)
-				| Self::FindZero(..)
-				| Self::IfNotZero(..)
-				| Self::DuplicateCell { .. }
-				| Self::SubCell(SubType::CellAt(..))
-		) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
+		if let Self::SetManyCells { values, start } = self {
+			let start = start.get_or_zero();
+			let end = start.wrapping_add_unsigned(values.len() as u32);
+
+			let mut range = start..end;
+
+			let Some(index) = range.position(|x| matches!(x, 0)) else {
+				return false;
+			};
+
+			let Some(value) = values.get(index) else {
+				return false;
+			};
+
+			matches!(value, 0)
+		} else {
+			matches!(
+				self,
+				Self::SetCell(0, None)
+					| Self::DynamicLoop(..)
+					| Self::MoveValueTo(..)
+					| Self::FindZero(..)
+					| Self::IfNotZero(..)
+					| Self::DuplicateCell { .. }
+					| Self::SubCell(SubType::CellAt(..))
+					| Self::Boundary // This is here so that it removes starting loops properly
+			) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
+		}
 	}
 
 	#[must_use]

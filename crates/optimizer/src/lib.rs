@@ -144,6 +144,9 @@ impl Optimizer {
 		self.pass_info("optimize memory operations");
 		*progress |= run_peephole_pass(self, passes::optimize_mem_sets);
 		*progress |= run_peephole_pass(self, passes::optimize_mem_set_move_change);
+
+		self.pass_info("unroll certail if nz");
+		*progress |= run_peephole_pass(self, passes::unroll_constant_if_nz);
 	}
 
 	fn pass_info(&self, pass: &str) {
