@@ -5,7 +5,6 @@ use std::{fs, path::Path};
 use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::{AssembledModule as _, Assembler as _};
-use frick_async_runtime::block_on;
 #[cfg(feature = "cranelift")]
 use frick_cranelift_assembler::{AssemblerFlags, CraneliftAssembler};
 use frick_ir::parse;
@@ -14,7 +13,6 @@ use frick_llvm_assembler::LlvmAssembler;
 use frick_optimizer::Optimizer;
 #[cfg(feature = "interpret")]
 use frick_rust_assembler::RustInterpreterAssembler;
-use futures_util::{AsyncReadExt as _, AsyncWriteExt as _, io::AllowStdIo, stream::All};
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
@@ -46,24 +44,10 @@ fn main() -> Result<()> {
 	install_tracing(args.output_path());
 	color_eyre::install()?;
 
-	block_on(run(args))
-}
-
-async fn run(args: Args) -> Result<()> {
-	let raw_data = {
-		let file = fs::OpenOptions::new().read(true).open(args.file_path())?;
-
-		let mut async_file = AllowStdIo::new(file);
-
-		let mut output = String::new();
-
-		async_file.read_to_string(&mut output).await?;
-
-		output
-	}
-	.chars()
-	.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
-	.collect::<String>();
+	let raw_data = fs::read_to_string(args.file_path())?
+		.chars()
+		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
+		.collect::<String>();
 
 	let parsed = parse(raw_data)?;
 
@@ -75,11 +59,11 @@ async fn run(args: Args) -> Result<()> {
 
 	let mut optimizer = parsed.into_iter().collect::<Optimizer>();
 
-	serialize(&optimizer, args.output_path(), "unoptimized").await?;
+	serialize(&optimizer, args.output_path(), "unoptimized")?;
 
 	optimizer.run();
 
-	serialize(&optimizer, args.output_path(), "optimized").await?;
+	serialize(&optimizer, args.output_path(), "optimized")?;
 
 	#[allow(unreachable_patterns)]
 	match &args {
@@ -203,17 +187,13 @@ fn env_filter() -> EnvFilter {
 	EnvFilter::new("info,cranelift_jit=warn")
 }
 
-async fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
-	serialize_as_ron(value, folder_path, file_name).await?;
+fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
+	serialize_as_ron(value, folder_path, file_name)?;
 
-	serialize_as_s_expr(value, folder_path, file_name).await
+	serialize_as_s_expr(value, folder_path, file_name)
 }
 
-async fn serialize_as_ron<T: Serialize>(
-	value: &T,
-	folder_path: &Path,
-	file_name: &str,
-) -> Result<()> {
+fn serialize_as_ron<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
 	let mut output = String::new();
 	let mut serializer = ron::Serializer::with_options(
 		&mut output,
@@ -225,49 +205,21 @@ async fn serialize_as_ron<T: Serialize>(
 
 	drop(serializer);
 
-	write_file(
-		folder_path.join(format!("{file_name}.ron")),
-		output.as_bytes(),
-	)
-	.await?;
+	fs::write(folder_path.join(format!("{file_name}.ron")), output)?;
 
 	Ok(())
 }
 
-async fn serialize_as_s_expr<T: Serialize>(
-	value: &T,
-	folder_path: &Path,
-	file_name: &str,
-) -> Result<()> {
-	// let file = fs::OpenOptions::new()
-	// 	.create(true)
-	// 	.truncate(true)
-	// 	.write(true)
-	// 	.open(folder_path.join(format!("{file_name}.s-expr")))?;
+fn serialize_as_s_expr<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
+	let file = fs::OpenOptions::new()
+		.create(true)
+		.truncate(true)
+		.write(true)
+		.open(folder_path.join(format!("{file_name}.s-expr")))?;
 
 	let options = serde_lexpr::print::Options::elisp();
 
-	// serde_lexpr::to_writer_custom(file, value, options)?;
-
-	// Ok(())
-
-	let serialized = serde_lexpr::to_string_custom(value, options)?;
-
-	write_file(folder_path.join(format!("{file_name}.s-expr")), serialized).await?;
-
-	Ok(())
-}
-
-async fn write_file(file_path: impl AsRef<Path>, contents: impl AsRef<[u8]>) -> Result<()> {
-	let file = fs::OpenOptions::new()
-		.write(true)
-		.truncate(true)
-		.create(true)
-		.open(file_path)?;
-
-	let mut async_file = AllowStdIo::new(file);
-
-	async_file.write_all(contents.as_ref()).await?;
+	serde_lexpr::to_writer_custom(file, value, options)?;
 
 	Ok(())
 }
