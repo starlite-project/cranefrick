@@ -120,6 +120,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let basic_type = ty.as_basic_type_enum();
 
 		match basic_type {
+			BasicTypeEnum::ArrayType(ty) => {
+				let zero = self.ptr_int_type.const_zero();
+
+				Ok(unsafe {
+					self.builder.build_in_bounds_gep(
+						ty,
+						self.pointers.tape,
+						&[zero, offset],
+						&format!("{name}_array_gep"),
+					)?
+				})
+			}
 			BasicTypeEnum::IntType(ty) => Ok(unsafe {
 				self.builder.build_in_bounds_gep(
 					ty,
@@ -137,18 +149,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 						self.pointers.tape,
 						&[zero, offset],
 						&format!("{name}_vector_gep"),
-					)?
-				})
-			}
-			BasicTypeEnum::ArrayType(ty) => {
-				let zero = self.ptr_int_type.const_zero();
-
-				Ok(unsafe {
-					self.builder.build_in_bounds_gep(
-						ty,
-						self.pointers.tape,
-						&[zero, offset],
-						&format!("{name}_array_gep"),
 					)?
 				})
 			}
