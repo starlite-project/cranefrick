@@ -343,7 +343,7 @@ extern "C" fn putchar(c: libc::c_int) -> libc::c_int {
 		.and_then(|()| stdout.flush());
 
 	if res.is_err() {
-		std::process::abort();
+		return -1;
 	}
 
 	c
