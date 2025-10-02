@@ -371,6 +371,28 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 		}
 		[
 			BrainIr::SetManyCells { values, start },
+			BrainIr::Output(OutputOptions::Cell(option)),
+		] => {
+			let start = start.get_or_zero();
+			let end = start.wrapping_add_unsigned(values.len() as u32);
+
+			let mut range = start..end;
+
+			if !range.contains(&option.offset()) {
+				return None;
+			}
+
+			let char_value_index = range.position(|x| x == option.offset())?;
+
+			let char_value = values.get(char_value_index).copied()?;
+
+			Some(Change::swap([
+				BrainIr::output_char(char_value),
+				BrainIr::set_many_cells(values.iter().copied(), start),
+			]))
+		}
+		[
+			BrainIr::SetManyCells { values, start },
 			BrainIr::Output(OutputOptions::Cells(options)),
 		] => {
 			let start = start.get_or_zero();
