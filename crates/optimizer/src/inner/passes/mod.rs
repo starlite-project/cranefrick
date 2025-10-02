@@ -809,6 +809,28 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				set_many_options.start.get_or_zero(),
 			)))
 		}
+		[
+			BrainIr::SetRange(set_range_options),
+			BrainIr::SetManyCells(set_many_options),
+		]
+		| [
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::SetRange(set_range_options),
+		] => {
+			let set_many_range = set_many_options.range();
+			let set_range_range = set_range_options.range();
+
+			let set_many_count = set_many_range.len();
+			let set_range_count = set_range_range.count();
+
+			if set_many_count == set_range_count
+				&& set_many_options.start.get_or_zero() == set_range_options.start
+			{
+				Some(Change::remove_offset(0))
+			} else {
+				None
+			}
+		}
 		_ => None,
 	}
 }
