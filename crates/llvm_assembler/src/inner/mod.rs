@@ -201,7 +201,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
 				BrainIr::SetRange(options) => self.set_range(options.value, options.range())?,
 				BrainIr::SetManyCells(options) => {
-					self.set_many_cells(&options.values, options.start.get_or_zero())?
+					self.set_many_cells(&options.values, options.start.get_or_zero())?;
 				}
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
