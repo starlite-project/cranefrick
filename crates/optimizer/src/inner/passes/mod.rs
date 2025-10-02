@@ -6,7 +6,7 @@ mod sort;
 use std::{cmp, iter};
 
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions, SubType, is_range};
-use frick_utils::GetOrZero as _;
+use frick_utils::{GetOrZero as _, InsertOrPush as _};
 
 pub use self::{loops::*, sort::*};
 use super::Change;
@@ -653,21 +653,43 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 		| [
 			BrainIr::SetCell(b, x),
 			BrainIr::SetRange { value: a, range },
-		] if *a == *b => {
+		] => {
 			let x = x.get_or_zero();
 			let start = *range.start();
 			let end = *range.end();
-
 			if !matches!((x - start).unsigned_abs(), 1) && !matches!((end - x).unsigned_abs(), 1) {
 				return None;
 			}
 
 			let min = cmp::min(x, start);
-			let max = cmp::max(x, end);
 
-			let range = min..=max;
+			if *a == *b {
+				let max = cmp::max(x, end);
 
-			Some(Change::replace(BrainIr::set_range(*a, range)))
+				let range = min..=max;
+
+				Some(Change::replace(BrainIr::set_range(*a, range)))
+			} else {
+				let mut values = range.clone().map(|_| *a).collect::<Vec<_>>();
+
+				let new_offset_raw = x.wrapping_add(min.abs());
+
+				assert!(new_offset_raw.is_positive() || matches!(new_offset_raw, 0));
+
+				let new_offset = new_offset_raw as usize;
+
+				if range.contains(&x) {
+					if new_offset >= values.len() {
+						values.push(*b);
+					} else {
+						values[new_offset] = *b;
+					}
+				} else {
+					values.insert_or_push(new_offset, *b);
+				}
+
+				Some(Change::replace(BrainIr::set_many_cells(values, min)))
+			}
 		}
 		[
 			BrainIr::SetRange { range: x, value: a },
@@ -686,7 +708,7 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::SetRange { range: y, .. },
 		] if x == y => Some(Change::remove_offset(0)),
 		[
-			BrainIr::ChangeCell(.., offset) | BrainIr::SetCell(.., offset),
+			BrainIr::ChangeCell(.., offset),
 			BrainIr::SetRange { range, .. },
 		] if range.contains(&offset.get_or_zero()) => Some(Change::remove_offset(0)),
 		[BrainIr::SetCell(a, x), BrainIr::SetCell(b, y)] => {
