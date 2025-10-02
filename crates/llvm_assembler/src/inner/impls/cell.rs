@@ -1,6 +1,7 @@
 use std::ops::RangeInclusive;
 
 use frick_ir::{CellChangeOptions, get_range, is_range};
+use inkwell::types::VectorType;
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
 
@@ -223,9 +224,9 @@ impl InnerAssembler<'_> {
 			.map(|x| i8_type.const_int(x.into(), false))
 			.collect::<Vec<_>>();
 
-		let array = i8_type.const_array(&values_values);
+		let vector = VectorType::const_vector(&values_values);
 
-		self.store(array, start, "set_many_cells")
+		self.store(vector, start, "set_many_cells")
 	}
 
 	pub fn set_range(
