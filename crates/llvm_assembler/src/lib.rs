@@ -33,8 +33,8 @@ use send_wrapper::SendWrapper;
 use tracing::info;
 
 pub(crate) use self::ext::ContextExt;
+use self::inner::InnerAssembler;
 pub use self::module::LlvmAssembledModule;
-use self::{inner::InnerAssembler, module::MemoryManager};
 
 pub struct LlvmAssembler {
 	context: Context,
@@ -199,13 +199,7 @@ impl Assembler for LlvmAssembler {
 		info!("creating JIT execution engine");
 
 		let execution_engine = module
-			.create_mcjit_execution_engine_with_memory_manager(
-				MemoryManager::default(),
-				OptimizationLevel::Aggressive,
-				CodeModel::JITDefault,
-				false,
-				true,
-			)
+			.create_jit_execution_engine(OptimizationLevel::Aggressive)
 			.map_err(AssemblyError::backend)?;
 
 		if let Some(getchar) = module.get_function("getchar") {

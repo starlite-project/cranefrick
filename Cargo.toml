@@ -158,5 +158,11 @@ panic = "abort"
 [workspace.metadata.docs.rs]
 all-features = true
 
+[profile.dev]
+opt-level = 1
+
 [profile.dev.package.inkwell]
+opt-level = 3
+
+[profile.dev.package.frick_optimizer]
 opt-level = 3
