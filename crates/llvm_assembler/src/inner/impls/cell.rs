@@ -23,7 +23,9 @@ impl InnerAssembler<'_> {
 			self.builder
 				.build_int_add(current_cell_value, value_to_add, "change_cell_add")?;
 
-		self.store_into(added, gep)
+		self.store_into(added, gep)?;
+
+		Ok(())
 	}
 
 	pub fn sub_cell_at(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
@@ -44,7 +46,9 @@ impl InnerAssembler<'_> {
 			self.builder
 				.build_int_sub(other_value, subtractor, "sub_cell_at_sub")?;
 
-		self.store_into(value_to_store, gep)
+		self.store_into(value_to_store, gep)?;
+
+		Ok(())
 	}
 
 	pub fn sub_from_cell(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
@@ -65,7 +69,9 @@ impl InnerAssembler<'_> {
 			self.builder
 				.build_int_sub(other_value, subtractor, "sub_from_cell_sub")?;
 
-		self.store_into(value_to_store, gep)
+		self.store_into(value_to_store, gep)?;
+
+		Ok(())
 	}
 
 	pub fn duplicate_cell(
@@ -117,7 +123,9 @@ impl InnerAssembler<'_> {
 			self.store_into(modified_value, other_value_gep)?;
 		}
 
-		self.store_value_into(0, value_gep)
+		self.store_value_into(0, value_gep)?;
+
+		Ok(())
 	}
 
 	fn duplicate_cell_vectorized(
@@ -210,7 +218,9 @@ impl InnerAssembler<'_> {
 		};
 
 		self.builder.build_store(gep, modified_vector_of_values)?;
-		self.store_value_into(0, current_cell_gep)
+		self.store_value_into(0, current_cell_gep)?;
+
+		Ok(())
 	}
 
 	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), LlvmAssemblyError> {

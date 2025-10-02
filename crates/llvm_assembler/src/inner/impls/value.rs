@@ -42,7 +42,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_add(other_value, value_to_add, "duplicate_value_to_add")?;
 
-		self.store_into(added, gep)
+		self.store_into(added, gep)?;
+
+		Ok(())
 	}
 
 	pub fn take_value_to(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
@@ -68,7 +70,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_int_add(other_cell, value_to_add, "take_value_to_add")?;
 
-		self.store_into(added, gep)
+		self.store_into(added, gep)?;
+
+		Ok(())
 	}
 
 	pub fn fetch_value_from(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
@@ -92,7 +96,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_add(current_cell, value_to_add, "fetch_value_from_add")?;
 
-		self.store_into(added, gep)
+		self.store_into(added, gep)?;
+
+		Ok(())
 	}
 
 	pub fn replace_value_from(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {
@@ -114,7 +120,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder
 			.build_memcpy(current_cell_gep, 1, other_value_gep, 1, i8_size)?;
 
-		self.store_value_into(0, other_value_gep)
+		self.store_value_into(0, other_value_gep)?;
+
+		Ok(())
 	}
 
 	fn replace_value_from_factorized(
@@ -146,6 +154,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder.build_int_mul(cell, factor, "scale_value_mul")
 		}?;
 
-		self.store_into(value_to_store, gep)
+		self.store_into(value_to_store, gep)?;
+
+		Ok(())
 	}
 }

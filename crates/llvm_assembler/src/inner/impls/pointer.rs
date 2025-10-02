@@ -1,13 +1,10 @@
 use frick_assembler::TAPE_SIZE;
-use inkwell::{IntPredicate, values::IntValue};
+use inkwell::{IntPredicate, builder::BuilderError, values::IntValue};
 
-use crate::{
-	LlvmAssemblyError,
-	inner::{InnerAssembler, utils::CalculatedOffset},
-};
+use crate::inner::{InnerAssembler, utils::CalculatedOffset};
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn move_pointer(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
+	pub fn move_pointer(&self, offset: i32) -> Result<(), BuilderError> {
 		let wrapped_ptr = self.offset_pointer(offset)?;
 
 		self.builder
@@ -19,14 +16,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn resolve_offset(
 		&self,
 		offset: CalculatedOffset<'ctx>,
-	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+	) -> Result<IntValue<'ctx>, BuilderError> {
 		match offset {
 			CalculatedOffset::Calculated(offset) => Ok(offset),
 			CalculatedOffset::Raw(offset) => self.offset_pointer(offset),
 		}
 	}
 
-	pub fn offset_pointer(&self, offset: i32) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+	pub fn offset_pointer(&self, offset: i32) -> Result<IntValue<'ctx>, BuilderError> {
 		let ptr_type = self.ptr_int_type;
 		let offset_value = ptr_type.const_int(offset as u64, false);
 
@@ -43,34 +40,30 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_add(current_ptr, offset_value, "offset_pointer_add")?;
 
-		let wrapped_offset_ptr = if offset > 0 {
-			self.wrap_pointer_positive(offset_ptr)?
+		if offset > 0 {
+			self.wrap_pointer_positive(offset_ptr)
 		} else {
-			self.wrap_pointer_negative(offset_ptr)?
-		};
-
-		Ok(wrapped_offset_ptr)
+			self.wrap_pointer_negative(offset_ptr)
+		}
 	}
 
 	fn wrap_pointer_positive(
 		&self,
 		offset_ptr: IntValue<'ctx>,
-	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+	) -> Result<IntValue<'ctx>, BuilderError> {
 		let ptr_int_type = self.ptr_int_type;
 
-		let ptr_offset = self.builder.build_int_unsigned_rem(
+		self.builder.build_int_unsigned_rem(
 			offset_ptr,
 			ptr_int_type.const_int(TAPE_SIZE as u64, false),
 			"wrap_pointer_positive_urem",
-		)?;
-
-		Ok(ptr_offset)
+		)
 	}
 
 	fn wrap_pointer_negative(
 		&self,
 		offset_ptr: IntValue<'ctx>,
-	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+	) -> Result<IntValue<'ctx>, BuilderError> {
 		let ptr_int_type = self.ptr_int_type;
 
 		let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
@@ -92,11 +85,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"wrap_pointer_negative_cmp",
 		)?;
 
-		let ptr_offset = self
-			.builder
-			.build_select(cmp, added_offset, tmp, "wrap_pointer_negative_select")?
-			.into_int_value();
-
-		Ok(ptr_offset)
+		self.builder
+			.build_select(cmp, added_offset, tmp, "wrap_pointer_negative_select")
+			.map(|i| i.into_int_value())
 	}
 }

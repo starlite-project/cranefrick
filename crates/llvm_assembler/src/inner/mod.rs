@@ -174,7 +174,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			match op {
 				BrainIr::Boundary => continue,
-				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
+				BrainIr::MovePointer(offset) => self
+					.move_pointer(*offset)
+					.map_err(LlvmAssemblyError::from)?,
 				BrainIr::SetCell(value, offset) => {
 					self.set_cell(*value, offset.get_or_zero())?;
 				}

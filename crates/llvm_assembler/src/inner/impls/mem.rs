@@ -39,11 +39,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok((loaded_value, gep))
 	}
 
-	pub fn store_value_into(
-		&self,
-		value: u8,
-		gep: PointerValue<'ctx>,
-	) -> Result<(), LlvmAssemblyError> {
+	pub fn store_value_into(&self, value: u8, gep: PointerValue<'ctx>) -> Result<(), BuilderError> {
 		let value = {
 			let i8_type = self.context().i8_type();
 
@@ -54,16 +50,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn store_into(
-		&self,
-		value: impl BasicValue<'ctx>,
-		gep: PointerValue<'ctx>,
-	) -> Result<(), LlvmAssemblyError> {
-		self.store_into_inner(value, gep)?;
-
-		Ok(())
-	}
-
-	fn store_into_inner(
 		&self,
 		value: impl BasicValue<'ctx>,
 		gep: PointerValue<'ctx>,
@@ -118,7 +104,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = self.context().i8_type();
 
 		let gep = self.tape_gep(i8_type, offset, fn_name)?;
-		self.store_into_inner(value, gep)?;
+		self.store_into(value, gep)?;
 
 		Ok(())
 	}
