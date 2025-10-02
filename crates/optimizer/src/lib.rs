@@ -1,6 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
-mod impls;
+mod inner;
 
 use std::{
 	iter,
@@ -11,7 +11,7 @@ use frick_ir::BrainIr;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
-use self::impls::{passes, run_loop_pass, run_peephole_pass};
+use self::inner::{passes, run_loop_pass, run_peephole_pass};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(transparent)]
@@ -66,8 +66,8 @@ impl Optimizer {
 		*progress |= run_peephole_pass(self, passes::add_offsets);
 
 		self.pass_info("fix boundary instructions");
-		*progress |= run_peephole_pass(self, passes::fix_boundary_instructions);
 		*progress |= run_peephole_pass(self, passes::optimize_initial_sets);
+		*progress |= run_peephole_pass(self, passes::fix_boundary_instructions);
 
 		self.pass_info("optimize clear cell instructions");
 		*progress |= run_loop_pass(self, passes::clear_cell);

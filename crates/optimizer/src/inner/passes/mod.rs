@@ -13,12 +13,16 @@ use super::Change;
 
 pub fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::ChangeCell(a, x), BrainIr::ChangeCell(b, y)] if *x == *y => Some(
-			Change::replace(BrainIr::change_cell_at(a.wrapping_add(*b), x.get_or_zero())),
-		),
-		[BrainIr::MovePointer(a), BrainIr::MovePointer(b)] => {
-			Some(Change::replace(BrainIr::move_pointer(a.wrapping_add(*b))))
-		}
+		[BrainIr::ChangeCell(a, x), BrainIr::ChangeCell(b, y)] if *x == *y => Some(if *a == -b {
+			Change::remove()
+		} else {
+			Change::replace(BrainIr::change_cell_at(a.wrapping_add(*b), x.get_or_zero()))
+		}),
+		[BrainIr::MovePointer(a), BrainIr::MovePointer(b)] => Some(if *a == -b {
+			Change::remove()
+		} else {
+			Change::replace(BrainIr::move_pointer(a.wrapping_add(*b)))
+		}),
 		_ => None,
 	}
 }
@@ -61,16 +65,6 @@ pub fn optimize_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
-	match ops {
-		[BrainIr::ChangeCell(.., offset)] => Some(Change::replace(BrainIr::set_cell_at(
-			0,
-			offset.get_or_zero(),
-		))),
-		_ => None,
-	}
-}
-
 pub const fn remove_noop_instructions(ops: [&BrainIr; 1]) -> Option<Change> {
 	match ops {
 		[BrainIr::ChangeCell(0, ..) | BrainIr::MovePointer(0)] => Some(Change::remove()),
@@ -80,9 +74,7 @@ pub const fn remove_noop_instructions(ops: [&BrainIr; 1]) -> Option<Change> {
 
 pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::Boundary, l] if l.needs_nonzero_cell() => {
-			Some(Change::replace(BrainIr::boundary()))
-		}
+		[BrainIr::Boundary, l] if l.needs_nonzero_cell() => Some(Change::remove_offset(1)),
 		[BrainIr::Boundary, BrainIr::ChangeCell(a, x)] => Some(Change::swap([
 			BrainIr::boundary(),
 			BrainIr::set_cell_at(*a as u8, x.get_or_zero()),
@@ -382,26 +374,26 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 		[
 			BrainIr::ChangeCell(a, None),
 			BrainIr::Output(OutputOptions::Cell(options)),
-			BrainIr::ChangeCell(c, None),
-		] if *a == -c && matches!(options.offset(), 0) => Some(Change::replace(
-			BrainIr::output_offset_cell(a.wrapping_add(options.value())),
-		)),
-		[
-			BrainIr::ChangeCell(a, None),
-			BrainIr::Output(OutputOptions::Cell(options)),
 			BrainIr::ChangeCell(b, None),
-		] if options.is_default() => Some(Change::swap([
-			BrainIr::output_offset_cell(*a),
-			BrainIr::change_cell(a.wrapping_add(*b)),
-		])),
-		[
-			BrainIr::ChangeCell(a, None),
-			BrainIr::Output(OutputOptions::Cell(options)),
-			BrainIr::ChangeCell(b, None),
-		] if matches!(options.offset(), 0) => Some(Change::swap([
-			BrainIr::change_cell(a.wrapping_add(*b)),
-			BrainIr::output_offset_cell(options.value().wrapping_sub(*b)),
-		])),
+		] => {
+			if *a == -b {
+				Some(Change::replace(BrainIr::output_offset_cell(
+					a.wrapping_add(options.value()),
+				)))
+			} else if options.is_default() {
+				Some(Change::swap([
+					BrainIr::output_offset_cell(*a),
+					BrainIr::change_cell(a.wrapping_add(*b)),
+				]))
+			} else if matches!(options.offset(), 0) {
+				Some(Change::swap([
+					BrainIr::change_cell(a.wrapping_add(*b)),
+					BrainIr::output_offset_cell(options.value().wrapping_sub(*b)),
+				]))
+			} else {
+				None
+			}
+		}
 		[
 			BrainIr::MovePointer(x),
 			BrainIr::Output(OutputOptions::Cell(options)),
@@ -436,31 +428,16 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::set_cell(*b),
 		])),
 		[
-			BrainIr::ChangeCell(a, None),
-			BrainIr::Output(OutputOptions::Cells(options)),
-			BrainIr::ChangeCell(b, None),
-		] => {
-			let mut output = Vec::with_capacity(options.len());
-
-			for option in options.iter().copied() {
-				if matches!(option.offset(), 0) {
-					output.push(CellChangeOptions::new(option.value().wrapping_add(*a), 0));
-				} else {
-					output.push(option);
-				}
-			}
-
-			Some(Change::swap([
-				BrainIr::output_cells(output),
-				BrainIr::change_cell(a.wrapping_add(*b)),
-			]))
-		}
-		[
 			BrainIr::ChangeCell(a, x),
 			BrainIr::Output(OutputOptions::Cells(options)),
 			BrainIr::ChangeCell(b, y),
-		] if x.get_or_zero() == -(y.get_or_zero()) => {
+		] => {
 			let x = x.get_or_zero();
+			let y = y.get_or_zero();
+
+			if x != -y {
+				return None;
+			}
 
 			let mut output = Vec::with_capacity(options.len());
 
@@ -527,19 +504,6 @@ pub fn optimize_changes_and_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 					.map(|x| CellChangeOptions::new(x.value().wrapping_add(*value), 0)),
 			),
 			BrainIr::set_cell(*value_to_set),
-		])),
-		[
-			BrainIr::ChangeCell(value, None),
-			BrainIr::Output(OutputOptions::Cells(options)),
-			BrainIr::ChangeCell(second_value, None),
-		] if options.iter().all(|x| matches!(x.offset(), 0)) => Some(Change::swap([
-			BrainIr::output_cells(
-				options
-					.iter()
-					.copied()
-					.map(|x| CellChangeOptions::new(x.value().wrapping_add(*value), 0)),
-			),
-			BrainIr::change_cell(value.wrapping_add(*second_value)),
 		])),
 		_ => None,
 	}

@@ -3,7 +3,7 @@ use std::iter;
 use frick_utils::GetOrZero as _;
 
 use super::{BrainIr, Change};
-use crate::impls::utils::calculate_ptr_movement;
+use crate::inner::utils::calculate_ptr_movement;
 
 pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
@@ -171,6 +171,16 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::duplicate_cell(values)))
 		}
+		_ => None,
+	}
+}
+
+pub fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
+		[BrainIr::ChangeCell(.., offset)] => Some(Change::replace(BrainIr::set_cell_at(
+			0,
+			offset.get_or_zero(),
+		))),
 		_ => None,
 	}
 }
