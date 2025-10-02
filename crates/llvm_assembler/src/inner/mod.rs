@@ -199,9 +199,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 					self.replace_value_from(*options)?;
 				}
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
-				BrainIr::SetRange { value, range } => self.set_range(*value, range.clone())?,
-				BrainIr::SetManyCells { values, start } => {
-					self.set_many_cells(values, start.get_or_zero())?;
+				BrainIr::SetRange(options) => self.set_range(options.value, options.range())?,
+				BrainIr::SetManyCells(options) => {
+					self.set_many_cells(&options.values, options.start.get_or_zero())?
 				}
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}

@@ -1,19 +1,20 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 
+mod ops;
 mod options;
 mod output;
 #[cfg(feature = "parse")]
 mod parse;
 mod sub;
 
-use std::{num::NonZero, ops::RangeInclusive};
+use std::num::NonZero;
 
-use frick_utils::{GetOrZero as _, IntoIteratorExt as _};
+use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "parse")]
 pub use self::parse::*;
-pub use self::{options::*, output::*, sub::*};
+pub use self::{ops::*, options::*, output::*, sub::*};
 
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -41,14 +42,8 @@ pub enum BrainIr {
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
-	SetRange {
-		value: u8,
-		range: RangeInclusive<i32>,
-	},
-	SetManyCells {
-		values: Vec<u8>,
-		start: Option<NonZero<i32>>,
-	},
+	SetRange(SetRangeOptions),
+	SetManyCells(SetManyCellsOptions),
 	DuplicateCell {
 		values: Vec<CellChangeOptions<i8>>,
 	},
@@ -181,16 +176,13 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn set_range(value: u8, range: RangeInclusive<i32>) -> Self {
-		Self::SetRange { value, range }
+	pub const fn set_range(value: u8, start: i32, end: i32) -> Self {
+		Self::SetRange(SetRangeOptions::new(value, start, end))
 	}
 
 	#[must_use]
 	pub fn set_many_cells(values: impl IntoIterator<Item = u8>, offset: i32) -> Self {
-		Self::SetManyCells {
-			values: values.collect_to(),
-			start: NonZero::new(offset),
-		}
+		Self::SetManyCells(SetManyCellsOptions::new(values, offset))
 	}
 
 	#[must_use]
@@ -269,33 +261,17 @@ impl BrainIr {
 
 	#[must_use]
 	pub fn is_zeroing_cell(&self) -> bool {
-		if let Self::SetManyCells { values, start } = self {
-			let start = start.get_or_zero();
-			let end = start.wrapping_add_unsigned(values.len() as u32);
-
-			let mut range = start..end;
-
-			let Some(index) = range.position(|x| matches!(x, 0)) else {
-				return false;
-			};
-
-			let Some(value) = values.get(index) else {
-				return false;
-			};
-
-			matches!(value, 0)
-		} else {
-			matches!(
-				self,
-				Self::SetCell(0, None)
-					| Self::DynamicLoop(..)
-					| Self::MoveValueTo(..)
-					| Self::FindZero(..)
-					| Self::IfNotZero(..)
-					| Self::DuplicateCell { .. }
-					| Self::SubCell(SubType::CellAt(..))
-					| Self::Boundary // This is here so that it removes starting loops properly
-			) || matches!(self, Self::SetRange { value: 0, range } if range.contains(&0))
+		match self {
+			Self::SetCell(0, None)
+			| Self::DynamicLoop(..)
+			| Self::MoveValueTo(..)
+			| Self::FindZero(..)
+			| Self::IfNotZero(..)
+			| Self::SubCell(..)
+			| Self::Boundary => true,
+			Self::SetRange(options) => options.is_zeroing_cell(),
+			Self::SetManyCells(options) => options.is_zeroing_cell(),
+			_ => false,
 		}
 	}
 

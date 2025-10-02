@@ -125,7 +125,7 @@ impl<'a> InnerAssembler<'a> {
 				BrainIr::FetchValueFrom(options) => self.fetch_value_from(*options),
 				BrainIr::ReplaceValueFrom(options) => self.replace_value_from(*options),
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor),
-				BrainIr::SetRange { value, range } => self.set_range(*value, range.clone()),
+				BrainIr::SetRange(options) => self.set_range(options.value, options.range()),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 		}

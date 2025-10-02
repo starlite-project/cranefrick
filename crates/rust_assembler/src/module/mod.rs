@@ -48,8 +48,8 @@ impl RustInterpreterModule<'_> {
 				Self::replace_value_from(*options, memory, *ptr);
 			}
 			BrainIr::ScaleValue(factor) => Self::scale_value(*factor, memory, *ptr),
-			BrainIr::SetRange { value, range } => {
-				Self::set_range(*value, range.clone(), memory, *ptr);
+			BrainIr::SetRange(options) => {
+				Self::set_range(options.value, options.range(), memory, *ptr);
 			}
 			_ => unimplemented!("op {op:?}"),
 		}
