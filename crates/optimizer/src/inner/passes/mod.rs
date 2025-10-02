@@ -110,44 +110,36 @@ pub fn add_offsets(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::MovePointer(x),
-			BrainIr::ChangeCell(i, None),
-			BrainIr::MovePointer(y),
-		] => Some(Change::swap([
-			BrainIr::change_cell_at(*i, *x),
-			BrainIr::move_pointer(x.wrapping_add(*y)),
-		])),
-		[
-			BrainIr::MovePointer(x),
-			BrainIr::SetCell(i, None),
-			BrainIr::MovePointer(y),
-		] => Some(Change::swap([
-			BrainIr::set_cell_at(*i, *x),
-			BrainIr::move_pointer(x.wrapping_add(*y)),
-		])),
-		[
-			BrainIr::MovePointer(x),
-			BrainIr::ChangeCell(i, Some(y)),
+			BrainIr::ChangeCell(i, y),
 			BrainIr::MovePointer(z),
 		] => Some(Change::swap([
-			BrainIr::change_cell_at(*i, x.wrapping_add(y.get())),
+			BrainIr::change_cell_at(*i, x.wrapping_add(y.get_or_zero())),
 			BrainIr::move_pointer(x.wrapping_add(*z)),
 		])),
 		[
 			BrainIr::MovePointer(x),
-			BrainIr::SetCell(i, Some(y)),
+			BrainIr::SetCell(i, y),
 			BrainIr::MovePointer(z),
 		] => Some(Change::swap([
-			BrainIr::set_cell_at(*i, x.wrapping_add(y.get())),
+			BrainIr::set_cell_at(*i, x.wrapping_add(y.get_or_zero())),
 			BrainIr::move_pointer(x.wrapping_add(*z)),
 		])),
 		[
 			BrainIr::MovePointer(x),
 			BrainIr::SetRange { range, value },
 			BrainIr::MovePointer(y),
-		] if *x == -y => Some(Change::replace(BrainIr::set_range(
-			*value,
-			range.start().wrapping_add(*x)..=range.end().wrapping_add(*x),
-		))),
+		] => {
+			let set_range_instr = BrainIr::set_range(
+				*value,
+				range.start().wrapping_add(*x)..=range.end().wrapping_add(*x),
+			);
+
+			Some(if *x == -y {
+				Change::replace(set_range_instr)
+			} else {
+				Change::swap([set_range_instr, BrainIr::move_pointer(x.wrapping_add(*y))])
+			})
+		}
 		_ => None,
 	}
 }
@@ -172,6 +164,18 @@ pub fn remove_offsets(ops: [&BrainIr; 2]) -> Option<Change> {
 		] if options.offset() == *y => Some(Change::swap([
 			BrainIr::move_pointer(*y),
 			BrainIr::output_offset_cell(options.value()),
+		])),
+		[
+			BrainIr::Output(OutputOptions::Cells(options)),
+			BrainIr::MovePointer(y),
+		] if options.iter().all(|x| x.offset() == *y) => Some(Change::swap([
+			BrainIr::move_pointer(*y),
+			BrainIr::output_cells(
+				options
+					.iter()
+					.copied()
+					.map(|x| CellChangeOptions::new(x.value(), 0)),
+			),
 		])),
 		_ => None,
 	}
