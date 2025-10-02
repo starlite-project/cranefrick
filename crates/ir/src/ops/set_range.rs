@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use std::{iter::FusedIterator, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
 
@@ -23,5 +23,52 @@ impl SetRangeOptions {
 	#[must_use]
 	pub fn is_zeroing_cell(self) -> bool {
 		matches!(self.value, 0) && self.range().contains(&0)
+	}
+
+	#[must_use]
+	pub const fn iter(self) -> SetRangeIter {
+		SetRangeIter {
+			range: self.range(),
+			value: self.value,
+		}
+	}
+}
+
+impl IntoIterator for &SetRangeOptions {
+	type IntoIter = SetRangeIter;
+	type Item = (u8, i32);
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.iter()
+	}
+}
+
+impl IntoIterator for SetRangeOptions {
+	type IntoIter = SetRangeIter;
+	type Item = (u8, i32);
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.iter()
+	}
+}
+
+pub struct SetRangeIter {
+	range: RangeInclusive<i32>,
+	value: u8,
+}
+
+impl DoubleEndedIterator for SetRangeIter {
+	fn next_back(&mut self) -> Option<Self::Item> {
+		self.range.next_back().map(|index| (self.value, index))
+	}
+}
+
+impl FusedIterator for SetRangeIter {}
+
+impl Iterator for SetRangeIter {
+	type Item = (u8, i32);
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.range.next().map(|index| (self.value, index))
 	}
 }

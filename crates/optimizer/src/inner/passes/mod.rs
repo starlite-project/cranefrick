@@ -397,8 +397,6 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 				return None;
 			}
 
-			tracing::info!("made it");
-
 			let mut str = Vec::new();
 
 			for opt in output_options {
