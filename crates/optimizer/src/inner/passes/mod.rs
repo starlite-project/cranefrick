@@ -369,6 +369,34 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 				BrainIr::set_cell_at(*a, x.get_or_zero()),
 			]))
 		}
+		[
+			BrainIr::SetManyCells { values, start },
+			BrainIr::Output(OutputOptions::Cells(options)),
+		] => {
+			let start = start.get_or_zero();
+			let end = start.wrapping_add_unsigned(values.len() as u32);
+
+			let range = start..end;
+
+			if !options.iter().all(|x| range.contains(&x.offset())) {
+				return None;
+			}
+
+			let mut str = Vec::new();
+
+			for opt in options {
+				let current_value_index = (start..end).position(|x| x == opt.offset())?;
+
+				let current_value = values.get(current_value_index).copied()?;
+
+				str.push(current_value);
+			}
+
+			Some(Change::swap([
+				BrainIr::output_str(str),
+				BrainIr::set_many_cells(values.iter().copied(), start),
+			]))
+		}
 		_ => None,
 	}
 }
@@ -496,6 +524,14 @@ pub fn optimize_changes_and_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
 			BrainIr::SetCell(.., None),
 		] => Some(Change::remove_offset(0)),
+		[
+			first
+			@ (BrainIr::SetCell(..) | BrainIr::SetManyCells { .. } | BrainIr::SetRange { .. }),
+			out @ BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
+			second @ (BrainIr::SetCell(..)
+			| BrainIr::SetManyCells { .. }
+			| BrainIr::SetRange { .. }),
+		] => Some(Change::swap([out.clone(), first.clone(), second.clone()])),
 		[
 			BrainIr::ChangeCell(value, None),
 			BrainIr::Output(OutputOptions::Cells(options)),
@@ -788,6 +824,37 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				new_values,
 				x.get_or_zero(),
 			)))
+		}
+		_ => None,
+	}
+}
+
+pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::SetManyCells { values, start },
+			BrainIr::MovePointer(x),
+			BrainIr::ChangeCell(a, None),
+		] => {
+			let start = start.get_or_zero();
+			let end = start.wrapping_add_unsigned(values.len() as u32);
+
+			let mut range = start..end;
+
+			if !range.contains(x) {
+				return None;
+			}
+
+			let cell_index = range.position(|y| y == *x)?;
+
+			let mut values = values.clone();
+
+			values[cell_index] = values[cell_index].wrapping_add_signed(*a);
+
+			Some(Change::swap([
+				BrainIr::set_many_cells(values, start),
+				BrainIr::move_pointer(*x),
+			]))
 		}
 		_ => None,
 	}

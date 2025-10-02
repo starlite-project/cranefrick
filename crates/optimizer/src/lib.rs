@@ -143,6 +143,7 @@ impl Optimizer {
 
 		self.pass_info("optimize memory operations");
 		*progress |= run_peephole_pass(self, passes::optimize_mem_sets);
+		*progress |= run_peephole_pass(self, passes::optimize_mem_set_move_change);
 	}
 
 	fn pass_info(&self, pass: &str) {
