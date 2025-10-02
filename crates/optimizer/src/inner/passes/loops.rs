@@ -117,6 +117,26 @@ pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 			BrainIr::set_cell(0),
 			BrainIr::set_cell_at(*x, offset.get()),
 		])),
+		[
+			BrainIr::ChangeCell(-1, None),
+			BrainIr::SetManyCells(options),
+		]
+		| [
+			BrainIr::SetManyCells(options),
+			BrainIr::ChangeCell(-1, None),
+		] if !options.range().contains(&0) => Some(Change::swap([
+			BrainIr::clear_cell(),
+			BrainIr::set_many_cells(options.values.iter().copied(), options.start.get_or_zero()),
+		])),
+		[BrainIr::ChangeCell(-1, None), BrainIr::SetRange(options)]
+		| [BrainIr::SetRange(options), BrainIr::ChangeCell(-1, None)]
+			if !options.range().contains(&0) =>
+		{
+			Some(Change::swap([
+				BrainIr::clear_cell(),
+				BrainIr::set_range(options.value, options.start, options.end),
+			]))
+		}
 		_ => None,
 	}
 }
