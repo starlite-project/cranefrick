@@ -212,7 +212,7 @@ impl Assembler for LlvmAssembler {
 			execution_engine.add_global_mapping(&putchar, frick_llvm_interop::putchar as usize);
 		}
 
-		if let Some(eh_personality) = module.get_function("rust_eh_personality") {
+		if let Some(eh_personality) = module.get_function("eh_personality") {
 			execution_engine
 				.add_global_mapping(&eh_personality, frick_llvm_interop::eh_personality as usize);
 		}
