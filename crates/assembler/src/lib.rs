@@ -19,12 +19,6 @@ pub enum AssemblyError<E> {
 	Io(IoError),
 }
 
-impl<E> AssemblyError<E> {
-	pub fn backend(e: impl Into<E>) -> Self {
-		Self::Backend(e.into())
-	}
-}
-
 impl<E> Display for AssemblyError<E> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match self {

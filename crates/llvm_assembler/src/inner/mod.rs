@@ -141,18 +141,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 				&[tape_size.into(), self.pointers.tape.into()],
 				"",
 			)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 		self.builder
 			.build_call(
 				self.functions.lifetime.end,
 				&[i64_size.into(), self.pointers.pointer.into()],
 				"",
 			)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder
 			.build_return(None)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder.unset_current_debug_location();
 
@@ -175,7 +175,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				true,
 				"exception",
 			)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder
 			.build_call(
@@ -183,18 +183,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 				&[tape_size.into(), self.pointers.tape.into()],
 				"",
 			)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 		self.builder
 			.build_call(
 				self.functions.lifetime.end,
 				&[i64_size.into(), self.pointers.pointer.into()],
 				"",
 			)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder
 			.build_resume(exception)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.write_puts()?;
 

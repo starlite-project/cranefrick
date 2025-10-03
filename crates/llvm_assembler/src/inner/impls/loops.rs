@@ -18,7 +18,7 @@ impl InnerAssembler<'_> {
 
 		self.builder
 			.build_unconditional_branch(header_block)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder.position_at_end(header_block);
 
@@ -33,11 +33,11 @@ impl InnerAssembler<'_> {
 		let cmp = self
 			.builder
 			.build_int_compare(IntPredicate::NE, value, zero, "if_not_zero_cmp")
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder
 			.build_conditional_branch(cmp, body_block, exit_block)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder.position_at_end(body_block);
 
@@ -59,7 +59,7 @@ impl InnerAssembler<'_> {
 
 		self.builder
 			.build_unconditional_branch(exit_block)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder.position_at_end(exit_block);
 
@@ -79,7 +79,7 @@ impl InnerAssembler<'_> {
 
 		self.builder
 			.build_unconditional_branch(header_block)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder.position_at_end(header_block);
 
@@ -94,11 +94,11 @@ impl InnerAssembler<'_> {
 		let cmp = self
 			.builder
 			.build_int_compare(IntPredicate::NE, value, zero, "dynamic_loop_cmp")
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder
 			.build_conditional_branch(cmp, body_block, exit_block)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder.position_at_end(body_block);
 
@@ -120,7 +120,7 @@ impl InnerAssembler<'_> {
 
 		self.builder
 			.build_unconditional_branch(header_block)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		self.builder.position_at_end(exit_block);
 
