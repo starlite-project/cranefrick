@@ -101,7 +101,7 @@ impl Assembler for LlvmAssembler {
 		let cpu = TargetMachine::get_host_cpu_name().to_string();
 		let features = TargetMachine::get_host_cpu_features().to_string();
 
-		let target = Target::from_triple(&target_triple).map_err(AssemblyError::backend)?;
+		let target = Target::from_triple(&target_triple).map_err(LlvmAssemblyError::from)?;
 
 		let target_machine = {
 			let options = TargetMachineOptions::new()
@@ -119,19 +119,18 @@ impl Assembler for LlvmAssembler {
 		target_machine.set_asm_verbosity(true);
 
 		info!("lowering into LLVM IR");
-
 		let assembler =
 			InnerAssembler::new(&self.context, target_machine, self.file_path.as_deref())?;
 
 		let (module, AssemblerFunctions { main, .. }, target_machine) = assembler.assemble(ops)?;
 
 		info!("verifying emitted LLVM IR");
-		module.verify().map_err(AssemblyError::backend)?;
+		module.verify().map_err(LlvmAssemblyError::from)?;
 
 		info!("writing unoptimized LLVM IR");
 		module
 			.print_to_file(output_path.join("unoptimized.ll"))
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		info!("writing unoptimized object file");
 		target_machine
@@ -140,7 +139,7 @@ impl Assembler for LlvmAssembler {
 				FileType::Object,
 				&output_path.join("unoptimized.o"),
 			)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		info!("writing unoptimized asm");
 		target_machine
@@ -149,7 +148,7 @@ impl Assembler for LlvmAssembler {
 				FileType::Assembly,
 				&output_path.join("unoptimized.asm"),
 			)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		info!("writing unoptimized LLVM bitcode");
 		module.write_bitcode_to_path(output_path.join("unoptimized.bc"));
@@ -171,20 +170,20 @@ impl Assembler for LlvmAssembler {
 
 		module
 			.run_passes(&self.passes, &target_machine, pass_options)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		info!("verifying optimized LLVM IR");
-		module.verify().map_err(AssemblyError::backend)?;
+		module.verify().map_err(LlvmAssemblyError::from)?;
 
 		info!("writing optimized LLVM IR");
 		module
 			.print_to_file(output_path.join("optimized.ll"))
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		info!("writing optimized object file");
 		target_machine
 			.write_to_file(&module, FileType::Object, &output_path.join("optimized.o"))
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		info!("writing optimized asm");
 		target_machine
@@ -193,16 +192,42 @@ impl Assembler for LlvmAssembler {
 				FileType::Assembly,
 				&output_path.join("optimized.asm"),
 			)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		info!("writing optimized LLVM bitcode");
 		module.write_bitcode_to_path(output_path.join("optimized.bc"));
 
-		info!("creating JIT execution engine");
+		if module.strip_debug_info() {
+			info!("verifying stripped LLVM IR");
+			module.verify().map_err(LlvmAssemblyError::from)?;
 
+			info!("writing stripped LLVM IR");
+			module
+				.print_to_file(output_path.join("stripped.ll"))
+				.map_err(LlvmAssemblyError::from)?;
+
+			info!("writing stripped object file");
+			target_machine
+				.write_to_file(&module, FileType::Object, &output_path.join("stripped.o"))
+				.map_err(LlvmAssemblyError::from)?;
+
+			info!("writing stripped asm");
+			target_machine
+				.write_to_file(
+					&module,
+					FileType::Assembly,
+					&output_path.join("stripped.asm"),
+				)
+				.map_err(LlvmAssemblyError::from)?;
+
+			info!("writing stripped LLVM bitcode");
+			module.write_bitcode_to_path(output_path.join("stripped.bc"));
+		}
+
+		info!("creating JIT execution engine");
 		let execution_engine = module
 			.create_jit_execution_engine(OptimizationLevel::Aggressive)
-			.map_err(AssemblyError::backend)?;
+			.map_err(LlvmAssemblyError::from)?;
 
 		if let Some(getchar) = module.get_function("getchar") {
 			execution_engine.add_global_mapping(&getchar, libc::getchar as usize);
