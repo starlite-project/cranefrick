@@ -236,7 +236,7 @@ impl<'ctx> IntrinsicFunctionSet<'ctx> {
 	}
 }
 
-#[tracing::instrument(skip(module, types), level = tracing::Level::DEBUG)]
+#[tracing::instrument(skip(module, types))]
 fn get_intrinsic_function_from_name<'ctx>(
 	name: &'static str,
 	module: &Module<'ctx>,
@@ -251,7 +251,7 @@ fn get_intrinsic_function_from_name<'ctx>(
 		.get_declaration(module, types)
 		.ok_or_else(|| LlvmAssemblyError::invalid_intrinsic_declaration(name))?;
 
-	tracing::debug!(?declaration);
+	tracing::debug!(%declaration);
 
 	Ok(declaration)
 }
