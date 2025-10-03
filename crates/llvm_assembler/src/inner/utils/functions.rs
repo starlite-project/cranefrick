@@ -82,6 +82,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	}
 
 	fn setup(self, context: &'ctx Context) -> Self {
+		self.main.set_personality_function(self.eh_personality);
 		self.puts.set_personality_function(self.eh_personality);
 
 		self.setup_common_attributes(context)
