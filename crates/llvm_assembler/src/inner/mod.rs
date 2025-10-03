@@ -173,6 +173,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.map_err(AssemblyError::backend)?;
 
 		self.builder
+			.build_call(
+				self.functions.lifetime.end,
+				&[tape_size.into(), self.pointers.tape.into()],
+				"",
+			)
+			.map_err(AssemblyError::backend)?;
+		self.builder
+			.build_call(
+				self.functions.lifetime.end,
+				&[i64_size.into(), self.pointers.pointer.into()],
+				"",
+			)
+			.map_err(AssemblyError::backend)?;
+
+		self.builder
 			.build_resume(out)
 			.map_err(AssemblyError::backend)?;
 
