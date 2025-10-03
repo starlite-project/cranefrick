@@ -249,7 +249,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		// Need to do this as `setup` is called before any other instructions are added
 		self.di_builder.insert_declare_at_end(
-			pointers.output,
+			pointers.puts_alloca,
 			Some(output_variable),
 			None,
 			debug_loc,

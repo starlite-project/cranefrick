@@ -53,7 +53,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let array_len = i64_type.const_int(options.len() as u64, false);
 
-		let _lifetime = self.start_lifetime(lifetime_array_len, self.pointers.output)?;
+		let _lifetime = self.start_lifetime(lifetime_array_len, self.pointers.puts_alloca)?;
 
 		if options.windows(2).all(|w| w[0] == w[1]) {
 			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
@@ -66,7 +66,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let last_index_gep = unsafe {
 			self.builder.build_in_bounds_gep(
 				i8_type,
-				self.pointers.output,
+				self.pointers.puts_alloca,
 				&[array_len],
 				"output_cells_puts_gep",
 			)?
@@ -76,7 +76,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let puts_call = self.builder.build_call(
 			self.functions.puts,
-			&[self.pointers.output.into(), array_len.into()],
+			&[self.pointers.puts_alloca.into(), array_len.into()],
 			"output_cells_puts_call",
 		)?;
 
@@ -143,7 +143,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let array_len = i64_type.const_int(length, false);
 
 		self.builder
-			.build_memset(self.pointers.output, 1, value_to_memset, array_len)?;
+			.build_memset(self.pointers.puts_alloca, 1, value_to_memset, array_len)?;
 
 		Ok(())
 	}
@@ -175,7 +175,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let output_array_gep = unsafe {
 				self.builder.build_in_bounds_gep(
 					i8_type,
-					self.pointers.output,
+					self.pointers.puts_alloca,
 					&[array_offset],
 					"setup_output_cells_puts_iterated_gep",
 				)?
@@ -199,51 +199,48 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn output_cell(&self, value_offset: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
 		let context = self.context();
 
-		let i32_type = context.i32_type();
-		let loaded_value = self.load(offset, "output_current_cell")?;
+		let i8_type = context.i8_type();
+		let i64_type = context.i64_type();
 
-		let extended_loaded_value = self.builder.build_int_z_extend(
-			loaded_value,
-			i32_type,
-			"output_current_cell_extend",
-		)?;
+		// let lifetime_array_len = i64_type.const_int(2, false);
 
-		if let Some(extended_instr) = extended_loaded_value.as_instruction() {
-			extended_instr.set_non_negative_flag(true);
-		}
+		// let _lifetime = self.start_lifetime(lifetime_array_len, self.pointers.single_puts_alloca)?;
 
-		let offset_loaded_value = if matches!(value_offset, 0) {
-			extended_loaded_value
-		} else {
-			let offset_value = i32_type.const_int(value_offset as u64, false);
+		let _lifetime = {
+			let lifetime_array_len = i64_type.const_int(2, false);
 
-			self.builder.build_int_add(
-				extended_loaded_value,
-				offset_value,
-				"output_current_cell_add",
-			)?
+			self.start_lifetime(lifetime_array_len, self.pointers.single_puts_alloca)?
 		};
 
-		let putchar_call = self.builder.build_call(
-			self.functions.putchar,
-			&[offset_loaded_value.into()],
-			"output_current_cell_call",
+		let i64_one = i64_type.const_int(1, false);
+
+		let cell_gep = self.tape_gep(i8_type, offset, "output_cell")?;
+
+		if matches!(value_offset, 0) {
+			self.builder
+				.build_memcpy(self.pointers.single_puts_alloca, 1, cell_gep, 1, i64_one)?;
+		} else {
+			let value_offset = i8_type.const_int(value_offset as u64, false);
+
+			let cell_value = self
+				.builder
+				.build_load(i8_type, cell_gep, "output_cell_load")?
+				.into_int_value();
+
+			let offset_cell_value =
+				self.builder
+					.build_int_add(cell_value, value_offset, "output_cell_add")?;
+
+			self.store_into(offset_cell_value, self.pointers.single_puts_alloca)?;
+		}
+
+		let puts_call = self.builder.build_call(
+			self.functions.puts,
+			&[self.pointers.single_puts_alloca.into(), i64_one.into()],
+			"output_cell_puts_call",
 		)?;
 
-		putchar_call.set_tail_call(true);
-
-		let putchar_value = putchar_call
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_int_value();
-
-		self.add_range_io_metadata(context, putchar_value, u8::MIN.into(), u8::MAX.into())?;
-
-		self.builder.build_call(
-			self.functions.i32_expect,
-			&[offset_loaded_value.into(), putchar_value.into()],
-			"",
-		)?;
+		self.add_puts_io_attributes(puts_call, i8_type.array_type(2), 1);
 
 		Ok(())
 	}
@@ -267,15 +264,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let array_len = i64_type.const_int(c.len() as u64, false);
 
-		let lifetime_len = i64_type.const_int(c.len() as u64 + 1, false);
+		let _lifetime = {
+			let lifetime_len = i64_type.const_int(c.len() as u64 + 1, false);
 
-		let _lifetime = self.start_lifetime(lifetime_len, global_constant_pointer)?;
+			self.start_lifetime(lifetime_len, global_constant_pointer)?
+		};
 
 		let puts_call = self.builder.build_call(
 			self.functions.puts,
 			&[global_constant_pointer.into(), array_len.into()],
 			"output_chars_call",
 		)?;
+
+		self.add_puts_io_attributes(puts_call, constant_string_ty, c.len() as u64);
 
 		let puts_value = puts_call
 			.try_as_basic_value()
