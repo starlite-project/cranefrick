@@ -1,4 +1,4 @@
-use std::slice;
+use std::{fmt::Display, slice};
 
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
@@ -6,7 +6,7 @@ use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	context::ContextRef,
 	types::{ArrayType, IntType},
-	values::{CallSiteValue, InstructionValueError, IntValue},
+	values::{CallSiteValue, InstructionValueError, IntValue, PointerValue},
 };
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
@@ -15,7 +15,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		match options {
 			OutputOptions::Cell(options) => {
-				self.output_cell(options.value(), options.offset())?;
+				self.output_cells_puts(slice::from_ref(options))?;
 			}
 			OutputOptions::Cells(options) => self.output_cells(options)?,
 			OutputOptions::Char(c) => self.output_chars(slice::from_ref(c))?,
@@ -82,41 +82,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"output_cells_puts_call",
 		)?;
 
-		let puts_value = puts_call
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_int_value();
-
 		self.add_puts_io_attributes(
 			puts_call,
 			i8_type.array_type(options.len() as u32 + 1),
 			options.len() as u64,
 		);
-
-		let last_cell = {
-			let i32_type = self.context().i32_type();
-
-			let last_options = options.last().copied().unwrap();
-
-			let loaded_value = self.load(0, "output_cells_puts")?;
-
-			let extended_value = self.builder.build_int_s_extend(
-				loaded_value,
-				i32_type,
-				"output_cells_puts_extend",
-			)?;
-
-			let offset_to_add = i32_type.const_int(last_options.value() as u64, false);
-
-			self.builder
-				.build_int_add(extended_value, offset_to_add, "output_cells_puts_add")?
-		};
-
-		self.builder.build_call(
-			self.functions.i32_expect,
-			&[puts_value.into(), last_cell.into()],
-			"",
-		)?;
 
 		Ok(())
 	}
@@ -195,63 +165,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), LlvmAssemblyError> {
 		options
 			.iter()
-			.try_for_each(|x| self.output_cell(x.value(), x.offset()))
-	}
-
-	fn output_cell(&self, value_offset: i8, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let context = self.context();
-
-		let i8_type = context.i8_type();
-		let i64_type = context.i64_type();
-
-		let _lifetime = {
-			let lifetime_array_len = i64_type.const_int(2, false);
-
-			self.start_lifetime(lifetime_array_len, self.pointers.output)?
-		};
-
-		let i64_one = i64_type.const_int(1, false);
-
-		let cell_gep = self.tape_gep(i8_type, offset, "output_cell")?;
-
-		if matches!(value_offset, 0) {
-			self.builder
-				.build_memcpy(self.pointers.output, 1, cell_gep, 1, i64_one)?;
-		} else {
-			let value_offset = i8_type.const_int(value_offset as u64, false);
-
-			let cell_value = self
-				.builder
-				.build_load(i8_type, cell_gep, "output_cell_load")?
-				.into_int_value();
-
-			let offset_cell_value =
-				self.builder
-					.build_int_add(cell_value, value_offset, "output_cell_add")?;
-
-			self.store_into(offset_cell_value, self.pointers.output)?;
-		}
-
-		let puts_array_second_index = unsafe {
-			self.builder.build_in_bounds_gep(
-				i8_type,
-				self.pointers.output,
-				&[i64_one],
-				"output_cell_output_array_gep",
-			)?
-		};
-
-		self.store_value_into(0, puts_array_second_index)?;
-
-		let puts_call = self.builder.build_call(
-			self.functions.puts,
-			&[self.pointers.output.into(), i64_one.into()],
-			"output_cell_puts_call",
-		)?;
-
-		self.add_puts_io_attributes(puts_call, i8_type.array_type(2), 1);
-
-		Ok(())
+			.try_for_each(|x| self.output_cells(slice::from_ref(x)))
 	}
 
 	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
@@ -279,11 +193,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.start_lifetime(lifetime_len, global_constant_pointer)?
 		};
 
-		let puts_call = self.builder.build_call(
-			self.functions.puts,
-			&[global_constant_pointer.into(), array_len.into()],
-			"output_chars_call",
-		)?;
+		let puts_call = self.call_puts(global_constant_pointer, array_len, "output_chars")?;
 
 		self.add_puts_io_attributes(puts_call, constant_string_ty, c.len() as u64);
 
@@ -293,18 +203,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.into_int_value();
 
 		let last = c.last().copied().unwrap();
-
-		let last_value = {
-			let i32_type = self.context().i32_type();
-
-			i32_type.const_int(last.into(), false)
-		};
-
-		self.builder.build_call(
-			self.functions.i32_expect,
-			&[puts_value.into(), last_value.into()],
-			"",
-		)?;
 
 		self.add_range_io_metadata(context, puts_value, last.into(), last.into())?;
 
@@ -386,5 +284,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_truncate(getchar_value, i8_type, "input_into_cell_truncate")?;
 
 		self.store(truncated_value, 0, "input_into_cell")
+	}
+
+	fn call_puts(
+		&self,
+		array_ptr: PointerValue<'ctx>,
+		array_len: IntValue<'ctx>,
+		fn_name: impl Display,
+	) -> Result<CallSiteValue<'ctx>, LlvmAssemblyError> {
+		Ok(self.builder.build_call(
+			self.functions.puts,
+			&[array_ptr.into(), array_len.into()],
+			&format!("{fn_name}_puts_call"),
+		)?)
 	}
 }
