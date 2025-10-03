@@ -22,3 +22,9 @@ impl AssembledModule for LlvmAssembledModule<'_> {
 		Ok(())
 	}
 }
+
+impl Drop for LlvmAssembledModule<'_> {
+	fn drop(&mut self) {
+		self.execution_engine.free_fn_machine_code(self.main);
+	}
+}
