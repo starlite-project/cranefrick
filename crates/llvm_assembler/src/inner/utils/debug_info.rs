@@ -57,6 +57,8 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		functions: AssemblerFunctions<'ctx>,
 		pointers: AssemblerPointers<'ctx>,
 	) -> Result<Self, LlvmAssemblyError> {
+		let entry_block = functions.main.get_first_basic_block().unwrap();
+
 		let main_subroutine_type = self.di_builder.create_subroutine_type(
 			self.compile_unit.get_file(),
 			None,
@@ -245,14 +247,13 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			1,
 		);
 
-		let right_after_output_alloca = get_instruction_after_alloca(pointers.output)?;
-
-		self.di_builder.insert_declare_before_instruction(
+		// Need to do this as `setup` is called before any other instructions are added
+		self.insert_declare_at_end(
 			pointers.output,
 			Some(output_variable),
 			None,
 			debug_loc,
-			right_after_output_alloca,
+			entry_block,
 		);
 
 		builder.set_current_debug_location(debug_loc);

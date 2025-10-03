@@ -34,7 +34,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn output_cells(&self, options: &[CellChangeOptions<i8>]) -> Result<(), LlvmAssemblyError> {
-		if options.len() < OUTPUT_ARRAY_LEN as usize {
+		if options.len() <= OUTPUT_ARRAY_LEN as usize {
 			self.output_cells_puts(options)
 		} else {
 			self.output_cells_iterated(options)
@@ -45,17 +45,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		options: &[CellChangeOptions<i8>],
 	) -> Result<(), LlvmAssemblyError> {
-		assert!(options.len() < OUTPUT_ARRAY_LEN as usize);
+		assert!(options.len() <= OUTPUT_ARRAY_LEN as usize);
 
 		let context = self.context();
 
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
 
-		let array_len = i64_type.const_int(options.len() as u64, false);
-
 		let _lifetime = {
-			let lifetime_array_len = i64_type.const_int(options.len() as u64 + 1, false);
+			let lifetime_array_len = i64_type.const_int(options.len() as u64, false);
 
 			self.start_lifetime(lifetime_array_len, self.pointers.output)?
 		};
@@ -65,19 +63,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		} else {
 			self.setup_output_cells_puts_iterated(i8_type, options)
 		}?;
-
-		if options.len() != OUTPUT_ARRAY_LEN as usize - 1 {
-			let last_array_slot_gep = unsafe {
-				self.builder.build_in_bounds_gep(
-					i8_type,
-					self.pointers.output,
-					&[array_len],
-					"output_cells_puts_gep",
-				)?
-			};
-
-			self.store_value_into(0, last_array_slot_gep)?;
-		}
 
 		self.call_puts(
 			context,
@@ -162,7 +147,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		options: &[CellChangeOptions<i8>],
 	) -> Result<(), LlvmAssemblyError> {
 		options
-			.chunks(OUTPUT_ARRAY_LEN as usize - 1)
+			.chunks(OUTPUT_ARRAY_LEN as usize)
 			.try_for_each(|x| self.output_cells(x))
 	}
 
@@ -171,7 +156,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let i64_type = context.i64_type();
 
-		let constant_initializer = context.const_string(c, true);
+		let constant_initializer = context.const_string(c, false);
 
 		let constant_string_ty = constant_initializer.get_type();
 
@@ -184,7 +169,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let global_constant_pointer = global_constant.as_pointer_value();
 
 		let _lifetime = {
-			let lifetime_len = i64_type.const_int(c.len() as u64 + 1, false);
+			let lifetime_len = i64_type.const_int(c.len() as u64, false);
 
 			self.start_lifetime(lifetime_len, global_constant_pointer)?
 		};
