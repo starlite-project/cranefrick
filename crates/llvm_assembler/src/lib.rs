@@ -155,7 +155,7 @@ impl Assembler for LlvmAssembler {
 
 		let pass_options = PassBuilderOptions::create();
 
-		pass_options.set_verify_each(true);
+		pass_options.set_verify_each(false);
 		pass_options.set_loop_interleaving(true);
 		pass_options.set_loop_vectorization(true);
 		pass_options.set_loop_slp_vectorization(true);
@@ -166,7 +166,11 @@ impl Assembler for LlvmAssembler {
 		pass_options.set_licm_mssa_opt_cap(u32::MAX);
 		pass_options.set_licm_mssa_no_acc_for_promotion_cap(u32::MAX);
 
-		info!("verifying and optimizing LLVM IR");
+		info!("verifying LLVM IR");
+
+		module.verify().map_err(AssemblyError::backend)?;
+
+		info!("optimizing LLVM IR");
 
 		module
 			.run_passes(&self.passes, &target_machine, pass_options)
