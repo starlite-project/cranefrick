@@ -144,8 +144,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	fn setup_put_attributes(self, context: &'ctx Context) -> Self {
 		let memory_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 9);
+		let uwtable_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 1);
 
-		for attribute in iter::once(memory_attr) {
+		for attribute in [memory_attr, uwtable_attr] {
 			self.putchar
 				.add_attribute(AttributeLoc::Function, attribute);
 			self.puts.add_attribute(AttributeLoc::Function, attribute);
