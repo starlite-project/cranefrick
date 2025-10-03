@@ -1,14 +1,18 @@
-use std::{fmt::Display, slice};
+use std::slice;
 
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
+	attributes::{Attribute, AttributeLoc},
 	context::ContextRef,
 	types::IntType,
 	values::{InstructionValueError, IntValue, PointerValue},
 };
 
-use crate::{LlvmAssemblyError, inner::InnerAssembler};
+use crate::{
+	LlvmAssemblyError,
+	inner::{InnerAssembler, utils::OUTPUT_ARRAY_LEN},
+};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError<LlvmAssemblyError>> {
@@ -30,7 +34,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn output_cells(&self, options: &[CellChangeOptions<i8>]) -> Result<(), LlvmAssemblyError> {
-		if options.len() < 8 {
+		if options.len() < OUTPUT_ARRAY_LEN as usize {
 			self.output_cells_puts(options)
 		} else {
 			self.output_cells_iterated(options)
@@ -41,7 +45,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		options: &[CellChangeOptions<i8>],
 	) -> Result<(), LlvmAssemblyError> {
-		assert!(options.len() < 8);
+		assert!(options.len() < OUTPUT_ARRAY_LEN as usize);
 
 		let context = self.context();
 
@@ -75,10 +79,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.build_store(last_index_gep, zero)?;
 
-		self.builder.build_call(
-			self.functions.puts,
-			&[self.pointers.output.into(), array_len.into()],
-			"output_cells_puts_call",
+		self.call_puts(
+			context,
+			self.pointers.output,
+			options.len() as u64,
+			"output_cells_puts",
 		)?;
 
 		Ok(())
@@ -184,9 +189,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.start_lifetime(lifetime_len, global_constant_pointer)?
 		};
 
-		let array_len = i64_type.const_int(c.len() as u64, false);
-
-		let puts_value = self.call_puts(global_constant_pointer, array_len, "output_chars")?;
+		let puts_value = self.call_puts(
+			context,
+			global_constant_pointer,
+			c.len() as u64,
+			"output_chars",
+		)?;
 
 		let last = c.last().copied().unwrap();
 
@@ -248,17 +256,44 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn call_puts(
 		&self,
+		context: ContextRef<'ctx>,
 		array_ptr: PointerValue<'ctx>,
-		array_len: IntValue<'ctx>,
-		fn_name: impl Display,
+		array_len: u64,
+		fn_name: &'static str,
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+		let i8_type = context.i8_type();
+		let i8_array_type = i8_type.array_type(array_len as u32);
+
+		let array_len_value = {
+			let i64_type = context.i64_type();
+
+			i64_type.const_int(array_len, false)
+		};
+
 		let call = self.builder.build_call(
 			self.functions.puts,
-			&[array_ptr.into(), array_len.into()],
+			&[array_ptr.into(), array_len_value.into()],
 			&format!("{fn_name}_puts_call"),
 		)?;
 
 		call.set_tail_call(true);
+
+		let byref_attr = context.create_type_attribute(
+			Attribute::get_named_enum_kind_id("byref"),
+			i8_array_type.into(),
+		);
+
+		let deref_attr = context.create_enum_attribute(
+			Attribute::get_named_enum_kind_id("dereferenceable"),
+			array_len + 1,
+		);
+
+		let align_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("align"), 1);
+
+		for attribute in [byref_attr, deref_attr, align_attr] {
+			call.add_attribute(AttributeLoc::Param(0), attribute);
+		}
 
 		Ok(call.try_as_basic_value().unwrap_left().into_int_value())
 	}

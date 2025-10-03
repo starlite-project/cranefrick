@@ -57,8 +57,8 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			pointer_alloca
 		};
 
-		let puts_alloca = {
-			let i8_array_type = i8_type.array_type(8);
+		let output = {
+			let i8_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN.into());
 
 			builder.build_alloca(i8_array_type, "output")?
 		};
@@ -67,9 +67,11 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			Self {
 				tape,
 				pointer,
-				output: puts_alloca,
+				output,
 			},
 			ptr_int_type,
 		))
 	}
 }
+
+pub const OUTPUT_ARRAY_LEN: u32 = 8;
