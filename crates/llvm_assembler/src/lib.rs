@@ -125,6 +125,9 @@ impl Assembler for LlvmAssembler {
 
 		let (module, AssemblerFunctions { main, .. }, target_machine) = assembler.assemble(ops)?;
 
+		info!("verifying emitted LLVM IR");
+		module.verify().map_err(AssemblyError::backend)?;
+
 		info!("writing unoptimized LLVM IR");
 		module
 			.print_to_file(output_path.join("unoptimized.ll"))
@@ -164,15 +167,14 @@ impl Assembler for LlvmAssembler {
 		pass_options.set_licm_mssa_opt_cap(u32::MAX);
 		pass_options.set_licm_mssa_no_acc_for_promotion_cap(u32::MAX);
 
-		info!("verifying LLVM IR");
-
-		module.verify().map_err(AssemblyError::backend)?;
-
 		info!("optimizing LLVM IR");
 
 		module
 			.run_passes(&self.passes, &target_machine, pass_options)
 			.map_err(AssemblyError::backend)?;
+
+		info!("verifying optimized LLVM IR");
+		module.verify().map_err(AssemblyError::backend)?;
 
 		info!("writing optimized LLVM IR");
 		module
@@ -195,8 +197,6 @@ impl Assembler for LlvmAssembler {
 
 		info!("writing optimized LLVM bitcode");
 		module.write_bitcode_to_path(output_path.join("optimized.bc"));
-
-		module.verify().map_err(AssemblyError::backend)?;
 
 		info!("creating JIT execution engine");
 
