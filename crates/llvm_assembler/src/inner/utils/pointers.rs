@@ -60,7 +60,22 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let output = {
 			let i8_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN.into());
 
-			builder.build_alloca(i8_array_type, "output")?
+			let output_alloca = builder.build_alloca(i8_array_type, "output")?;
+
+			let last_output_slot_idx = i64_type.const_int(OUTPUT_ARRAY_LEN.into(), false);
+
+			let last_output_slot_gep = unsafe {
+				builder.build_in_bounds_gep(
+					i8_type,
+					output_alloca,
+					&[last_output_slot_idx],
+					"output_alloca_gep",
+				)?
+			};
+
+			builder.build_store(last_output_slot_gep, i8_type.const_zero())?;
+
+			output_alloca
 		};
 
 		Ok((

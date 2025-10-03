@@ -66,18 +66,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.setup_output_cells_puts_iterated(i8_type, options)
 		}?;
 
-		let zero = i8_type.const_zero();
+		if options.len() != OUTPUT_ARRAY_LEN as usize - 1 {
+			let last_array_slot_gep = unsafe {
+				self.builder.build_in_bounds_gep(
+					i8_type,
+					self.pointers.output,
+					&[array_len],
+					"output_cells_puts_gep",
+				)?
+			};
 
-		let last_index_gep = unsafe {
-			self.builder.build_in_bounds_gep(
-				i8_type,
-				self.pointers.output,
-				&[array_len],
-				"output_cells_puts_gep",
-			)?
-		};
-
-		self.builder.build_store(last_index_gep, zero)?;
+			self.store_value_into(0, last_array_slot_gep)?;
+		}
 
 		self.call_puts(
 			context,
@@ -162,8 +162,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		options: &[CellChangeOptions<i8>],
 	) -> Result<(), LlvmAssemblyError> {
 		options
-			.iter()
-			.try_for_each(|x| self.output_cells(slice::from_ref(x)))
+			.chunks(OUTPUT_ARRAY_LEN as usize - 1)
+			.try_for_each(|x| self.output_cells(x))
 	}
 
 	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
