@@ -10,8 +10,7 @@ use crate::LlvmAssemblyError;
 pub struct AssemblerPointers<'ctx> {
 	pub tape: PointerValue<'ctx>,
 	pub pointer: PointerValue<'ctx>,
-	pub puts_array: PointerValue<'ctx>,
-	pub puts_cell: PointerValue<'ctx>,
+	pub output: PointerValue<'ctx>,
 }
 
 impl<'ctx> AssemblerPointers<'ctx> {
@@ -61,29 +60,14 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let puts_alloca = {
 			let i8_array_type = i8_type.array_type(8);
 
-			builder.build_alloca(i8_array_type, "puts_output")?
-		};
-
-		let single_puts_alloca = {
-			let i8_array_type = i8_type.array_type(2);
-
-			let alloca = builder.build_alloca(i8_array_type, "single_puts_output")?;
-
-			let second_index = i64_type.const_int(1, false);
-
-			let gep = unsafe { builder.build_in_bounds_gep(i8_type, alloca, &[second_index], "")? };
-
-			builder.build_store(gep, i8_type.const_zero())?;
-
-			alloca
+			builder.build_alloca(i8_array_type, "output")?
 		};
 
 		Ok((
 			Self {
 				tape,
 				pointer,
-				puts_array: puts_alloca,
-				puts_cell: single_puts_alloca,
+				output: puts_alloca,
 			},
 			ptr_int_type,
 		))
