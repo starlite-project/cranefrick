@@ -61,7 +61,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder.unset_current_debug_location();
 
 		let entry_block = context.append_basic_block(self.functions.puts, "entry");
-		let body_block = context.append_basic_block(self.functions.puts, "body");
+		let try_block = context.append_basic_block(self.functions.puts, "try");
+		let continue_block = context.append_basic_block(self.functions.puts, "continue");
+		let catch_block = context.append_basic_block(self.functions.puts, "catch");
 		let exit_block = context.append_basic_block(self.functions.puts, "exit");
 
 		self.builder.position_at_end(entry_block);
@@ -105,9 +107,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		)?;
 
 		self.builder
-			.build_conditional_branch(is_string_len_zero, exit_block, body_block)?;
+			.build_conditional_branch(is_string_len_zero, exit_block, try_block)?;
 
-		self.builder.position_at_end(body_block);
+		self.builder.position_at_end(try_block);
 
 		let body_block_phi = self.builder.build_phi(ptr_type, "")?;
 
@@ -122,8 +124,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			)?
 		};
 
-		body_block_phi
-			.add_incoming(&[(&pointer_param, entry_block), (&next_index_gep, body_block)]);
+		body_block_phi.add_incoming(&[
+			(&pointer_param, entry_block),
+			(&next_index_gep, continue_block),
+		]);
 
 		let actual_value = self
 			.builder
@@ -138,23 +142,27 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_int_z_extend(actual_value, i32_type, "")?;
 
-		let putchar_call =
-			self.builder
-				.build_call(self.functions.putchar, &[extended_character.into()], "")?;
-
-		putchar_call.set_tail_call(true);
+		let putchar_call = self.builder.build_invoke(
+			self.functions.putchar,
+			&[extended_character.into()],
+			continue_block,
+			catch_block,
+			"",
+		)?;
 
 		let putchar_value = putchar_call
 			.try_as_basic_value()
 			.unwrap_left()
 			.into_int_value();
 
+		self.builder.position_at_end(continue_block);
+
 		let check_if_at_end =
 			self.builder
 				.build_int_compare(IntPredicate::EQ, next_index_gep, end_of_string, "")?;
 
 		self.builder
-			.build_conditional_branch(check_if_at_end, exit_block, body_block)?;
+			.build_conditional_branch(check_if_at_end, exit_block, try_block)?;
 
 		self.builder.position_at_end(exit_block);
 
@@ -162,11 +170,25 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		end_value.add_incoming(&[
 			(&i32_type.const_zero(), entry_block),
-			(&putchar_value, body_block),
+			(&putchar_value, continue_block),
 		]);
 
 		self.builder
 			.build_return(Some(&end_value.as_basic_value()))?;
+
+		self.builder.position_at_end(catch_block);
+
+		let exception_type = context.struct_type(&[ptr_type.into(), i32_type.into()], false);
+
+		let out = self.builder.build_landing_pad(
+			exception_type,
+			self.functions.eh_personality,
+			&[],
+			true,
+			"",
+		)?;
+
+		self.builder.build_resume(out)?;
 
 		Ok(())
 	}

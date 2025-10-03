@@ -21,6 +21,7 @@ pub struct AssemblerFunctions<'ctx> {
 	pub i32_expect: FunctionValue<'ctx>,
 	pub bool_expect: FunctionValue<'ctx>,
 	pub assume: FunctionValue<'ctx>,
+	pub eh_personality: FunctionValue<'ctx>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -42,6 +43,19 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 		let puts_ty = i32_type.fn_type(&[ptr_type.into(), i64_type.into()], false);
 		let puts = module.add_function("puts", puts_ty, Some(Linkage::Private));
+
+		let eh_personality_ty = i32_type.fn_type(
+			&[
+				i32_type.into(),
+				i32_type.into(),
+				i64_type.into(),
+				ptr_type.into(),
+				ptr_type.into(),
+			],
+			false,
+		);
+		let eh_personality =
+			module.add_function("eh_personality", eh_personality_ty, Some(Linkage::External));
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(
@@ -72,17 +86,21 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			i32_expect,
 			bool_expect,
 			assume,
+			eh_personality,
 		};
 
 		Ok(this.setup(context))
 	}
 
 	fn setup(self, context: &'ctx Context) -> Self {
+		self.puts.set_personality_function(self.eh_personality);
+
 		self.setup_common_attributes(context)
 			.setup_getchar_attributes(context)
 			.setup_put_attributes(context)
 			.setup_putchar_attributes(context)
 			.setup_puts_attributes(context)
+			.setup_eh_personality_attributes(context)
 	}
 
 	fn setup_common_attributes(self, context: &'ctx Context) -> Self {
@@ -182,6 +200,32 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		for attribute in [zeroext_attr, noundef_attr, returned_attr] {
 			self.putchar
 				.add_attribute(AttributeLoc::Param(0), attribute);
+		}
+
+		self
+	}
+
+	fn setup_eh_personality_attributes(self, context: &'ctx Context) -> Self {
+		let nounwind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
+		let nonlazybind_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 0);
+
+		for attribute in [nounwind_attr, nonlazybind_attr] {
+			self.eh_personality
+				.add_attribute(AttributeLoc::Function, attribute);
+		}
+
+		let noundef_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
+
+		for attribute in iter::once(noundef_attr) {
+			for i in 0..5 {
+				self.eh_personality
+					.add_attribute(AttributeLoc::Param(i), attribute);
+			}
+			self.eh_personality
+				.add_attribute(AttributeLoc::Return, attribute);
 		}
 
 		self
