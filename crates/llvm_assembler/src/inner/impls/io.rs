@@ -246,7 +246,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i64_type.const_int(array_len, false)
 		};
 
-		let call = self.builder.build_invoke(
+		let call = self.builder.build_direct_invoke(
 			self.functions.puts,
 			&[array_ptr.into(), array_len_value.into()],
 			continue_block,
