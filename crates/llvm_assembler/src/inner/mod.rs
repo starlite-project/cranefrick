@@ -59,7 +59,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let basic_block = context.append_basic_block(functions.main, "entry");
 		builder.position_at_end(basic_block);
 
-		let catch_block = context.append_basic_block(functions.main, "catch");
+		let catch_block = context.append_basic_block(functions.main, "lpad");
 
 		let (pointers, ptr_int_type) =
 			AssemblerPointers::new(&module, functions, &builder, &target_data)?;
