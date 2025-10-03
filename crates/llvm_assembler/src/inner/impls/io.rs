@@ -3,7 +3,6 @@ use std::slice;
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
-	attributes::{Attribute, AttributeLoc},
 	context::ContextRef,
 	types::IntType,
 	values::{InstructionValueError, IntValue, PointerValue},
@@ -154,8 +153,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
 		let context = self.context();
 
-		let i64_type = context.i64_type();
-
 		let constant_initializer = context.const_string(c, false);
 
 		let constant_string_ty = constant_initializer.get_type();
@@ -167,12 +164,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.setup_global_value(global_constant, &constant_initializer);
 
 		let global_constant_pointer = global_constant.as_pointer_value();
-
-		let _lifetime = {
-			let lifetime_len = i64_type.const_int(c.len() as u64, false);
-
-			self.start_lifetime(lifetime_len, global_constant_pointer)?
-		};
 
 		let puts_value = self.call_puts(
 			context,
@@ -246,9 +237,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		array_len: u64,
 		fn_name: &'static str,
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
-		let i8_type = context.i8_type();
-		let i8_array_type = i8_type.array_type(array_len as u32);
-
 		let continue_block =
 			context.append_basic_block(self.functions.main, &format!("{fn_name}.continue"));
 
@@ -258,11 +246,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i64_type.const_int(array_len, false)
 		};
 
-		// let call = self.builder.build_call(
-		// 	self.functions.puts,
-		// 	&[array_ptr.into(), array_len_value.into()],
-		// 	&format!("{fn_name}_puts_call"),
-		// )?;
 		let call = self.builder.build_invoke(
 			self.functions.puts,
 			&[array_ptr.into(), array_len_value.into()],
@@ -272,23 +255,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		)?;
 
 		call.set_tail_call(true);
-
-		let byref_attr = context.create_type_attribute(
-			Attribute::get_named_enum_kind_id("byref"),
-			i8_array_type.into(),
-		);
-
-		let deref_attr = context.create_enum_attribute(
-			Attribute::get_named_enum_kind_id("dereferenceable"),
-			array_len + 1,
-		);
-
-		let align_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("align"), 1);
-
-		for attribute in [byref_attr, deref_attr, align_attr] {
-			call.add_attribute(AttributeLoc::Param(0), attribute);
-		}
 
 		self.builder.position_at_end(continue_block);
 

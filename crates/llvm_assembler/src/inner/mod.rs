@@ -16,10 +16,9 @@ use inkwell::{
 	types::IntType,
 	values::{BasicValue, GlobalValue},
 };
-use utils::AssemblerDebugBuilder;
 
 pub use self::utils::AssemblerFunctions;
-use self::utils::AssemblerPointers;
+use self::utils::{AssemblerDebugBuilder, AssemblerPointers};
 use super::LlvmAssemblyError;
 use crate::ContextExt as _;
 
@@ -167,9 +166,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let exception_type = context.struct_type(&[ptr_type.into(), i32_type.into()], false);
 
-		let out = self
+		let exception = self
 			.builder
-			.build_landing_pad(exception_type, self.functions.eh_personality, &[], true, "")
+			.build_landing_pad(
+				exception_type,
+				self.functions.eh_personality,
+				&[],
+				true,
+				"exception",
+			)
 			.map_err(AssemblyError::backend)?;
 
 		self.builder
@@ -188,7 +193,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.map_err(AssemblyError::backend)?;
 
 		self.builder
-			.build_resume(out)
+			.build_resume(exception)
 			.map_err(AssemblyError::backend)?;
 
 		self.write_puts()?;
