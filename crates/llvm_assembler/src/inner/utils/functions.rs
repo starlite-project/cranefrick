@@ -33,7 +33,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
 
 		let putchar_ty = i32_type.fn_type(&[i32_type.into()], false);
-		let putchar = module.add_function("putchar", putchar_ty, Some(Linkage::External));
+		let putchar = module.add_function("rust_putchar", putchar_ty, Some(Linkage::External));
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
@@ -51,8 +51,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			],
 			false,
 		);
-		let eh_personality =
-			module.add_function("eh_personality", eh_personality_ty, Some(Linkage::External));
+		let eh_personality = module.add_function(
+			"rust_eh_personality",
+			eh_personality_ty,
+			Some(Linkage::External),
+		);
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(
