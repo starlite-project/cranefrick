@@ -238,7 +238,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		fn_name: &'static str,
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
 		let continue_block =
-			context.append_basic_block(self.functions.main, &format!("{fn_name}.continue"));
+			context.append_basic_block(self.functions.main, &format!("{fn_name}.invoke.cont"));
 
 		let array_len_value = {
 			let i64_type = context.i64_type();
