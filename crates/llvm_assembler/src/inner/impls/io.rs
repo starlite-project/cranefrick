@@ -3,10 +3,9 @@ use std::{fmt::Display, slice};
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{
-	attributes::{Attribute, AttributeLoc},
 	context::ContextRef,
-	types::{ArrayType, IntType},
-	values::{CallSiteValue, InstructionValueError, IntValue, PointerValue},
+	types::IntType,
+	values::{InstructionValueError, IntValue, PointerValue},
 };
 
 use crate::{LlvmAssemblyError, inner::InnerAssembler};
@@ -57,7 +56,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.start_lifetime(lifetime_array_len, self.pointers.output)?
 		};
 
-		if options.windows(2).all(|w| w[0] == w[1]) {
+		if options.len() > 1 && options.windows(2).all(|w| w[0] == w[1]) {
 			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
 		} else {
 			self.setup_output_cells_puts_iterated(i8_type, options)
@@ -76,17 +75,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.build_store(last_index_gep, zero)?;
 
-		let puts_call = self.builder.build_call(
+		self.builder.build_call(
 			self.functions.puts,
 			&[self.pointers.output.into(), array_len.into()],
 			"output_cells_puts_call",
 		)?;
-
-		self.add_puts_io_attributes(
-			puts_call,
-			i8_type.array_type(options.len() as u32 + 1),
-			options.len() as u64,
-		);
 
 		Ok(())
 	}
@@ -185,22 +178,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let global_constant_pointer = global_constant.as_pointer_value();
 
-		let array_len = i64_type.const_int(c.len() as u64, false);
-
 		let _lifetime = {
 			let lifetime_len = i64_type.const_int(c.len() as u64 + 1, false);
 
 			self.start_lifetime(lifetime_len, global_constant_pointer)?
 		};
 
-		let puts_call = self.call_puts(global_constant_pointer, array_len, "output_chars")?;
+		let array_len = i64_type.const_int(c.len() as u64, false);
 
-		self.add_puts_io_attributes(puts_call, constant_string_ty, c.len() as u64);
-
-		let puts_value = puts_call
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_int_value();
+		let puts_value = self.call_puts(global_constant_pointer, array_len, "output_chars")?;
 
 		let last = c.last().copied().unwrap();
 
@@ -235,32 +221,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		char_instr.set_metadata(range_metadata_node, range_metadata_id)
 	}
 
-	fn add_puts_io_attributes(
-		&self,
-		call: CallSiteValue<'ctx>,
-		array_ty: ArrayType<'ctx>,
-		array_len: u64,
-	) {
-		call.set_tail_call(true);
-
-		let byref_attr = self
-			.context()
-			.create_type_attribute(Attribute::get_named_enum_kind_id("byref"), array_ty.into());
-
-		let deref_attr = self.context().create_enum_attribute(
-			Attribute::get_named_enum_kind_id("dereferenceable"),
-			array_len + 1,
-		);
-
-		let align_attr = self
-			.context()
-			.create_enum_attribute(Attribute::get_named_enum_kind_id("align"), 1);
-
-		for attribute in [byref_attr, deref_attr, align_attr] {
-			call.add_attribute(AttributeLoc::Param(0), attribute);
-		}
-	}
-
 	pub fn input_into_cell(&self) -> Result<(), LlvmAssemblyError> {
 		let context = self.context();
 
@@ -291,11 +251,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 		array_ptr: PointerValue<'ctx>,
 		array_len: IntValue<'ctx>,
 		fn_name: impl Display,
-	) -> Result<CallSiteValue<'ctx>, LlvmAssemblyError> {
-		Ok(self.builder.build_call(
+	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+		let call = self.builder.build_call(
 			self.functions.puts,
 			&[array_ptr.into(), array_len.into()],
 			&format!("{fn_name}_puts_call"),
-		)?)
+		)?;
+
+		call.set_tail_call(true);
+
+		Ok(call.try_as_basic_value().unwrap_left().into_int_value())
 	}
 }
