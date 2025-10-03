@@ -689,7 +689,6 @@ name = "frick_llvm_interop"
 version = "0.1.0"
 dependencies = [
  "libc",
- "tracing",
 ]
 
 [[package]]
