@@ -9,9 +9,7 @@ use std::{
 	error::Error as StdError,
 	ffi::CStr,
 	fmt::{Display, Formatter, Result as FmtResult, Write as _},
-	io::{self, prelude::*},
 	path::{Path, PathBuf},
-	slice,
 };
 
 use frick_assembler::{Assembler, AssemblyError, InnerAssemblyError};
