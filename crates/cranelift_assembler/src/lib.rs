@@ -64,12 +64,15 @@ impl Assembler for CraneliftAssembler {
 		info!("looking up ISA");
 
 		let isa = {
-			let flags = self.flags.try_into().map_err(AssemblyError::backend)?;
+			let flags = self
+				.flags
+				.try_into()
+				.map_err(CraneliftAssemblyError::from)?;
 
 			isa::lookup(triple)
-				.map_err(AssemblyError::backend)?
+				.map_err(CraneliftAssemblyError::from)?
 				.finish(flags)
-				.map_err(AssemblyError::backend)
+				.map_err(CraneliftAssemblyError::from)
 		}?;
 
 		info!("creating JIT module");
@@ -95,7 +98,7 @@ impl Assembler for CraneliftAssembler {
 
 		let func = module
 			.declare_function("main", Linkage::Local, &sig)
-			.map_err(AssemblyError::backend)?;
+			.map_err(CraneliftAssemblyError::from)?;
 
 		ctx.func.signature = sig;
 
@@ -124,7 +127,7 @@ impl Assembler for CraneliftAssembler {
 
 		info!("optimizing cranelift IR");
 		ctx.optimize(&*isa, &mut ControlPlane::default())
-			.map_err(AssemblyError::backend)?;
+			.map_err(CraneliftAssemblyError::from)?;
 
 		{
 			info!("writing optimized cranelift IR");
@@ -144,7 +147,7 @@ impl Assembler for CraneliftAssembler {
 			info!("compiling binary");
 			let compiled_func = ctx
 				.compile(&*isa, &mut ControlPlane::default())
-				.map_err(AssemblyError::backend)?;
+				.map_err(CraneliftAssemblyError::from)?;
 
 			info!("writing compiled binary");
 			fs::write(output_path.join("program.bin"), compiled_func.code_buffer())?;
@@ -153,13 +156,13 @@ impl Assembler for CraneliftAssembler {
 		info!("finishing up module definitions");
 		module
 			.define_function(func, &mut ctx)
-			.map_err(AssemblyError::backend)?;
+			.map_err(CraneliftAssemblyError::from)?;
 		module.clear_context(&mut ctx);
 
 		info!("lowering to native assembly");
 		module
 			.finalize_definitions()
-			.map_err(AssemblyError::backend)?;
+			.map_err(CraneliftAssemblyError::from)?;
 
 		Ok(CraneliftAssembledModule {
 			module: Some(module),
