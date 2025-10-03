@@ -233,12 +233,38 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_array_di_type = self
 			.di_builder
-			.create_array_type(i8_di_type, 8 * 256, 1, &[0..8])
+			.create_array_type(i8_di_type, 8 * 8, 1, &[0..8])
 			.as_type();
 
-		let output_variable = self.di_builder.create_auto_variable(
+		let puts_array_variable = self.di_builder.create_auto_variable(
 			main_subprogram.as_debug_info_scope(),
-			"output",
+			"puts_array",
+			self.compile_unit.get_file(),
+			0,
+			i8_array_di_type,
+			false,
+			i32::ZERO,
+			1,
+		);
+
+		let right_after_puts_array_alloca = get_instruction_after_alloca(pointers.puts_array)?;
+
+		self.di_builder.insert_declare_before_instruction(
+			pointers.puts_array,
+			Some(puts_array_variable),
+			None,
+			debug_loc,
+			right_after_puts_array_alloca,
+		);
+
+		let i8_array_di_type = self
+			.di_builder
+			.create_array_type(i8_di_type, 8 * 2, 1, &[0..2])
+			.as_type();
+
+		let puts_cell_variable = self.di_builder.create_auto_variable(
+			main_subprogram.as_debug_info_scope(),
+			"puts_cell",
 			self.compile_unit.get_file(),
 			0,
 			i8_array_di_type,
@@ -249,8 +275,8 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		// Need to do this as `setup` is called before any other instructions are added
 		self.di_builder.insert_declare_at_end(
-			pointers.puts_alloca,
-			Some(output_variable),
+			pointers.puts_cell,
+			Some(puts_cell_variable),
 			None,
 			debug_loc,
 			entry_block,

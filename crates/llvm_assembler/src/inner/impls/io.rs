@@ -49,11 +49,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
 
-		let lifetime_array_len = i64_type.const_int(options.len() as u64 + 1, false);
-
 		let array_len = i64_type.const_int(options.len() as u64, false);
 
-		let _lifetime = self.start_lifetime(lifetime_array_len, self.pointers.puts_alloca)?;
+		let _lifetime = {
+			let lifetime_array_len = i64_type.const_int(options.len() as u64 + 1, false);
+
+			self.start_lifetime(lifetime_array_len, self.pointers.puts_array)?
+		};
 
 		if options.windows(2).all(|w| w[0] == w[1]) {
 			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
@@ -66,7 +68,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let last_index_gep = unsafe {
 			self.builder.build_in_bounds_gep(
 				i8_type,
-				self.pointers.puts_alloca,
+				self.pointers.puts_array,
 				&[array_len],
 				"output_cells_puts_gep",
 			)?
@@ -76,7 +78,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let puts_call = self.builder.build_call(
 			self.functions.puts,
-			&[self.pointers.puts_alloca.into(), array_len.into()],
+			&[self.pointers.puts_array.into(), array_len.into()],
 			"output_cells_puts_call",
 		)?;
 
@@ -143,7 +145,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let array_len = i64_type.const_int(length, false);
 
 		self.builder
-			.build_memset(self.pointers.puts_alloca, 1, value_to_memset, array_len)?;
+			.build_memset(self.pointers.puts_array, 1, value_to_memset, array_len)?;
 
 		Ok(())
 	}
@@ -175,7 +177,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let output_array_gep = unsafe {
 				self.builder.build_in_bounds_gep(
 					i8_type,
-					self.pointers.puts_alloca,
+					self.pointers.puts_array,
 					&[array_offset],
 					"setup_output_cells_puts_iterated_gep",
 				)?
@@ -202,14 +204,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
 
-		// let lifetime_array_len = i64_type.const_int(2, false);
-
-		// let _lifetime = self.start_lifetime(lifetime_array_len, self.pointers.single_puts_alloca)?;
-
 		let _lifetime = {
 			let lifetime_array_len = i64_type.const_int(2, false);
 
-			self.start_lifetime(lifetime_array_len, self.pointers.single_puts_alloca)?
+			self.start_lifetime(lifetime_array_len, self.pointers.puts_cell)?
 		};
 
 		let i64_one = i64_type.const_int(1, false);
@@ -218,7 +216,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		if matches!(value_offset, 0) {
 			self.builder
-				.build_memcpy(self.pointers.single_puts_alloca, 1, cell_gep, 1, i64_one)?;
+				.build_memcpy(self.pointers.puts_cell, 1, cell_gep, 1, i64_one)?;
 		} else {
 			let value_offset = i8_type.const_int(value_offset as u64, false);
 
@@ -231,12 +229,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 				self.builder
 					.build_int_add(cell_value, value_offset, "output_cell_add")?;
 
-			self.store_into(offset_cell_value, self.pointers.single_puts_alloca)?;
+			self.store_into(offset_cell_value, self.pointers.puts_cell)?;
 		}
 
 		let puts_call = self.builder.build_call(
 			self.functions.puts,
-			&[self.pointers.single_puts_alloca.into(), i64_one.into()],
+			&[self.pointers.puts_cell.into(), i64_one.into()],
 			"output_cell_puts_call",
 		)?;
 

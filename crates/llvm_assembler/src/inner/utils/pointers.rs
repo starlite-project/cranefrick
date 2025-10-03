@@ -10,8 +10,8 @@ use crate::LlvmAssemblyError;
 pub struct AssemblerPointers<'ctx> {
 	pub tape: PointerValue<'ctx>,
 	pub pointer: PointerValue<'ctx>,
-	pub puts_alloca: PointerValue<'ctx>,
-	pub single_puts_alloca: PointerValue<'ctx>,
+	pub puts_array: PointerValue<'ctx>,
+	pub puts_cell: PointerValue<'ctx>,
 }
 
 impl<'ctx> AssemblerPointers<'ctx> {
@@ -82,8 +82,8 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			Self {
 				tape,
 				pointer,
-				puts_alloca,
-				single_puts_alloca,
+				puts_array: puts_alloca,
+				puts_cell: single_puts_alloca,
 			},
 			ptr_int_type,
 		))
