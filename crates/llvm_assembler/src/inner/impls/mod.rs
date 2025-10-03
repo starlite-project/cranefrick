@@ -74,11 +74,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			(params[0].into_pointer_value(), params[1].into_int_value())
 		};
 
-		let null_pointer = ptr_type.const_null();
-
-		let is_ptr_null =
-			self.builder
-				.build_int_compare(IntPredicate::NE, pointer_param, null_pointer, "")?;
+		let is_ptr_null = self.builder.build_is_not_null(pointer_param, "")?;
 
 		self.builder
 			.build_direct_call(self.functions.assume, &[is_ptr_null.into()], "")?;
