@@ -56,7 +56,7 @@ members = [
     "crates/assembler",
     "crates/cranelift_assembler",
     "crates/ir",
-    "crates/llvm_assembler",
+    "crates/llvm_assembler", "crates/llvm_interop",
     "crates/optimizer",
     "crates/rust_assembler",
     "crates/utils",
@@ -164,4 +164,7 @@ opt-level = 1
 opt-level = 3
 
 [profile.dev.package.frick_optimizer]
+opt-level = 3
+
+[profile.dev.package.frick_llvm_interop]
 opt-level = 3

@@ -676,10 +676,19 @@ version = "0.1.0"
 dependencies = [
  "frick_assembler",
  "frick_ir",
+ "frick_llvm_interop",
  "frick_utils",
  "inkwell",
  "libc",
  "send_wrapper",
+ "tracing",
+]
+
+[[package]]
+name = "frick_llvm_interop"
+version = "0.1.0"
+dependencies = [
+ "libc",
  "tracing",
 ]
 

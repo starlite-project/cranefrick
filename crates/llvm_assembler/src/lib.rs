@@ -211,12 +211,12 @@ impl Assembler for LlvmAssembler {
 		}
 
 		if let Some(putchar) = module.get_function("putchar") {
-			execution_engine.add_global_mapping(&putchar, self::putchar as usize);
+			execution_engine.add_global_mapping(&putchar, frick_llvm_interop::putchar as usize);
 		}
 
 		if let Some(eh_personality) = module.get_function("eh_personality") {
 			execution_engine
-				.add_global_mapping(&eh_personality, self::rust_eh_personality as usize);
+				.add_global_mapping(&eh_personality, frick_llvm_interop::eh_personality as usize);
 		}
 
 		Ok(LlvmAssembledModule {
@@ -339,28 +339,3 @@ impl From<InstructionValueError> for LlvmAssemblyError {
 }
 
 impl InnerAssemblyError for LlvmAssemblyError {}
-
-#[unsafe(no_mangle)]
-#[must_use]
-unsafe extern "C-unwind" fn putchar(c: libc::c_int) -> libc::c_int {
-	let mut stdout = io::stdout().lock();
-
-	let c_truncated = c as u8;
-
-	stdout
-		.write_all(slice::from_ref(&c_truncated))
-		.and_then(|()| stdout.flush())
-		.unwrap();
-
-	c
-}
-
-unsafe extern "C" {
-	fn rust_eh_personality(
-		version: i32,
-		actions: i32,
-		exception_class: i64,
-		exception_object: *mut u8,
-		context: *mut u8,
-	) -> i32;
-}
