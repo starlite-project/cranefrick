@@ -81,7 +81,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_compare(IntPredicate::NE, pointer_param, null_pointer, "")?;
 
 		self.builder
-			.build_call(self.functions.assume, &[is_ptr_null.into()], "")?;
+			.build_direct_call(self.functions.assume, &[is_ptr_null.into()], "")?;
 
 		let end_of_string = unsafe {
 			self.builder
@@ -130,7 +130,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_int_z_extend(actual_value, i32_type, "")?;
 
-		let putchar_call = self.builder.build_invoke(
+		let putchar_call = self.builder.build_direct_invoke(
 			self.functions.putchar,
 			&[extended_character.into()],
 			continue_block,
