@@ -249,16 +249,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = context.i8_type();
 		let i8_array_type = i8_type.array_type(array_len as u32);
 
+		let continue_block =
+			context.append_basic_block(self.functions.main, &format!("{fn_name}.continue"));
+
 		let array_len_value = {
 			let i64_type = context.i64_type();
 
 			i64_type.const_int(array_len, false)
 		};
 
-		let call = self.builder.build_call(
+		// let call = self.builder.build_call(
+		// 	self.functions.puts,
+		// 	&[array_ptr.into(), array_len_value.into()],
+		// 	&format!("{fn_name}_puts_call"),
+		// )?;
+		let call = self.builder.build_invoke(
 			self.functions.puts,
 			&[array_ptr.into(), array_len_value.into()],
-			&format!("{fn_name}_puts_call"),
+			continue_block,
+			self.catch_block,
+			&format!("{fn_name}_puts_invoke"),
 		)?;
 
 		call.set_tail_call(true);
@@ -279,6 +289,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		for attribute in [byref_attr, deref_attr, align_attr] {
 			call.add_attribute(AttributeLoc::Param(0), attribute);
 		}
+
+		self.builder.position_at_end(continue_block);
 
 		Ok(call.try_as_basic_value().unwrap_left().into_int_value())
 	}

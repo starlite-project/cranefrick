@@ -7,6 +7,7 @@ use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::{BrainIr, SubType};
 use frick_utils::GetOrZero as _;
 use inkwell::{
+	basic_block::BasicBlock,
 	builder::Builder,
 	context::{Context, ContextRef},
 	debug_info::AsDIScope,
@@ -20,6 +21,7 @@ use utils::AssemblerDebugBuilder;
 pub use self::utils::AssemblerFunctions;
 use self::utils::AssemblerPointers;
 use super::LlvmAssemblyError;
+use crate::ContextExt as _;
 
 pub struct InnerAssembler<'ctx> {
 	module: Module<'ctx>,
@@ -29,6 +31,7 @@ pub struct InnerAssembler<'ctx> {
 	ptr_int_type: IntType<'ctx>,
 	target_machine: TargetMachine,
 	debug_builder: AssemblerDebugBuilder<'ctx>,
+	catch_block: BasicBlock<'ctx>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -56,6 +59,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let basic_block = context.append_basic_block(functions.main, "entry");
 		builder.position_at_end(basic_block);
+
+		let catch_block = context.append_basic_block(functions.main, "catch");
 
 		let (pointers, ptr_int_type) =
 			AssemblerPointers::new(&module, functions, &builder, &target_data)?;
@@ -102,6 +107,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_int_type,
 			target_machine,
 			debug_builder,
+			catch_block,
 		})
 	}
 
@@ -120,7 +126,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.ops(ops, 1)?;
 
-		let i64_type = self.context().i64_type();
+		let context = self.context();
+
+		let i64_type = context.i64_type();
+		let i32_type = context.i32_type();
+		let ptr_type = context.default_ptr_type();
 
 		let i64_size = i64_type.const_int(8, false);
 
@@ -143,6 +153,27 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder
 			.build_return(None)
+			.map_err(AssemblyError::backend)?;
+
+		self.builder.unset_current_debug_location();
+
+		let last_basic_block = self.functions.main.get_last_basic_block().unwrap();
+
+		if last_basic_block != self.catch_block {
+			self.catch_block.move_after(last_basic_block).unwrap();
+		}
+
+		self.builder.position_at_end(self.catch_block);
+
+		let exception_type = context.struct_type(&[ptr_type.into(), i32_type.into()], false);
+
+		let out = self
+			.builder
+			.build_landing_pad(exception_type, self.functions.eh_personality, &[], true, "")
+			.map_err(AssemblyError::backend)?;
+
+		self.builder
+			.build_resume(out)
 			.map_err(AssemblyError::backend)?;
 
 		self.write_puts()?;
