@@ -927,8 +927,7 @@ dependencies = [
 [[package]]
 name = "llvm-sys"
 version = "181.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d320f9d2723c97d4b78f9190a61ed25cc7cfbe456668c08e6e7dd8e50ceb8500"
+source = "git+https://gitlab.com/taricorp/llvm-sys.rs.git?branch=llvm-18.0#c4ae77c86ec40b954ec0907f35231e9cf92d2a04"
 dependencies = [
  "anyhow",
  "cc",

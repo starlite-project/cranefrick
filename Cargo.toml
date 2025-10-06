@@ -56,7 +56,8 @@ members = [
     "crates/assembler",
     "crates/cranelift_assembler",
     "crates/ir",
-    "crates/llvm_assembler", "crates/llvm_interop",
+    "crates/llvm_assembler",
+    "crates/llvm_interop",
     "crates/optimizer",
     "crates/rust_assembler",
     "crates/utils",
@@ -153,6 +154,9 @@ version = "0.1.0"
 [profile.release]
 codegen-units = 1
 lto = "fat"
+
+[patch.crates-io]
+llvm-sys = { git = "https://gitlab.com/taricorp/llvm-sys.rs.git", branch = "llvm-18.0" }
 
 [workspace.metadata.docs.rs]
 all-features = true
