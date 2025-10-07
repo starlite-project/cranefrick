@@ -7,7 +7,7 @@ use inkwell::{
 };
 
 use crate::{
-	LlvmAssemblyError,
+	ContextGetter as _, LlvmAssemblyError,
 	inner::{InnerAssembler, utils::OUTPUT_ARRAY_LEN},
 };
 

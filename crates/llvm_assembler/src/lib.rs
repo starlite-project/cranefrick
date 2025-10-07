@@ -30,7 +30,7 @@ use inner::AssemblerFunctions;
 use send_wrapper::SendWrapper;
 use tracing::info;
 
-pub(crate) use self::ext::ContextExt;
+pub(crate) use self::ext::*;
 use self::inner::InnerAssembler;
 pub use self::module::LlvmAssembledModule;
 

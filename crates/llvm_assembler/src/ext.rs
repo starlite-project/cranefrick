@@ -1,9 +1,24 @@
 use inkwell::{
 	AddressSpace,
 	attributes::Attribute,
-	context::{Context, ContextRef},
+	context::{AsContextRef, Context, ContextRef},
 	types::PointerType,
 };
+
+pub trait ContextGetter<'ctx> {
+	fn context(&self) -> ContextRef<'ctx>;
+}
+
+impl<'ctx, C> ContextGetter<'ctx> for C
+where
+	C: AsContextRef<'ctx>,
+{
+	fn context(&self) -> ContextRef<'ctx> {
+		let raw_context_ref = self.as_ctx_ref();
+
+		unsafe { ContextRef::new(raw_context_ref) }
+	}
+}
 
 pub trait ContextExt {
 	fn default_ptr_type(&self) -> PointerType<'_>;

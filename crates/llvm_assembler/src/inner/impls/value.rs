@@ -1,7 +1,7 @@
 use frick_ir::CellChangeOptions;
 use inkwell::values::{IntValue, PointerValue};
 
-use crate::{LlvmAssemblyError, inner::InnerAssembler};
+use crate::{ContextGetter as _, LlvmAssemblyError, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn move_value_to(&self, options: CellChangeOptions) -> Result<(), LlvmAssemblyError> {

@@ -2,7 +2,7 @@ use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use inkwell::{IntPredicate, debug_info::AsDIScope as _};
 
-use crate::{LlvmAssemblyError, inner::InnerAssembler};
+use crate::{ContextGetter as _, LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	pub fn if_not_zero(

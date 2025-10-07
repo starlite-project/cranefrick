@@ -12,7 +12,7 @@ use inkwell::{
 };
 
 use super::{InnerAssembler, LlvmAssemblyError};
-use crate::ContextExt as _;
+use crate::{ContextExt as _, ContextGetter as _};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	fn start_lifetime(
@@ -53,6 +53,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub fn write_puts(&self) -> Result<(), LlvmAssemblyError> {
 		let context = self.context();
+
 		let i8_type = context.i8_type();
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();

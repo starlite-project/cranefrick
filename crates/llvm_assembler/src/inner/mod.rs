@@ -9,8 +9,9 @@ use frick_utils::GetOrZero as _;
 use inkwell::{
 	basic_block::BasicBlock,
 	builder::Builder,
-	context::{Context, ContextRef},
+	context::{AsContextRef, Context},
 	debug_info::AsDIScope,
+	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Linkage, Module},
 	targets::TargetMachine,
 	types::IntType,
@@ -20,7 +21,7 @@ use inkwell::{
 pub use self::utils::AssemblerFunctions;
 use self::utils::{AssemblerDebugBuilder, AssemblerPointers};
 use super::LlvmAssemblyError;
-use crate::ContextExt as _;
+use crate::{ContextExt as _, ContextGetter as _};
 
 pub struct InnerAssembler<'ctx> {
 	module: Module<'ctx>,
@@ -108,10 +109,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			debug_builder,
 			catch_block,
 		})
-	}
-
-	pub fn context(&self) -> ContextRef<'ctx> {
-		self.module.get_context()
 	}
 
 	pub fn assemble(
@@ -279,5 +276,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		global.set_linkage(Linkage::Private);
 		global.set_initializer(initializer);
 		global.set_constant(true);
+	}
+}
+
+unsafe impl<'ctx> AsContextRef<'ctx> for InnerAssembler<'ctx> {
+	fn as_ctx_ref(&self) -> LLVMContextRef {
+		self.module.get_context().as_ctx_ref()
 	}
 }

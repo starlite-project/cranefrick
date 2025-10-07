@@ -2,7 +2,7 @@ use std::ops::RangeInclusive;
 
 use frick_ir::{CellChangeOptions, get_range, is_range};
 
-use crate::{LlvmAssemblyError, inner::InnerAssembler};
+use crate::{ContextGetter as _, LlvmAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	pub fn set_cell(&self, value: u8, offset: i32) -> Result<(), LlvmAssemblyError> {
