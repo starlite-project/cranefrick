@@ -211,7 +211,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		for op in ops {
 			let debug_loc = self.debug_builder.create_debug_location(
 				self.context(),
-				0,
+				1,
 				op_count as u32,
 				self.functions
 					.main

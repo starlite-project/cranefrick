@@ -1,5 +1,3 @@
-use std::slice;
-
 use frick_assembler::AssemblyError;
 use frick_ir::{BrainIr, CellChangeOptions, OutputOptions};
 use inkwell::{

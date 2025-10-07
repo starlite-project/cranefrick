@@ -59,14 +59,10 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 	) -> Result<Self, LlvmAssemblyError> {
 		let entry_block = functions.main.get_first_basic_block().unwrap();
 
-		let main_subroutine_type = self.di_builder.create_subroutine_type(
-			self.compile_unit.get_file(),
-			None,
-			&[],
-			i32::PUBLIC,
-		);
+		let main_subroutine_type =
+			self.create_subroutine_type(self.compile_unit.get_file(), None, &[], i32::PUBLIC);
 
-		let main_subprogram = self.di_builder.create_function(
+		let main_subprogram = self.create_function(
 			self.compile_unit.as_debug_info_scope(),
 			"main",
 			None,
@@ -82,9 +78,11 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		functions.main.set_subprogram(main_subprogram);
 
+		let context = functions.main.get_type().get_context();
+
 		let debug_loc = self.create_debug_location(
 			functions.main.get_type().get_context(),
-			0,
+			1,
 			0,
 			main_subprogram.as_debug_info_scope(),
 			None,
@@ -105,14 +103,14 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			.create_basic_type("char", 32, 7, i32::ZERO)?
 			.as_type();
 
-		let puts_subroutine_type = self.di_builder.create_subroutine_type(
+		let puts_subroutine_type = self.create_subroutine_type(
 			self.compile_unit.get_file(),
 			Some(i32_di_type),
 			&[i8_di_ptr_type],
 			i32::ZERO,
 		);
 
-		let puts_subprogram = self.di_builder.create_function(
+		let puts_subprogram = self.create_function(
 			self.compile_unit.as_debug_info_scope(),
 			"puts",
 			None,
@@ -128,14 +126,14 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		functions.puts.set_subprogram(puts_subprogram);
 
-		let putchar_subroutine_type = self.di_builder.create_subroutine_type(
+		let putchar_subroutine_type = self.create_subroutine_type(
 			self.compile_unit.get_file(),
 			Some(i32_di_type),
 			&[i32_di_type],
 			i32::ZERO,
 		);
 
-		let putchar_subprogram = self.di_builder.create_function(
+		let putchar_subprogram = self.create_function(
 			self.compile_unit.as_debug_info_scope(),
 			"putchar",
 			Some("rust_putchar"),
@@ -151,14 +149,14 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		functions.putchar.set_subprogram(putchar_subprogram);
 
-		let getchar_subroutine_type = self.di_builder.create_subroutine_type(
+		let getchar_subroutine_type = self.create_subroutine_type(
 			self.compile_unit.get_file(),
 			Some(i32_di_type),
 			&[],
 			i32::ZERO,
 		);
 
-		let getchar_subprogram = self.di_builder.create_function(
+		let getchar_subprogram = self.create_function(
 			self.compile_unit.as_debug_info_scope(),
 			"getchar",
 			Some("getchar"),
@@ -184,7 +182,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			)
 			.as_type();
 
-		let tape_variable = self.di_builder.create_auto_variable(
+		let tape_variable = self.create_auto_variable(
 			main_subprogram.as_debug_info_scope(),
 			"tape",
 			self.compile_unit.get_file(),
@@ -197,7 +195,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let right_after_tape_alloca = get_instruction_after_alloca(pointers.tape)?;
 
-		self.di_builder.insert_declare_before_instruction(
+		self.insert_declare_before_instruction(
 			pointers.tape,
 			Some(tape_variable),
 			None,
@@ -210,11 +208,11 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			.create_basic_type("u64", 64, 7, i32::PUBLIC)?
 			.as_type();
 
-		let pointer_variable = self.di_builder.create_auto_variable(
+		let pointer_variable = self.create_auto_variable(
 			main_subprogram.as_debug_info_scope(),
 			"pointer",
 			self.compile_unit.get_file(),
-			1,
+			0,
 			i64_di_type,
 			false,
 			i32::ZERO,
@@ -223,7 +221,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let right_after_pointer_alloca = get_instruction_after_alloca(pointers.pointer)?;
 
-		self.di_builder.insert_declare_before_instruction(
+		self.insert_declare_before_instruction(
 			pointers.pointer,
 			Some(pointer_variable),
 			None,
@@ -236,7 +234,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			.create_array_type(i8_di_type, 8 * u64::from(OUTPUT_ARRAY_LEN), 1, &[0..8])
 			.as_type();
 
-		let output_variable = self.di_builder.create_auto_variable(
+		let output_variable = self.create_auto_variable(
 			main_subprogram.as_debug_info_scope(),
 			"output",
 			self.compile_unit.get_file(),
@@ -255,6 +253,9 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			debug_loc,
 			entry_block,
 		);
+
+		let debug_loc =
+			self.create_debug_location(context, 1, 0, main_subprogram.as_debug_info_scope(), None);
 
 		builder.set_current_debug_location(debug_loc);
 
