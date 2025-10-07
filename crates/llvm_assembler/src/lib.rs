@@ -89,7 +89,7 @@ impl Assembler for LlvmAssembler {
 		ops: &[BrainIr],
 		output_path: &Path,
 	) -> Result<Self::Module<'ctx>, AssemblyError<Self::Error>> {
-		info!("initializing native target");
+		info!("initializing all targets");
 
 		Target::initialize_all(&InitializationConfig::default());
 
