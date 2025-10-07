@@ -290,6 +290,9 @@ pub fn optimize_replace_value(ops: [&BrainIr; 2]) -> Option<Change> {
 			l.clone(),
 			BrainIr::ReplaceValueFrom(*options),
 		])),
+		[BrainIr::SetCell(.., None), BrainIr::ReplaceValueFrom(..)] => {
+			Some(Change::remove_offset(0))
+		}
 		_ => None,
 	}
 }
