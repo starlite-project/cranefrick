@@ -2,7 +2,10 @@ mod args;
 
 use clap::Parser as _;
 use color_eyre::{Report, Result};
-use inkwell::{context::Context, values::{BasicValue, CallSiteValue}};
+use inkwell::{
+	context::Context,
+	values::{BasicValue, CallSiteValue},
+};
 
 use self::args::Args;
 
