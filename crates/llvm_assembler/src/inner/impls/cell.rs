@@ -228,15 +228,15 @@ impl InnerAssembler<'_> {
 
 		let i8_type = context.i8_type();
 
-		let values_values = values
+		let values_value = values
 			.iter()
 			.copied()
 			.map(|x| i8_type.const_int(x.into(), false))
 			.collect::<Vec<_>>();
 
-		let vector = VectorType::const_vector(&values_values);
+		let array_value = i8_type.const_array(&values_value);
 
-		self.store(vector, start, "set_many_cells")
+		self.store(array_value, start, "set_many_cells")
 	}
 
 	pub fn set_range(
