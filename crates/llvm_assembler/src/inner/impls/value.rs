@@ -110,8 +110,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn replace_value_from_memcpyed(&self, offset: i32) -> Result<(), LlvmAssemblyError> {
-		let i8_type = self.context().i8_type();
-		let i8_size = i8_type.size_of();
+		let context = self.context();
+
+		let i8_type = context.i8_type();
+		let i8_size = {
+			let i64_type = context.i64_type();
+
+			i64_type.const_int(1, false)
+		};
 
 		let current_cell_gep = self.tape_gep(i8_type, 0, "replace_value_from_memcpyed")?;
 

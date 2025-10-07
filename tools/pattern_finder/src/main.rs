@@ -1,8 +1,12 @@
-use std::{fs, path::PathBuf};
+mod args;
 
-use clap::Parser;
+use std::fs;
+
+use clap::Parser as _;
 use color_eyre::Result;
 use walkdir::WalkDir;
+
+use self::args::Args;
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
@@ -56,12 +60,6 @@ fn main() -> Result<()> {
 	println!("found {input} a total of {count} times");
 
 	Ok(())
-}
-
-#[derive(Debug, Parser)]
-struct Args {
-	folder_path: PathBuf,
-	input: String,
 }
 
 const fn is_brainfuck(c: char) -> bool {

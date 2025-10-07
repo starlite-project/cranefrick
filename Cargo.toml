@@ -61,6 +61,7 @@ members = [
     "crates/optimizer",
     "crates/rust_assembler",
     "crates/utils",
+    "tools/memcpy_finder",
     "tools/pattern_finder"
 ]
 resolver = "3"
