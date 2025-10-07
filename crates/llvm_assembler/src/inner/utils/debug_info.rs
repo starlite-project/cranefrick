@@ -12,7 +12,7 @@ use inkwell::{
 	values::{InstructionValue, PointerValue},
 };
 
-use super::{AssemblerFunctions, AssemblerPointers};
+use super::{AssemblerFunctions, AssemblerPointers, OUTPUT_ARRAY_LEN};
 use crate::LlvmAssemblyError;
 
 pub struct AssemblerDebugBuilder<'ctx> {
@@ -233,7 +233,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_array_di_type = self
 			.di_builder
-			.create_array_type(i8_di_type, 8 * 256, 1, &[0..8])
+			.create_array_type(i8_di_type, 8 * u64::from(OUTPUT_ARRAY_LEN), 1, &[0..8])
 			.as_type();
 
 		let output_variable = self.di_builder.create_auto_variable(
