@@ -57,7 +57,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.start_lifetime(lifetime_array_len, self.pointers.output)?
 		};
 
-		if options.len() > 1 && options.windows(2).all(|w| w[0] == w[1]) {
+		if is_memcpyable(options) {
+			self.setup_output_cells_puts_memcpy(context, options)
+		} else if is_memsettable(options) {
 			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
 		} else {
 			self.setup_output_cells_puts_iterated(i8_type, options)
@@ -69,6 +71,30 @@ impl<'ctx> InnerAssembler<'ctx> {
 			options.len() as u64,
 			"output_cells_puts",
 		)?;
+
+		Ok(())
+	}
+
+	fn setup_output_cells_puts_memcpy(
+		&self,
+		context: ContextRef<'ctx>,
+		options: &[CellChangeOptions<i8>],
+	) -> Result<(), LlvmAssemblyError> {
+		let i8_type = context.i8_type();
+
+		let start = options.first().unwrap().offset();
+		let len = (start..=options.last().unwrap().offset()).count() as u32;
+
+		let current_gep = self.tape_gep(i8_type, start, "setup_output_cells_puts_memcpy")?;
+
+		let len_value = {
+			let i64_type = context.i64_type();
+
+			i64_type.const_int(len.into(), false)
+		};
+
+		self.builder
+			.build_memcpy(self.pointers.output, 1, current_gep, 1, len_value)?;
 
 		Ok(())
 	}
@@ -260,4 +286,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		Ok(call.try_as_basic_value().unwrap_left().into_int_value())
 	}
+}
+
+fn is_memcpyable(options: &[CellChangeOptions<i8>]) -> bool {
+	if options.len() <= 1 {
+		return false;
+	}
+
+	if options.iter().any(|x| !matches!(x.value(), 0)) {
+		return false;
+	}
+
+	options
+		.windows(2)
+		.all(|w| w[0].offset() + 1 == w[1].offset())
+}
+
+fn is_memsettable(options: &[CellChangeOptions<i8>]) -> bool {
+	if options.len() <= 1 {
+		return false;
+	}
+
+	options.windows(2).all(|w| w[0] == w[1])
 }
