@@ -60,7 +60,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		let entry_block = functions.main.get_first_basic_block().unwrap();
 
 		let main_subroutine_type =
-			self.create_subroutine_type(self.compile_unit.get_file(), None, &[], i32::PUBLIC);
+			self.create_subroutine_type(self.compile_unit.get_file(), None, &[], i32::ZERO);
 
 		let main_subprogram = self.create_function(
 			self.compile_unit.as_debug_info_scope(),
@@ -205,7 +205,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i64_di_type = self
 			.di_builder
-			.create_basic_type("u64", 64, 7, i32::PUBLIC)?
+			.create_basic_type("u64", 64, 7, i32::ZERO)?
 			.as_type();
 
 		let pointer_variable = self.create_auto_variable(
