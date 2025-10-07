@@ -2,10 +2,7 @@ mod args;
 
 use clap::Parser as _;
 use color_eyre::{Report, Result};
-use inkwell::{
-	context::Context,
-	values::{BasicValue, CallSiteValue},
-};
+use inkwell::{context::Context, values::CallSiteValue};
 
 use self::args::Args;
 
@@ -44,6 +41,8 @@ fn main() -> Result<()> {
 				let Some(size_param) = fn_value.get_nth_param(2) else {
 					continue;
 				};
+
+				println!("{size_param}");
 			}
 		}
 	}
