@@ -88,7 +88,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		self.main.set_personality_function(self.eh_personality);
 		self.puts.set_personality_function(self.eh_personality);
 
-		self.setup_common_attributes(context)
+		self.setup_common_declared_attributes(context)
+			.setup_common_attributes(context)
 			.setup_getchar_attributes(context)
 			.setup_put_attributes(context)
 			.setup_putchar_attributes(context)
@@ -96,11 +97,23 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			.setup_eh_personality_attributes(context)
 	}
 
+	fn setup_common_declared_attributes(self, context: &'ctx Context) -> Self {
+		let nocallback_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocallback"), 0);
+
+		for attribute in iter::once(nocallback_attr) {
+			self.putchar
+				.add_attribute(AttributeLoc::Function, attribute);
+			self.getchar
+				.add_attribute(AttributeLoc::Function, attribute);
+		}
+
+		self
+	}
+
 	fn setup_common_attributes(self, context: &'ctx Context) -> Self {
 		let nofree_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
-		let nocallback_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocallback"), 0);
 		let norecurse_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("norecurse"), 0);
 		let willreturn_attr =
@@ -108,13 +121,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let nosync_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nosync"), 0);
 
-		for attribute in [
-			nofree_attr,
-			nocallback_attr,
-			norecurse_attr,
-			willreturn_attr,
-			nosync_attr,
-		] {
+		for attribute in [nofree_attr, norecurse_attr, willreturn_attr, nosync_attr] {
 			self.getchar
 				.add_attribute(AttributeLoc::Function, attribute);
 			self.putchar
