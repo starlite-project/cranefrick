@@ -97,12 +97,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let i8_di_ptr_type = self
 			.di_builder
-			.create_pointer_type("*u8", i8_di_type, 64, 64, AddressSpace::default())
+			.create_pointer_type("ptr(u8)", i8_di_type, 64, 64, AddressSpace::default())
 			.as_type();
 
 		let i32_di_type = self
 			.di_builder
-			.create_basic_type("u32", 32, 7, i32::ZERO)?
+			.create_basic_type("char", 32, 7, i32::ZERO)?
 			.as_type();
 
 		let puts_subroutine_type = self.di_builder.create_subroutine_type(
@@ -138,7 +138,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		let putchar_subprogram = self.di_builder.create_function(
 			self.compile_unit.as_debug_info_scope(),
 			"putchar",
-			Some("putchar"),
+			Some("rust_putchar"),
 			self.compile_unit.get_file(),
 			0,
 			putchar_subroutine_type,
