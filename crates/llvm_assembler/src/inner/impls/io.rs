@@ -16,11 +16,9 @@ use crate::{
 impl<'ctx> InnerAssembler<'ctx> {
 	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		match options {
-			OutputOptions::Cell(options) => {
-				self.output_cells_puts(slice::from_ref(options))?;
-			}
+			OutputOptions::Cell(options) => self.output_cell(*options)?,
 			OutputOptions::Cells(options) => self.output_cells(options)?,
-			OutputOptions::Char(c) => self.output_chars(slice::from_ref(c))?,
+			OutputOptions::Char(c) => self.output_char(*c)?,
 			OutputOptions::Str(c) => self.output_chars(c)?,
 			_ => {
 				return Err(AssemblyError::NotImplemented(BrainIr::Output(
@@ -176,6 +174,46 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.try_for_each(|x| self.output_cells(x))
 	}
 
+	fn output_cell(&self, options: CellChangeOptions<i8>) -> Result<(), LlvmAssemblyError> {
+		let context = self.context();
+
+		let i8_type = context.i8_type();
+		let i32_type = context.i32_type();
+
+		let current_cell_value = self.load(options.offset(), "output_cell")?;
+
+		let offset_cell_value = if matches!(options.value(), 0) {
+			current_cell_value
+		} else {
+			let offset_value = i8_type.const_int(options.value() as u64, false);
+
+			self.builder
+				.build_int_add(current_cell_value, offset_value, "output_cell_add")?
+		};
+
+		let extended_value = self.builder.build_int_z_extend_or_bit_cast(
+			offset_cell_value,
+			i32_type,
+			"output_cell_extend",
+		)?;
+
+		self.call_putchar(context, extended_value, "output_cell")?;
+
+		Ok(())
+	}
+
+	fn output_char(&self, c: u8) -> Result<(), LlvmAssemblyError> {
+		let context = self.context();
+
+		let i32_type = context.i32_type();
+
+		let char_value = i32_type.const_int(c.into(), false);
+
+		self.call_putchar(context, char_value, "output_char")?;
+
+		Ok(())
+	}
+
 	fn output_chars(&self, c: &[u8]) -> Result<(), LlvmAssemblyError> {
 		let context = self.context();
 
@@ -264,7 +302,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		fn_name: &'static str,
 	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
 		let continue_block =
-			context.append_basic_block(self.functions.main, &format!("{fn_name}.invoke.cont"));
+			context.append_basic_block(self.functions.main, &format!("{fn_name}.puts.invoke.cont"));
 
 		let array_len_value = {
 			let i64_type = context.i64_type();
@@ -278,6 +316,32 @@ impl<'ctx> InnerAssembler<'ctx> {
 			continue_block,
 			self.catch_block,
 			&format!("{fn_name}_puts_invoke"),
+		)?;
+
+		call.set_tail_call(true);
+
+		self.builder.position_at_end(continue_block);
+
+		Ok(call.try_as_basic_value().unwrap_left().into_int_value())
+	}
+
+	fn call_putchar(
+		&self,
+		context: ContextRef<'ctx>,
+		value: IntValue<'ctx>,
+		fn_name: &'static str,
+	) -> Result<IntValue<'ctx>, LlvmAssemblyError> {
+		let continue_block = context.append_basic_block(
+			self.functions.main,
+			&format!("{fn_name}.putchar.invoke.cont"),
+		);
+
+		let call = self.builder.build_direct_invoke(
+			self.functions.putchar,
+			&[value.into()],
+			continue_block,
+			self.catch_block,
+			&format!("{fn_name}_putchar_invoke"),
 		)?;
 
 		call.set_tail_call(true);
