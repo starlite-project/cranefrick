@@ -212,8 +212,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
 		let nonlazybind_attr =
 			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 0);
+		let uwtable_attr =
+			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 1);
 
-		for attribute in [nounwind_attr, nonlazybind_attr] {
+		for attribute in [nounwind_attr, nonlazybind_attr, uwtable_attr] {
 			self.eh_personality
 				.add_attribute(AttributeLoc::Function, attribute);
 		}
