@@ -1,6 +1,7 @@
 use frick_assembler::TAPE_SIZE;
 use inkwell::{
-	builder::Builder, module::Module, targets::TargetData, types::IntType, values::PointerValue,
+	builder::Builder, context::AsContextRef, llvm_sys::prelude::LLVMContextRef, module::Module,
+	targets::TargetData, types::IntType, values::PointerValue,
 };
 
 use super::AssemblerFunctions;
@@ -71,6 +72,12 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			},
 			ptr_int_type,
 		))
+	}
+}
+
+unsafe impl<'ctx> AsContextRef<'ctx> for AssemblerPointers<'ctx> {
+	fn as_ctx_ref(&self) -> LLVMContextRef {
+		self.tape.get_type().get_context().as_ctx_ref()
 	}
 }
 

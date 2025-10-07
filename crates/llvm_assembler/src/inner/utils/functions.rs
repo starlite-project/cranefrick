@@ -1,13 +1,14 @@
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
-	context::Context,
+	context::{AsContextRef, Context},
 	intrinsics::Intrinsic,
+	llvm_sys::prelude::LLVMContextRef,
 	module::{Linkage, Module},
 	types::BasicTypeEnum,
 	values::FunctionValue,
 };
 
-use crate::{ContextExt as _, LlvmAssemblyError};
+use crate::{ContextExt as _, ContextGetter as _, LlvmAssemblyError};
 
 #[derive(Debug, Clone, Copy)]
 pub struct AssemblerFunctions<'ctx> {
@@ -79,12 +80,14 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			eh_personality,
 		};
 
-		this.setup(context);
+		this.setup();
 
 		Ok(this)
 	}
 
-	fn setup(self, context: &'ctx Context) {
+	fn setup(self) {
+		let context = self.context();
+
 		self.main.set_personality_function(self.eh_personality);
 		self.puts.set_personality_function(self.eh_personality);
 
@@ -161,6 +164,12 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			(0..5).map(|i| (i, noundef_attr)),
 			[noundef_attr],
 		);
+	}
+}
+
+unsafe impl<'ctx> AsContextRef<'ctx> for AssemblerFunctions<'ctx> {
+	fn as_ctx_ref(&self) -> LLVMContextRef {
+		self.main.get_type().get_context().as_ctx_ref()
 	}
 }
 
