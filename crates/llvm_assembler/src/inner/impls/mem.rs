@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use inkwell::{
-	builder::BuilderError,
 	types::{BasicType, BasicTypeEnum},
 	values::{BasicValue, IntValue, PointerValue},
 };
@@ -39,7 +38,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok((loaded_value, gep))
 	}
 
-	pub fn store_value_into(&self, value: u8, gep: PointerValue<'ctx>) -> Result<(), BuilderError> {
+	pub fn store_value_into(
+		&self,
+		value: u8,
+		gep: PointerValue<'ctx>,
+	) -> Result<(), LlvmAssemblyError> {
 		let value = {
 			let i8_type = self.context().i8_type();
 
@@ -53,7 +56,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		value: impl BasicValue<'ctx>,
 		gep: PointerValue<'ctx>,
-	) -> Result<(), BuilderError> {
+	) -> Result<(), LlvmAssemblyError> {
 		self.builder.build_store(gep, value)?;
 
 		Ok(())
