@@ -128,8 +128,6 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 				return None;
 			}
 
-			tracing::info!(?range, x, ?ops, "made it");
-
 			let mut values = set_many_options.values.clone();
 
 			values.extend(iter::repeat_n(0, (range.end..x).len()).chain(iter::once(*a as u8)));
