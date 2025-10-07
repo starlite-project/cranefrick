@@ -74,14 +74,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 			(params[0].into_pointer_value(), params[1].into_int_value())
 		};
 
+		let ptr_alloca = self.builder.build_array_alloca(i8_type, string_len, "")?;
+
 		let is_ptr_null = self.builder.build_is_not_null(pointer_param, "")?;
 
 		self.builder
 			.build_direct_call(self.functions.assume, &[is_ptr_null.into()], "")?;
 
+		self.builder
+			.build_memcpy(ptr_alloca, 1, pointer_param, 1, string_len)?;
+
 		let end_of_string = unsafe {
 			self.builder
-				.build_in_bounds_gep(i8_type, pointer_param, &[string_len], "")?
+				.build_in_bounds_gep(i8_type, ptr_alloca, &[string_len], "")?
 		};
 
 		let i64_zero = i64_type.const_zero();
@@ -109,7 +114,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		body_block_phi.add_incoming(&[
-			(&pointer_param, entry_block),
+			(&ptr_alloca, entry_block),
 			(&next_index_gep, continue_block),
 		]);
 
