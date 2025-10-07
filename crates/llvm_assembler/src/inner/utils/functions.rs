@@ -51,8 +51,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			],
 			false,
 		);
-		let eh_personality =
-			module.add_function("eh_personality", eh_personality_ty, Some(Linkage::External));
+		let eh_personality = module.add_function(
+			"rust_eh_personality",
+			eh_personality_ty,
+			Some(Linkage::External),
+		);
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(

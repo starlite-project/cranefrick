@@ -230,14 +230,17 @@ impl Assembler for LlvmAssembler {
 			.map_err(LlvmAssemblyError::from)?;
 
 		if let Some(getchar) = module.get_function("getchar") {
+			info!("adding getchar to the execution engine");
 			execution_engine.add_global_mapping(&getchar, libc::getchar as usize);
 		}
 
 		if let Some(putchar) = module.get_function("rust_putchar") {
+			info!("adding rust_putchar to the execution engine");
 			execution_engine.add_global_mapping(&putchar, frick_llvm_interop::putchar as usize);
 		}
 
-		if let Some(eh_personality) = module.get_function("eh_personality") {
+		if let Some(eh_personality) = module.get_function("rust_eh_personality") {
+			info!("adding rust_eh_personality to the execution engine");
 			execution_engine
 				.add_global_mapping(&eh_personality, frick_llvm_interop::eh_personality as usize);
 		}
