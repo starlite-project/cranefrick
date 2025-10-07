@@ -96,15 +96,49 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::Boundary,
-			set @ BrainIr::SetCell(.., x),
+			BrainIr::SetCell(a, x),
 			BrainIr::ChangeCell(b, y),
-		] if *x != *y => Some(Change::swap([
-			BrainIr::boundary(),
-			set.clone(),
-			BrainIr::set_cell_at(*b as u8, y.get_or_zero()),
-		])),
-		[BrainIr::Boundary, BrainIr::SetCell(0, ..), ..] => Some(Change::remove_offset(1)),
-		[BrainIr::Boundary, .., BrainIr::SetCell(0, ..)] => Some(Change::remove_offset(2)),
+		] => {
+			let x = x.get_or_zero();
+			let y = y.get_or_zero();
+
+			if x == y {
+				return None;
+			}
+
+			let mut values = vec![*a];
+
+			values.extend(iter::repeat_n(0, (x..y).skip(1).len()).chain(iter::once(*b as u8)));
+
+			Some(Change::swap([
+				BrainIr::boundary(),
+				BrainIr::set_many_cells(values, x),
+			]))
+		}
+		[
+			BrainIr::Boundary,
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::ChangeCell(a, x),
+		] => {
+			let x = x.get_or_zero();
+
+			let range = set_many_options.range();
+
+			if range.end + 1 != x {
+				return None;
+			}
+
+			tracing::info!(?range, x, ?ops, "made it");
+
+			let mut values = set_many_options.values.clone();
+
+			values.extend(iter::repeat_n(0, (range.end..x).len()).chain(iter::once(*a as u8)));
+
+			Some(Change::swap([
+				BrainIr::boundary(),
+				BrainIr::set_many_cells(values, set_many_options.start.get_or_zero()),
+			]))
+		}
 		_ => None,
 	}
 }
