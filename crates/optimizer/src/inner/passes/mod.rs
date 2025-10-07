@@ -286,6 +286,9 @@ pub fn optimize_fetch_value(ops: [&BrainIr; 2]) -> Option<Change> {
 
 pub fn optimize_replace_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
+		[BrainIr::SetCell(.., None), BrainIr::FetchValueFrom(options)] => {
+			Some(Change::replace(BrainIr::ReplaceValueFrom(*options)))
+		}
 		[l, BrainIr::FetchValueFrom(options)] if l.is_zeroing_cell() => Some(Change::swap([
 			l.clone(),
 			BrainIr::ReplaceValueFrom(*options),
