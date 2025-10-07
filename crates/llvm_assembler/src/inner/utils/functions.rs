@@ -1,5 +1,3 @@
-use std::iter;
-
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	context::Context,
@@ -81,158 +79,88 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			eh_personality,
 		};
 
-		Ok(this.setup(context))
+		this.setup(context);
+
+		Ok(this)
 	}
 
-	fn setup(self, context: &'ctx Context) -> Self {
+	fn setup(self, context: &'ctx Context) {
 		self.main.set_personality_function(self.eh_personality);
 		self.puts.set_personality_function(self.eh_personality);
 
-		self.setup_common_declared_attributes(context)
-			.setup_common_attributes(context)
-			.setup_getchar_attributes(context)
-			.setup_put_attributes(context)
-			.setup_putchar_attributes(context)
-			.setup_puts_attributes(context)
-			.setup_eh_personality_attributes(context)
-	}
+		let nocallback_attr = context.create_named_enum_attribute("nocallback", 0);
+		let nofree_attr = context.create_named_enum_attribute("nofree", 0);
+		let norecurse_attr = context.create_named_enum_attribute("norecurse", 0);
+		let willreturn_attr = context.create_named_enum_attribute("willreturn", 0);
+		let nosync_attr = context.create_named_enum_attribute("nosync", 0);
+		let arg_none_inaccessable_read_memory_attr =
+			context.create_named_enum_attribute("memory", 4);
+		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0);
+		let arg_read_inaccessable_write_memory_attr =
+			context.create_named_enum_attribute("memory", 9);
+		let uwtable_sync_attr = context.create_named_enum_attribute("uwtable", 1);
+		let noalias_attr = context.create_named_enum_attribute("noalias", 0);
+		let nonnull_attr = context.create_named_enum_attribute("nonnull", 0);
+		let readonly_attr = context.create_named_enum_attribute("readonly", 0);
+		let align_attr = context.create_named_enum_attribute("align", 1);
+		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
+		let returned_attr = context.create_named_enum_attribute("returned", 0);
+		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
+		let nonlazybind_attr = context.create_named_enum_attribute("nonlazybind", 0);
 
-	fn setup_common_declared_attributes(self, context: &'ctx Context) -> Self {
-		let nocallback_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nocallback"), 0);
-
-		for attribute in iter::once(nocallback_attr) {
-			self.putchar
-				.add_attribute(AttributeLoc::Function, attribute);
-			self.getchar
-				.add_attribute(AttributeLoc::Function, attribute);
-		}
-
-		self
-	}
-
-	fn setup_common_attributes(self, context: &'ctx Context) -> Self {
-		let nofree_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
-		let norecurse_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("norecurse"), 0);
-		let willreturn_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("willreturn"), 0);
-		let nosync_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nosync"), 0);
-
-		for attribute in [nofree_attr, norecurse_attr, willreturn_attr, nosync_attr] {
-			self.getchar
-				.add_attribute(AttributeLoc::Function, attribute);
-			self.putchar
-				.add_attribute(AttributeLoc::Function, attribute);
-			self.puts.add_attribute(AttributeLoc::Function, attribute);
-		}
-
-		self
-	}
-
-	fn setup_getchar_attributes(self, context: &'ctx Context) -> Self {
-		let memory_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 4);
-
-		for attribute in iter::once(memory_attr) {
-			self.getchar
-				.add_attribute(AttributeLoc::Function, attribute);
-		}
-
-		let zeroext_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
-
-		for attribute in iter::once(zeroext_attr) {
-			self.getchar.add_attribute(AttributeLoc::Return, attribute);
-		}
-
-		self
-	}
-
-	fn setup_put_attributes(self, context: &'ctx Context) -> Self {
-		let memory_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("memory"), 9);
-		let uwtable_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 1);
-
-		for attribute in [memory_attr, uwtable_attr] {
-			self.putchar
-				.add_attribute(AttributeLoc::Function, attribute);
-			self.puts.add_attribute(AttributeLoc::Function, attribute);
-		}
-
-		self
-	}
-
-	fn setup_puts_attributes(self, context: &'ctx Context) -> Self {
-		let noalias_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noalias"), 0);
-		let nofree_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nofree"), 0);
-		let nonnull_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonnull"), 0);
-		let readonly_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("readonly"), 0);
-		let align_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("align"), 1);
-
-		for attribute in [
-			noalias_attr,
-			nofree_attr,
-			nonnull_attr,
-			readonly_attr,
-			align_attr,
-		] {
-			self.puts.add_attribute(AttributeLoc::Param(0), attribute);
-		}
-
-		self
-	}
-
-	fn setup_putchar_attributes(self, context: &'ctx Context) -> Self {
-		let zeroext_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
-		let noundef_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
-		let returned_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("returned"), 0);
-
-		for attribute in [zeroext_attr, noundef_attr, returned_attr] {
-			self.putchar
-				.add_attribute(AttributeLoc::Param(0), attribute);
-		}
-
-		self
-	}
-
-	fn setup_eh_personality_attributes(self, context: &'ctx Context) -> Self {
-		let nounwind_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nounwind"), 0);
-		let nonlazybind_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("nonlazybind"), 0);
-		let uwtable_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("uwtable"), 1);
-
-		for attribute in [nounwind_attr, nonlazybind_attr, uwtable_attr] {
-			self.eh_personality
-				.add_attribute(AttributeLoc::Function, attribute);
-		}
-
-		let noundef_attr =
-			context.create_enum_attribute(Attribute::get_named_enum_kind_id("noundef"), 0);
-
-		for attribute in iter::once(noundef_attr) {
-			for i in 0..5 {
-				self.eh_personality
-					.add_attribute(AttributeLoc::Param(i), attribute);
-			}
-			self.eh_personality
-				.add_attribute(AttributeLoc::Return, attribute);
-		}
-
-		self
+		add_attributes_to(
+			self.putchar,
+			[
+				nocallback_attr,
+				nofree_attr,
+				norecurse_attr,
+				willreturn_attr,
+				nosync_attr,
+				arg_read_inaccessable_write_memory_attr,
+				uwtable_sync_attr,
+			],
+			[(0, zeroext_attr), (0, noundef_attr), (0, returned_attr)],
+			[],
+		);
+		add_attributes_to(
+			self.getchar,
+			[
+				nocallback_attr,
+				nofree_attr,
+				norecurse_attr,
+				willreturn_attr,
+				nosync_attr,
+				arg_none_inaccessable_read_memory_attr,
+			],
+			[],
+			[zeroext_attr],
+		);
+		add_attributes_to(
+			self.puts,
+			[
+				nofree_attr,
+				norecurse_attr,
+				willreturn_attr,
+				nosync_attr,
+				arg_read_inaccessable_write_memory_attr,
+				uwtable_sync_attr,
+			],
+			[
+				(0, noalias_attr),
+				(0, nofree_attr),
+				(0, nonnull_attr),
+				(0, readonly_attr),
+				(0, align_attr),
+			],
+			[],
+		);
+		add_attributes_to(self.main, [nosync_attr, nofree_attr], [], []);
+		add_attributes_to(
+			self.eh_personality,
+			[nounwind_attr, nonlazybind_attr, uwtable_sync_attr],
+			(0..5).map(|i| (i, noundef_attr)),
+			[noundef_attr],
+		);
 	}
 }
 
@@ -266,4 +194,23 @@ fn get_intrinsic_function_from_name<'ctx>(
 	tracing::debug!(%declaration);
 
 	Ok(declaration)
+}
+
+fn add_attributes_to(
+	func: FunctionValue<'_>,
+	func_attrs: impl IntoIterator<Item = Attribute>,
+	param_attrs: impl IntoIterator<Item = (u32, Attribute)>,
+	return_attrs: impl IntoIterator<Item = Attribute>,
+) {
+	for attribute in func_attrs {
+		func.add_attribute(AttributeLoc::Function, attribute);
+	}
+
+	for (param_idx, attribute) in param_attrs {
+		func.add_attribute(AttributeLoc::Param(param_idx), attribute);
+	}
+
+	for attribute in return_attrs {
+		func.add_attribute(AttributeLoc::Return, attribute);
+	}
 }
