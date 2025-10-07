@@ -140,6 +140,15 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			Some(Change::swap(swap))
 		}
+		[
+			BrainIr::Boundary,
+			BrainIr::MovePointer(x),
+			BrainIr::ChangeCell(a, y),
+		] => Some(Change::swap([
+			BrainIr::boundary(),
+			BrainIr::move_pointer(*x),
+			BrainIr::set_cell_at(*a as u8, y.get_or_zero()),
+		])),
 		_ => None,
 	}
 }
@@ -447,6 +456,28 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 					set_options.start.get_or_zero(),
 				),
 			]))
+		}
+		[
+			set @ BrainIr::SetCell(a, x),
+			BrainIr::Output(OutputOptions::Cells(options)),
+		] => {
+			let x = x.get_or_zero();
+
+			if !options.iter().all(|option| option.offset() == x) {
+				return None;
+			}
+
+			let mut new_output = Vec::new();
+
+			for opt in options {
+				let value_offset = opt.value();
+
+				new_output.push(BrainIr::output_char(a.wrapping_add_signed(value_offset)));
+			}
+
+			new_output.push(set.clone());
+
+			Some(Change::swap(new_output))
 		}
 		_ => None,
 	}
