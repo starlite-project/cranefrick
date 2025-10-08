@@ -2,46 +2,69 @@ use cranelift_codegen::ir::{InstBuilder as _, MemFlags, Value, types};
 
 use crate::inner::InnerAssembler;
 
+#[expect(unused)]
 impl InnerAssembler<'_> {
 	pub fn load(&mut self, offset: i32) -> Value {
-		if let Some(value) = self.loads.get(&offset) {
-			return *value;
-		}
+		let (loaded_value, ..) = self.load_from(offset);
 
-		let ptr_value = self.ptr_value();
+		loaded_value
+	}
 
-		let value = self
+	pub fn load_from(&mut self, offset: i32) -> (Value, Value) {
+		let tape_slot = self.tape;
+		let ptr_type = self.ptr_type;
+
+		let tape_addr = self.ins().stack_addr(ptr_type, tape_slot, 0);
+
+		let pointer_value = self.offset_pointer(offset);
+
+		let pointer_offset_tape = self.ins().iadd(tape_addr, pointer_value);
+
+		let tape_value = self
 			.ins()
-			.load(types::I8, Self::memflags(), ptr_value, offset);
+			.load(types::I8, Self::memflags(), pointer_offset_tape, 0);
 
-		self.loads.insert(offset, value);
+		(tape_value, pointer_offset_tape)
+	}
+
+	pub fn store(&mut self, value: Value, offset: i32) {
+		let tape_slot = self.tape;
+		let ptr_type = self.ptr_type;
+
+		let tape_addr = self.ins().stack_addr(ptr_type, tape_slot, 0);
+
+		let pointer_value = self.offset_pointer(offset);
+
+		let pointer = self.ins().iadd(tape_addr, pointer_value);
+
+		self.store_into(value, pointer);
+	}
+
+	pub fn store_into(&mut self, value: Value, pointer: Value) {
+		self.ins().store(Self::memflags(), value, pointer, 0);
+	}
+
+	pub fn store_value(&mut self, value: u8, offset: i32) {
+		let value = self.ins().iconst(types::I8, i64::from(value));
+
+		self.store(value, offset);
+	}
+
+	pub fn store_value_into(&mut self, value: u8, pointer: Value) {
+		let value = self.ins().iconst(types::I8, i64::from(value));
+
+		self.store_into(value, pointer);
+	}
+
+	pub fn take(&mut self, offset: i32) -> Value {
+		let (value, pointer) = self.load_from(offset);
+
+		self.store_value_into(0, pointer);
 
 		value
 	}
 
-	pub fn store(&mut self, value: Value, offset: i32) {
-		self.invalidate_load_at(offset);
-
-		let ptr_value = self.ptr_value();
-
-		self.ins().store(Self::memflags(), value, ptr_value, offset);
-	}
-
 	const fn memflags() -> MemFlags {
-		MemFlags::trusted()
-	}
-
-	pub fn invalidate_loads(&mut self) {
-		self.loads.clear();
-	}
-
-	pub fn invalidate_load_at(&mut self, offset: i32) {
-		self.loads.remove(&offset);
-	}
-
-	pub fn invalidate_loads_at(&mut self, offsets: impl IntoIterator<Item = i32>) {
-		for offset in offsets {
-			self.invalidate_load_at(offset);
-		}
+		MemFlags::new()
 	}
 }

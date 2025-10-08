@@ -183,8 +183,8 @@ impl Assembler for LlvmAssembler {
 			.create_jit_execution_engine(OptimizationLevel::Aggressive)
 			.map_err(LlvmAssemblyError::from)?;
 
-		if let Some(getchar) = module.get_function("getchar") {
-			info!("adding getchar to the execution engine");
+		if let Some(getchar) = module.get_function("rust_getchar") {
+			info!("adding rust_getchar to the execution engine");
 			execution_engine.add_global_mapping(&getchar, frick_interop::rust_getchar as usize);
 		}
 

@@ -1,4 +1,5 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
+#![feature(try_blocks)]
 
 mod flags;
 mod inner;
@@ -18,9 +19,7 @@ use cranelift_codegen::{
 use cranelift_frontend::FunctionBuilderContext;
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module as _, ModuleError};
-use frick_assembler::{
-	Assembler, AssemblyError, InnerAssemblyError, frick_assembler_read, frick_assembler_write,
-};
+use frick_assembler::{Assembler, AssemblyError, InnerAssemblyError};
 use frick_ir::BrainIr;
 use inner::InnerAssembler;
 use target_lexicon::Triple;
@@ -63,25 +62,21 @@ impl Assembler for CraneliftAssembler {
 
 		info!("looking up ISA");
 
-		let isa = {
-			let flags = self
-				.flags
-				.try_into()
-				.map_err(CraneliftAssemblyError::from)?;
+		let isa: Result<_, CraneliftAssemblyError> = try {
+			let flags = self.flags.try_into()?;
 
-			isa::lookup(triple)
-				.map_err(CraneliftAssemblyError::from)?
-				.finish(flags)
-				.map_err(CraneliftAssemblyError::from)
-		}?;
+			isa::lookup(triple)?.finish(flags)?
+		};
+
+		let isa = isa?;
 
 		info!("creating JIT module");
 
 		let mut jit_builder =
 			JITBuilder::with_isa(isa.clone(), cranelift_module::default_libcall_names());
 
-		jit_builder.symbol("write", frick_assembler_write as *const u8);
-		jit_builder.symbol("read", frick_assembler_read as *const u8);
+		jit_builder.symbol("rust_putchar", frick_interop::rust_putchar as *const u8);
+		jit_builder.symbol("rust_getchar", frick_interop::rust_getchar as *const u8);
 
 		let mut module = JITModule::new(jit_builder);
 

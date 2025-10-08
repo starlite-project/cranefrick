@@ -171,5 +171,5 @@ opt-level = 3
 [profile.dev.package.frick_optimizer]
 opt-level = 3
 
-[profile.dev.package.frick_llvm_interop]
+[profile.dev.package.frick_interop]
 opt-level = 3

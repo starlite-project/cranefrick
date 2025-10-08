@@ -29,7 +29,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let ptr_type = context.default_ptr_type();
 
 		let getchar_ty = i32_type.fn_type(&[], false);
-		let getchar = module.add_function("getchar", getchar_ty, Some(Linkage::External));
+		let getchar = module.add_function("rust_getchar", getchar_ty, Some(Linkage::External));
 
 		let putchar_ty = i32_type.fn_type(&[i32_type.into()], false);
 		let putchar = module.add_function("rust_putchar", putchar_ty, Some(Linkage::External));

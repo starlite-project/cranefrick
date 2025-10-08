@@ -87,7 +87,7 @@ pub trait InnerAssemblyError: StdError + 'static {}
 
 pub const TAPE_SIZE: usize = 0x8000;
 
-#[deprecated = "use frick_interop::putchar instead"]
+#[deprecated = "use frick_interop::rust_putchar instead"]
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn frick_assembler_write(value: u32) {
 	if cfg!(target_os = "windows") && value >= 128 {
@@ -113,7 +113,7 @@ pub unsafe extern "C-unwind" fn frick_assembler_write(value: u32) {
 	}
 }
 
-#[deprecated = "use frick_interop::getchar instead"]
+#[deprecated = "use frick_interop::rust_getchar instead"]
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn frick_assembler_read(buf: *mut u8) {
 	let mut stdin = io::stdin().lock();

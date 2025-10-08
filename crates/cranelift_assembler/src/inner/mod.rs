@@ -1,16 +1,16 @@
 mod impls;
 
 use std::{
-	collections::HashMap,
+	mem,
 	ops::{Deref, DerefMut},
 };
 
 use cranelift_codegen::ir::{
-	AbiParam, FuncRef, Function, InstBuilder as _, SourceLoc, Type, Value, types,
+	AbiParam, FuncRef, Function, InstBuilder as _, MemFlags, SourceLoc, StackSlot, StackSlotData, StackSlotKind, Type, types
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_jit::JITModule;
-use cranelift_module::{DataDescription, Linkage, Module};
+use cranelift_module::{Linkage, Module};
 use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use frick_utils::GetOrZero as _;
@@ -19,10 +19,11 @@ use super::CraneliftAssemblyError;
 
 pub struct InnerAssembler<'a> {
 	builder: FunctionBuilder<'a>,
-	read: FuncRef,
-	write: FuncRef,
-	ptr_variable: Variable,
-	loads: HashMap<i32, Value>,
+	getchar: FuncRef,
+	putchar: FuncRef,
+	tape: StackSlot,
+	ptr: Variable,
+	ptr_type: Type
 }
 
 impl<'a> InnerAssembler<'a> {
@@ -32,57 +33,70 @@ impl<'a> InnerAssembler<'a> {
 		module: &mut JITModule,
 		ptr_type: Type,
 	) -> Result<Self, CraneliftAssemblyError> {
-		let tape_global_value = {
-			let tape_id = module.declare_data("tape", Linkage::Local, true, false)?;
-
-			let mut tape_description = DataDescription::new();
-
-			tape_description.define_zeroinit(TAPE_SIZE);
-
-			module.define_data(tape_id, &tape_description)?;
-
-			module.declare_data_in_func(tape_id, func)
-		};
-
 		let mut builder = FunctionBuilder::new(func, fn_ctx);
 
 		let block = builder.create_block();
 
 		builder.switch_to_block(block);
 
-		let ptr_variable = {
-			let ptr_value = builder.declare_var(ptr_type);
+		let tape = {
+			let data = StackSlotData::new(
+				StackSlotKind::ExplicitSlot,
+				(mem::size_of::<u8>() * TAPE_SIZE) as u32,
+				0,
+			);
 
-			let tape_value = builder.ins().symbol_value(ptr_type, tape_global_value);
+			let slot = builder.create_sized_stack_slot(data);
 
-			builder.def_var(ptr_value, tape_value);
+			let buffer = builder.ins().stack_addr(ptr_type, slot, 0);
 
-			ptr_value
+			builder.emit_small_memset(
+				module.isa().frontend_config(),
+				buffer,
+				0,
+				TAPE_SIZE as u64,
+				0,
+				MemFlags::new(),
+			);
+
+			slot
 		};
 
-		let write = {
-			let mut write_sig = module.make_signature();
-			write_sig.params.push(AbiParam::new(types::I32));
+		let ptr = {
+			let variable = builder.declare_var(ptr_type);
 
-			module.declare_function("write", Linkage::Import, &write_sig)
-		}?;
+			let zero = builder.ins().iconst(ptr_type, 0);
 
-		let read = {
-			let mut read_sig = module.make_signature();
-			read_sig.params.push(AbiParam::new(ptr_type));
+			builder.def_var(variable, zero);
 
-			module.declare_function("read", Linkage::Import, &read_sig)
-		}?;
+			variable
+		};
 
-		let write = module.declare_func_in_func(write, builder.func);
-		let read = module.declare_func_in_func(read, builder.func);
+		let putchar = {
+			let mut putchar_sig = module.make_signature();
+			putchar_sig.params.push(AbiParam::new(types::I32));
+			putchar_sig.returns.push(AbiParam::new(types::I32));
+
+			module.declare_function("rust_putchar", Linkage::Import, &putchar_sig)?
+		};
+
+		let getchar = {
+			let mut getchar_sig = module.make_signature();
+			getchar_sig.returns.push(AbiParam::new(types::I32));
+
+			module.declare_function("rust_getchar", Linkage::Import, &getchar_sig)?
+		};
+
+		let putchar = module.declare_func_in_func(putchar, builder.func);
+		let getchar = module.declare_func_in_func(getchar, builder.func);
 
 		Ok(Self {
 			builder,
-			read,
-			write,
-			ptr_variable,
-			loads: HashMap::new(),
+			getchar,
+			putchar,
+			tape,
+			ptr,
+			ptr_type,
 		})
 	}
 
@@ -118,17 +132,6 @@ impl<'a> InnerAssembler<'a> {
 				BrainIr::ChangeCell(value, offset) => {
 					self.change_cell(*value, offset.get_or_zero());
 				}
-				BrainIr::Output(options) => self.output(options)?,
-				BrainIr::InputIntoCell => self.input_into_cell(),
-				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops, op_count)?,
-				BrainIr::IfNotZero(ops) => self.if_not_zero(ops, op_count)?,
-				BrainIr::FindZero(offset) => self.find_zero(*offset),
-				BrainIr::MoveValueTo(options) => self.move_value_to(*options),
-				BrainIr::TakeValueTo(options) => self.take_value_to(*options),
-				BrainIr::FetchValueFrom(options) => self.fetch_value_from(*options),
-				BrainIr::ReplaceValueFrom(options) => self.replace_value_from(*options),
-				BrainIr::ScaleValue(factor) => self.scale_value(*factor),
-				BrainIr::SetRange(options) => self.set_range(options.value, options.range()),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 
@@ -140,16 +143,6 @@ impl<'a> InnerAssembler<'a> {
 
 	fn ins<'short>(&'short mut self) -> FuncInstBuilder<'short, 'a> {
 		self.builder.ins()
-	}
-
-	fn ptr_value(&mut self) -> Value {
-		let variable = self.ptr_variable;
-
-		self.use_var(variable)
-	}
-
-	fn const_u8(&mut self, value: u8) -> Value {
-		self.ins().iconst(types::I8, i64::from(value))
 	}
 }
 
