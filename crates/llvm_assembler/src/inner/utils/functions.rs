@@ -101,7 +101,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0);
 		let arg_read_inaccessable_write_memory_attr =
 			context.create_named_enum_attribute("memory", 9);
-		let uwtable_sync_attr = context.create_named_enum_attribute("uwtable", 1);
+		let uwtable_attr = context.create_named_enum_attribute("uwtable", 2);
 		let noalias_attr = context.create_named_enum_attribute("noalias", 0);
 		let nonnull_attr = context.create_named_enum_attribute("nonnull", 0);
 		let readonly_attr = context.create_named_enum_attribute("readonly", 0);
@@ -120,7 +120,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				willreturn_attr,
 				nosync_attr,
 				arg_read_inaccessable_write_memory_attr,
-				uwtable_sync_attr,
+				uwtable_attr,
 			],
 			[(0, zeroext_attr), (0, noundef_attr), (0, returned_attr)],
 			[],
@@ -146,7 +146,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				willreturn_attr,
 				nosync_attr,
 				arg_read_inaccessable_write_memory_attr,
-				uwtable_sync_attr,
+				uwtable_attr,
 			],
 			[
 				(0, noalias_attr),
@@ -157,10 +157,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			],
 			[],
 		);
-		add_attributes_to(self.main, [nosync_attr, nofree_attr], [], []);
+		add_attributes_to(self.main, [nosync_attr, nofree_attr, uwtable_attr], [], []);
 		add_attributes_to(
 			self.eh_personality,
-			[nounwind_attr, nonlazybind_attr, uwtable_sync_attr],
+			[nounwind_attr, nonlazybind_attr, uwtable_attr],
 			(0..5).map(|i| (i, noundef_attr)),
 			[noundef_attr],
 		);
