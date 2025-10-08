@@ -9,13 +9,18 @@ impl InnerAssembler<'_> {
 
 		let wrapped_pointer = self.offset_pointer(offset);
 
-		self.def_var(ptr_var, wrapped_pointer);
+		// self.def_var(ptr_var, wrapped_pointer);
+
+		self.ins().stack_store(wrapped_pointer, ptr_var, 0);
 	}
 
 	pub fn load_pointer(&mut self) -> Value {
+		let ptr_type = self.ptr_type;
 		let ptr_var = self.ptr;
 
-		self.use_var(ptr_var)
+		// self.use_var(ptr_var)
+
+		self.ins().stack_load(ptr_type, ptr_var, 0)
 	}
 
 	pub fn offset_pointer(&mut self, offset: i32) -> Value {

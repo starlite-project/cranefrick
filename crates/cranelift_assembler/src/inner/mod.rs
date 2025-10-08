@@ -6,7 +6,8 @@ use std::{
 };
 
 use cranelift_codegen::ir::{
-	AbiParam, FuncRef, Function, InstBuilder as _, MemFlags, SourceLoc, StackSlot, StackSlotData, StackSlotKind, Type, types
+	AbiParam, FuncRef, Function, InstBuilder as _, MemFlags, SourceLoc, StackSlot, StackSlotData,
+	StackSlotKind, Type, types,
 };
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_jit::JITModule;
@@ -22,8 +23,8 @@ pub struct InnerAssembler<'a> {
 	getchar: FuncRef,
 	putchar: FuncRef,
 	tape: StackSlot,
-	ptr: Variable,
-	ptr_type: Type
+	ptr: StackSlot,
+	ptr_type: Type,
 }
 
 impl<'a> InnerAssembler<'a> {
@@ -63,13 +64,19 @@ impl<'a> InnerAssembler<'a> {
 		};
 
 		let ptr = {
-			let variable = builder.declare_var(ptr_type);
+			let data = StackSlotData::new(
+				StackSlotKind::ExplicitSlot,
+				mem::size_of::<usize>() as u32,
+				0,
+			);
+
+			let slot = builder.create_sized_stack_slot(data);
 
 			let zero = builder.ins().iconst(ptr_type, 0);
 
-			builder.def_var(variable, zero);
+			builder.ins().stack_store(zero, slot, 0);
 
-			variable
+			slot
 		};
 
 		let putchar = {
@@ -131,6 +138,10 @@ impl<'a> InnerAssembler<'a> {
 				}
 				BrainIr::ChangeCell(value, offset) => {
 					self.change_cell(*value, offset.get_or_zero());
+				}
+				BrainIr::Output(options) => self.output(options)?,
+				BrainIr::SetManyCells(options) => {
+					self.set_many_cells(&options.values, options.start.get_or_zero());
 				}
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}

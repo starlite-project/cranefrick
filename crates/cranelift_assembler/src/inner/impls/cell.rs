@@ -14,4 +14,10 @@ impl InnerAssembler<'_> {
 
 		self.store(added, offset);
 	}
+
+	pub fn set_many_cells(&mut self, values: &[u8], start: i32) {
+		for (i, value) in values.iter().copied().enumerate() {
+			self.set_cell(value, start.wrapping_add_unsigned(i as u32));
+		}
+	}
 }
