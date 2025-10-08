@@ -29,17 +29,13 @@ pub struct AssemblerFlags {
 	pub enable_alias_analysis: bool,
 	pub enable_verifier: bool,
 	pub use_colocated_libcalls: bool,
-	pub enable_float: bool,
 	pub enable_nan_canonicalization: bool,
-	pub enable_atomics: bool,
-	pub enable_safepoints: bool,
 	pub enable_llvm_abi_extensions: bool,
 	pub enable_multi_ret_implicit_sret: bool,
 	pub unwind_info: bool,
 	pub preserve_frame_pointers: bool,
 	pub machine_code_cfg_info: bool,
 	pub enable_probestack: bool,
-	pub enable_jump_tables: bool,
 	pub enable_heap_access_spectre_mitigation: bool,
 	pub enable_table_access_spectre_mitigation: bool,
 	pub enable_incremental_compilation_cache_checks: bool,
@@ -101,17 +97,13 @@ impl From<Flags> for AssemblerFlags {
 			regalloc_verbose_logs: value.regalloc_verbose_logs(),
 			enable_alias_analysis: value.enable_alias_analysis(),
 			enable_verifier: value.enable_verifier(),
-			enable_atomics: value.enable_atomics(),
-			enable_float: value.enable_float(),
 			enable_heap_access_spectre_mitigation: value.enable_heap_access_spectre_mitigation(),
 			enable_incremental_compilation_cache_checks: value
 				.enable_incremental_compilation_cache_checks(),
-			enable_jump_tables: value.enable_jump_tables(),
 			enable_llvm_abi_extensions: value.enable_llvm_abi_extensions(),
 			enable_multi_ret_implicit_sret: value.enable_multi_ret_implicit_sret(),
 			enable_nan_canonicalization: value.enable_nan_canonicalization(),
 			enable_probestack: value.enable_probestack(),
-			enable_safepoints: value.enable_safepoints(),
 			enable_table_access_spectre_mitigation: value.enable_table_access_spectre_mitigation(),
 			machine_code_cfg_info: value.machine_code_cfg_info(),
 			preserve_frame_pointers: value.preserve_frame_pointers(),
@@ -190,13 +182,10 @@ fn set_bool_options(
 		"use_colocated_libcalls",
 		get_bool(flags.use_colocated_libcalls),
 	)?;
-	flag_builder.set("enable_float", get_bool(flags.enable_float))?;
 	flag_builder.set(
 		"enable_nan_canonicalization",
 		get_bool(flags.enable_nan_canonicalization),
 	)?;
-	flag_builder.set("enable_atomics", get_bool(flags.enable_atomics))?;
-	flag_builder.set("enable_safepoints", get_bool(flags.enable_safepoints))?;
 	flag_builder.set(
 		"enable_llvm_abi_extensions",
 		get_bool(flags.enable_llvm_abi_extensions),
@@ -215,7 +204,6 @@ fn set_bool_options(
 		get_bool(flags.machine_code_cfg_info),
 	)?;
 	flag_builder.set("enable_probestack", get_bool(flags.enable_probestack))?;
-	flag_builder.set("enable_jump_tables", get_bool(flags.enable_jump_tables))?;
 	flag_builder.set(
 		"enable_heap_access_spectre_mitigation",
 		get_bool(flags.enable_heap_access_spectre_mitigation),

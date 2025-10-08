@@ -11,7 +11,7 @@ use std::{
 use frick_ir::BrainIr;
 
 #[derive(Debug)]
-pub enum AssemblyError<E> {
+pub enum AssemblyError<E: InnerAssemblyError> {
 	Custom(&'static str),
 	Backend(E),
 	Fmt(FmtError),
@@ -19,7 +19,7 @@ pub enum AssemblyError<E> {
 	Io(IoError),
 }
 
-impl<E> Display for AssemblyError<E> {
+impl<E: InnerAssemblyError> Display for AssemblyError<E> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match self {
 			Self::NotImplemented(i) => {
@@ -35,10 +35,7 @@ impl<E> Display for AssemblyError<E> {
 	}
 }
 
-impl<E> StdError for AssemblyError<E>
-where
-	E: StdError + 'static,
-{
+impl<E: InnerAssemblyError> StdError for AssemblyError<E> {
 	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			Self::Fmt(e) => Some(e),
@@ -55,20 +52,20 @@ impl<E: InnerAssemblyError> From<E> for AssemblyError<E> {
 	}
 }
 
-impl<E> From<FmtError> for AssemblyError<E> {
+impl<E: InnerAssemblyError> From<FmtError> for AssemblyError<E> {
 	fn from(value: FmtError) -> Self {
 		Self::Fmt(value)
 	}
 }
 
-impl<E> From<IoError> for AssemblyError<E> {
+impl<E: InnerAssemblyError> From<IoError> for AssemblyError<E> {
 	fn from(value: IoError) -> Self {
 		Self::Io(value)
 	}
 }
 
 pub trait Assembler {
-	type Error: StdError + 'static;
+	type Error: InnerAssemblyError;
 	type Module<'ctx>: AssembledModule
 	where
 		Self: 'ctx;
@@ -86,7 +83,7 @@ pub trait AssembledModule {
 	fn execute(&self) -> Result<(), Self::Error>;
 }
 
-pub trait InnerAssemblyError {}
+pub trait InnerAssemblyError: StdError + 'static {}
 
 pub const TAPE_SIZE: usize = 0x8000;
 
