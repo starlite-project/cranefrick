@@ -9,6 +9,7 @@ use std::{
 	error::Error as StdError,
 	ffi::CStr,
 	fmt::{Display, Formatter, Result as FmtResult, Write as _},
+	fs,
 	path::{Path, PathBuf},
 };
 
@@ -18,6 +19,7 @@ use inkwell::{
 	OptimizationLevel,
 	builder::BuilderError,
 	context::Context,
+	module::Module,
 	passes::PassBuilderOptions,
 	support::LLVMString,
 	targets::{
@@ -127,31 +129,14 @@ impl Assembler for LlvmAssembler {
 		info!("verifying emitted LLVM IR");
 		module.verify().map_err(LlvmAssemblyError::from)?;
 
-		info!("writing unoptimized LLVM IR");
-		module
-			.print_to_file(output_path.join("unoptimized.ll"))
-			.map_err(LlvmAssemblyError::from)?;
+		write_module(&module, output_path, ToWriteType::Unoptimized)?;
 
-		info!("writing unoptimized object file");
-		target_machine
-			.write_to_file(
-				&module,
-				FileType::Object,
-				&output_path.join("unoptimized.o"),
-			)
-			.map_err(LlvmAssemblyError::from)?;
-
-		info!("writing unoptimized asm");
-		target_machine
-			.write_to_file(
-				&module,
-				FileType::Assembly,
-				&output_path.join("unoptimized.asm"),
-			)
-			.map_err(LlvmAssemblyError::from)?;
-
-		info!("writing unoptimized LLVM bitcode");
-		module.write_bitcode_to_path(output_path.join("unoptimized.bc"));
+		write_target_machine(
+			&target_machine,
+			&module,
+			output_path,
+			ToWriteType::Unoptimized,
+		)?;
 
 		let pass_options = PassBuilderOptions::create();
 
@@ -175,53 +160,22 @@ impl Assembler for LlvmAssembler {
 		info!("verifying optimized LLVM IR");
 		module.verify().map_err(LlvmAssemblyError::from)?;
 
-		info!("writing optimized LLVM IR");
-		module
-			.print_to_file(output_path.join("optimized.ll"))
-			.map_err(LlvmAssemblyError::from)?;
+		write_module(&module, output_path, ToWriteType::Optimized)?;
 
-		info!("writing optimized object file");
-		target_machine
-			.write_to_file(&module, FileType::Object, &output_path.join("optimized.o"))
-			.map_err(LlvmAssemblyError::from)?;
-
-		info!("writing optimized asm");
-		target_machine
-			.write_to_file(
-				&module,
-				FileType::Assembly,
-				&output_path.join("optimized.asm"),
-			)
-			.map_err(LlvmAssemblyError::from)?;
-
-		info!("writing optimized LLVM bitcode");
-		module.write_bitcode_to_path(output_path.join("optimized.bc"));
+		write_target_machine(
+			&target_machine,
+			&module,
+			output_path,
+			ToWriteType::Optimized,
+		)?;
 
 		if module.strip_debug_info() {
 			info!("verifying stripped LLVM IR");
 			module.verify().map_err(LlvmAssemblyError::from)?;
 
-			info!("writing stripped LLVM IR");
-			module
-				.print_to_file(output_path.join("stripped.ll"))
-				.map_err(LlvmAssemblyError::from)?;
+			write_module(&module, output_path, ToWriteType::Stripped)?;
 
-			info!("writing stripped object file");
-			target_machine
-				.write_to_file(&module, FileType::Object, &output_path.join("stripped.o"))
-				.map_err(LlvmAssemblyError::from)?;
-
-			info!("writing stripped asm");
-			target_machine
-				.write_to_file(
-					&module,
-					FileType::Assembly,
-					&output_path.join("stripped.asm"),
-				)
-				.map_err(LlvmAssemblyError::from)?;
-
-			info!("writing stripped LLVM bitcode");
-			module.write_bitcode_to_path(output_path.join("stripped.bc"));
+			write_target_machine(&target_machine, &module, output_path, ToWriteType::Stripped)?;
 		}
 
 		info!("creating JIT execution engine");
@@ -365,3 +319,70 @@ impl From<InstructionValueError> for LlvmAssemblyError {
 }
 
 impl InnerAssemblyError for LlvmAssemblyError {}
+
+#[tracing::instrument(skip_all, fields(%opt_type))]
+fn write_module(
+	module: &Module<'_>,
+	output_path: &Path,
+	opt_type: ToWriteType,
+) -> std::io::Result<()> {
+	info!("writing LLVM IR");
+	let s = module.print_to_string().to_string();
+
+	fs::write(output_path.join(format!("{opt_type}.ll")), s)?;
+
+	info!("writing LLVM bitcode");
+	let memory_buf = module.write_bitcode_to_memory();
+
+	fs::write(
+		output_path.join(format!("{opt_type}.bc")),
+		memory_buf.as_slice(),
+	)
+}
+
+#[tracing::instrument(skip_all, fields(%opt_type))]
+fn write_target_machine(
+	target_machine: &TargetMachine,
+	module: &Module<'_>,
+	output_path: &Path,
+	opt_type: ToWriteType,
+) -> Result<(), AssemblyError<LlvmAssemblyError>> {
+	info!("writing object file");
+	let mut memory_buf = target_machine
+		.write_to_memory_buffer(module, FileType::Object)
+		.map_err(LlvmAssemblyError::from)?;
+
+	fs::write(
+		output_path.join(format!("{opt_type}.o")),
+		memory_buf.as_slice(),
+	)?;
+
+	info!("writing assembly");
+	memory_buf = target_machine
+		.write_to_memory_buffer(module, FileType::Assembly)
+		.map_err(LlvmAssemblyError::from)?;
+
+	fs::write(
+		output_path.join(format!("{opt_type}.asm")),
+		memory_buf.as_slice(),
+	)?;
+
+	Ok(())
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ToWriteType {
+	Unoptimized,
+	Optimized,
+	Stripped,
+}
+
+impl Display for ToWriteType {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.write_str(match *self {
+			Self::Unoptimized => "unoptimized",
+			Self::Optimized => "optimized",
+			Self::Stripped => "stripped",
+		})
+	}
+}
