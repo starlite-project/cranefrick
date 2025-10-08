@@ -185,18 +185,18 @@ impl Assembler for LlvmAssembler {
 
 		if let Some(getchar) = module.get_function("getchar") {
 			info!("adding getchar to the execution engine");
-			execution_engine.add_global_mapping(&getchar, libc::getchar as usize);
+			execution_engine.add_global_mapping(&getchar, frick_interop::rust_getchar as usize);
 		}
 
 		if let Some(putchar) = module.get_function("rust_putchar") {
 			info!("adding rust_putchar to the execution engine");
-			execution_engine.add_global_mapping(&putchar, frick_llvm_interop::putchar as usize);
+			execution_engine.add_global_mapping(&putchar, frick_interop::rust_putchar as usize);
 		}
 
 		if let Some(eh_personality) = module.get_function("rust_eh_personality") {
 			info!("adding rust_eh_personality to the execution engine");
 			execution_engine
-				.add_global_mapping(&eh_personality, frick_llvm_interop::eh_personality as usize);
+				.add_global_mapping(&eh_personality, frick_interop::rust_eh_personality as usize);
 		}
 
 		Ok(LlvmAssembledModule {

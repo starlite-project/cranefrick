@@ -1,15 +1,11 @@
 use std::ops::RangeInclusive;
 
-use crate::inner::{InnerAssembler, SrcLoc};
+use crate::inner::InnerAssembler;
 
 impl InnerAssembler<'_> {
 	pub fn set_range(&mut self, value: u8, range: RangeInclusive<i32>) {
-		self.add_srcflag(SrcLoc::SET_RANGE);
-
 		for i in range {
 			self.set_cell(value, i);
 		}
-
-		self.remove_srcflag(SrcLoc::SET_RANGE);
 	}
 }

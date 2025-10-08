@@ -55,9 +55,9 @@ llvm = ["dep:frick_llvm_assembler"]
 members = [
     "crates/assembler",
     "crates/cranelift_assembler",
+    "crates/interop",
     "crates/ir",
     "crates/llvm_assembler",
-    "crates/llvm_interop",
     "crates/optimizer",
     "crates/rust_assembler",
     "crates/utils",
@@ -85,6 +85,7 @@ cranelift-native = { git = "https://github.com/bytecodealliance/wasmtime.git", r
 cranelift-object = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "adff9d9d0f09569203709d5687e5a7dc8e1ad0a3" }
 criterion = "0.7"
 frick_assembler = { path = "crates/assembler" }
+frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
 frick_utils = { path = "crates/utils" }
 inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "075db5c0f535c500f9e801313e570206ab28f613", features = [

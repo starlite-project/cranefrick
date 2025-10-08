@@ -4,19 +4,15 @@ use cranelift_codegen::ir::InstBuilder as _;
 use frick_assembler::AssemblyError;
 use frick_ir::BrainIr;
 
-use crate::{
-	CraneliftAssemblyError,
-	inner::{InnerAssembler, SrcLoc},
-};
+use crate::{CraneliftAssemblyError, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	pub fn if_not_zero(
 		&mut self,
 		ops: &[BrainIr],
+		op_count: u32,
 	) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
 		self.invalidate_loads();
-
-		self.add_srcflag(SrcLoc::BLOCK);
 
 		let body_block = self.create_block();
 		let next_block = self.create_block();
@@ -27,10 +23,9 @@ impl InnerAssembler<'_> {
 
 		self.switch_to_block(body_block);
 
-		for op in ops {
+		for (i, op) in ops.iter().enumerate() {
 			self.invalidate_loads();
-			self.ops(slice::from_ref(op))?;
-			self.add_srcflag(SrcLoc::BLOCK);
+			self.ops(slice::from_ref(op), op_count + i as u32)?;
 		}
 
 		self.ins().jump(next_block, &[]);
@@ -38,18 +33,15 @@ impl InnerAssembler<'_> {
 		self.switch_to_block(next_block);
 		self.seal_block(next_block);
 
-		self.remove_srcflag(SrcLoc::BLOCK);
-
 		Ok(())
 	}
 
 	pub fn dynamic_loop(
 		&mut self,
 		ops: &[BrainIr],
+		op_count: u32,
 	) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
 		self.invalidate_loads();
-
-		self.add_srcflag(SrcLoc::DYNAMIC_LOOP);
 
 		let head_block = self.create_block();
 		let body_block = self.create_block();
@@ -65,25 +57,20 @@ impl InnerAssembler<'_> {
 
 		self.switch_to_block(body_block);
 
-		for op in ops {
+		for (i, op) in ops.iter().enumerate() {
 			self.invalidate_loads();
-			self.ops(slice::from_ref(op))?;
-			self.add_srcflag(SrcLoc::DYNAMIC_LOOP);
+			self.ops(slice::from_ref(op), op_count + i as u32)?;
 		}
 
 		self.ins().jump(head_block, &[]);
 
 		self.switch_to_block(next_block);
 
-		self.remove_srcflag(SrcLoc::DYNAMIC_LOOP);
-
 		Ok(())
 	}
 
 	pub fn find_zero(&mut self, offset: i32) {
 		self.invalidate_loads();
-
-		self.add_srcflag(SrcLoc::FIND_ZERO);
 
 		let head_block = self.create_block();
 		let body_block = self.create_block();
@@ -104,7 +91,5 @@ impl InnerAssembler<'_> {
 		self.ins().jump(head_block, &[]);
 
 		self.switch_to_block(next_block);
-
-		self.remove_srcflag(SrcLoc::FIND_ZERO);
 	}
 }

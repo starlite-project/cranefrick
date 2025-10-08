@@ -5,9 +5,10 @@ use std::{
 	slice,
 };
 
+pub use libc::getchar as rust_getchar;
+
 unsafe extern "C" {
-	#[link_name = "rust_eh_personality"]
-	pub fn eh_personality(
+	pub fn rust_eh_personality(
 		version: i32,
 		actions: i32,
 		exception_class: i64,
@@ -18,7 +19,7 @@ unsafe extern "C" {
 
 #[unsafe(no_mangle)]
 #[must_use]
-pub unsafe extern "C-unwind" fn putchar(c: libc::c_int) -> libc::c_int {
+pub unsafe extern "C-unwind" fn rust_putchar(c: libc::c_int) -> libc::c_int {
 	let mut stdout = io::stdout().lock();
 
 	let c_trunc = c as u8;

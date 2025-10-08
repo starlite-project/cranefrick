@@ -8,7 +8,7 @@ impl InnerAssembler<'_> {
 	pub fn if_not_zero(
 		&self,
 		ops: &[BrainIr],
-		ops_count: usize,
+		op_count: usize,
 	) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let context = self.context();
 
@@ -41,12 +41,12 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(body_block);
 
-		self.ops(ops, ops_count + 1)?;
+		self.ops(ops, op_count + 1)?;
 
 		let debug_loc = self.debug_builder.create_debug_location(
 			context,
 			0,
-			ops_count as u32 + 2,
+			op_count as u32 + 2,
 			self.functions
 				.main
 				.get_subprogram()
@@ -69,7 +69,7 @@ impl InnerAssembler<'_> {
 	pub fn dynamic_loop(
 		&self,
 		ops: &[BrainIr],
-		ops_count: usize,
+		op_count: usize,
 	) -> Result<(), AssemblyError<LlvmAssemblyError>> {
 		let context = self.context();
 
@@ -102,12 +102,12 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(body_block);
 
-		self.ops(ops, ops_count + 1)?;
+		self.ops(ops, op_count + 1)?;
 
 		let debug_loc = self.debug_builder.create_debug_location(
 			context,
 			0,
-			ops_count as u32 + 2,
+			op_count as u32 + 2,
 			self.functions
 				.main
 				.get_subprogram()

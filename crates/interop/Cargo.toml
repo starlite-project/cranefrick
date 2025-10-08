@@ -3,7 +3,7 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "frick_llvm_interop"
+name = "frick_interop"
 rust-version.workspace = true
 version.workspace = true
 

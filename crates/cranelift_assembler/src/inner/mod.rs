@@ -1,5 +1,4 @@
 mod impls;
-mod srcloc;
 
 use std::{
 	collections::HashMap,
@@ -16,14 +15,12 @@ use frick_assembler::{AssemblyError, TAPE_SIZE};
 use frick_ir::BrainIr;
 use frick_utils::GetOrZero as _;
 
-use self::srcloc::SrcLoc;
 use super::CraneliftAssemblyError;
 
 pub struct InnerAssembler<'a> {
 	builder: FunctionBuilder<'a>,
 	read: FuncRef,
 	write: FuncRef,
-	current_srcloc: SrcLoc,
 	ptr_variable: Variable,
 	loads: HashMap<i32, Value>,
 }
@@ -81,7 +78,6 @@ impl<'a> InnerAssembler<'a> {
 		let read = module.declare_func_in_func(read, builder.func);
 
 		Ok(Self {
-			current_srcloc: SrcLoc::empty(),
 			builder,
 			read,
 			write,
@@ -94,7 +90,7 @@ impl<'a> InnerAssembler<'a> {
 		mut self,
 		ops: &[BrainIr],
 	) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
-		self.ops(ops)?;
+		self.ops(ops, 0)?;
 
 		self.ins().return_(&[]);
 
@@ -105,9 +101,16 @@ impl<'a> InnerAssembler<'a> {
 		Ok(())
 	}
 
-	fn ops(&mut self, ops: &[BrainIr]) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
+	fn ops(
+		&mut self,
+		ops: &[BrainIr],
+		mut op_count: u32,
+	) -> Result<(), AssemblyError<CraneliftAssemblyError>> {
 		for op in ops {
+			self.set_srcloc(SourceLoc::new(op_count));
+
 			match op {
+				BrainIr::Boundary => continue,
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset),
 				BrainIr::SetCell(value, offset) => {
 					self.set_cell(*value, offset.get_or_zero());
@@ -117,8 +120,8 @@ impl<'a> InnerAssembler<'a> {
 				}
 				BrainIr::Output(options) => self.output(options)?,
 				BrainIr::InputIntoCell => self.input_into_cell(),
-				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops)?,
-				BrainIr::IfNotZero(ops) => self.if_not_zero(ops)?,
+				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops, op_count)?,
+				BrainIr::IfNotZero(ops) => self.if_not_zero(ops, op_count)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset),
 				BrainIr::MoveValueTo(options) => self.move_value_to(*options),
 				BrainIr::TakeValueTo(options) => self.take_value_to(*options),
@@ -128,6 +131,8 @@ impl<'a> InnerAssembler<'a> {
 				BrainIr::SetRange(options) => self.set_range(options.value, options.range()),
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
+
+			op_count += 1;
 		}
 
 		Ok(())
@@ -145,22 +150,6 @@ impl<'a> InnerAssembler<'a> {
 
 	fn const_u8(&mut self, value: u8) -> Value {
 		self.ins().iconst(types::I8, i64::from(value))
-	}
-
-	fn add_srcflag(&mut self, flag: SrcLoc) {
-		self.current_srcloc |= flag;
-
-		let srcloc = self.current_srcloc.bits();
-
-		self.set_srcloc(SourceLoc::new(srcloc));
-	}
-
-	fn remove_srcflag(&mut self, flag: SrcLoc) {
-		self.current_srcloc &= !flag;
-
-		let srcloc = self.current_srcloc.bits();
-
-		self.set_srcloc(SourceLoc::new(srcloc));
 	}
 }
 

@@ -650,12 +650,20 @@ dependencies = [
  "cranelift-module",
  "cranelift-native",
  "frick_assembler",
+ "frick_interop",
  "frick_ir",
  "frick_utils",
  "serde",
  "target-lexicon",
  "tracing",
  "tracing-indicatif",
+]
+
+[[package]]
+name = "frick_interop"
+version = "0.1.0"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -675,20 +683,13 @@ name = "frick_llvm_assembler"
 version = "0.1.0"
 dependencies = [
  "frick_assembler",
+ "frick_interop",
  "frick_ir",
- "frick_llvm_interop",
  "frick_utils",
  "inkwell",
  "libc",
  "send_wrapper",
  "tracing",
-]
-
-[[package]]
-name = "frick_llvm_interop"
-version = "0.1.0"
-dependencies = [
- "libc",
 ]
 
 [[package]]
