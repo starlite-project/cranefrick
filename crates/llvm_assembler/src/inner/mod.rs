@@ -99,6 +99,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let debug_builder = AssemblerDebugBuilder::new(&module, &file_name, &directory)?
 			.setup(&builder, functions, pointers)?;
 
+		module.set_source_file_name(&file_name);
+
 		Ok(Self {
 			module,
 			builder,
