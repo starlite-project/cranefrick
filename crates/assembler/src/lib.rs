@@ -3,9 +3,8 @@
 use std::{
 	error::Error as StdError,
 	fmt::{Debug, Display, Error as FmtError, Formatter, Result as FmtResult},
-	io::{self, Error as IoError, prelude::*},
+	io::Error as IoError,
 	path::Path,
-	slice,
 };
 
 use frick_ir::BrainIr;
