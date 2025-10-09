@@ -129,9 +129,7 @@ impl Assembler for LlvmAssembler {
 		info!("verifying emitted LLVM IR");
 		module.verify().map_err(LlvmAssemblyError::from)?;
 
-		write_module(&module, output_path, ToWriteType::Unoptimized)?;
-
-		write_target_machine(
+		write_data(
 			&target_machine,
 			&module,
 			output_path,
@@ -160,9 +158,7 @@ impl Assembler for LlvmAssembler {
 		info!("verifying optimized LLVM IR");
 		module.verify().map_err(LlvmAssemblyError::from)?;
 
-		write_module(&module, output_path, ToWriteType::Optimized)?;
-
-		write_target_machine(
+		write_data(
 			&target_machine,
 			&module,
 			output_path,
@@ -173,9 +169,7 @@ impl Assembler for LlvmAssembler {
 			info!("verifying stripped LLVM IR");
 			module.verify().map_err(LlvmAssemblyError::from)?;
 
-			write_module(&module, output_path, ToWriteType::Stripped)?;
-
-			write_target_machine(&target_machine, &module, output_path, ToWriteType::Stripped)?;
+			write_data(&target_machine, &module, output_path, ToWriteType::Stripped)?;
 		}
 
 		info!("creating JIT execution engine");
@@ -321,51 +315,50 @@ impl From<InstructionValueError> for LlvmAssemblyError {
 impl InnerAssemblyError for LlvmAssemblyError {}
 
 #[tracing::instrument(skip_all, fields(%opt_type))]
-fn write_module(
-	module: &Module<'_>,
-	output_path: &Path,
-	opt_type: ToWriteType,
-) -> std::io::Result<()> {
-	info!("writing LLVM IR");
-	let s = module.print_to_string().to_string();
-
-	fs::write(output_path.join(format!("{opt_type}.ll")), s)?;
-
-	info!("writing LLVM bitcode");
-	let memory_buf = module.write_bitcode_to_memory();
-
-	fs::write(
-		output_path.join(format!("{opt_type}.bc")),
-		memory_buf.as_slice(),
-	)
-}
-
-#[tracing::instrument(skip_all, fields(%opt_type))]
-fn write_target_machine(
+fn write_data(
 	target_machine: &TargetMachine,
 	module: &Module<'_>,
 	output_path: &Path,
 	opt_type: ToWriteType,
 ) -> Result<(), AssemblyError<LlvmAssemblyError>> {
-	info!("writing object file");
-	let mut memory_buf = target_machine
-		.write_to_memory_buffer(module, FileType::Object)
-		.map_err(LlvmAssemblyError::from)?;
+	info!("writing LLVM IR");
 
-	fs::write(
-		output_path.join(format!("{opt_type}.o")),
-		memory_buf.as_slice(),
-	)?;
+	{
+		let s = module.print_to_string().to_string();
+		fs::write(output_path.join(format!("{opt_type}.ll")), s)?;
+	}
+
+	info!("writing LLVM bitcode");
+
+	{
+		let memory_buf = module.write_bitcode_to_memory();
+		fs::write(
+			output_path.join(format!("{opt_type}.bc")),
+			memory_buf.as_slice(),
+		)?;
+	}
+
+	info!("writing object file");
+	{
+		let memory_buffer = target_machine
+			.write_to_memory_buffer(module, FileType::Object)
+			.map_err(LlvmAssemblyError::from)?;
+		fs::write(
+			output_path.join(format!("{opt_type}.o")),
+			memory_buffer.as_slice(),
+		)?;
+	}
 
 	info!("writing assembly");
-	memory_buf = target_machine
-		.write_to_memory_buffer(module, FileType::Assembly)
-		.map_err(LlvmAssemblyError::from)?;
-
-	fs::write(
-		output_path.join(format!("{opt_type}.asm")),
-		memory_buf.as_slice(),
-	)?;
+	{
+		let memory_buffer = target_machine
+			.write_to_memory_buffer(module, FileType::Object)
+			.map_err(LlvmAssemblyError::from)?;
+		fs::write(
+			output_path.join(format!("{opt_type}.asm")),
+			memory_buffer.as_slice(),
+		)?;
+	}
 
 	Ok(())
 }
