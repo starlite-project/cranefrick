@@ -1,4 +1,7 @@
-use std::ops::{Deref, DerefMut};
+use std::{
+	mem,
+	ops::{Deref, DerefMut},
+};
 
 use frick_assembler::TAPE_SIZE;
 use inkwell::{
@@ -13,7 +16,7 @@ use inkwell::{
 };
 
 use super::{AssemblerFunctions, AssemblerPointers, OUTPUT_ARRAY_LEN};
-use crate::LlvmAssemblyError;
+use crate::{ContextGetter as _, LlvmAssemblyError};
 
 pub struct AssemblerDebugBuilder<'ctx> {
 	pub di_builder: DebugInfoBuilder<'ctx>,
@@ -50,15 +53,117 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		})
 	}
 
-	#[allow(clippy::single_range_in_vec_init)]
-	pub fn setup(
-		self,
-		builder: &Builder<'ctx>,
+	pub fn declare_variables(
+		&self,
 		functions: AssemblerFunctions<'ctx>,
 		pointers: AssemblerPointers<'ctx>,
-	) -> Result<Self, LlvmAssemblyError> {
-		let entry_block = functions.main.get_first_basic_block().unwrap();
+	) -> Result<(), LlvmAssemblyError> {
+		let main_subprogram = functions.main.get_subprogram().unwrap();
 
+		let debug_loc = self.create_debug_location(
+			functions.context(),
+			1,
+			0,
+			main_subprogram.as_debug_info_scope(),
+			None,
+		);
+
+		let u8_type = self
+			.create_basic_type("u8", mem::size_of::<u8>() as u64 * 8, 7, i32::ZERO)?
+			.as_type();
+
+		let u8_array_type = self
+			.create_array_type(
+				u8_type,
+				mem::size_of::<[u8; TAPE_SIZE]>() as u64 * 8,
+				mem::align_of::<[u8; TAPE_SIZE]>() as u32 * 8,
+				&[],
+			)
+			.as_type();
+
+		let tape_variable = self.create_auto_variable(
+			main_subprogram.as_debug_info_scope(),
+			"tape",
+			self.compile_unit.get_file(),
+			0,
+			u8_array_type,
+			false,
+			i32::ZERO,
+			mem::align_of::<[u8; TAPE_SIZE]>() as u32 * 8,
+		);
+
+		let right_after_tape_alloca = get_instruction_after_alloca(pointers.tape)?;
+
+		self.insert_declare_before_instruction(
+			pointers.tape,
+			Some(tape_variable),
+			None,
+			debug_loc,
+			right_after_tape_alloca,
+		);
+
+		let pointer_type = self
+			.create_basic_type("usize", mem::size_of::<usize>() as u64 * 8, 7, i32::ZERO)?
+			.as_type();
+
+		let pointer_variable = self.create_auto_variable(
+			main_subprogram.as_debug_info_scope(),
+			"pointer",
+			self.compile_unit.get_file(),
+			0,
+			pointer_type,
+			false,
+			i32::ZERO,
+			mem::align_of::<usize>() as u32 * 8,
+		);
+
+		let right_after_pointer_alloca = get_instruction_after_alloca(pointers.pointer)?;
+
+		self.insert_declare_before_instruction(
+			pointers.pointer,
+			Some(pointer_variable),
+			None,
+			debug_loc,
+			right_after_pointer_alloca,
+		);
+
+		let output_array_type = self
+			.create_array_type(
+				u8_type,
+				mem::size_of::<[u8; OUTPUT_ARRAY_LEN as usize]>() as u64 * 8,
+				mem::align_of::<[u8; OUTPUT_ARRAY_LEN as usize]>() as u32 * 8,
+				&[],
+			)
+			.as_type();
+
+		let output_variable = self.create_auto_variable(
+			main_subprogram.as_debug_info_scope(),
+			"output",
+			self.compile_unit.get_file(),
+			0,
+			output_array_type,
+			false,
+			i32::ZERO,
+			mem::align_of::<[u8; OUTPUT_ARRAY_LEN as usize]>() as u32 * 8,
+		);
+
+		let right_after_output_alloca = get_instruction_after_alloca(pointers.output)?;
+
+		self.insert_declare_before_instruction(
+			pointers.output,
+			Some(output_variable),
+			None,
+			debug_loc,
+			right_after_output_alloca,
+		);
+
+		Ok(())
+	}
+
+	pub fn declare_subprograms(
+		&self,
+		functions: AssemblerFunctions<'ctx>,
+	) -> Result<(), LlvmAssemblyError> {
 		let main_subroutine_type =
 			self.create_subroutine_type(self.compile_unit.get_file(), None, &[], i32::ZERO);
 
@@ -78,35 +183,32 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		functions.main.set_subprogram(main_subprogram);
 
-		let context = functions.main.get_type().get_context();
-
-		let debug_loc = self.create_debug_location(
-			functions.main.get_type().get_context(),
-			1,
-			0,
-			main_subprogram.as_debug_info_scope(),
-			None,
-		);
-
-		let i8_di_type = self
-			.di_builder
-			.create_basic_type("u8", 8, 7, i32::ZERO)?
+		let u8_type = self
+			.create_basic_type("u8", mem::size_of::<u8>() as u64 * 8, 7, i32::ZERO)?
 			.as_type();
 
-		let i8_di_ptr_type = self
-			.di_builder
-			.create_pointer_type("ptr(u8)", i8_di_type, 64, 64, AddressSpace::default())
+		let u8_ptr_type = self
+			.create_pointer_type(
+				"ptr(u8)",
+				u8_type,
+				mem::size_of::<*const u8>() as u64 * 8,
+				mem::align_of::<*const u8>() as u32 * 8,
+				AddressSpace::default(),
+			)
 			.as_type();
 
-		let i32_di_type = self
-			.di_builder
-			.create_basic_type("char", 32, 7, i32::ZERO)?
+		let char_type = self
+			.create_basic_type("char", mem::size_of::<u32>() as u64 * 8, 7, i32::ZERO)?
+			.as_type();
+
+		let usize_type = self
+			.create_basic_type("usize", mem::size_of::<usize>() as u64 * 8, 7, i32::ZERO)?
 			.as_type();
 
 		let puts_subroutine_type = self.create_subroutine_type(
 			self.compile_unit.get_file(),
-			Some(i32_di_type),
-			&[i8_di_ptr_type],
+			Some(char_type),
+			&[u8_ptr_type, usize_type],
 			i32::ZERO,
 		);
 
@@ -120,7 +222,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			true,
 			true,
 			0,
-			i32::PRIVATE,
+			i32::ZERO,
 			true,
 		);
 
@@ -128,8 +230,8 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let putchar_subroutine_type = self.create_subroutine_type(
 			self.compile_unit.get_file(),
-			Some(i32_di_type),
-			&[i32_di_type],
+			Some(char_type),
+			&[char_type],
 			i32::ZERO,
 		);
 
@@ -151,7 +253,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let getchar_subroutine_type = self.create_subroutine_type(
 			self.compile_unit.get_file(),
-			Some(i32_di_type),
+			Some(char_type),
 			&[],
 			i32::ZERO,
 		);
@@ -159,7 +261,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		let getchar_subprogram = self.create_function(
 			self.compile_unit.as_debug_info_scope(),
 			"getchar",
-			Some("getchar"),
+			Some("rust_getchar"),
 			self.compile_unit.get_file(),
 			0,
 			getchar_subroutine_type,
@@ -172,94 +274,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		functions.getchar.set_subprogram(getchar_subprogram);
 
-		let i8_array_di_type = self
-			.di_builder
-			.create_array_type(
-				i8_di_type,
-				TAPE_SIZE as u64 * 8,
-				1,
-				&[0..(TAPE_SIZE as i64)],
-			)
-			.as_type();
-
-		let tape_variable = self.create_auto_variable(
-			main_subprogram.as_debug_info_scope(),
-			"tape",
-			self.compile_unit.get_file(),
-			0,
-			i8_array_di_type,
-			false,
-			i32::ZERO,
-			1,
-		);
-
-		let right_after_tape_alloca = get_instruction_after_alloca(pointers.tape)?;
-
-		self.insert_declare_before_instruction(
-			pointers.tape,
-			Some(tape_variable),
-			None,
-			debug_loc,
-			right_after_tape_alloca,
-		);
-
-		let i64_di_type = self
-			.di_builder
-			.create_basic_type("u64", 64, 7, i32::ZERO)?
-			.as_type();
-
-		let pointer_variable = self.create_auto_variable(
-			main_subprogram.as_debug_info_scope(),
-			"pointer",
-			self.compile_unit.get_file(),
-			0,
-			i64_di_type,
-			false,
-			i32::ZERO,
-			8,
-		);
-
-		let right_after_pointer_alloca = get_instruction_after_alloca(pointers.pointer)?;
-
-		self.insert_declare_before_instruction(
-			pointers.pointer,
-			Some(pointer_variable),
-			None,
-			debug_loc,
-			right_after_pointer_alloca,
-		);
-
-		let i8_array_di_type = self
-			.di_builder
-			.create_array_type(i8_di_type, 8 * u64::from(OUTPUT_ARRAY_LEN), 1, &[0..8])
-			.as_type();
-
-		let output_variable = self.create_auto_variable(
-			main_subprogram.as_debug_info_scope(),
-			"output",
-			self.compile_unit.get_file(),
-			0,
-			i8_array_di_type,
-			false,
-			i32::ZERO,
-			1,
-		);
-
-		// Need to do this as `setup` is called before any other instructions are added
-		self.insert_declare_at_end(
-			pointers.output,
-			Some(output_variable),
-			None,
-			debug_loc,
-			entry_block,
-		);
-
-		let debug_loc =
-			self.create_debug_location(context, 1, 0, main_subprogram.as_debug_info_scope(), None);
-
-		builder.set_current_debug_location(debug_loc);
-
-		Ok(self)
+		Ok(())
 	}
 }
 

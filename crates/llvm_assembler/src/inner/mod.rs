@@ -96,8 +96,23 @@ impl<'ctx> InnerAssembler<'ctx> {
 			("frick_source_file.bf".to_owned(), "/".to_owned())
 		};
 
-		let debug_builder = AssemblerDebugBuilder::new(&module, &file_name, &directory)?
-			.setup(&builder, functions, pointers)?;
+		let debug_builder = AssemblerDebugBuilder::new(&module, &file_name, &directory)?;
+
+		debug_builder.declare_subprograms(functions)?;
+
+		let debug_loc = debug_builder.create_debug_location(
+			module.get_context(),
+			1,
+			0,
+			functions
+				.main
+				.get_subprogram()
+				.unwrap()
+				.as_debug_info_scope(),
+			None,
+		);
+
+		builder.set_current_debug_location(debug_loc);
 
 		module.set_source_file_name(&file_name);
 
@@ -123,6 +138,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		assert!(TAPE_SIZE.is_power_of_two());
 
 		self.ops(ops, 1)?;
+
+		self.debug_builder
+			.declare_variables(self.functions, self.pointers)?;
 
 		let context = self.context();
 
