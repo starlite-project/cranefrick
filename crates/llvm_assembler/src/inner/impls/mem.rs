@@ -112,9 +112,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[inline]
 	pub fn tape_gep(
 		&self,
 		ty: impl BasicType<'ctx>,
+		offset: impl Into<CalculatedOffset<'ctx>>,
+		name: impl Display,
+	) -> Result<PointerValue<'ctx>, LlvmAssemblyError> {
+		self.gep(ty, self.pointers.tape, offset, name)
+	}
+
+	pub fn gep(
+		&self,
+		ty: impl BasicType<'ctx>,
+		ptr: PointerValue<'ctx>,
 		offset: impl Into<CalculatedOffset<'ctx>>,
 		name: impl Display,
 	) -> Result<PointerValue<'ctx>, LlvmAssemblyError> {
@@ -124,32 +135,36 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		match basic_type {
 			BasicTypeEnum::ArrayType(ty) => {
-				let zero = self.ptr_int_type.const_zero();
+				let zero = {
+					let i64_type = self.context().i64_type();
+
+					i64_type.const_zero()
+				};
 
 				Ok(unsafe {
 					self.builder.build_in_bounds_gep(
 						ty,
-						self.pointers.tape,
+						ptr,
 						&[zero, offset],
 						&format!("{name}_array_gep"),
 					)?
 				})
 			}
 			BasicTypeEnum::IntType(ty) => Ok(unsafe {
-				self.builder.build_in_bounds_gep(
-					ty,
-					self.pointers.tape,
-					&[offset],
-					&format!("{name}_int_gep"),
-				)?
+				self.builder
+					.build_in_bounds_gep(ty, ptr, &[offset], &format!("{name}_int_gep"))?
 			}),
 			BasicTypeEnum::VectorType(ty) => {
-				let zero = self.ptr_int_type.const_zero();
+				let zero = {
+					let i64_type = self.context().i64_type();
+
+					i64_type.const_zero()
+				};
 
 				Ok(unsafe {
 					self.builder.build_in_bounds_gep(
 						ty,
-						self.pointers.tape,
+						ptr,
 						&[zero, offset],
 						&format!("{name}_vector_gep"),
 					)?

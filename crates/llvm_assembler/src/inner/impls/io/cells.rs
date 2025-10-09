@@ -165,14 +165,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let array_offset = ptr_int_type.const_int(i as u64, false);
 
-			let output_array_gep = unsafe {
-				self.builder.build_in_bounds_gep(
-					i8_type,
-					self.pointers.output,
-					&[array_offset],
-					"setup_output_cells_puts_iterated_gep",
-				)?
-			};
+			let output_array_gep = self.gep(
+				i8_type,
+				self.pointers.output,
+				array_offset,
+				"setup_output_cells_puts_iterated",
+			)?;
 
 			self.store_into(offset_char, output_array_gep)?;
 		}

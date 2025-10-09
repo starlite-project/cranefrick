@@ -20,14 +20,14 @@ where
 	}
 }
 
-pub trait ContextExt {
-	fn default_ptr_type(&self) -> PointerType<'_>;
+pub trait ContextExt<'ctx> {
+	fn default_ptr_type(&self) -> PointerType<'ctx>;
 
 	fn create_named_enum_attribute(&self, name: &'static str, val: u64) -> Attribute;
 }
 
-impl ContextExt for Context {
-	fn default_ptr_type(&self) -> PointerType<'_> {
+impl<'ctx> ContextExt<'ctx> for &'ctx Context {
+	fn default_ptr_type(&self) -> PointerType<'ctx> {
 		self.ptr_type(AddressSpace::default())
 	}
 
@@ -36,8 +36,8 @@ impl ContextExt for Context {
 	}
 }
 
-impl ContextExt for ContextRef<'_> {
-	fn default_ptr_type(&self) -> PointerType<'_> {
+impl<'ctx> ContextExt<'ctx> for ContextRef<'ctx> {
+	fn default_ptr_type(&self) -> PointerType<'ctx> {
 		self.ptr_type(AddressSpace::default())
 	}
 

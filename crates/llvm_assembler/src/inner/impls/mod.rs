@@ -11,8 +11,7 @@ use inkwell::{
 	values::{FunctionValue, IntValue, PointerValue},
 };
 
-use super::{InnerAssembler, LlvmAssemblyError};
-use crate::{ContextExt as _, ContextGetter as _};
+use crate::{ContextExt as _, ContextGetter as _, LlvmAssemblyError, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	fn start_lifetime(
@@ -85,10 +84,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder
 			.build_memcpy(ptr_alloca, 1, pointer_param, 1, string_len)?;
 
-		let end_of_string = unsafe {
-			self.builder
-				.build_in_bounds_gep(i8_type, ptr_alloca, &[string_len], "")?
-		};
+		let end_of_string = self.gep(i8_type, ptr_alloca, string_len, "end_of_string")?;
 
 		let i64_zero = i64_type.const_zero();
 
@@ -105,14 +101,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let i64_one = i64_type.const_int(1, false);
 
-		let next_index_gep = unsafe {
-			self.builder.build_in_bounds_gep(
-				i8_type,
-				body_block_phi.as_basic_value().into_pointer_value(),
-				&[i64_one],
-				"",
-			)?
-		};
+		let next_index_gep = self.gep(
+			i8_type,
+			body_block_phi.as_basic_value().into_pointer_value(),
+			i64_one,
+			"next_char_index",
+		)?;
 
 		body_block_phi.add_incoming(&[
 			(&ptr_alloca, entry_block),
