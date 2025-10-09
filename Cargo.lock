@@ -707,6 +707,7 @@ name = "frick_rust_assembler"
 version = "0.1.0"
 dependencies = [
  "frick_assembler",
+ "frick_interop",
  "frick_ir",
  "frick_utils",
  "tracing",

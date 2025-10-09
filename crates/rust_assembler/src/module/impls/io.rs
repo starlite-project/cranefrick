@@ -1,4 +1,4 @@
-use frick_assembler::{TAPE_SIZE, frick_assembler_read, frick_assembler_write};
+use frick_assembler::TAPE_SIZE;
 use frick_ir::OutputOptions;
 
 use crate::RustInterpreterModule;
@@ -27,18 +27,20 @@ impl RustInterpreterModule<'_> {
 
 		let extended = u32::from(value);
 
-		let output = extended.wrapping_add_signed(cell_offset.into());
+		let output = extended.wrapping_add_signed(cell_offset.into()) as i32;
 
 		unsafe {
-			frick_assembler_write(output);
+			let putchar_output = frick_interop::rust_putchar(output);
+			assert_eq!(putchar_output, output);
 		}
 	}
 
 	fn output_char(c: u8) {
-		let extended = c.into();
+		let extended = u32::from(c) as i32;
 
 		unsafe {
-			frick_assembler_write(extended);
+			let output = frick_interop::rust_putchar(extended);
+			assert_eq!(extended, output);
 		}
 	}
 
@@ -47,8 +49,10 @@ impl RustInterpreterModule<'_> {
 	}
 
 	pub(crate) fn input_into_cell(memory: &mut [u8; TAPE_SIZE], current_ptr: usize) {
-		unsafe {
-			frick_assembler_read(memory.as_mut_ptr().add(current_ptr));
-		}
+		let value = unsafe { frick_interop::rust_getchar() };
+
+		let trunc = value as u8;
+
+		memory[current_ptr] = trunc;
 	}
 }
