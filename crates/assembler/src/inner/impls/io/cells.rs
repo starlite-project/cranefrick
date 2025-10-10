@@ -129,11 +129,24 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let array_len = i64_type.const_int(length, false);
 
-		let memset_ptr = self.builder
-			.build_memset(self.pointers.output, 1, value_to_memset, array_len)?;
+		let memset_ptr =
+			self.builder
+				.build_memset(self.pointers.output, 1, value_to_memset, array_len)?;
 
 		if let Some(memset_instr) = memset_ptr.as_instruction() {
+			for i in 0..length {
+				let i = (i * 8) as i64;
 
+				let expression = self.debug_builder.create_expression(vec![0x1000, i, 8]);
+
+				self.debug_builder.insert_dbg_value_before(
+					value_to_memset.into(),
+					self.debug_builder.variables.output,
+					Some(expression),
+					self.builder.get_current_debug_location().unwrap(),
+					memset_instr,
+				);
+			}
 		}
 
 		Ok(())
