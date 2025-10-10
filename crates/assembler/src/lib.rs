@@ -358,7 +358,7 @@ fn write_data(
 	info!("writing assembly");
 	{
 		let memory_buffer = target_machine
-			.write_to_memory_buffer(module, FileType::Object)
+			.write_to_memory_buffer(module, FileType::Assembly)
 			.map_err(AssemblyError::from)?;
 		fs::write(
 			output_path.join(format!("{opt_type}.asm")),
