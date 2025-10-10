@@ -72,6 +72,7 @@ impl Assembler {
 		this
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn assemble<'ctx>(
 		&'ctx self,
 		ops: &[BrainIr],
