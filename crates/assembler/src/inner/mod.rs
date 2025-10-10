@@ -137,7 +137,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.ops(ops, 1)?;
 
 		self.debug_builder
-			.declare_variables(self.functions, self.pointers)?;
+			.declare_variables(self.context(), self.pointers)?;
 
 		let context = self.context();
 
