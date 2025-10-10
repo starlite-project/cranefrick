@@ -347,8 +347,7 @@ fn write_data(
 	info!("writing object file");
 	{
 		let memory_buffer = target_machine
-			.write_to_memory_buffer(module, FileType::Object)
-			.map_err(AssemblyError::from)?;
+			.write_to_memory_buffer(module, FileType::Object)?;
 		fs::write(
 			output_path.join(format!("{opt_type}.o")),
 			memory_buffer.as_slice(),
@@ -358,8 +357,7 @@ fn write_data(
 	info!("writing assembly");
 	{
 		let memory_buffer = target_machine
-			.write_to_memory_buffer(module, FileType::Assembly)
-			.map_err(AssemblyError::from)?;
+			.write_to_memory_buffer(module, FileType::Assembly)?;
 		fs::write(
 			output_path.join(format!("{opt_type}.s")),
 			memory_buffer.as_slice(),
