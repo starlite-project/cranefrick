@@ -4,15 +4,9 @@ use std::{fs, path::Path};
 
 use clap::Parser as _;
 use color_eyre::Result;
-use frick_assembler::{AssembledModule as _, Assembler as _};
-#[cfg(feature = "cranelift")]
-use frick_cranelift_assembler::{AssemblerFlags, CraneliftAssembler};
+use frick_assembler::Assembler;
 use frick_ir::parse;
-#[cfg(feature = "llvm")]
-use frick_llvm_assembler::LlvmAssembler;
 use frick_optimizer::Optimizer;
-#[cfg(feature = "interpret")]
-use frick_rust_assembler::RustInterpreterAssembler;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
@@ -65,57 +59,28 @@ fn main() -> Result<()> {
 
 	serialize(&optimizer, args.output_path(), "optimized")?;
 
-	#[allow(unreachable_patterns)]
-	match &args {
-		#[cfg(feature = "cranelift")]
-		Args::Cranelift { flags_path, .. } => {
-			let flags = get_cranelift_assembler(flags_path.as_deref());
+	let mut assembler = match args.passes_path() {
+		None => Assembler::default(),
+		Some(passes_path) => {
+			let passes = fs::read_to_string(passes_path)?;
 
-			let assembler = CraneliftAssembler::with_flags(flags);
-
-			let module = assembler.assemble(&optimizer, args.output_path())?;
-
-			tracing::info!("finished assembling with cranelift");
-
-			module.execute()?;
+			Assembler::new(
+				passes
+					.lines()
+					.map(|l| l.trim())
+					.collect::<Vec<_>>()
+					.join(","),
+			)
 		}
-		#[cfg(feature = "llvm")]
-		Args::Llvm { passes_path, .. } => {
-			let mut assembler = match passes_path {
-				None => LlvmAssembler::default(),
-				Some(passes_path) => {
-					let passes = fs::read_to_string(passes_path)?;
+	};
 
-					LlvmAssembler::new(
-						passes
-							.lines()
-							.map(|l| l.trim())
-							.collect::<Vec<_>>()
-							.join(","),
-					)
-				}
-			};
+	assembler.set_path(args.file_path().to_owned());
 
-			assembler.set_path(args.file_path().to_owned());
+	let module = assembler.assemble(&optimizer, args.output_path())?;
 
-			let module = assembler.assemble(&optimizer, args.output_path())?;
+	tracing::info!("finished assembling module");
 
-			tracing::info!("finished assembling with LLVM");
-
-			module.execute()?;
-		}
-		#[cfg(feature = "interpret")]
-		Args::Interpret { .. } => {
-			let assembler = RustInterpreterAssembler;
-
-			let module = assembler.assemble(&optimizer, args.output_path())?;
-
-			tracing::info!("finished assembling with Rust");
-
-			module.execute()?;
-		}
-		_ => unreachable!(),
-	}
+	module.execute()?;
 
 	Ok(())
 }
@@ -222,29 +187,4 @@ fn serialize_as_s_expr<T: Serialize>(value: &T, folder_path: &Path, file_name: &
 	serde_lexpr::to_writer_custom(file, value, options)?;
 
 	Ok(())
-}
-
-#[cfg(feature = "cranelift")]
-fn get_cranelift_assembler(path: Option<&Path>) -> AssemblerFlags {
-	if let Some(path) = path {
-		let data = match fs::read(path) {
-			Ok(data) => data,
-			Err(e) => {
-				tracing::warn!("error reading flags file: {e}");
-				tracing::warn!("resorting to default flags");
-				return AssemblerFlags::default();
-			}
-		};
-
-		match toml::from_slice(&data) {
-			Ok(flags) => flags,
-			Err(e) => {
-				tracing::warn!("error deserializing flags: {e}");
-				tracing::warn!("resorting to default flags");
-				AssemblerFlags::default()
-			}
-		}
-	} else {
-		AssemblerFlags::default()
-	}
 }
