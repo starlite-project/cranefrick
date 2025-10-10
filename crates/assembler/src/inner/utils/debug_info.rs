@@ -16,7 +16,7 @@ use inkwell::{
 };
 
 use super::{AssemblerFunctions, AssemblerPointers, OUTPUT_ARRAY_LEN};
-use crate::{AssemblyError, ContextGetter as _};
+use crate::AssemblyError;
 
 pub struct AssemblerDebugBuilder<'ctx> {
 	pub di_builder: DebugInfoBuilder<'ctx>,
@@ -212,8 +212,8 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		let right_after_output_alloca = get_instruction_after_alloca(pointers.output)?;
 
 		self.insert_declare_before_instruction(
-			pointers.pointer,
-			Some(self.variables.pointer),
+			pointers.output,
+			Some(self.variables.output),
 			None,
 			debug_loc,
 			right_after_output_alloca,
