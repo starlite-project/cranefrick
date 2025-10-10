@@ -35,7 +35,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_load(ptr_type, self.pointers.pointer, "offset_pointer_load")?
 			.into_int_value();
 
-		let new_ptr_value = if matches!(offset, 0) {
+		if matches!(offset, 0) {
 			Ok(current_ptr)
 		} else {
 			let offset_ptr =
@@ -47,19 +47,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			} else {
 				self.wrap_pointer_negative(offset_ptr)
 			}
-		}?;
-
-		if let Some(new_ptr_instr) = new_ptr_value.as_instruction() {
-			self.debug_builder.insert_dbg_value_before(
-				new_ptr_value.into(),
-				self.debug_builder.variables.pointer,
-				None,
-				self.builder.get_current_debug_location().unwrap(),
-				new_ptr_instr,
-			);
 		}
-
-		Ok(new_ptr_value)
 	}
 
 	fn wrap_pointer_positive(

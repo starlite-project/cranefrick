@@ -1,5 +1,5 @@
 use frick_ir::CellChangeOptions;
-use inkwell::{basic_block::BasicBlock, types::IntType};
+use inkwell::types::IntType;
 
 use crate::{
 	AssemblyError, ContextGetter as _,
@@ -129,25 +129,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let array_len = i64_type.const_int(length, false);
 
-		let memset_ptr =
-			self.builder
-				.build_memset(self.pointers.output, 1, value_to_memset, array_len)?;
-
-		if let Some(memset_instr) = memset_ptr.as_instruction() {
-			for i in 0..length {
-				let i = (i * 8) as i64;
-
-				let expression = self.debug_builder.create_expression(vec![0x1000, i, 8]);
-
-				self.debug_builder.insert_dbg_value_before(
-					value_to_memset.into(),
-					self.debug_builder.variables.output,
-					Some(expression),
-					self.builder.get_current_debug_location().unwrap(),
-					memset_instr,
-				);
-			}
-		}
+		self.builder
+			.build_memset(self.pointers.output, 1, value_to_memset, array_len)?;
 
 		Ok(())
 	}
@@ -158,8 +141,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		options: &[CellChangeOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		let ptr_int_type = self.ptr_int_type;
-
-		let mut int_values = Vec::new();
 
 		for (i, char) in options.iter().copied().enumerate() {
 			let loaded_char = self.load(char.offset(), "setup_output_cells_puts_iterated")?;
@@ -185,29 +166,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"setup_output_cells_puts_iterated",
 			)?;
 
-			int_values.push(offset_char);
-
 			self.store_into(offset_char, output_array_gep)?;
-		}
-
-		if let Some(last_instruction) = self
-			.builder
-			.get_insert_block()
-			.and_then(BasicBlock::get_last_instruction)
-		{
-			for (i, int) in int_values.into_iter().enumerate() {
-				let expression =
-					self.debug_builder
-						.create_expression(vec![0x1000, (i * 8) as i64, 8]);
-
-				self.debug_builder.insert_dbg_value_before(
-					int.into(),
-					self.debug_builder.variables.output,
-					Some(expression),
-					self.builder.get_current_debug_location().unwrap(),
-					last_instruction,
-				);
-			}
 		}
 
 		Ok(())
