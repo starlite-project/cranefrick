@@ -23,9 +23,6 @@ use self::args::Args;
 #[cfg(target_os = "windows")]
 #[global_allocator]
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
-#[cfg(target_os = "linux")]
-#[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 fn main() -> Result<()> {
 	let args = match Args::try_parse() {

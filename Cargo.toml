@@ -29,9 +29,6 @@ tracing-tree = "0.4"
 [target.'cfg(target_os = "windows")'.dependencies]
 mimalloc = "0.1"
 
-[target.'cfg(target_os = "linux")'.dependencies]
-jemallocator = "0.5"
-
 [build-dependencies]
 build-rs = "0.3"
 
