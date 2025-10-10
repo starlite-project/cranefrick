@@ -37,7 +37,7 @@ impl InnerAssembler<'_> {
 
 		let debug_loc = self.debug_builder.create_debug_location(
 			context,
-			0,
+			1,
 			op_count as u32 + 2,
 			self.functions
 				.main
@@ -88,7 +88,7 @@ impl InnerAssembler<'_> {
 
 		let debug_loc = self.debug_builder.create_debug_location(
 			context,
-			0,
+			1,
 			op_count as u32 + 2,
 			self.functions
 				.main
