@@ -129,12 +129,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let array_len = i64_type.const_int(length, false);
 
-		let memset_ptr = self.builder
+		self.builder
 			.build_memset(self.pointers.output, 1, value_to_memset, array_len)?;
-
-		if let Some(_) = memset_ptr.as_instruction() {
-			tracing::warn!("made it");
-		}
 
 		Ok(())
 	}
