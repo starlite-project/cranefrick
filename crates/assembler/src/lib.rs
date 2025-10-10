@@ -361,7 +361,7 @@ fn write_data(
 			.write_to_memory_buffer(module, FileType::Assembly)
 			.map_err(AssemblyError::from)?;
 		fs::write(
-			output_path.join(format!("{opt_type}.asm")),
+			output_path.join(format!("{opt_type}.s")),
 			memory_buffer.as_slice(),
 		)?;
 	}
