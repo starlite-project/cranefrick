@@ -237,6 +237,7 @@ impl DerefMut for AssemblerDebugBuilder<'_> {
 	}
 }
 
+// These should match the AssemblerPointers struct
 pub struct AssemblerDebugVariables<'ctx> {
 	pub tape: DILocalVariable<'ctx>,
 	pub pointer: DILocalVariable<'ctx>,
