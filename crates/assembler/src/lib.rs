@@ -155,6 +155,8 @@ impl Assembler {
 			info!("verifying stripped LLVM IR");
 			module.verify()?;
 
+			target_machine.set_asm_verbosity(false);
+
 			write_data(&target_machine, &module, output_path, ToWriteType::Stripped)?;
 		}
 
