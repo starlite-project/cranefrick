@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use frick_ir::{CellChangeOptions, get_range, is_range};
+use frick_ir::{ChangeCellOptions, get_range, is_range};
 
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
@@ -27,7 +27,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn sub_cell_at(&self, options: CellChangeOptions) -> Result<(), AssemblyError> {
+	pub fn sub_cell_at(&self, options: ChangeCellOptions) -> Result<(), AssemblyError> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
 
@@ -50,7 +50,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn sub_from_cell(&self, options: CellChangeOptions) -> Result<(), AssemblyError> {
+	pub fn sub_from_cell(&self, options: ChangeCellOptions) -> Result<(), AssemblyError> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
 
@@ -73,7 +73,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn duplicate_cell(&self, values: &[CellChangeOptions<i8>]) -> Result<(), AssemblyError> {
+	pub fn duplicate_cell(&self, values: &[ChangeCellOptions<i8>]) -> Result<(), AssemblyError> {
 		if is_vectorizable(values) {
 			self.duplicate_cell_vectorized(values)
 		} else {
@@ -83,13 +83,13 @@ impl InnerAssembler<'_> {
 
 	fn duplicate_cell_iterated(
 		&self,
-		values: &[CellChangeOptions<i8>],
+		values: &[ChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let (value, value_gep) = self.load_from(0, "duplicate_cell_iterated")?;
 
-		for (factor, index) in values.iter().copied().map(CellChangeOptions::into_parts) {
+		for (factor, index) in values.iter().copied().map(ChangeCellOptions::into_parts) {
 			let (other_value, other_value_gep) =
 				self.load_from(index, "duplicate_cell_iterated")?;
 
@@ -126,7 +126,7 @@ impl InnerAssembler<'_> {
 
 	fn duplicate_cell_vectorized(
 		&self,
-		values: &[CellChangeOptions<i8>],
+		values: &[ChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -175,7 +175,7 @@ impl InnerAssembler<'_> {
 			for (i, factor) in values
 				.iter()
 				.copied()
-				.map(CellChangeOptions::value)
+				.map(ChangeCellOptions::value)
 				.enumerate()
 			{
 				let index = i64_type.const_int(i as u64, false);
@@ -191,7 +191,7 @@ impl InnerAssembler<'_> {
 		let modified_vector_of_values = if values
 			.iter()
 			.copied()
-			.map(CellChangeOptions::value)
+			.map(ChangeCellOptions::value)
 			.all(|x| matches!(x, 1))
 		{
 			self.builder.build_int_add(
@@ -257,7 +257,7 @@ impl InnerAssembler<'_> {
 	}
 }
 
-fn is_vectorizable(values: &[CellChangeOptions<i8>]) -> bool {
+fn is_vectorizable(values: &[ChangeCellOptions<i8>]) -> bool {
 	if !is_vector_size(values) {
 		return false;
 	}

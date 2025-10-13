@@ -5,7 +5,7 @@ mod sort;
 
 use std::{cmp, iter};
 
-use frick_ir::{BrainIr, CellChangeOptions, OutputOptions, SetManyCellsOptions, SubType, is_range};
+use frick_ir::{BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubType, is_range};
 use frick_utils::{GetOrZero as _, InsertOrPush as _};
 
 pub use self::{loops::*, sort::*};
@@ -218,7 +218,7 @@ pub fn remove_offsets(ops: [&BrainIr; 2]) -> Option<Change> {
 				options
 					.iter()
 					.copied()
-					.map(|x| CellChangeOptions::new(x.value(), 0)),
+					.map(|x| ChangeCellOptions::new(x.value(), 0)),
 			),
 		])),
 		_ => None,
@@ -528,7 +528,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			for option in options {
 				if option.offset() == x {
-					output.push(CellChangeOptions::new(
+					output.push(ChangeCellOptions::new(
 						option.value().wrapping_add(a.value()),
 						x,
 					));
@@ -548,7 +548,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::MovePointer(y),
 		] => Some(Change::swap([
 			BrainIr::output_cells(options.iter().map(|option| {
-				CellChangeOptions::new(option.value(), option.offset().wrapping_add(*x))
+				ChangeCellOptions::new(option.value(), option.offset().wrapping_add(*x))
 			})),
 			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
@@ -561,7 +561,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			for option in output_options {
 				if matches!(option.offset(), 0) {
-					output.push(CellChangeOptions::new(
+					output.push(ChangeCellOptions::new(
 						option.value().wrapping_add(change_options.value()),
 						0,
 					));
@@ -1008,7 +1008,7 @@ pub fn optimize_duplicate_cell_vectorization(ops: [&BrainIr; 1]) -> Option<Chang
 				out.push(a);
 
 				for missing_offset in (a.offset() + 1)..b.offset() {
-					out.push(CellChangeOptions::new(0, missing_offset));
+					out.push(ChangeCellOptions::new(0, missing_offset));
 				}
 			}
 

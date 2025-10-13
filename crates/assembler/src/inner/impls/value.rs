@@ -1,10 +1,10 @@
-use frick_ir::CellChangeOptions;
+use frick_ir::ChangeCellOptions;
 use inkwell::values::{IntValue, PointerValue};
 
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn move_value_to(&self, options: CellChangeOptions) -> Result<(), AssemblyError> {
+	pub fn move_value_to(&self, options: ChangeCellOptions) -> Result<(), AssemblyError> {
 		let current_value = self.take(0, "move_value_to")?;
 
 		let (other_cell, gep) = self.load_from(options.offset(), "move_value_to")?;
@@ -12,7 +12,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.duplicate_value_to(current_value, other_cell, options.value(), gep)
 	}
 
-	pub fn copy_value_to(&self, options: CellChangeOptions) -> Result<(), AssemblyError> {
+	pub fn copy_value_to(&self, options: ChangeCellOptions) -> Result<(), AssemblyError> {
 		let current_value = self.load(0, "copy_value_to")?;
 
 		let (other_cell, gep) = self.load_from(options.offset(), "copy_value_to")?;
@@ -47,7 +47,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub fn take_value_to(&self, options: CellChangeOptions) -> Result<(), AssemblyError> {
+	pub fn take_value_to(&self, options: ChangeCellOptions) -> Result<(), AssemblyError> {
 		let current_value = self.take(0, "take_value_to")?;
 
 		self.move_pointer(options.offset())?;
@@ -75,7 +75,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub fn fetch_value_from(&self, options: CellChangeOptions) -> Result<(), AssemblyError> {
+	pub fn fetch_value_from(&self, options: ChangeCellOptions) -> Result<(), AssemblyError> {
 		let other_cell = self.take(options.offset(), "fetch_value_from")?;
 
 		let (current_cell, gep) = self.load_from(0, "fetch_value_from")?;
@@ -101,7 +101,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub fn replace_value_from(&self, options: CellChangeOptions) -> Result<(), AssemblyError> {
+	pub fn replace_value_from(&self, options: ChangeCellOptions) -> Result<(), AssemblyError> {
 		if matches!(options.value(), 1) {
 			self.replace_value_from_memcpyed(options.offset())
 		} else {
@@ -133,7 +133,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn replace_value_from_factorized(
 		&self,
-		options: CellChangeOptions,
+		options: ChangeCellOptions,
 	) -> Result<(), AssemblyError> {
 		let other_cell = self.take(options.offset(), "replace_value_from_factorized")?;
 

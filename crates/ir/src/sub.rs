@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use super::CellChangeOptions;
+use super::ChangeCellOptions;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SubType {
 	Value(u8),
-	CellAt(CellChangeOptions),
-	FromCell(CellChangeOptions),
+	CellAt(ChangeCellOptions),
+	FromCell(ChangeCellOptions),
 }

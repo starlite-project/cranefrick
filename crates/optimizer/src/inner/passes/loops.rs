@@ -1,6 +1,5 @@
 use std::iter;
 
-use frick_ir::CellChangeOptions;
 use frick_utils::GetOrZero as _;
 
 use super::{BrainIr, Change};
@@ -154,7 +153,7 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 				values.push(*options);
 			}
 
-			values.sort_by_key(CellChangeOptions::offset);
+			values.sort_by_key(|options| options.offset());
 
 			Some(Change::replace(BrainIr::duplicate_cell(values)))
 		}
