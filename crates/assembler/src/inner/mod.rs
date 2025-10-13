@@ -236,11 +236,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			match op {
 				BrainIr::Boundary => continue,
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
-				BrainIr::SetCell(value, offset) => {
-					self.set_cell(*value, offset.get_or_zero())?;
+				BrainIr::SetCell(options) => {
+					self.set_cell(options.value(), options.offset())?;
 				}
-				BrainIr::ChangeCell(value, offset) => {
-					self.change_cell(*value, offset.get_or_zero())?;
+				BrainIr::ChangeCell(options) => {
+					self.change_cell(options.value(), options.offset())?;
 				}
 				BrainIr::SubCell(SubType::CellAt(options)) => self.sub_cell_at(*options)?,
 				BrainIr::SubCell(SubType::FromCell(options)) => self.sub_from_cell(*options)?,

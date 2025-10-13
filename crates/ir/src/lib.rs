@@ -7,8 +7,6 @@ mod output;
 mod parse;
 mod sub;
 
-use std::num::NonZero;
-
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
@@ -21,14 +19,8 @@ pub use self::{ops::*, options::*, output::*, sub::*};
 #[non_exhaustive]
 pub enum BrainIr {
 	Boundary,
-	ChangeCell(
-		i8,
-		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
-	),
-	SetCell(
-		u8,
-		#[serde(skip_serializing_if = "Option::is_none")] Option<NonZero<i32>>,
-	),
+	ChangeCell(CellChangeOptions<i8>),
+	SetCell(CellChangeOptions),
 	SubCell(SubType),
 	MovePointer(i32),
 	FindZero(i32),
@@ -44,9 +36,7 @@ pub enum BrainIr {
 	IfNotZero(Vec<Self>),
 	SetRange(SetRangeOptions),
 	SetManyCells(SetManyCellsOptions),
-	DuplicateCell {
-		values: Vec<CellChangeOptions<i8>>,
-	},
+	DuplicateCell { values: Vec<CellChangeOptions<i8>> },
 }
 
 impl BrainIr {
@@ -62,7 +52,7 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn change_cell_at(value: i8, offset: i32) -> Self {
-		Self::ChangeCell(value, NonZero::new(offset))
+		Self::ChangeCell(CellChangeOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -77,7 +67,7 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn set_cell_at(value: u8, offset: i32) -> Self {
-		Self::SetCell(value, NonZero::new(offset))
+		Self::SetCell(CellChangeOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -186,12 +176,9 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub fn duplicate_cell(values: impl IntoIterator<Item = (i8, i32)>) -> Self {
+	pub fn duplicate_cell(values: impl IntoIterator<Item = CellChangeOptions<i8>>) -> Self {
 		Self::DuplicateCell {
-			values: values
-				.into_iter()
-				.map(|(factor, offset)| CellChangeOptions::new(factor, offset))
-				.collect(),
+			values: values.collect_to(),
 		}
 	}
 
@@ -235,11 +222,10 @@ impl BrainIr {
 	#[must_use]
 	pub const fn offset(&self) -> Option<i32> {
 		match self {
-			Self::ChangeCell(.., offset) | Self::SetCell(.., offset) => match offset {
-				None => Some(0),
-				Some(i) => Some(i.get()),
-			},
-			Self::Output(OutputOptions::Cell(options)) => Some(options.offset()),
+			Self::SetCell(options) => Some(options.offset()),
+			Self::ChangeCell(options) | Self::Output(OutputOptions::Cell(options)) => {
+				Some(options.offset())
+			}
 			_ => None,
 		}
 	}
@@ -262,8 +248,7 @@ impl BrainIr {
 	#[must_use]
 	pub fn is_zeroing_cell(&self) -> bool {
 		match self {
-			Self::SetCell(0, None)
-			| Self::DynamicLoop(..)
+			Self::DynamicLoop(..)
 			| Self::MoveValueTo(..)
 			| Self::FindZero(..)
 			| Self::IfNotZero(..)
@@ -271,6 +256,7 @@ impl BrainIr {
 			| Self::Boundary => true,
 			Self::SetRange(options) => options.is_zeroing_cell(),
 			Self::SetManyCells(options) => options.is_zeroing_cell(),
+			Self::SetCell(options) => options.is_default(),
 			_ => false,
 		}
 	}

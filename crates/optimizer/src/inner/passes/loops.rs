@@ -1,5 +1,6 @@
 use std::iter;
 
+use frick_ir::CellChangeOptions;
 use frick_utils::GetOrZero as _;
 
 use super::{BrainIr, Change};
@@ -7,16 +8,21 @@ use super::{BrainIr, Change};
 pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::ChangeCell(-1, None),
-			BrainIr::ChangeCell(factor @ i8::MIN..0, Some(offset)),
+			BrainIr::ChangeCell(current_cell_options),
+			BrainIr::ChangeCell(offset_cell_options),
 		]
 		| [
-			BrainIr::ChangeCell(factor @ i8::MIN..0, Some(offset)),
-			BrainIr::ChangeCell(-1, None),
-		] => Some(Change::replace(BrainIr::sub_cell_at(
-			factor.unsigned_abs(),
-			offset.get(),
-		))),
+			BrainIr::ChangeCell(offset_cell_options),
+			BrainIr::ChangeCell(current_cell_options),
+		] if matches!(current_cell_options.into_parts(), (-1, 0))
+			&& matches!(offset_cell_options.value(), i8::MIN..0)
+			&& !matches!(offset_cell_options.offset(), 0) =>
+		{
+			Some(Change::replace(BrainIr::sub_cell_at(
+				offset_cell_options.value().unsigned_abs(),
+				offset_cell_options.offset(),
+			)))
+		}
 		_ => None,
 	}
 }
@@ -30,10 +36,10 @@ pub fn remove_unreachable_loops(ops: [&BrainIr; 2]) -> Option<Change> {
 
 pub const fn remove_infinite_loops(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[
-			..,
-			BrainIr::SetCell(1..=u8::MAX, None) | BrainIr::InputIntoCell,
-		] => Some(Change::remove()),
+		[.., BrainIr::InputIntoCell] => Some(Change::remove()),
+		[.., BrainIr::SetCell(options)] if matches!(options.into_parts(), (1..=u8::MAX, 0)) => {
+			Some(Change::remove())
+		}
 		_ => None,
 	}
 }
@@ -45,34 +51,51 @@ pub fn remove_empty_loops(ops: &[BrainIr]) -> Option<Change> {
 pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::ChangeCell(-1, None),
-			BrainIr::SetCell(x, Some(offset)),
+			BrainIr::ChangeCell(change_options),
+			BrainIr::SetCell(set_options),
 		]
 		| [
-			BrainIr::SetCell(x, Some(offset)),
-			BrainIr::ChangeCell(-1, None),
-		] => Some(Change::swap([
-			BrainIr::set_cell(0),
-			BrainIr::set_cell_at(*x, offset.get()),
-		])),
+			BrainIr::SetCell(set_options),
+			BrainIr::ChangeCell(change_options),
+		] if matches!(change_options.into_parts(), (-1, 0))
+			&& !matches!(set_options.offset(), 0) =>
+		{
+			Some(Change::swap([
+				BrainIr::set_cell(0),
+				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
+			]))
+		}
 		[
-			BrainIr::ChangeCell(-1, None),
-			BrainIr::SetManyCells(options),
+			BrainIr::ChangeCell(change_options),
+			BrainIr::SetManyCells(set_options),
 		]
 		| [
-			BrainIr::SetManyCells(options),
-			BrainIr::ChangeCell(-1, None),
-		] if !options.range().contains(&0) => Some(Change::swap([
-			BrainIr::clear_cell(),
-			BrainIr::set_many_cells(options.values.iter().copied(), options.start.get_or_zero()),
-		])),
-		[BrainIr::ChangeCell(-1, None), BrainIr::SetRange(options)]
-		| [BrainIr::SetRange(options), BrainIr::ChangeCell(-1, None)]
-			if !options.range().contains(&0) =>
+			BrainIr::SetManyCells(set_options),
+			BrainIr::ChangeCell(change_options),
+		] if matches!(change_options.into_parts(), (-1, 0))
+			&& !set_options.range().contains(&0) =>
 		{
 			Some(Change::swap([
 				BrainIr::clear_cell(),
-				BrainIr::set_range(options.value, options.start, options.end),
+				BrainIr::set_many_cells(
+					set_options.values.iter().copied(),
+					set_options.start.get_or_zero(),
+				),
+			]))
+		}
+		[
+			BrainIr::ChangeCell(change_options),
+			BrainIr::SetRange(set_options),
+		]
+		| [
+			BrainIr::SetRange(set_options),
+			BrainIr::ChangeCell(change_options),
+		] if matches!(change_options.into_parts(), (-1, 0))
+			&& !set_options.range().contains(&0) =>
+		{
+			Some(Change::swap([
+				BrainIr::clear_cell(),
+				BrainIr::set_range(set_options.value, set_options.start, set_options.end),
 			]))
 		}
 		_ => None,
@@ -100,32 +123,38 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::ChangeCell(-1, None),
-			BrainIr::ChangeCell(i, Some(offset)),
-		] if i.is_positive() => Some(Change::replace(BrainIr::move_value_to(
-			i.unsigned_abs(),
-			offset.get(),
-		))),
+			BrainIr::ChangeCell(current_cell_options),
+			BrainIr::ChangeCell(offset_cell_options),
+		] if matches!(current_cell_options.into_parts(), (-1, 0))
+			&& matches!(offset_cell_options.value(), 1..=i8::MAX)
+			&& !matches!(offset_cell_options.offset(), 0) =>
+		{
+			Some(Change::replace(BrainIr::move_value_to(
+				offset_cell_options.value().unsigned_abs(),
+				offset_cell_options.offset(),
+			)))
+		}
 		_ => None,
 	}
 }
 
 pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[BrainIr::ChangeCell(-1, None), rest @ ..]
-			if rest.iter().all(|i| matches!(i, BrainIr::ChangeCell(..))) =>
+		[BrainIr::ChangeCell(options), rest @ ..]
+			if rest.iter().all(|i| matches!(i, BrainIr::ChangeCell(..)))
+				&& matches!(options.into_parts(), (-1, 0)) =>
 		{
 			let mut values = Vec::new();
 
 			for op in rest {
-				let BrainIr::ChangeCell(value, offset) = op else {
+				let BrainIr::ChangeCell(options) = op else {
 					unreachable!()
 				};
 
-				values.push((*value, offset.get_or_zero()));
+				values.push(*options);
 			}
 
-			values.sort_by_key(|(.., offset)| *offset);
+			values.sort_by_key(CellChangeOptions::offset);
 
 			Some(Change::replace(BrainIr::duplicate_cell(values)))
 		}
@@ -133,12 +162,11 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
-pub fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
+pub const fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[BrainIr::ChangeCell(.., offset)] => Some(Change::replace(BrainIr::set_cell_at(
-			0,
-			offset.get_or_zero(),
-		))),
+		[BrainIr::ChangeCell(options)] => {
+			Some(Change::replace(BrainIr::clear_cell_at(options.offset())))
+		}
 		_ => None,
 	}
 }

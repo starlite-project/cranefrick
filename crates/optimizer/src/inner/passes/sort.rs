@@ -29,11 +29,8 @@ pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 
 fn sorter_key(i: &BrainIr) -> Priority {
 	match i {
-		BrainIr::ChangeCell(.., offset) | BrainIr::SetCell(.., offset) => {
-			let offset = offset.get_or_zero();
-
-			Priority::High(offset)
-		}
+		BrainIr::ChangeCell(options) => Priority::High(options.offset()),
+		BrainIr::SetCell(options) => Priority::High(options.offset()),
 		BrainIr::SetRange(options) => {
 			let range = options.range();
 			let start = *range.start();
