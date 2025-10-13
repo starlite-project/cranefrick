@@ -120,7 +120,7 @@ fn install_tracing(folder_path: &Path) {
 }
 
 fn env_filter() -> EnvFilter {
-	EnvFilter::new("info,cranelift_jit=warn")
+	EnvFilter::new("info")
 }
 
 fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
