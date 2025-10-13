@@ -1,12 +1,13 @@
 use frick_ir::BrainIr;
 use frick_utils::{InsertOrPush as _, IntoIteratorExt as _};
+use smallvec::SmallVec;
 use tracing::trace;
 
 #[derive(Debug, Clone)]
 pub enum Change {
 	Remove,
 	RemoveOffset(isize),
-	Swap(Vec<BrainIr>),
+	Swap(SmallVec<[BrainIr; 4]>),
 	Replace(BrainIr),
 }
 
@@ -30,7 +31,7 @@ impl Change {
 	pub fn apply(self, ops: &mut Vec<BrainIr>, i: usize, size: usize) {
 		match self {
 			Self::Remove => {
-				let removed = ops.drain(i..(i + size)).collect::<Vec<_>>();
+				let removed = ops.drain(i..(i + size)).collect::<SmallVec<[BrainIr; 4]>>();
 
 				trace!("removing instructions {removed:?}");
 			}
@@ -40,7 +41,7 @@ impl Change {
 				trace!("removing instruction {removed:?}");
 			}
 			Self::Swap(instrs) => {
-				let mut replaced = Vec::with_capacity(size);
+				let mut replaced: SmallVec<[BrainIr; 4]> = SmallVec::with_capacity(size);
 
 				for _ in 0..size {
 					replaced.push(ops.remove(i));
@@ -53,7 +54,7 @@ impl Change {
 				}
 			}
 			Self::Replace(instr) => {
-				let mut replaced = Vec::with_capacity(size);
+				let mut replaced: SmallVec<[BrainIr; 4]> = SmallVec::with_capacity(size);
 
 				for _ in 0..size {
 					replaced.push(ops.remove(i));

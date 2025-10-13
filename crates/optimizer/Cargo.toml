@@ -11,4 +11,5 @@ version.workspace = true
 frick_ir.workspace = true
 frick_utils = { workspace = true, features = ["insert_or_push", "iter"] }
 serde.workspace = true
+smallvec = { version = "1", features = ["const_generics"] }
 tracing = { workspace = true, features = ["attributes"] }
