@@ -184,5 +184,7 @@ fn create_string(prefix: &str, suffix: &'static str) -> String {
 	out.push_str(prefix);
 	out.push_str(suffix);
 
+	out.shrink_to_fit();
+
 	out
 }
