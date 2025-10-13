@@ -1,21 +1,16 @@
-use std::fmt::Display;
-
 use inkwell::{
 	types::{BasicType, BasicTypeEnum},
 	values::{BasicValue, IntValue, PointerValue},
 };
 
+use super::create_string;
 use crate::{
 	AssemblyError, ContextGetter as _,
 	inner::{InnerAssembler, utils::CalculatedOffset},
 };
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub fn load(
-		&self,
-		offset: i32,
-		fn_name: impl Display,
-	) -> Result<IntValue<'ctx>, AssemblyError> {
+	pub fn load(&self, offset: i32, fn_name: &str) -> Result<IntValue<'ctx>, AssemblyError> {
 		let (loaded_value, ..) = self.load_from(offset, fn_name)?;
 
 		Ok(loaded_value)
@@ -24,15 +19,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn load_from(
 		&self,
 		offset: i32,
-		fn_name: impl Display,
+		fn_name: &str,
 	) -> Result<(IntValue<'ctx>, PointerValue<'ctx>), AssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let gep = self.tape_gep(i8_type, offset, format!("{fn_name}_load_from"))?;
+		let gep = self.tape_gep(i8_type, offset, &create_string(fn_name, "_load_from"))?;
 
 		let loaded_value = self
 			.builder
-			.build_load(i8_type, gep, &format!("{fn_name}_load_from_load"))?
+			.build_load(i8_type, gep, &create_string(fn_name, "_load_from_load"))?
 			.into_int_value();
 
 		Ok((loaded_value, gep))
@@ -62,11 +57,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub fn take(
-		&self,
-		offset: i32,
-		fn_name: impl Display,
-	) -> Result<IntValue<'ctx>, AssemblyError> {
+	pub fn take(&self, offset: i32, fn_name: &str) -> Result<IntValue<'ctx>, AssemblyError> {
 		let (value, gep) = self.load_from(offset, fn_name)?;
 
 		self.store_value_into(0, gep)?;
@@ -74,28 +65,23 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(value)
 	}
 
-	pub fn store_value(
-		&self,
-		value: u8,
-		offset: i32,
-		fn_name: impl Display,
-	) -> Result<(), AssemblyError> {
+	pub fn store_value(&self, value: u8, offset: i32, fn_name: &str) -> Result<(), AssemblyError> {
 		let value = {
 			let i8_type = self.context().i8_type();
 
 			i8_type.const_int(value.into(), false)
 		};
 
-		self.store_inner(value, offset, format!("{fn_name}_store_value"))
+		self.store_inner(value, offset, create_string(fn_name, "_store_value"))
 	}
 
 	pub fn store(
 		&self,
 		value: impl BasicValue<'ctx>,
 		offset: i32,
-		fn_name: impl Display,
+		fn_name: &str,
 	) -> Result<(), AssemblyError> {
-		self.store_inner(value, offset, format!("{fn_name}_store"))
+		self.store_inner(value, offset, create_string(fn_name, "_store"))
 	}
 
 	fn store_inner(
@@ -106,7 +92,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let gep = self.tape_gep(i8_type, offset, fn_name)?;
+		let gep = self.tape_gep(i8_type, offset, &fn_name)?;
 		self.store_into(value, gep)?;
 
 		Ok(())
@@ -117,7 +103,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		ty: impl BasicType<'ctx>,
 		offset: impl Into<CalculatedOffset<'ctx>>,
-		name: impl Display,
+		name: &str,
 	) -> Result<PointerValue<'ctx>, AssemblyError> {
 		self.gep(ty, self.pointers.tape, offset, name)
 	}
@@ -127,7 +113,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		ty: impl BasicType<'ctx>,
 		ptr: PointerValue<'ctx>,
 		offset: impl Into<CalculatedOffset<'ctx>>,
-		name: impl Display,
+		name: &str,
 	) -> Result<PointerValue<'ctx>, AssemblyError> {
 		let offset = self.resolve_offset(offset.into())?;
 
@@ -146,13 +132,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 						ty,
 						ptr,
 						&[zero, offset],
-						&format!("{name}_array_gep"),
+						&create_string(name, "_array_gep"),
 					)?
 				})
 			}
 			BasicTypeEnum::IntType(ty) => Ok(unsafe {
-				self.builder
-					.build_in_bounds_gep(ty, ptr, &[offset], &format!("{name}_int_gep"))?
+				self.builder.build_in_bounds_gep(
+					ty,
+					ptr,
+					&[offset],
+					&create_string(name, "_int_gep"),
+				)?
 			}),
 			BasicTypeEnum::VectorType(ty) => {
 				let zero = {
@@ -166,7 +156,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 						ty,
 						ptr,
 						&[zero, offset],
-						&format!("{name}_vector_gep"),
+						&create_string(name, "_vector_gep"),
 					)?
 				})
 			}

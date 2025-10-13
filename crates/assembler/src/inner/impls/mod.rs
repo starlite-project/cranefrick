@@ -177,3 +177,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 }
+
+fn create_string(prefix: &str, suffix: &'static str) -> String {
+	let mut out = String::with_capacity(prefix.len() + suffix.len());
+
+	out.push_str(prefix);
+	out.push_str(suffix);
+
+	out
+}
