@@ -3,7 +3,6 @@ use std::iter;
 use frick_utils::GetOrZero as _;
 
 use super::{BrainIr, Change};
-use crate::inner::utils::calculate_ptr_movement;
 
 pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
