@@ -18,7 +18,7 @@ pub use self::{options::*, output::*, sub::*};
 #[non_exhaustive]
 pub enum BrainIr {
 	Boundary,
-	ChangeCell(ChangeCellOptions<i8>),
+	ChangeCell(ChangeCellOptions<i8, Value>),
 	SetCell(ChangeCellOptions),
 	SubCell(SubType),
 	MovePointer(i32),

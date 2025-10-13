@@ -1,4 +1,9 @@
-pub trait Sealed {}
+pub trait PrimitiveSealed {}
 
-impl Sealed for u8 {}
-impl Sealed for i8 {}
+impl PrimitiveSealed for u8 {}
+impl PrimitiveSealed for i8 {}
+
+pub trait MarkerSealed {}
+
+impl MarkerSealed for super::Factor {}
+impl MarkerSealed for super::Value {}
