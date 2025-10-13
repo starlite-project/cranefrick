@@ -122,7 +122,6 @@ impl Optimizer {
 
 		self.pass_info("optimize constant shifts");
 		*progress |= run_peephole_pass(self, passes::optimize_constant_shifts);
-		*progress |= run_peephole_pass(self, passes::optimize_constant_shift_sets);
 
 		self.pass_info("remove unnecessary offsets");
 		*progress |= run_peephole_pass(self, passes::remove_offsets);

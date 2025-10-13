@@ -674,30 +674,6 @@ pub fn optimize_constant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_constant_shift_sets(ops: [&BrainIr; 3]) -> Option<Change> {
-	match ops {
-		[
-			BrainIr::SetCell(a @ 1..=u8::MAX, x),
-			BrainIr::MovePointer(y),
-			BrainIr::FetchValueFrom(options),
-		] => {
-			let x = x.get_or_zero();
-			let z = options.offset();
-
-			let total_movement_from_fetches = x.wrapping_add_unsigned(z.unsigned_abs());
-
-			if !matches!(y.wrapping_sub(total_movement_from_fetches), 0) {
-				return None;
-			}
-
-			tracing::info!(?ops, "made it");
-
-			None
-		}
-		_ => None,
-	}
-}
-
 pub fn optimize_sub_cell_from(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
