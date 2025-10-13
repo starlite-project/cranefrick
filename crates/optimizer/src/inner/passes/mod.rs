@@ -5,7 +5,7 @@ mod sort;
 
 use std::{cmp, iter};
 
-use frick_ir::{BrainIr, CellChangeOptions, OutputOptions, SubType, is_range};
+use frick_ir::{BrainIr, CellChangeOptions, OutputOptions, SetManyCellsOptions, SubType, is_range};
 use frick_utils::{GetOrZero as _, InsertOrPush as _};
 
 pub use self::{loops::*, sort::*};
@@ -571,6 +571,47 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			}
 
 			Some(Change::swap([BrainIr::output_cells(output), l.clone()]))
+		}
+		[
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::MovePointer(x),
+			BrainIr::Output(OutputOptions::Cells(output_options)),
+		] => {
+			let range = set_many_options.range();
+
+			if !range.contains(x) {
+				return None;
+			}
+
+			let old_range = range;
+
+			let range = (old_range.start.wrapping_sub(*x))..(old_range.end.wrapping_sub(*x));
+
+			if output_options.iter().any(|x| !range.contains(&x.offset())) {
+				return None;
+			}
+
+			let new_set_many_options =
+				SetManyCellsOptions::new(set_many_options.values.iter().copied(), range.start);
+
+			let mut chars = Vec::with_capacity(output_options.len());
+
+			for option in output_options {
+				let char = new_set_many_options
+					.value_at(option.offset())?
+					.wrapping_add_signed(option.value());
+
+				chars.push(char);
+			}
+
+			Some(Change::swap([
+				BrainIr::output_str(chars),
+				BrainIr::set_many_cells(
+					set_many_options.values.iter().copied(),
+					set_many_options.start.get_or_zero(),
+				),
+				BrainIr::move_pointer(*x),
+			]))
 		}
 		_ => None,
 	}
