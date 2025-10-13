@@ -47,21 +47,11 @@ impl Optimizer {
 		info!(iterations = iteration, "finished optimizing mlir");
 	}
 
-	pub fn shrink_to_fit(&mut self) {
-		self.inner.shrink_to_fit();
-
-		for child_ops in self.iter_mut().filter_map(|op| op.child_ops_mut()) {
-			child_ops.shrink_to_fit();
-		}
-	}
-
 	#[tracing::instrument("run passes", skip(self))]
 	fn optimization_pass(&mut self, iteration: usize) -> bool {
 		let mut progress = false;
 
 		self.run_all_passes(&mut progress);
-
-		self.shrink_to_fit();
 
 		progress
 	}
