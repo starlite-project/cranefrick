@@ -24,7 +24,14 @@ use self::args::Args;
 #[global_allocator]
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
+#[cfg(feature = "heap_profiling")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 fn main() -> Result<()> {
+	#[cfg(feature = "heap_profiling")]
+	let _heap_profiler = dhat::Profiler::new_heap();
+
 	let args = match Args::try_parse() {
 		Ok(a) => a,
 		Err(e) => {
