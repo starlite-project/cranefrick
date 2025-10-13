@@ -15,7 +15,7 @@ pub enum OutputOptions {
 impl OutputOptions {
 	#[must_use]
 	pub const fn cell(value_offset: i8, offset: i32) -> Self {
-		Self::Cell(ChangeCellOptions::new(value_offset, offset))
+		Self::Cell(ChangeCellOptions::new_value(value_offset, offset))
 	}
 
 	#[must_use]

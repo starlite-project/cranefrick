@@ -15,10 +15,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_cell_value = self.load(options.offset(), "output_cell")?;
 
-		let offset_cell_value = if matches!(options.value(), 0) {
+		let offset_cell_value = if matches!(options.inner_value(), 0) {
 			current_cell_value
 		} else {
-			let offset_value = i8_type.const_int(options.value() as u64, false);
+			let offset_value = i8_type.const_int(options.inner_value() as u64, false);
 
 			self.builder
 				.build_int_add(current_cell_value, offset_value, "output_cell_add")?
@@ -115,10 +115,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let current_value = self.load(options.offset(), "setup_output_cells_puts_memset")?;
 
-		let value_to_memset = if matches!(options.value(), 0) {
+		let value_to_memset = if matches!(options.inner_value(), 0) {
 			current_value
 		} else {
-			let value_offset = i8_type.const_int(options.value() as u64, false);
+			let value_offset = i8_type.const_int(options.inner_value() as u64, false);
 
 			self.builder.build_int_add(
 				current_value,
@@ -145,10 +145,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		for (i, char) in options.iter().copied().enumerate() {
 			let loaded_char = self.load(char.offset(), "setup_output_cells_puts_iterated")?;
 
-			let offset_char = if matches!(char.value(), 0) {
+			let offset_char = if matches!(char.inner_value(), 0) {
 				loaded_char
 			} else {
-				let offset_value = i8_type.const_int(char.value() as u64, false);
+				let offset_value = i8_type.const_int(char.inner_value() as u64, false);
 
 				self.builder.build_int_add(
 					loaded_char,
@@ -178,7 +178,7 @@ fn is_memcpyable(options: &[ChangeCellOptions<i8>]) -> bool {
 		return false;
 	}
 
-	if options.iter().any(|x| matches!(x.value(), 0)) {
+	if options.iter().any(|x| matches!(x.inner_value(), 0)) {
 		return false;
 	}
 

@@ -237,10 +237,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::Boundary => continue,
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::SetCell(options) => {
-					self.set_cell(options.value(), options.offset())?;
+					self.set_cell(options.inner_value(), options.offset())?;
 				}
 				BrainIr::ChangeCell(options) => {
-					self.change_cell(options.value(), options.offset())?;
+					self.change_cell(options.inner_value(), options.offset())?;
 				}
 				BrainIr::SubCell(SubType::CellAt(options)) => self.sub_cell_at(*options)?,
 				BrainIr::SubCell(SubType::FromCell(options)) => self.sub_from_cell(*options)?,

@@ -33,7 +33,7 @@ impl InnerAssembler<'_> {
 
 			let current_cell = self.take(0, "sub_cell_at")?;
 
-			let factor_value = i8_type.const_int(options.value().into(), false);
+			let factor_value = i8_type.const_int(options.inner_value().into(), false);
 
 			self.builder
 				.build_int_mul(current_cell, factor_value, "sub_cell_at_mul")?
@@ -56,7 +56,7 @@ impl InnerAssembler<'_> {
 
 			let current_cell = self.take(options.offset(), "sub_from_cell")?;
 
-			let factor_value = i8_type.const_int(options.value().into(), false);
+			let factor_value = i8_type.const_int(options.inner_value().into(), false);
 
 			self.builder
 				.build_int_mul(current_cell, factor_value, "sub_from_cell_mul")?
@@ -175,7 +175,7 @@ impl InnerAssembler<'_> {
 			for (i, factor) in values
 				.iter()
 				.copied()
-				.map(ChangeCellOptions::value)
+				.map(ChangeCellOptions::inner_value)
 				.enumerate()
 			{
 				let index = i64_type.const_int(i as u64, false);
@@ -191,7 +191,7 @@ impl InnerAssembler<'_> {
 		let modified_vector_of_values = if values
 			.iter()
 			.copied()
-			.map(ChangeCellOptions::value)
+			.map(ChangeCellOptions::inner_value)
 			.all(|x| matches!(x, 1))
 		{
 			self.builder.build_int_add(

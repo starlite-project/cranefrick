@@ -9,7 +9,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (other_cell, gep) = self.load_from(options.offset(), "move_value_to")?;
 
-		self.duplicate_value_to(current_value, other_cell, options.value(), gep)
+		self.duplicate_value_to(current_value, other_cell, options.inner_value(), gep)
 	}
 
 	pub fn copy_value_to(&self, options: ChangeCellOptions) -> Result<(), AssemblyError> {
@@ -17,7 +17,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (other_cell, gep) = self.load_from(options.offset(), "copy_value_to")?;
 
-		self.duplicate_value_to(current_value, other_cell, options.value(), gep)
+		self.duplicate_value_to(current_value, other_cell, options.inner_value(), gep)
 	}
 
 	fn duplicate_value_to(
@@ -54,7 +54,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (other_cell, gep) = self.load_from(0, "take_value_to")?;
 
-		let factor = options.value();
+		let factor = options.inner_value();
 		let value_to_add = if matches!(factor, 1) {
 			current_value
 		} else {
@@ -80,7 +80,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (current_cell, gep) = self.load_from(0, "fetch_value_from")?;
 
-		let factor = options.value();
+		let factor = options.inner_value();
 		let value_to_add = if matches!(factor, 1) {
 			other_cell
 		} else {
@@ -102,7 +102,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub fn replace_value_from(&self, options: ChangeCellOptions) -> Result<(), AssemblyError> {
-		if matches!(options.value(), 1) {
+		if matches!(options.inner_value(), 1) {
 			self.replace_value_from_memcpyed(options.offset())
 		} else {
 			self.replace_value_from_factorized(options)
@@ -140,7 +140,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value_to_store = {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int((options.value()).into(), false);
+			let factor = i8_type.const_int((options.inner_value()).into(), false);
 
 			self.builder
 				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul")?

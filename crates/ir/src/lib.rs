@@ -51,7 +51,7 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn change_cell_at(value: i8, offset: i32) -> Self {
-		Self::ChangeCell(ChangeCellOptions::new(value, offset))
+		Self::ChangeCell(ChangeCellOptions::new_value(value, offset))
 	}
 
 	#[must_use]
@@ -66,17 +66,21 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn set_cell_at(value: u8, offset: i32) -> Self {
-		Self::SetCell(ChangeCellOptions::new(value, offset))
+		Self::SetCell(ChangeCellOptions::new_value(value, offset))
 	}
 
 	#[must_use]
 	pub const fn sub_from_cell(value: u8, offset: i32) -> Self {
-		Self::SubCell(SubType::FromCell(ChangeCellOptions::new(value, offset)))
+		Self::SubCell(SubType::FromCell(ChangeCellOptions::new_factor(
+			value, offset,
+		)))
 	}
 
 	#[must_use]
 	pub const fn sub_cell_at(value: u8, offset: i32) -> Self {
-		Self::SubCell(SubType::CellAt(ChangeCellOptions::new(value, offset)))
+		Self::SubCell(SubType::CellAt(ChangeCellOptions::new_factor(
+			value, offset,
+		)))
 	}
 
 	#[must_use]
@@ -131,27 +135,27 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn fetch_value_from(value: u8, offset: i32) -> Self {
-		Self::FetchValueFrom(ChangeCellOptions::new(value, offset))
+		Self::FetchValueFrom(ChangeCellOptions::new_factor(value, offset))
 	}
 
 	#[must_use]
 	pub const fn replace_value_from(value: u8, offset: i32) -> Self {
-		Self::ReplaceValueFrom(ChangeCellOptions::new(value, offset))
+		Self::ReplaceValueFrom(ChangeCellOptions::new_factor(value, offset))
 	}
 
 	#[must_use]
 	pub const fn take_value_to(value: u8, offset: i32) -> Self {
-		Self::TakeValueTo(ChangeCellOptions::new(value, offset))
+		Self::TakeValueTo(ChangeCellOptions::new_factor(value, offset))
 	}
 
 	#[must_use]
 	pub const fn move_value_to(value: u8, offset: i32) -> Self {
-		Self::MoveValueTo(ChangeCellOptions::new(value, offset))
+		Self::MoveValueTo(ChangeCellOptions::new_factor(value, offset))
 	}
 
 	#[must_use]
 	pub const fn copy_value_to(value: u8, offset: i32) -> Self {
-		Self::CopyValueTo(ChangeCellOptions::new(value, offset))
+		Self::CopyValueTo(ChangeCellOptions::new_factor(value, offset))
 	}
 
 	#[must_use]
