@@ -583,9 +583,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 				return None;
 			}
 
-			let old_range = range;
-
-			let range = (old_range.start.wrapping_sub(*x))..(old_range.end.wrapping_sub(*x));
+			let range = (range.start.wrapping_sub(*x))..(range.end.wrapping_sub(*x));
 
 			if output_options.iter().any(|x| !range.contains(&x.offset())) {
 				return None;
@@ -606,6 +604,39 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			Some(Change::swap([
 				BrainIr::output_str(chars),
+				BrainIr::set_many_cells(
+					set_many_options.values.iter().copied(),
+					set_many_options.start.get_or_zero(),
+				),
+				BrainIr::move_pointer(*x),
+			]))
+		}
+		[
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::MovePointer(x),
+			BrainIr::Output(OutputOptions::Cell(output_options)),
+		] => {
+			let range = set_many_options.range();
+
+			if !range.contains(x) {
+				return None;
+			}
+
+			let range = (range.start.wrapping_sub(*x))..(range.end.wrapping_sub(*x));
+
+			if !range.contains(&output_options.offset()) {
+				return None;
+			}
+
+			let new_set_many_options =
+				SetManyCellsOptions::new(set_many_options.values.iter().copied(), range.start);
+
+			let char = new_set_many_options
+				.value_at(output_options.offset())?
+				.wrapping_add_signed(output_options.value());
+
+			Some(Change::swap([
+				BrainIr::output_char(char),
 				BrainIr::set_many_cells(
 					set_many_options.values.iter().copied(),
 					set_many_options.start.get_or_zero(),
