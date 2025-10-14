@@ -164,12 +164,7 @@ impl InnerAssembler<'_> {
 			"find_zero_add\0",
 		)?;
 
-		let wrapped_pointer_value = {
-			let tape_len = ptr_int_type.const_int(TAPE_SIZE as u64 - 1, false);
-
-			self.builder
-				.build_and(new_pointer_value, tape_len, "find_zero_and\0")?
-		};
+		let wrapped_pointer_value = self.wrap_pointer(new_pointer_value, offset > 0)?;
 
 		self.builder.build_unconditional_branch(header_block)?;
 
@@ -180,10 +175,18 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(exit_block);
 
-		self.builder.build_store(
+		let store_instr = self.builder.build_store(
 			self.pointers.pointer,
 			header_phi_value.as_basic_value().into_int_value(),
 		)?;
+
+		self.debug_builder.insert_dbg_value_before(
+			header_phi_value.as_basic_value(),
+			self.debug_builder.variables.pointer,
+			None,
+			self.builder.get_current_debug_location().unwrap(),
+			store_instr,
+		);
 
 		Ok(())
 	}

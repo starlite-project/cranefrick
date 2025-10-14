@@ -42,11 +42,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 				self.builder
 					.build_int_add(current_ptr, offset_value, "offset_pointer_add\0")?;
 
-			if offset > 0 {
-				self.wrap_pointer_positive(offset_ptr)
-			} else {
-				self.wrap_pointer_negative(offset_ptr)
-			}
+			self.wrap_pointer(offset_ptr, offset > 0)
+		}
+	}
+
+	pub fn wrap_pointer(
+		&self,
+		offset_ptr: IntValue<'ctx>,
+		is_positive: bool,
+	) -> Result<IntValue<'ctx>, AssemblyError> {
+		if is_positive {
+			self.wrap_pointer_positive(offset_ptr)
+		} else {
+			self.wrap_pointer_negative(offset_ptr)
 		}
 	}
 
