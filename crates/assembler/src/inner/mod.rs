@@ -128,14 +128,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 		})
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn assemble(
 		self,
 		ops: &[BrainIr],
 	) -> Result<(Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine), AssemblyError> {
 		assert!(TAPE_SIZE.is_power_of_two());
 
+		tracing::debug!("writing instructions");
 		self.ops(ops, 1)?;
 
+		tracing::debug!("declaring variables");
 		self.debug_builder
 			.declare_variables(self.context(), self.pointers)?;
 
@@ -149,6 +152,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let tape_size = i64_type.const_int(TAPE_SIZE as u64, false);
 
+		tracing::debug!("ending lifetimes in exit block");
 		self.builder.build_call(
 			self.functions.lifetime.end,
 			&[tape_size.into(), self.pointers.tape.into()],
@@ -164,6 +168,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.unset_current_debug_location();
 
+		tracing::debug!("setting up the landing pad");
 		let last_basic_block = self.functions.main.get_last_basic_block().unwrap();
 
 		if last_basic_block != self.catch_block {
@@ -182,6 +187,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"exception\0",
 		)?;
 
+		tracing::debug!("ending the lifetimes in catch block");
 		self.builder.build_call(
 			self.functions.lifetime.end,
 			&[tape_size.into(), self.pointers.tape.into()],
@@ -195,6 +201,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.build_resume(exception)?;
 
+		tracing::debug!("writing the frick_puts function");
 		self.write_puts()?;
 
 		self.debug_builder.di_builder.finalize();
