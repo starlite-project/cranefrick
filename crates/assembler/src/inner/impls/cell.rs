@@ -222,7 +222,10 @@ impl InnerAssembler<'_> {
 			)?
 		};
 
-		self.builder.build_store(gep, modified_vector_of_values)?;
+		let vec_store_instr = self.builder.build_store(gep, modified_vector_of_values)?;
+
+		vec_store_instr.set_alignment(16)?;
+
 		self.store_value_into(0, current_cell_gep)?;
 
 		Ok(())
@@ -260,7 +263,7 @@ impl InnerAssembler<'_> {
 		let gep = self.tape_gep(i8_type, start, "set_range")?;
 
 		self.builder
-			.build_memset(gep, 1, value_value, range_len_value)?;
+			.build_memset(gep, 16, value_value, range_len_value)?;
 
 		Ok(())
 	}

@@ -107,7 +107,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let len_value = i64_type.const_int(len.into(), false);
 
 		self.builder
-			.build_memcpy(self.pointers.output, 1, current_gep, 1, len_value)?;
+			.build_memcpy(self.pointers.output, 16, current_gep, 16, len_value)?;
 
 		Ok(())
 	}
@@ -136,7 +136,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let array_len = i64_type.const_int(length, false);
 
 		self.builder
-			.build_memset(self.pointers.output, 1, value_to_memset, array_len)?;
+			.build_memset(self.pointers.output, 16, value_to_memset, array_len)?;
 
 		Ok(())
 	}

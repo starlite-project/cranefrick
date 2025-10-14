@@ -30,6 +30,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_load(i8_type, gep, &create_string(fn_name, "_load_from_load\0"))?
 			.into_int_value();
 
+		if let Some(loaded_instr) = loaded_value.as_instruction() {
+			loaded_instr.set_alignment(16)?;
+		}
+
 		Ok((loaded_value, gep))
 	}
 
@@ -52,7 +56,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		value: impl BasicValue<'ctx>,
 		gep: PointerValue<'ctx>,
 	) -> Result<(), AssemblyError> {
-		self.builder.build_store(gep, value)?;
+		let store_instr = self.builder.build_store(gep, value)?;
+
+		store_instr.set_alignment(16)?;
 
 		Ok(())
 	}

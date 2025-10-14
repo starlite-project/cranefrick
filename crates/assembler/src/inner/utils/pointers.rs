@@ -32,13 +32,17 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 			let tape_alloca = builder.build_alloca(i8_array_type, "tape")?;
 
+			if let Some(tape_instr) = tape_alloca.as_instruction() {
+				tape_instr.set_alignment(16)?;
+			}
+
 			builder.build_call(
 				functions.lifetime.start,
 				&[i8_array_size.into(), tape_alloca.into()],
 				"",
 			)?;
 
-			builder.build_memset(tape_alloca, 1, i8_type.const_zero(), i8_array_size)?;
+			builder.build_memset(tape_alloca, 16, i8_type.const_zero(), i8_array_size)?;
 
 			tape_alloca
 		};
@@ -61,7 +65,13 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let output = {
 			let i8_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN.into());
 
-			builder.build_alloca(i8_array_type, "output")?
+			let output_alloca = builder.build_alloca(i8_array_type, "output")?;
+
+			if let Some(output_instr) = output_alloca.as_instruction() {
+				output_instr.set_alignment(16)?;
+			}
+
+			output_alloca
 		};
 
 		Ok((
