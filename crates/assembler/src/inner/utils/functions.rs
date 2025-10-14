@@ -193,8 +193,6 @@ fn get_intrinsic_function_from_name<'ctx>(
 	let intrinsic =
 		Intrinsic::find(name).ok_or_else(|| AssemblyError::intrinsic_not_found(name))?;
 
-	tracing::debug!(?intrinsic);
-
 	let declaration = intrinsic
 		.get_declaration(module, types)
 		.ok_or_else(|| AssemblyError::invalid_intrinsic_declaration(name))?;

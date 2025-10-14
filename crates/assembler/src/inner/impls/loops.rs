@@ -4,7 +4,7 @@ use inkwell::{IntPredicate, debug_info::AsDIScope as _};
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	pub fn if_not_zero(&self, ops: &[BrainIr], op_count: usize) -> Result<(), AssemblyError> {
+	pub fn if_not_zero(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
 		let header_block = context.append_basic_block(self.functions.main, "if_not_zero.header\0");
@@ -31,13 +31,14 @@ impl InnerAssembler<'_> {
 			.build_conditional_branch(cmp, body_block, exit_block)?;
 
 		self.builder.position_at_end(body_block);
+		*op_count += 1;
 
-		self.ops(ops, op_count + 1)?;
+		self.ops(ops, op_count)?;
 
 		let debug_loc = self.debug_builder.create_debug_location(
 			context,
 			1,
-			op_count as u32 + 2,
+			*op_count as u32 + 1,
 			self.functions
 				.main
 				.get_subprogram()
@@ -45,6 +46,8 @@ impl InnerAssembler<'_> {
 				.as_debug_info_scope(),
 			None,
 		);
+
+		*op_count -= 1;
 
 		self.builder.set_current_debug_location(debug_loc);
 
@@ -55,7 +58,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn dynamic_loop(&self, ops: &[BrainIr], op_count: usize) -> Result<(), AssemblyError> {
+	pub fn dynamic_loop(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
 		let header_block = context.append_basic_block(self.functions.main, "dynamic_loop.header\0");
@@ -83,12 +86,14 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(body_block);
 
-		self.ops(ops, op_count + 1)?;
+		*op_count += 1;
+
+		self.ops(ops, op_count)?;
 
 		let debug_loc = self.debug_builder.create_debug_location(
 			context,
 			1,
-			op_count as u32 + 2,
+			*op_count as u32 + 1,
 			self.functions
 				.main
 				.get_subprogram()
@@ -96,6 +101,8 @@ impl InnerAssembler<'_> {
 				.as_debug_info_scope(),
 			None,
 		);
+
+		*op_count -= 1;
 
 		self.builder.set_current_debug_location(debug_loc);
 

@@ -128,7 +128,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		})
 	}
 
-	#[tracing::instrument(skip_all)]
 	pub fn assemble(
 		self,
 		ops: &[BrainIr],
@@ -136,7 +135,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		assert!(TAPE_SIZE.is_power_of_two());
 
 		tracing::debug!("writing instructions");
-		self.ops(ops, 1)?;
+		let mut op_count = 1;
+
+		let ops_span = tracing::trace_span!("ops").entered();
+		self.ops(ops, &mut op_count)?;
+		drop(ops_span);
 
 		tracing::debug!("declaring variables");
 		self.debug_builder
@@ -209,12 +212,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(self.into_parts())
 	}
 
-	fn ops(&self, ops: &[BrainIr], mut op_count: usize) -> Result<(), AssemblyError> {
+	fn ops(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
 		for op in ops {
+			tracing::trace!(%op_count, ?op);
+
 			let debug_loc = self.debug_builder.create_debug_location(
 				self.context(),
 				1,
-				op_count as u32,
+				*op_count as u32,
 				self.functions
 					.main
 					.get_subprogram()
@@ -226,7 +231,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder.set_current_debug_location(debug_loc);
 
 			match op {
-				BrainIr::Boundary => continue,
+				BrainIr::Boundary => {}
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::SetCell(options) => {
 					self.set_cell(options.value(), options.offset())?;
@@ -259,7 +264,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 
-			op_count += 1;
+			*op_count += 1;
 		}
 
 		Ok(())
