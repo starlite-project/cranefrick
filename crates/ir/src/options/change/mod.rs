@@ -95,6 +95,10 @@ pub trait ChangeCellPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSeal
 
 impl<T> ChangeCellPrimitive for T where T: Copy + Default + Eq + self::sealed::PrimitiveSealed {}
 
+pub type FactoredChangeCellOptions<T> = ChangeCellOptions<T, Factor>;
+
+pub type ValuedChangeCellOptions<T> = ChangeCellOptions<T, Value>;
+
 pub fn is_range<T: ChangeCellPrimitive, Marker: ChangeCellMarker>(
 	values: &[ChangeCellOptions<T, Marker>],
 ) -> bool {
