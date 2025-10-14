@@ -272,7 +272,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		global.set_linkage(Linkage::Private);
 		global.set_initializer(initializer);
 		global.set_constant(true);
-		global.set_alignment(16);
 	}
 }
 
