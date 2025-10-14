@@ -80,10 +80,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let ptr_alloca = self.builder.build_array_alloca(i8_type, string_len, "\0")?;
 
-		let is_ptr_null = self.builder.build_is_not_null(pointer_param, "\0")?;
+		let assert_ptr_not_null = self.builder.build_is_not_null(pointer_param, "\0")?;
 
-		self.builder
-			.build_direct_call(self.functions.assume, &[is_ptr_null.into()], "\0")?;
+		self.builder.build_direct_call(
+			self.functions.assume,
+			&[assert_ptr_not_null.into()],
+			"\0",
+		)?;
 
 		self.builder
 			.build_memcpy(ptr_alloca, 1, pointer_param, 1, string_len)?;
@@ -94,25 +97,25 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let is_string_len_zero =
 			self.builder
-				.build_int_compare(IntPredicate::EQ, string_len, i64_zero, "")?;
+				.build_int_compare(IntPredicate::EQ, string_len, i64_zero, "\0")?;
 
 		self.builder
 			.build_conditional_branch(is_string_len_zero, exit_block, try_block)?;
 
 		self.builder.position_at_end(try_block);
 
-		let body_block_phi = self.builder.build_phi(ptr_type, "\0")?;
+		let try_block_phi = self.builder.build_phi(ptr_type, "\0")?;
 
 		let i64_one = i64_type.const_int(1, false);
 
 		let next_index_gep = self.gep(
 			i8_type,
-			body_block_phi.as_basic_value().into_pointer_value(),
+			try_block_phi.as_basic_value().into_pointer_value(),
 			i64_one,
 			"next_char_index",
 		)?;
 
-		body_block_phi.add_incoming(&[
+		try_block_phi.add_incoming(&[
 			(&ptr_alloca, entry_block),
 			(&next_index_gep, continue_block),
 		]);
@@ -121,7 +124,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_load(
 				i8_type,
-				body_block_phi.as_basic_value().into_pointer_value(),
+				try_block_phi.as_basic_value().into_pointer_value(),
 				"\0",
 			)?
 			.into_int_value();
@@ -157,15 +160,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(exit_block);
 
-		let end_value = self.builder.build_phi(i32_type, "\0")?;
+		let exit_block_phi = self.builder.build_phi(i32_type, "\0")?;
 
-		end_value.add_incoming(&[
+		exit_block_phi.add_incoming(&[
 			(&i32_type.const_zero(), entry_block),
 			(&putchar_value, continue_block),
 		]);
 
 		self.builder
-			.build_return(Some(&end_value.as_basic_value()))?;
+			.build_return(Some(&exit_block_phi.as_basic_value()))?;
 
 		self.builder.position_at_end(catch_block);
 
