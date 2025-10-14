@@ -1,4 +1,4 @@
-use frick_ir::ChangeCellOptions;
+use frick_ir::{ChangeCellOptions, Value};
 use inkwell::types::IntType;
 
 use crate::{
@@ -7,7 +7,10 @@ use crate::{
 };
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub(super) fn output_cell(&self, options: ChangeCellOptions<i8>) -> Result<(), AssemblyError> {
+	pub(super) fn output_cell(
+		&self,
+		options: ChangeCellOptions<i8, Value>,
+	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
 		let i8_type = context.i8_type();
@@ -15,10 +18,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_cell_value = self.load(options.offset(), "output_cell")?;
 
-		let offset_cell_value = if matches!(options.inner_value(), 0) {
+		let offset_cell_value = if matches!(options.value(), 0) {
 			current_cell_value
 		} else {
-			let offset_value = i8_type.const_int(options.inner_value() as u64, false);
+			let offset_value = i8_type.const_int(options.value() as u64, false);
 
 			self.builder
 				.build_int_add(current_cell_value, offset_value, "output_cell_add")?
@@ -37,7 +40,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn output_cells(
 		&self,
-		options: &[ChangeCellOptions<i8>],
+		options: &[ChangeCellOptions<i8, Value>],
 	) -> Result<(), AssemblyError> {
 		if options.len() <= OUTPUT_ARRAY_LEN as usize {
 			self.output_cells_puts(options)
@@ -48,14 +51,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn output_cells_iterated(
 		&self,
-		options: &[ChangeCellOptions<i8>],
+		options: &[ChangeCellOptions<i8, Value>],
 	) -> Result<(), AssemblyError> {
 		options
 			.chunks(OUTPUT_ARRAY_LEN as usize)
 			.try_for_each(|x| self.output_cells(x))
 	}
 
-	fn output_cells_puts(&self, options: &[ChangeCellOptions<i8>]) -> Result<(), AssemblyError> {
+	fn output_cells_puts(
+		&self,
+		options: &[ChangeCellOptions<i8, Value>],
+	) -> Result<(), AssemblyError> {
 		assert!(options.len() <= OUTPUT_ARRAY_LEN as usize);
 
 		let context = self.context();
@@ -91,7 +97,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		i8_type: IntType<'ctx>,
 		i64_type: IntType<'ctx>,
-		options: &[ChangeCellOptions<i8>],
+		options: &[ChangeCellOptions<i8, Value>],
 	) -> Result<(), AssemblyError> {
 		let start = options.first().unwrap().offset();
 		let len = (start..=options.last().unwrap().offset()).count() as u32;
@@ -110,15 +116,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		i8_type: IntType<'ctx>,
 		i64_type: IntType<'ctx>,
-		options: ChangeCellOptions<i8>,
+		options: ChangeCellOptions<i8, Value>,
 		length: u64,
 	) -> Result<(), AssemblyError> {
 		let current_value = self.load(options.offset(), "setup_output_cells_puts_memset")?;
 
-		let value_to_memset = if matches!(options.inner_value(), 0) {
+		let value_to_memset = if matches!(options.value(), 0) {
 			current_value
 		} else {
-			let value_offset = i8_type.const_int(options.inner_value() as u64, false);
+			let value_offset = i8_type.const_int(options.value() as u64, false);
 
 			self.builder.build_int_add(
 				current_value,
@@ -138,17 +144,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn setup_output_cells_puts_iterated(
 		&self,
 		i8_type: IntType<'ctx>,
-		options: &[ChangeCellOptions<i8>],
+		options: &[ChangeCellOptions<i8, Value>],
 	) -> Result<(), AssemblyError> {
 		let ptr_int_type = self.ptr_int_type;
 
 		for (i, char) in options.iter().copied().enumerate() {
 			let loaded_char = self.load(char.offset(), "setup_output_cells_puts_iterated")?;
 
-			let offset_char = if matches!(char.inner_value(), 0) {
+			let offset_char = if matches!(char.value(), 0) {
 				loaded_char
 			} else {
-				let offset_value = i8_type.const_int(char.inner_value() as u64, false);
+				let offset_value = i8_type.const_int(char.value() as u64, false);
 
 				self.builder.build_int_add(
 					loaded_char,
@@ -173,12 +179,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 }
 
-fn is_memcpyable(options: &[ChangeCellOptions<i8>]) -> bool {
+fn is_memcpyable(options: &[ChangeCellOptions<i8, Value>]) -> bool {
 	if options.len() <= 1 {
 		return false;
 	}
 
-	if options.iter().any(|x| matches!(x.inner_value(), 0)) {
+	if options.iter().any(|x| matches!(x.value(), 0)) {
 		return false;
 	}
 
@@ -187,7 +193,7 @@ fn is_memcpyable(options: &[ChangeCellOptions<i8>]) -> bool {
 		.all(|w| w[0].offset() + 1 == w[1].offset())
 }
 
-fn is_memsettable(options: &[ChangeCellOptions<i8>]) -> bool {
+fn is_memsettable(options: &[ChangeCellOptions<i8, Value>]) -> bool {
 	if options.len() <= 1 {
 		return false;
 	}

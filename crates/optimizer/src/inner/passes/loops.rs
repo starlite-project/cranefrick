@@ -4,7 +4,7 @@ use frick_utils::GetOrZero as _;
 
 use super::{BrainIr, Change};
 
-pub fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
+pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::ChangeCell(current_cell_options),
@@ -14,11 +14,11 @@ pub fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 			BrainIr::ChangeCell(offset_cell_options),
 			BrainIr::ChangeCell(current_cell_options),
 		] if matches!(current_cell_options.into_parts(), (-1, 0))
-			&& matches!(offset_cell_options.value()?, i8::MIN..0)
+			&& matches!(offset_cell_options.value(), i8::MIN..0)
 			&& !matches!(offset_cell_options.offset(), 0) =>
 		{
 			Some(Change::replace(BrainIr::sub_cell_at(
-				offset_cell_options.value()?.unsigned_abs(),
+				offset_cell_options.value().unsigned_abs(),
 				offset_cell_options.offset(),
 			)))
 		}
@@ -61,7 +61,7 @@ pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 		{
 			Some(Change::swap([
 				BrainIr::set_cell(0),
-				BrainIr::set_cell_at(set_options.value()?, set_options.offset()),
+				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
 			]))
 		}
 		[
@@ -119,17 +119,17 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
+pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::ChangeCell(current_cell_options),
 			BrainIr::ChangeCell(offset_cell_options),
 		] if matches!(current_cell_options.into_parts(), (-1, 0))
-			&& matches!(offset_cell_options.value()?, 1..=i8::MAX)
+			&& matches!(offset_cell_options.value(), 1..=i8::MAX)
 			&& !matches!(offset_cell_options.offset(), 0) =>
 		{
 			Some(Change::replace(BrainIr::move_value_to(
-				offset_cell_options.value()?.unsigned_abs(),
+				offset_cell_options.value().unsigned_abs(),
 				offset_cell_options.offset(),
 			)))
 		}
@@ -150,7 +150,7 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 					unreachable!()
 				};
 
-				values.push(options.into_factored());
+				values.push(options.into_factor());
 			}
 
 			values.sort_by_key(|options| options.offset());

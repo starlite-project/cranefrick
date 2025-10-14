@@ -2,12 +2,13 @@ use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
 use super::ChangeCellOptions;
+use crate::Value;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum OutputOptions {
-	Cell(ChangeCellOptions<i8>),
-	Cells(Vec<ChangeCellOptions<i8>>),
+	Cell(ChangeCellOptions<i8, Value>),
+	Cells(Vec<ChangeCellOptions<i8, Value>>),
 	Char(u8),
 	Str(Vec<u8>),
 }
@@ -15,11 +16,11 @@ pub enum OutputOptions {
 impl OutputOptions {
 	#[must_use]
 	pub const fn cell(value_offset: i8, offset: i32) -> Self {
-		Self::Cell(ChangeCellOptions::new_value(value_offset, offset))
+		Self::Cell(ChangeCellOptions::new(value_offset, offset))
 	}
 
 	#[must_use]
-	pub fn cells(values: impl IntoIterator<Item = ChangeCellOptions<i8>>) -> Self {
+	pub fn cells(values: impl IntoIterator<Item = ChangeCellOptions<i8, Value>>) -> Self {
 		Self::Cells(values.collect_to())
 	}
 

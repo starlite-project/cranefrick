@@ -1,10 +1,14 @@
 mod sealed;
 
-use std::{marker::PhantomData, ops::RangeInclusive};
+use std::{
+	fmt::{Debug, Formatter, Result as FmtResult},
+	marker::PhantomData,
+	ops::RangeInclusive,
+};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ChangeCellOptions<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> {
 	value: T,
 	offset: i32,
@@ -34,21 +38,21 @@ impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> ChangeCellOptions<
 }
 
 impl<T: ChangeCellOptionsPrimitive> ChangeCellOptions<T, Factor> {
-	pub fn factor(self) -> T {
+	pub const fn factor(self) -> T {
 		self.value
 	}
 
-	pub fn into_value(self) -> ChangeCellOptions<T, Value> {
+	pub const fn into_value(self) -> ChangeCellOptions<T, Value> {
 		ChangeCellOptions::new(self.value, self.offset)
 	}
 }
 
 impl<T: ChangeCellOptionsPrimitive> ChangeCellOptions<T, Value> {
-	pub fn value(self) -> T {
+	pub const fn value(self) -> T {
 		self.value
 	}
 
-	pub fn into_factor(self) -> ChangeCellOptions<T, Factor> {
+	pub const fn into_factor(self) -> ChangeCellOptions<T, Factor> {
 		ChangeCellOptions::new(self.value, self.offset)
 	}
 }
@@ -64,6 +68,18 @@ impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> Clone
 impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> Copy
 	for ChangeCellOptions<T, Marker>
 {
+}
+
+impl<T, Marker: ChangeCellMarker> Debug for ChangeCellOptions<T, Marker>
+where
+	T: ChangeCellOptionsPrimitive + Debug,
+{
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("ChangeCellOptions")
+			.field("value", &self.value)
+			.field("offset", &self.offset)
+			.finish()
+	}
 }
 
 impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> Eq for ChangeCellOptions<T, Marker> {}
