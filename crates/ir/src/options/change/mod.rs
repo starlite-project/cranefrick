@@ -9,13 +9,13 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub struct ChangeCellOptions<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> {
+pub struct ChangeCellOptions<T: ChangeCellPrimitive, Marker: ChangeCellMarker> {
 	value: T,
 	offset: i32,
 	marker: PhantomData<Marker>,
 }
 
-impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> ChangeCellOptions<T, Marker> {
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> ChangeCellOptions<T, Marker> {
 	pub const fn new(value: T, offset: i32) -> Self {
 		Self {
 			value,
@@ -37,7 +37,7 @@ impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> ChangeCellOptions<
 	}
 }
 
-impl<T: ChangeCellOptionsPrimitive> ChangeCellOptions<T, Factor> {
+impl<T: ChangeCellPrimitive> ChangeCellOptions<T, Factor> {
 	pub const fn factor(self) -> T {
 		self.value
 	}
@@ -47,7 +47,7 @@ impl<T: ChangeCellOptionsPrimitive> ChangeCellOptions<T, Factor> {
 	}
 }
 
-impl<T: ChangeCellOptionsPrimitive> ChangeCellOptions<T, Value> {
+impl<T: ChangeCellPrimitive> ChangeCellOptions<T, Value> {
 	pub const fn value(self) -> T {
 		self.value
 	}
@@ -57,7 +57,7 @@ impl<T: ChangeCellOptionsPrimitive> ChangeCellOptions<T, Value> {
 	}
 }
 
-impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> Clone
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Clone
 	for ChangeCellOptions<T, Marker>
 {
 	fn clone(&self) -> Self {
@@ -65,14 +65,14 @@ impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> Clone
 	}
 }
 
-impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> Copy
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Copy
 	for ChangeCellOptions<T, Marker>
 {
 }
 
 impl<T, Marker: ChangeCellMarker> Debug for ChangeCellOptions<T, Marker>
 where
-	T: ChangeCellOptionsPrimitive + Debug,
+	T: ChangeCellPrimitive + Debug,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("ChangeCellOptions")
@@ -82,9 +82,9 @@ where
 	}
 }
 
-impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> Eq for ChangeCellOptions<T, Marker> {}
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Eq for ChangeCellOptions<T, Marker> {}
 
-impl<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker> PartialEq
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> PartialEq
 	for ChangeCellOptions<T, Marker>
 {
 	fn eq(&self, other: &Self) -> bool {
@@ -97,12 +97,12 @@ pub enum Factor {}
 pub enum Value {}
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum ChangeCellValue<T: ChangeCellOptionsPrimitive = u8> {
+pub enum ChangeCellValue<T: ChangeCellPrimitive = u8> {
 	Value(T),
 	Factor(T),
 }
 
-impl<T: ChangeCellOptionsPrimitive> ChangeCellValue<T> {
+impl<T: ChangeCellPrimitive> ChangeCellValue<T> {
 	pub const fn value(self) -> Option<T> {
 		match self {
 			Self::Value(value) => Some(value),
@@ -124,17 +124,17 @@ impl<T: ChangeCellOptionsPrimitive> ChangeCellValue<T> {
 	}
 }
 
-impl<T: ChangeCellOptionsPrimitive> Clone for ChangeCellValue<T> {
+impl<T: ChangeCellPrimitive> Clone for ChangeCellValue<T> {
 	fn clone(&self) -> Self {
 		*self
 	}
 }
 
-impl<T: ChangeCellOptionsPrimitive> Copy for ChangeCellValue<T> {}
+impl<T: ChangeCellPrimitive> Copy for ChangeCellValue<T> {}
 
-impl<T: ChangeCellOptionsPrimitive> Eq for ChangeCellValue<T> {}
+impl<T: ChangeCellPrimitive> Eq for ChangeCellValue<T> {}
 
-impl<T: ChangeCellOptionsPrimitive> PartialEq for ChangeCellValue<T> {
+impl<T: ChangeCellPrimitive> PartialEq for ChangeCellValue<T> {
 	fn eq(&self, other: &Self) -> bool {
 		match (self, other) {
 			(Self::Factor(lhs), Self::Factor(rhs)) | (Self::Value(lhs), Self::Value(rhs)) => {
@@ -149,12 +149,12 @@ pub trait ChangeCellMarker: self::sealed::MarkerSealed {}
 
 impl<T: self::sealed::MarkerSealed> ChangeCellMarker for T {}
 
-pub trait ChangeCellOptionsPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSealed {}
+pub trait ChangeCellPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSealed {}
 
-impl<T> ChangeCellOptionsPrimitive for T where T: Copy + Default + Eq + self::sealed::PrimitiveSealed
+impl<T> ChangeCellPrimitive for T where T: Copy + Default + Eq + self::sealed::PrimitiveSealed
 {}
 
-pub fn is_range<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker>(
+pub fn is_range<T: ChangeCellPrimitive, Marker: ChangeCellMarker>(
 	values: &[ChangeCellOptions<T, Marker>],
 ) -> bool {
 	let Some(range) = get_range(values) else {
@@ -172,7 +172,7 @@ pub fn is_range<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker>(
 	range.count() == len_of_values
 }
 
-pub fn get_range<T: ChangeCellOptionsPrimitive, Marker: ChangeCellMarker>(
+pub fn get_range<T: ChangeCellPrimitive, Marker: ChangeCellMarker>(
 	values: &[ChangeCellOptions<T, Marker>],
 ) -> Option<RangeInclusive<i32>> {
 	assert!(values.len() > 1);
