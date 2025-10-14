@@ -215,7 +215,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn ops(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
 		for op in ops {
 			tracing::trace!(%op_count, ?op);
-
 			let debug_loc = self.debug_builder.create_debug_location(
 				self.context(),
 				1,
@@ -233,9 +232,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			match op {
 				BrainIr::Boundary => {}
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
-				BrainIr::SetCell(options) => {
-					self.set_cell(options.value(), options.offset())?;
-				}
+				BrainIr::SetCell(options) => self.set_cell(options.value(), options.offset())?,
 				BrainIr::ChangeCell(options) => {
 					self.change_cell(options.value(), options.offset())?;
 				}
@@ -250,12 +247,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::MoveValueTo(options) => self.move_value_to(*options)?,
 				BrainIr::CopyValueTo(options) => self.copy_value_to(*options)?,
 				BrainIr::TakeValueTo(options) => self.take_value_to(*options)?,
-				BrainIr::FetchValueFrom(options) => {
-					self.fetch_value_from(*options)?;
-				}
-				BrainIr::ReplaceValueFrom(options) => {
-					self.replace_value_from(*options)?;
-				}
+				BrainIr::FetchValueFrom(options) => self.fetch_value_from(*options)?,
+				BrainIr::ReplaceValueFrom(options) => self.replace_value_from(*options)?,
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
 				BrainIr::SetRange(options) => self.set_range(options.value, options.range())?,
 				BrainIr::SetManyCells(options) => {

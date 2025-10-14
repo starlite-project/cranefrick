@@ -64,9 +64,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<IntValue<'ctx>, AssemblyError> {
 		let ptr_int_type = self.ptr_int_type;
 
+		let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
+
 		Ok(self.builder.build_int_unsigned_rem(
 			offset_ptr,
-			ptr_int_type.const_int(TAPE_SIZE as u64, false),
+			tape_size,
 			"wrap_pointer_positive_urem\0",
 		)?)
 	}
