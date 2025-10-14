@@ -9,10 +9,7 @@ use serde::{
 	ser::SerializeStruct as _,
 };
 
-use super::{
-	ChangeCellMarker, ChangeCellOptions, ChangeCellPrimitive, Factor, FactoredChangeCellOptions,
-	Value, ValuedChangeCellOptions,
-};
+use super::{ChangeCellPrimitive, FactoredChangeCellOptions, ValuedChangeCellOptions};
 
 impl<'de, T> Deserialize<'de> for FactoredChangeCellOptions<T>
 where
