@@ -105,7 +105,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let noalias_attr = context.create_named_enum_attribute("noalias", 0);
 		let nonnull_attr = context.create_named_enum_attribute("nonnull", 0);
 		let readonly_attr = context.create_named_enum_attribute("readonly", 0);
-		let align_attr = context.create_named_enum_attribute("align", 1);
+		let align_16_attr = context.create_named_enum_attribute("align", 16);
 		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
 		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
 		let nonlazybind_attr = context.create_named_enum_attribute("nonlazybind", 0);
@@ -152,7 +152,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				(0, nofree_attr),
 				(0, nonnull_attr),
 				(0, readonly_attr),
-				(0, align_attr),
+				(0, align_16_attr),
 			],
 			[],
 		);

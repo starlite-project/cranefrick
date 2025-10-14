@@ -72,15 +72,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(entry_block);
 
-		let (pointer_param, string_len) = {
+		let (ptr_param, string_len) = {
 			let params = self.functions.puts.get_params();
 
 			(params[0].into_pointer_value(), params[1].into_int_value())
 		};
 
-		let ptr_alloca = self.builder.build_array_alloca(i8_type, string_len, "\0")?;
-
-		let assert_ptr_not_null = self.builder.build_is_not_null(pointer_param, "\0")?;
+		let assert_ptr_not_null = self.builder.build_is_not_null(ptr_param, "\0")?;
 
 		self.builder.build_direct_call(
 			self.functions.assume,
@@ -88,10 +86,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"\0",
 		)?;
 
-		self.builder
-			.build_memcpy(ptr_alloca, 1, pointer_param, 1, string_len)?;
-
-		let end_of_string = self.gep(i8_type, ptr_alloca, string_len, "end_of_string")?;
+		let end_of_string = self.gep(i8_type, ptr_param, string_len, "end_of_string")?;
 
 		let i64_zero = i64_type.const_zero();
 
@@ -115,10 +110,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"next_char_index",
 		)?;
 
-		try_block_phi.add_incoming(&[
-			(&ptr_alloca, entry_block),
-			(&next_index_gep, continue_block),
-		]);
+		try_block_phi.add_incoming(&[(&ptr_param, entry_block), (&next_index_gep, continue_block)]);
 
 		let actual_value = self
 			.builder
@@ -128,6 +120,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"\0",
 			)?
 			.into_int_value();
+
+		if let Some(actual_value_instr) = actual_value.as_instruction() {
+			actual_value_instr.set_alignment(16)?;
+		}
 
 		let extended_character = self
 			.builder
