@@ -1,4 +1,5 @@
 mod sealed;
+mod serde;
 
 use std::{
 	fmt::{Debug, Formatter, Result as FmtResult},
@@ -6,9 +7,6 @@ use std::{
 	ops::RangeInclusive,
 };
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize)]
 pub struct ChangeCellOptions<T: ChangeCellPrimitive, Marker: ChangeCellMarker> {
 	value: T,
 	offset: i32,
@@ -57,18 +55,13 @@ impl<T: ChangeCellPrimitive> ChangeCellOptions<T, Value> {
 	}
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Clone
-	for ChangeCellOptions<T, Marker>
-{
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Clone for ChangeCellOptions<T, Marker> {
 	fn clone(&self) -> Self {
 		*self
 	}
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Copy
-	for ChangeCellOptions<T, Marker>
-{
-}
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Copy for ChangeCellOptions<T, Marker> {}
 
 impl<T, Marker: ChangeCellMarker> Debug for ChangeCellOptions<T, Marker>
 where
@@ -84,9 +77,7 @@ where
 
 impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Eq for ChangeCellOptions<T, Marker> {}
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> PartialEq
-	for ChangeCellOptions<T, Marker>
-{
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> PartialEq for ChangeCellOptions<T, Marker> {
 	fn eq(&self, other: &Self) -> bool {
 		PartialEq::eq(&self.value, &other.value) && PartialEq::eq(&self.offset, &other.offset)
 	}
@@ -96,63 +87,13 @@ pub enum Factor {}
 
 pub enum Value {}
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum ChangeCellValue<T: ChangeCellPrimitive = u8> {
-	Value(T),
-	Factor(T),
-}
-
-impl<T: ChangeCellPrimitive> ChangeCellValue<T> {
-	pub const fn value(self) -> Option<T> {
-		match self {
-			Self::Value(value) => Some(value),
-			Self::Factor(..) => None,
-		}
-	}
-
-	pub const fn factor(self) -> Option<T> {
-		match self {
-			Self::Factor(factor) => Some(factor),
-			Self::Value(..) => None,
-		}
-	}
-
-	pub const fn inner_value(self) -> T {
-		match self {
-			Self::Factor(inner) | Self::Value(inner) => inner,
-		}
-	}
-}
-
-impl<T: ChangeCellPrimitive> Clone for ChangeCellValue<T> {
-	fn clone(&self) -> Self {
-		*self
-	}
-}
-
-impl<T: ChangeCellPrimitive> Copy for ChangeCellValue<T> {}
-
-impl<T: ChangeCellPrimitive> Eq for ChangeCellValue<T> {}
-
-impl<T: ChangeCellPrimitive> PartialEq for ChangeCellValue<T> {
-	fn eq(&self, other: &Self) -> bool {
-		match (self, other) {
-			(Self::Factor(lhs), Self::Factor(rhs)) | (Self::Value(lhs), Self::Value(rhs)) => {
-				PartialEq::eq(&lhs, &rhs)
-			}
-			_ => false,
-		}
-	}
-}
-
 pub trait ChangeCellMarker: self::sealed::MarkerSealed {}
 
 impl<T: self::sealed::MarkerSealed> ChangeCellMarker for T {}
 
 pub trait ChangeCellPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSealed {}
 
-impl<T> ChangeCellPrimitive for T where T: Copy + Default + Eq + self::sealed::PrimitiveSealed
-{}
+impl<T> ChangeCellPrimitive for T where T: Copy + Default + Eq + self::sealed::PrimitiveSealed {}
 
 pub fn is_range<T: ChangeCellPrimitive, Marker: ChangeCellMarker>(
 	values: &[ChangeCellOptions<T, Marker>],
