@@ -121,10 +121,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			)?
 			.into_int_value();
 
-		if let Some(actual_value_instr) = actual_value.as_instruction() {
-			actual_value_instr.set_alignment(16)?;
-		}
-
 		let extended_character = self
 			.builder
 			.build_int_z_extend(actual_value, i32_type, "\0")?;
