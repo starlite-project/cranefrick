@@ -9,7 +9,7 @@ use serde::{
 	ser::SerializeStruct as _,
 };
 
-use super::{ChangeCellMarker, ChangeCellOptions, ChangeCellPrimitive};
+use super::{ChangeCellMarker, ChangeCellOptions, ChangeCellPrimitive, Factor, Value};
 
 impl<'de, T, Marker: ChangeCellMarker> Deserialize<'de> for ChangeCellOptions<T, Marker>
 where
@@ -31,14 +31,42 @@ where
 	}
 }
 
-impl<T, Marker: ChangeCellMarker> Serialize for ChangeCellOptions<T, Marker>
+// impl<T, Marker: ChangeCellMarker> Serialize for ChangeCellOptions<T, Marker>
+// where
+// 	T: ChangeCellPrimitive + Serialize,
+// {
+// 	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+// 		let mut state = serializer.serialize_struct("ChangeCellOptions", 2)?;
+
+// 		state.serialize_field("value", &self.value)?;
+// 		state.serialize_field("offset", &self.offset)?;
+
+// 		state.end()
+// 	}
+// }
+
+impl<T> Serialize for ChangeCellOptions<T, Factor>
 where
 	T: ChangeCellPrimitive + Serialize,
 {
 	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
 		let mut state = serializer.serialize_struct("ChangeCellOptions", 2)?;
 
-		state.serialize_field("value", &self.value)?;
+		state.serialize_field("factor", &self.factor())?;
+		state.serialize_field("offset", &self.offset)?;
+
+		state.end()
+	}
+}
+
+impl<T> Serialize for ChangeCellOptions<T, Value>
+where
+	T: ChangeCellPrimitive + Serialize,
+{
+	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		let mut state = serializer.serialize_struct("ChangeCellOptions", 2)?;
+
+		state.serialize_field("value", &self.value())?;
 		state.serialize_field("offset", &self.offset)?;
 
 		state.end()
