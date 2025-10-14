@@ -168,7 +168,7 @@ impl Visitor<'_> for ChangeCellOptionsFieldVisitor {
 
 	fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> {
 		Ok(match v {
-			"value" => ChangeCellOptionsField::Value,
+			"value" | "factor" => ChangeCellOptionsField::Value,
 			"offset" => ChangeCellOptionsField::Offset,
 			_ => ChangeCellOptionsField::Ignore,
 		})
@@ -176,7 +176,7 @@ impl Visitor<'_> for ChangeCellOptionsFieldVisitor {
 
 	fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E> {
 		Ok(match v {
-			b"value" => ChangeCellOptionsField::Value,
+			b"value" | b"factor" => ChangeCellOptionsField::Value,
 			b"offset" => ChangeCellOptionsField::Offset,
 			_ => ChangeCellOptionsField::Ignore,
 		})
