@@ -206,10 +206,10 @@ pub fn add_offsets(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::SetRange(options),
 			BrainIr::MovePointer(y),
 		] => {
-			let start = options.start.wrapping_add(*x);
-			let end = options.end.wrapping_add(*y);
+			let start = options.start().wrapping_add(*x);
+			let end = options.end().wrapping_add(*y);
 
-			let set_range_instr = BrainIr::set_range(options.value, start, end);
+			let set_range_instr = BrainIr::set_range(options.value(), start, end);
 
 			Some(if *x == -y {
 				Change::replace(set_range_instr)
@@ -452,10 +452,7 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::swap([
 				BrainIr::output_char(char_at),
-				BrainIr::set_many_cells(
-					set_options.values.iter().copied(),
-					set_options.start.get_or_zero(),
-				),
+				BrainIr::set_many_cells(set_options.values().iter().copied(), set_options.start()),
 			]))
 		}
 		[
@@ -479,10 +476,7 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::swap([
 				BrainIr::output_str(str),
-				BrainIr::set_many_cells(
-					set_options.values.iter().copied(),
-					set_options.start.get_or_zero(),
-				),
+				BrainIr::set_many_cells(set_options.values().iter().copied(), set_options.start()),
 			]))
 		}
 
@@ -627,7 +621,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			}
 
 			let new_set_many_options =
-				SetManyCellsOptions::new(set_many_options.values.iter().copied(), range.start);
+				SetManyCellsOptions::new(set_many_options.values().iter().copied(), range.start);
 
 			let mut chars = Vec::with_capacity(output_options.len());
 
@@ -642,8 +636,8 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			Some(Change::swap([
 				BrainIr::output_str(chars),
 				BrainIr::set_many_cells(
-					set_many_options.values.iter().copied(),
-					set_many_options.start.get_or_zero(),
+					set_many_options.values().iter().copied(),
+					set_many_options.start(),
 				),
 				BrainIr::move_pointer(*x),
 			]))
@@ -666,7 +660,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			}
 
 			let new_set_many_options =
-				SetManyCellsOptions::new(set_many_options.values.iter().copied(), range.start);
+				SetManyCellsOptions::new(set_many_options.values().iter().copied(), range.start);
 
 			let char = new_set_many_options
 				.value_at(output_options.offset())?
@@ -675,8 +669,8 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			Some(Change::swap([
 				BrainIr::output_char(char),
 				BrainIr::set_many_cells(
-					set_many_options.values.iter().copied(),
-					set_many_options.start.get_or_zero(),
+					set_many_options.values().iter().copied(),
+					set_many_options.start(),
 				),
 				BrainIr::move_pointer(*x),
 			]))
@@ -860,18 +854,18 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			let min = cmp::min(x, start);
 
-			if set_range_options.value == set_options.value() {
+			if set_range_options.value() == set_options.value() {
 				let max = cmp::max(x, end);
 
 				Some(Change::replace(BrainIr::set_range(
-					set_range_options.value,
+					set_range_options.value(),
 					min,
 					max,
 				)))
 			} else {
 				let mut values = range
 					.clone()
-					.map(|_| set_range_options.value)
+					.map(|_| set_range_options.value())
 					.collect::<Vec<_>>();
 
 				let new_offset_raw = x.wrapping_add(min.abs());
@@ -894,14 +888,22 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			}
 		}
 		[BrainIr::SetRange(a), BrainIr::SetRange(b)]
-			if a.end.wrapping_add(1) == b.start && a.value == b.value =>
+			if a.end().wrapping_add(1) == b.start() && a.value() == b.value() =>
 		{
-			Some(Change::replace(BrainIr::set_range(a.value, a.start, b.end)))
+			Some(Change::replace(BrainIr::set_range(
+				a.value(),
+				a.start(),
+				b.end(),
+			)))
 		}
 		[BrainIr::SetRange(a), BrainIr::SetRange(b)]
-			if b.end.wrapping_add(1) == a.start && a.value == b.value =>
+			if b.end().wrapping_add(1) == a.start() && a.value() == b.value() =>
 		{
-			Some(Change::replace(BrainIr::set_range(a.value, b.start, a.end)))
+			Some(Change::replace(BrainIr::set_range(
+				a.value(),
+				b.start(),
+				a.end(),
+			)))
 		}
 		[BrainIr::SetRange(a), BrainIr::SetRange(b)] if a.range() == b.range() => {
 			Some(Change::remove_offset(0))
@@ -947,7 +949,7 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::set_many_cells(
 				set_many_options
-					.values
+					.values()
 					.iter()
 					.copied()
 					.chain(iter::once(set_options.value())),
@@ -955,7 +957,7 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			)))
 		}
 		[BrainIr::SetManyCells(a), BrainIr::SetManyCells(b)]
-			if a.start == b.start && a.values.len() <= b.values.len() =>
+			if a.start() == b.start() && a.values().len() <= b.values().len() =>
 		{
 			Some(Change::remove_offset(0))
 		}
@@ -963,23 +965,23 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			if a.range().end == b.range().start =>
 		{
 			Some(Change::replace(BrainIr::set_many_cells(
-				a.values.iter().copied().chain(b.values.iter().copied()),
-				a.start.get_or_zero(),
+				a.values().iter().copied().chain(b.values().iter().copied()),
+				a.start().get_or_zero(),
 			)))
 		}
 		[
 			BrainIr::SetManyCells(set_many_options),
 			BrainIr::SetRange(set_range_options),
 		] if set_many_options.range().end == *set_range_options.range().start() => {
-			let mut new_values = set_many_options.values.clone();
+			let mut new_values = set_many_options.values().to_owned();
 
 			for _ in set_range_options.range() {
-				new_values.push(set_range_options.value);
+				new_values.push(set_range_options.value());
 			}
 
 			Some(Change::replace(BrainIr::set_many_cells(
 				new_values,
-				set_many_options.start.get_or_zero(),
+				set_many_options.start(),
 			)))
 		}
 		[
@@ -989,7 +991,7 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			let set_many_count = set_many_options.range().len();
 			let set_range_count = set_range_options.range().count();
 
-			if set_many_options.start.get_or_zero() == set_range_options.start
+			if set_many_options.start() == set_range_options.start()
 				&& set_many_count >= set_range_count
 			{
 				Some(Change::remove_offset(0))
@@ -1016,12 +1018,12 @@ pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			let cell_index = range.position(|y| y == *x)?;
 
-			let mut values = set_many_options.values.clone();
+			let mut values = set_many_options.values().to_owned();
 
 			values[cell_index] = values[cell_index].wrapping_add_signed(change_options.value());
 
 			Some(Change::swap([
-				BrainIr::set_many_cells(values, set_many_options.start.get_or_zero()),
+				BrainIr::set_many_cells(values, set_many_options.start()),
 				BrainIr::move_pointer(*x),
 			]))
 		}

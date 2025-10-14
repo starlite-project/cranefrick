@@ -4,15 +4,30 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetRangeOptions {
-	pub value: u8,
-	pub start: i32,
-	pub end: i32,
+	value: u8,
+	start: i32,
+	end: i32,
 }
 
 impl SetRangeOptions {
 	#[must_use]
 	pub const fn new(value: u8, start: i32, end: i32) -> Self {
 		Self { value, start, end }
+	}
+
+	#[must_use]
+	pub const fn value(self) -> u8 {
+		self.value
+	}
+
+	#[must_use]
+	pub const fn start(self) -> i32 {
+		self.start
+	}
+
+	#[must_use]
+	pub const fn end(self) -> i32 {
+		self.end
 	}
 
 	#[must_use]

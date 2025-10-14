@@ -1,6 +1,5 @@
 use std::{
 	iter::{Copied, Enumerate, FusedIterator},
-	num::NonZero,
 	ops::Range,
 	slice,
 };
@@ -10,16 +9,26 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetManyCellsOptions {
-	pub values: Vec<u8>,
-	pub start: Option<NonZero<i32>>,
+	values: Vec<u8>,
+	start: i32,
 }
 
 impl SetManyCellsOptions {
 	pub fn new(values: impl IntoIterator<Item = u8>, start: i32) -> Self {
 		Self {
 			values: values.collect_to(),
-			start: NonZero::new(start),
+			start,
 		}
+	}
+
+	#[must_use]
+	pub const fn values(&self) -> &[u8] {
+		self.values.as_slice()
+	}
+
+	#[must_use]
+	pub const fn start(&self) -> i32 {
+		self.start
 	}
 
 	#[must_use]

@@ -1,7 +1,6 @@
 use std::cmp::{self, Ordering};
 
-use frick_ir::SetManyCellsOptions;
-use frick_utils::{GetOrZero as _, IteratorExt as _};
+use frick_utils::IteratorExt as _;
 
 use super::{BrainIr, Change};
 
@@ -40,9 +39,7 @@ fn sorter_key(i: &BrainIr) -> Priority {
 
 			Priority::Low(min)
 		}
-		BrainIr::SetManyCells(SetManyCellsOptions { start, .. }) => {
-			Priority::Low(start.get_or_zero())
-		}
+		BrainIr::SetManyCells(options) => Priority::Low(options.start()),
 		_ => unreachable!(),
 	}
 }

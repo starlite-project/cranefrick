@@ -1,7 +1,5 @@
 use std::iter;
 
-use frick_utils::GetOrZero as _;
-
 use super::{BrainIr, Change};
 
 pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
@@ -76,25 +74,26 @@ pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 		{
 			Some(Change::swap([
 				BrainIr::clear_cell(),
-				BrainIr::set_many_cells(
-					set_options.values.iter().copied(),
-					set_options.start.get_or_zero(),
-				),
+				BrainIr::set_many_cells(set_options.values().iter().copied(), set_options.start()),
 			]))
 		}
 		[
 			BrainIr::ChangeCell(change_options),
-			BrainIr::SetRange(set_options),
+			BrainIr::SetRange(set_range_options),
 		]
 		| [
-			BrainIr::SetRange(set_options),
+			BrainIr::SetRange(set_range_options),
 			BrainIr::ChangeCell(change_options),
 		] if matches!(change_options.into_parts(), (-1, 0))
-			&& !set_options.range().contains(&0) =>
+			&& !set_range_options.range().contains(&0) =>
 		{
 			Some(Change::swap([
 				BrainIr::clear_cell(),
-				BrainIr::set_range(set_options.value, set_options.start, set_options.end),
+				BrainIr::set_range(
+					set_range_options.value(),
+					set_range_options.start(),
+					set_range_options.end(),
+				),
 			]))
 		}
 		_ => None,

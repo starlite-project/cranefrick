@@ -5,7 +5,6 @@ use std::path::Path;
 
 use frick_ir::{BrainIr, SubType};
 use frick_spec::TAPE_SIZE;
-use frick_utils::GetOrZero as _;
 use inkwell::{
 	basic_block::BasicBlock,
 	builder::Builder,
@@ -232,10 +231,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			match op {
 				BrainIr::Boundary => {}
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
-				BrainIr::SetCell(options) => self.set_cell(options.value(), options.offset())?,
-				BrainIr::ChangeCell(options) => {
-					self.change_cell(options.value(), options.offset())?;
-				}
+				BrainIr::SetCell(options) => self.set_cell(*options)?,
+				BrainIr::ChangeCell(options) => self.change_cell(*options)?,
 				BrainIr::SubCell(SubType::CellAt(options)) => self.sub_cell_at(*options)?,
 				BrainIr::SubCell(SubType::FromCell(options)) => self.sub_from_cell(*options)?,
 				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
@@ -250,10 +247,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::FetchValueFrom(options) => self.fetch_value_from(*options)?,
 				BrainIr::ReplaceValueFrom(options) => self.replace_value_from(*options)?,
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
-				BrainIr::SetRange(options) => self.set_range(options.value, options.range())?,
-				BrainIr::SetManyCells(options) => {
-					self.set_many_cells(&options.values, options.start.get_or_zero())?;
-				}
+				BrainIr::SetRange(options) => self.set_range(*options)?,
+				BrainIr::SetManyCells(options) => self.set_many_cells(options)?,
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 

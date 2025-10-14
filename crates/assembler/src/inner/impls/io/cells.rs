@@ -1,4 +1,4 @@
-use frick_ir::{ChangeCellOptions, Value};
+use frick_ir::ValuedChangeCellOptions;
 use inkwell::types::IntType;
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
 impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn output_cell(
 		&self,
-		options: ChangeCellOptions<i8, Value>,
+		options: ValuedChangeCellOptions<i8>,
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -40,7 +40,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn output_cells(
 		&self,
-		options: &[ChangeCellOptions<i8, Value>],
+		options: &[ValuedChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		if options.len() <= OUTPUT_ARRAY_LEN as usize {
 			self.output_cells_puts(options)
@@ -51,7 +51,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn output_cells_iterated(
 		&self,
-		options: &[ChangeCellOptions<i8, Value>],
+		options: &[ValuedChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		options
 			.chunks(OUTPUT_ARRAY_LEN as usize)
@@ -60,7 +60,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn output_cells_puts(
 		&self,
-		options: &[ChangeCellOptions<i8, Value>],
+		options: &[ValuedChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		assert!(options.len() <= OUTPUT_ARRAY_LEN as usize);
 
@@ -97,7 +97,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		i8_type: IntType<'ctx>,
 		i64_type: IntType<'ctx>,
-		options: &[ChangeCellOptions<i8, Value>],
+		options: &[ValuedChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		let start = options.first().unwrap().offset();
 		let len = (start..=options.last().unwrap().offset()).count() as u32;
@@ -116,7 +116,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		i8_type: IntType<'ctx>,
 		i64_type: IntType<'ctx>,
-		options: ChangeCellOptions<i8, Value>,
+		options: ValuedChangeCellOptions<i8>,
 		length: u64,
 	) -> Result<(), AssemblyError> {
 		let current_value = self.load(options.offset(), "setup_output_cells_puts_memset")?;
@@ -144,7 +144,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn setup_output_cells_puts_iterated(
 		&self,
 		i8_type: IntType<'ctx>,
-		options: &[ChangeCellOptions<i8, Value>],
+		options: &[ValuedChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		let ptr_int_type = self.ptr_int_type;
 
@@ -179,7 +179,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 }
 
-fn is_memcpyable(options: &[ChangeCellOptions<i8, Value>]) -> bool {
+fn is_memcpyable(options: &[ValuedChangeCellOptions<i8>]) -> bool {
 	if options.len() <= 1 {
 		return false;
 	}
@@ -193,7 +193,7 @@ fn is_memcpyable(options: &[ChangeCellOptions<i8, Value>]) -> bool {
 		.all(|w| w[0].offset() + 1 == w[1].offset())
 }
 
-fn is_memsettable(options: &[ChangeCellOptions<i8, Value>]) -> bool {
+fn is_memsettable(options: &[ValuedChangeCellOptions<i8>]) -> bool {
 	if options.len() <= 1 {
 		return false;
 	}

@@ -18,25 +18,25 @@ pub use self::{options::*, output::*, sub::*};
 #[non_exhaustive]
 pub enum BrainIr {
 	Boundary,
-	ChangeCell(ChangeCellOptions<i8, Value>),
-	SetCell(ChangeCellOptions<u8, Value>),
+	ChangeCell(ValuedChangeCellOptions<i8>),
+	SetCell(ValuedChangeCellOptions<u8>),
 	SubCell(SubType),
 	MovePointer(i32),
 	FindZero(i32),
 	InputIntoCell,
 	Output(OutputOptions),
-	MoveValueTo(ChangeCellOptions<u8, Factor>),
-	CopyValueTo(ChangeCellOptions<u8, Factor>),
-	TakeValueTo(ChangeCellOptions<u8, Factor>),
-	FetchValueFrom(ChangeCellOptions<u8, Factor>),
-	ReplaceValueFrom(ChangeCellOptions<u8, Factor>),
+	MoveValueTo(FactoredChangeCellOptions<u8>),
+	CopyValueTo(FactoredChangeCellOptions<u8>),
+	TakeValueTo(FactoredChangeCellOptions<u8>),
+	FetchValueFrom(FactoredChangeCellOptions<u8>),
+	ReplaceValueFrom(FactoredChangeCellOptions<u8>),
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
 	SetRange(SetRangeOptions),
 	SetManyCells(SetManyCellsOptions),
 	DuplicateCell {
-		values: Vec<ChangeCellOptions<i8, Factor>>,
+		values: Vec<FactoredChangeCellOptions<i8>>,
 	},
 }
 
@@ -53,7 +53,7 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn change_cell_at(value: i8, offset: i32) -> Self {
-		Self::ChangeCell(ChangeCellOptions::new(value, offset))
+		Self::ChangeCell(ValuedChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -68,17 +68,21 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn set_cell_at(value: u8, offset: i32) -> Self {
-		Self::SetCell(ChangeCellOptions::new(value, offset))
+		Self::SetCell(ValuedChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn sub_from_cell(value: u8, offset: i32) -> Self {
-		Self::SubCell(SubType::FromCell(ChangeCellOptions::new(value, offset)))
+		Self::SubCell(SubType::FromCell(FactoredChangeCellOptions::new(
+			value, offset,
+		)))
 	}
 
 	#[must_use]
 	pub const fn sub_cell_at(value: u8, offset: i32) -> Self {
-		Self::SubCell(SubType::CellAt(ChangeCellOptions::new(value, offset)))
+		Self::SubCell(SubType::CellAt(FactoredChangeCellOptions::new(
+			value, offset,
+		)))
 	}
 
 	#[must_use]
@@ -117,7 +121,7 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub fn output_cells(c: impl IntoIterator<Item = ChangeCellOptions<i8, Value>>) -> Self {
+	pub fn output_cells(c: impl IntoIterator<Item = ValuedChangeCellOptions<i8>>) -> Self {
 		Self::Output(OutputOptions::cells(c))
 	}
 
@@ -133,27 +137,27 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn fetch_value_from(value: u8, offset: i32) -> Self {
-		Self::FetchValueFrom(ChangeCellOptions::new(value, offset))
+		Self::FetchValueFrom(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn replace_value_from(value: u8, offset: i32) -> Self {
-		Self::ReplaceValueFrom(ChangeCellOptions::new(value, offset))
+		Self::ReplaceValueFrom(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn take_value_to(value: u8, offset: i32) -> Self {
-		Self::TakeValueTo(ChangeCellOptions::new(value, offset))
+		Self::TakeValueTo(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn move_value_to(value: u8, offset: i32) -> Self {
-		Self::MoveValueTo(ChangeCellOptions::new(value, offset))
+		Self::MoveValueTo(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn copy_value_to(value: u8, offset: i32) -> Self {
-		Self::CopyValueTo(ChangeCellOptions::new(value, offset))
+		Self::CopyValueTo(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -177,7 +181,7 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub fn duplicate_cell(values: impl IntoIterator<Item = ChangeCellOptions<i8, Factor>>) -> Self {
+	pub fn duplicate_cell(values: impl IntoIterator<Item = FactoredChangeCellOptions<i8>>) -> Self {
 		Self::DuplicateCell {
 			values: values.collect_to(),
 		}

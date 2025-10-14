@@ -1,21 +1,22 @@
-use std::ops::RangeInclusive;
-
-use frick_ir::{ChangeCellOptions, Factor, get_range, is_range};
+use frick_ir::{
+	ChangeCellOptions, Factor, FactoredChangeCellOptions, SetManyCellsOptions, SetRangeOptions,
+	ValuedChangeCellOptions, get_range, is_range,
+};
 
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	pub fn set_cell(&self, value: u8, offset: i32) -> Result<(), AssemblyError> {
-		self.store_value(value, offset, "set_cell")
+	pub fn set_cell(&self, options: ValuedChangeCellOptions<u8>) -> Result<(), AssemblyError> {
+		self.store_value(options.value(), options.offset(), "set_cell")
 	}
 
-	pub fn change_cell(&self, value: i8, offset: i32) -> Result<(), AssemblyError> {
-		let (current_cell_value, gep) = self.load_from(offset, "change_cell")?;
+	pub fn change_cell(&self, options: ValuedChangeCellOptions<i8>) -> Result<(), AssemblyError> {
+		let (current_cell_value, gep) = self.load_from(options.offset(), "change_cell")?;
 
 		let value_to_add = {
 			let i8_type = self.context().i8_type();
 
-			i8_type.const_int(value as u64, false)
+			i8_type.const_int(options.value() as u64, false)
 		};
 
 		let added =
@@ -27,7 +28,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn sub_cell_at(&self, options: ChangeCellOptions<u8, Factor>) -> Result<(), AssemblyError> {
+	pub fn sub_cell_at(&self, options: FactoredChangeCellOptions<u8>) -> Result<(), AssemblyError> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
 
@@ -52,7 +53,7 @@ impl InnerAssembler<'_> {
 
 	pub fn sub_from_cell(
 		&self,
-		options: ChangeCellOptions<u8, Factor>,
+		options: FactoredChangeCellOptions<u8>,
 	) -> Result<(), AssemblyError> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
@@ -78,7 +79,7 @@ impl InnerAssembler<'_> {
 
 	pub fn duplicate_cell(
 		&self,
-		values: &[ChangeCellOptions<i8, Factor>],
+		values: &[FactoredChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		if is_vectorizable(values) {
 			self.duplicate_cell_vectorized(values)
@@ -89,13 +90,17 @@ impl InnerAssembler<'_> {
 
 	fn duplicate_cell_iterated(
 		&self,
-		values: &[ChangeCellOptions<i8, Factor>],
+		values: &[FactoredChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let (value, value_gep) = self.load_from(0, "duplicate_cell_iterated")?;
 
-		for (factor, index) in values.iter().copied().map(ChangeCellOptions::into_parts) {
+		for (factor, index) in values
+			.iter()
+			.copied()
+			.map(FactoredChangeCellOptions::into_parts)
+		{
 			let (other_value, other_value_gep) =
 				self.load_from(index, "duplicate_cell_iterated")?;
 
@@ -135,7 +140,7 @@ impl InnerAssembler<'_> {
 
 	fn duplicate_cell_vectorized(
 		&self,
-		values: &[ChangeCellOptions<i8, Factor>],
+		values: &[FactoredChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -184,7 +189,7 @@ impl InnerAssembler<'_> {
 			for (i, factor) in values
 				.iter()
 				.copied()
-				.map(ChangeCellOptions::factor)
+				.map(FactoredChangeCellOptions::factor)
 				.enumerate()
 			{
 				let index = i64_type.const_int(i as u64, false);
@@ -200,7 +205,7 @@ impl InnerAssembler<'_> {
 		let modified_vector_of_values = if values
 			.iter()
 			.copied()
-			.map(ChangeCellOptions::factor)
+			.map(FactoredChangeCellOptions::factor)
 			.all(|x| matches!(x, 1))
 		{
 			self.builder.build_int_add(
@@ -231,12 +236,13 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	pub fn set_many_cells(&self, values: &[u8], start: i32) -> Result<(), AssemblyError> {
+	pub fn set_many_cells(&self, options: &SetManyCellsOptions) -> Result<(), AssemblyError> {
 		let context = self.context();
 
 		let i8_type = context.i8_type();
 
-		let values_value = values
+		let values_value = options
+			.values()
 			.iter()
 			.copied()
 			.map(|x| i8_type.const_int(x.into(), false))
@@ -244,12 +250,12 @@ impl InnerAssembler<'_> {
 
 		let array_value = i8_type.const_array(&values_value);
 
-		self.store(array_value, start, "set_many_cells")
+		self.store(array_value, options.start(), "set_many_cells")
 	}
 
-	pub fn set_range(&self, value: u8, range: RangeInclusive<i32>) -> Result<(), AssemblyError> {
-		let start = *range.start();
-		let range_len = range.count();
+	pub fn set_range(&self, options: SetRangeOptions) -> Result<(), AssemblyError> {
+		let start = *options.range().start();
+		let range_len = options.range().count();
 		let i8_type = self.context().i8_type();
 
 		let range_len_value = {
@@ -258,7 +264,7 @@ impl InnerAssembler<'_> {
 			ptr_int_type.const_int(range_len as u64, false)
 		};
 
-		let value_value = i8_type.const_int(value.into(), false);
+		let value_value = i8_type.const_int(options.value().into(), false);
 
 		let gep = self.tape_gep(i8_type, start, "set_range")?;
 
