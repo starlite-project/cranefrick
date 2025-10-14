@@ -245,6 +245,7 @@ pub struct AssemblerDebugVariables<'ctx> {
 }
 
 impl<'ctx> AssemblerDebugVariables<'ctx> {
+	#[allow(clippy::single_range_in_vec_init)]
 	fn new(
 		debug_builder: &DebugInfoBuilder<'ctx>,
 		compile_unit: DICompileUnit<'ctx>,
@@ -261,7 +262,7 @@ impl<'ctx> AssemblerDebugVariables<'ctx> {
 				u8_type,
 				mem::size_of::<[u8; TAPE_SIZE]>() as u64 * 8,
 				tape_align_in_bits,
-				&[],
+				&[0..(TAPE_SIZE as i64)],
 			)
 			.as_type();
 
@@ -298,7 +299,7 @@ impl<'ctx> AssemblerDebugVariables<'ctx> {
 				u8_type,
 				mem::size_of::<[u8; OUTPUT_ARRAY_LEN as usize]>() as u64 * 8,
 				output_align_in_bits,
-				&[],
+				&[0..i64::from(OUTPUT_ARRAY_LEN)],
 			)
 			.as_type();
 
