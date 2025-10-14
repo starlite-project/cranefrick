@@ -109,7 +109,6 @@ impl Assembler {
 		target_machine.set_asm_verbosity(true);
 
 		info!("lowering into LLVM IR");
-
 		let assembler =
 			InnerAssembler::new(&self.context, target_machine, self.file_path.as_deref())?;
 
@@ -163,17 +162,17 @@ impl Assembler {
 		info!("creating JIT execution engine");
 		let execution_engine = module.create_jit_execution_engine(OptimizationLevel::Aggressive)?;
 
-		if let Some(getchar) = module.get_function("rust_getchar") {
+		if let Some(getchar) = module.get_function("rust_getchar\0") {
 			info!("adding rust_getchar to execution engine");
 			execution_engine.add_global_mapping(&getchar, frick_interop::rust_getchar as usize);
 		}
 
-		if let Some(putchar) = module.get_function("rust_putchar") {
+		if let Some(putchar) = module.get_function("rust_putchar\0") {
 			info!("adding rust_putchar to execution engine");
 			execution_engine.add_global_mapping(&putchar, frick_interop::rust_putchar as usize);
 		}
 
-		if let Some(eh_personality) = module.get_function("rust_eh_personality") {
+		if let Some(eh_personality) = module.get_function("rust_eh_personality\0") {
 			info!("adding rust_eh_personality to the execution engine");
 			execution_engine
 				.add_global_mapping(&eh_personality, frick_interop::rust_eh_personality as usize);
@@ -186,6 +185,7 @@ impl Assembler {
 	}
 }
 
+#[cold]
 extern "C" fn handler(ptr: *const i8) {
 	let c_str = unsafe { CStr::from_ptr(ptr) };
 

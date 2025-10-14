@@ -29,7 +29,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		impl Drop for LifetimeEnd<'_, '_> {
 			fn drop(&mut self) {
 				self.builder
-					.build_call(self.end, &[self.alloc_len.into(), self.pointer.into()], "")
+					.build_call(
+						self.end,
+						&[self.alloc_len.into(), self.pointer.into()],
+						"\0",
+					)
 					.unwrap();
 			}
 		}
@@ -37,7 +41,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder.build_call(
 			self.functions.lifetime.start,
 			&[alloc_len.into(), pointer.into()],
-			"",
+			"\0",
 		)?;
 
 		let lifetime_end = LifetimeEnd {
@@ -60,11 +64,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.unset_current_debug_location();
 
-		let entry_block = context.append_basic_block(self.functions.puts, "entry");
-		let try_block = context.append_basic_block(self.functions.puts, "try");
-		let continue_block = context.append_basic_block(self.functions.puts, "continue");
-		let catch_block = context.append_basic_block(self.functions.puts, "catch");
-		let exit_block = context.append_basic_block(self.functions.puts, "exit");
+		let entry_block = context.append_basic_block(self.functions.puts, "entry\0");
+		let try_block = context.append_basic_block(self.functions.puts, "try\0");
+		let continue_block = context.append_basic_block(self.functions.puts, "continue\0");
+		let catch_block = context.append_basic_block(self.functions.puts, "catch\0");
+		let exit_block = context.append_basic_block(self.functions.puts, "exit\0");
 
 		self.builder.position_at_end(entry_block);
 
@@ -74,12 +78,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			(params[0].into_pointer_value(), params[1].into_int_value())
 		};
 
-		let ptr_alloca = self.builder.build_array_alloca(i8_type, string_len, "")?;
+		let ptr_alloca = self.builder.build_array_alloca(i8_type, string_len, "\0")?;
 
-		let is_ptr_null = self.builder.build_is_not_null(pointer_param, "")?;
+		let is_ptr_null = self.builder.build_is_not_null(pointer_param, "\0")?;
 
 		self.builder
-			.build_direct_call(self.functions.assume, &[is_ptr_null.into()], "")?;
+			.build_direct_call(self.functions.assume, &[is_ptr_null.into()], "\0")?;
 
 		self.builder
 			.build_memcpy(ptr_alloca, 1, pointer_param, 1, string_len)?;
@@ -97,7 +101,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(try_block);
 
-		let body_block_phi = self.builder.build_phi(ptr_type, "")?;
+		let body_block_phi = self.builder.build_phi(ptr_type, "\0")?;
 
 		let i64_one = i64_type.const_int(1, false);
 
@@ -118,20 +122,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_load(
 				i8_type,
 				body_block_phi.as_basic_value().into_pointer_value(),
-				"",
+				"\0",
 			)?
 			.into_int_value();
 
 		let extended_character = self
 			.builder
-			.build_int_z_extend(actual_value, i32_type, "")?;
+			.build_int_z_extend(actual_value, i32_type, "\0")?;
 
 		let putchar_call = self.builder.build_direct_invoke(
 			self.functions.putchar,
 			&[extended_character.into()],
 			continue_block,
 			catch_block,
-			"",
+			"\0",
 		)?;
 
 		let putchar_value = putchar_call
@@ -141,16 +145,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(continue_block);
 
-		let check_if_at_end =
-			self.builder
-				.build_int_compare(IntPredicate::EQ, next_index_gep, end_of_string, "")?;
+		let check_if_at_end = self.builder.build_int_compare(
+			IntPredicate::EQ,
+			next_index_gep,
+			end_of_string,
+			"\0",
+		)?;
 
 		self.builder
 			.build_conditional_branch(check_if_at_end, exit_block, try_block)?;
 
 		self.builder.position_at_end(exit_block);
 
-		let end_value = self.builder.build_phi(i32_type, "")?;
+		let end_value = self.builder.build_phi(i32_type, "\0")?;
 
 		end_value.add_incoming(&[
 			(&i32_type.const_zero(), entry_block),
@@ -169,7 +176,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.functions.eh_personality,
 			&[],
 			true,
-			"",
+			"\0",
 		)?;
 
 		self.builder.build_resume(out)?;

@@ -40,7 +40,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		target_machine: TargetMachine,
 		path: Option<&Path>,
 	) -> Result<Self, AssemblyError> {
-		let module = context.create_module("frick");
+		let module = context.create_module("frick\0");
 		let functions = AssemblerFunctions::new(context, &module)?;
 		let builder = context.create_builder();
 
@@ -57,10 +57,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		module.set_data_layout(&data_layout);
 		module.set_triple(&target_triple);
 
-		let basic_block = context.append_basic_block(functions.main, "entry");
+		let basic_block = context.append_basic_block(functions.main, "entry\0");
 		builder.position_at_end(basic_block);
 
-		let catch_block = context.append_basic_block(functions.main, "lpad");
+		let catch_block = context.append_basic_block(functions.main, "lpad\0");
 
 		let (pointers, ptr_int_type) =
 			AssemblerPointers::new(&module, functions, &builder, &target_data)?;
@@ -149,24 +149,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let tape_size = i64_type.const_int(TAPE_SIZE as u64, false);
 
-		self.builder
-			.build_call(
-				self.functions.lifetime.end,
-				&[tape_size.into(), self.pointers.tape.into()],
-				"",
-			)
-			.map_err(AssemblyError::from)?;
-		self.builder
-			.build_call(
-				self.functions.lifetime.end,
-				&[i64_size.into(), self.pointers.pointer.into()],
-				"",
-			)
-			.map_err(AssemblyError::from)?;
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[tape_size.into(), self.pointers.tape.into()],
+			"\0",
+		)?;
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[i64_size.into(), self.pointers.pointer.into()],
+			"\0",
+		)?;
 
-		self.builder
-			.build_return(None)
-			.map_err(AssemblyError::from)?;
+		self.builder.build_return(None)?;
 
 		self.builder.unset_current_debug_location();
 
@@ -180,35 +174,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let exception_type = context.struct_type(&[ptr_type.into(), i32_type.into()], false);
 
-		let exception = self
-			.builder
-			.build_landing_pad(
-				exception_type,
-				self.functions.eh_personality,
-				&[],
-				true,
-				"exception",
-			)
-			.map_err(AssemblyError::from)?;
+		let exception = self.builder.build_landing_pad(
+			exception_type,
+			self.functions.eh_personality,
+			&[],
+			true,
+			"exception\0",
+		)?;
 
-		self.builder
-			.build_call(
-				self.functions.lifetime.end,
-				&[tape_size.into(), self.pointers.tape.into()],
-				"",
-			)
-			.map_err(AssemblyError::from)?;
-		self.builder
-			.build_call(
-				self.functions.lifetime.end,
-				&[i64_size.into(), self.pointers.pointer.into()],
-				"",
-			)
-			.map_err(AssemblyError::from)?;
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[tape_size.into(), self.pointers.tape.into()],
+			"\0",
+		)?;
+		self.builder.build_call(
+			self.functions.lifetime.end,
+			&[i64_size.into(), self.pointers.pointer.into()],
+			"\0",
+		)?;
 
-		self.builder
-			.build_resume(exception)
-			.map_err(AssemblyError::from)?;
+		self.builder.build_resume(exception)?;
 
 		self.write_puts()?;
 
