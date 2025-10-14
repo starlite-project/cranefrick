@@ -112,16 +112,25 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 				return None;
 			}
 
-			let mut swap = vec![
-				BrainIr::boundary(),
-				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
-			];
+			let range = (x..y).skip(1);
 
-			for i in (x..y).skip(1) {
-				swap.push(BrainIr::clear_cell_at(i));
-			}
+			let mut swap = Vec::with_capacity(range.len() + 3);
 
-			swap.push(BrainIr::set_cell_at(change_options.value() as u8, y));
+			swap.extend(
+				[
+					BrainIr::boundary(),
+					BrainIr::set_cell_at(set_options.value(), set_options.offset()),
+				]
+				.into_iter()
+				.chain(
+					range
+						.map(BrainIr::clear_cell_at)
+						.chain(iter::once(BrainIr::set_cell_at(
+							change_options.value() as u8,
+							y,
+						))),
+				),
+			);
 
 			Some(Change::swap(swap))
 		}
@@ -133,16 +142,25 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 			let x = change_options.offset();
 			let range = set_many_options.range();
 
-			let mut swap = vec![
-				BrainIr::boundary(),
-				BrainIr::SetManyCells(set_many_options.clone()),
-			];
+			let range = range.end..x;
 
-			for i in range.end..x {
-				swap.push(BrainIr::clear_cell_at(i));
-			}
+			let mut swap = Vec::with_capacity(range.len() + 3);
 
-			swap.push(BrainIr::set_cell_at(change_options.value() as u8, x));
+			swap.extend(
+				[
+					BrainIr::boundary(),
+					BrainIr::SetManyCells(set_many_options.clone()),
+				]
+				.into_iter()
+				.chain(
+					range
+						.map(BrainIr::clear_cell_at)
+						.chain(iter::once(BrainIr::set_cell_at(
+							change_options.value() as u8,
+							x,
+						))),
+				),
+			);
 
 			Some(Change::swap(swap))
 		}
