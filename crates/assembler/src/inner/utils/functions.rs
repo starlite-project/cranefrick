@@ -14,8 +14,8 @@ use crate::{AssemblyError, ContextExt as _, ContextGetter as _};
 pub struct AssemblerFunctions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
-	pub puts: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
+	pub puts: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 	pub assume: FunctionValue<'ctx>,
 	pub eh_personality: FunctionValue<'ctx>,
@@ -40,6 +40,20 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let puts_ty = void_type.fn_type(&[ptr_type.into(), i64_type.into()], false);
 		let puts = module.add_function("frick_puts", puts_ty, Some(Linkage::Private));
 
+		let lifetime = {
+			let lifetime_start = get_intrinsic_function_from_name(
+				"llvm.lifetime.start",
+				module,
+				&[ptr_type.into()],
+			)?;
+			let lifetime_end =
+				get_intrinsic_function_from_name("llvm.lifetime.end", module, &[ptr_type.into()])?;
+
+			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
+		};
+
+		let assume = get_intrinsic_function_from_name("llvm.assume", module, &[])?;
+
 		let eh_personality_ty = i32_type.fn_type(
 			&[
 				i32_type.into(),
@@ -56,25 +70,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			Some(Linkage::External),
 		);
 
-		let lifetime = {
-			let lifetime_start = get_intrinsic_function_from_name(
-				"llvm.lifetime.start",
-				module,
-				&[ptr_type.into()],
-			)?;
-			let lifetime_end =
-				get_intrinsic_function_from_name("llvm.lifetime.end", module, &[ptr_type.into()])?;
-
-			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
-		};
-
-		let assume = get_intrinsic_function_from_name("llvm.assume", module, &[])?;
-
 		let this = Self {
 			getchar,
 			putchar,
-			puts,
 			main,
+			puts,
 			lifetime,
 			assume,
 			eh_personality,
