@@ -469,7 +469,7 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 				return None;
 			}
 
-			let mut str = Vec::new();
+			let mut str = Vec::with_capacity(output_options.len());
 
 			for opt in output_options {
 				let current_value = set_options.value_at(opt.offset())?;
@@ -1036,7 +1036,7 @@ pub fn optimize_duplicate_cell_vectorization(ops: [&BrainIr; 1]) -> Option<Chang
 				return None;
 			}
 
-			let mut out = Vec::new();
+			let mut out = Vec::with_capacity(values.len());
 
 			for w in values.windows(2) {
 				let a = w[0];
