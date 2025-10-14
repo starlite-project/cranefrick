@@ -146,6 +146,18 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			Some(Change::swap(swap))
 		}
+		[
+			BrainIr::Boundary,
+			BrainIr::MovePointer(y),
+			BrainIr::ChangeCell(change_options),
+		] => Some(Change::swap([
+			BrainIr::boundary(),
+			BrainIr::move_pointer(*y),
+			BrainIr::SetCell(ChangeCellOptions::new(
+				change_options.value() as u8,
+				change_options.offset(),
+			)),
+		])),
 		_ => None,
 	}
 }
