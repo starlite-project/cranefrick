@@ -27,7 +27,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let loaded_value = self
 			.builder
-			.build_load(i8_type, gep, &create_string(fn_name, "_load_from_load"))?
+			.build_load(i8_type, gep, &create_string(fn_name, "_load_from_load\0"))?
 			.into_int_value();
 
 		Ok((loaded_value, gep))
@@ -72,7 +72,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i8_type.const_int(value.into(), false)
 		};
 
-		self.store_inner(value, offset, create_string(fn_name, "_store_value"))
+		self.store_inner(value, offset, create_string(fn_name, "_store_value\0"))
 	}
 
 	pub fn store(
@@ -81,7 +81,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		offset: i32,
 		fn_name: &str,
 	) -> Result<(), AssemblyError> {
-		self.store_inner(value, offset, create_string(fn_name, "_store"))
+		self.store_inner(value, offset, create_string(fn_name, "_store\0"))
 	}
 
 	fn store_inner(
@@ -132,7 +132,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 						ty,
 						ptr,
 						&[zero, offset],
-						&create_string(name, "_array_gep"),
+						&create_string(name, "_array_gep\0"),
 					)?
 				})
 			}
@@ -141,7 +141,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 					ty,
 					ptr,
 					&[offset],
-					&create_string(name, "_int_gep"),
+					&create_string(name, "_int_gep\0"),
 				)?
 			}),
 			BasicTypeEnum::VectorType(ty) => {
@@ -156,7 +156,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 						ty,
 						ptr,
 						&[zero, offset],
-						&create_string(name, "_vector_gep"),
+						&create_string(name, "_vector_gep\0"),
 					)?
 				})
 			}

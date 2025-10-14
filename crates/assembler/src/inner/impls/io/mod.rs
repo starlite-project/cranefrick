@@ -60,7 +60,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let getchar_call =
 			self.builder
-				.build_call(self.functions.getchar, &[], "input_into_cell_call")?;
+				.build_call(self.functions.getchar, &[], "input_into_cell_call\0")?;
 
 		getchar_call.set_tail_call(true);
 
@@ -71,9 +71,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.add_range_io_metadata(context, getchar_value, u8::MIN.into(), u8::MAX.into())?;
 
-		let truncated_value =
-			self.builder
-				.build_int_truncate(getchar_value, i8_type, "input_into_cell_truncate")?;
+		let truncated_value = self.builder.build_int_truncate(
+			getchar_value,
+			i8_type,
+			"input_into_cell_truncate\0",
+		)?;
 
 		self.store(truncated_value, 0, "input_into_cell")
 	}
@@ -87,7 +89,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<IntValue<'ctx>, AssemblyError> {
 		let continue_block = context.append_basic_block(
 			self.functions.main,
-			&create_string(fn_name, ".puts.invoke.cont"),
+			&create_string(fn_name, ".puts.invoke.cont\0"),
 		);
 
 		let array_len_value = {
@@ -101,7 +103,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			&[array_ptr.into(), array_len_value.into()],
 			continue_block,
 			self.catch_block,
-			&create_string(fn_name, "_puts_invoke"),
+			&create_string(fn_name, "_puts_invoke\0"),
 		)?;
 
 		call.set_tail_call(true);
@@ -119,7 +121,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<IntValue<'ctx>, AssemblyError> {
 		let continue_block = context.append_basic_block(
 			self.functions.main,
-			&create_string(fn_name, ".putchar.invoke.cont"),
+			&create_string(fn_name, ".putchar.invoke.cont\0"),
 		);
 
 		let call = self.builder.build_direct_invoke(
@@ -127,7 +129,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			&[value.into()],
 			continue_block,
 			self.catch_block,
-			&create_string(fn_name, "_putchar_invoke"),
+			&create_string(fn_name, "_putchar_invoke\0"),
 		)?;
 
 		call.set_tail_call(true);

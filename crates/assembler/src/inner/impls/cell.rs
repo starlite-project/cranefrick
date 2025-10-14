@@ -20,7 +20,7 @@ impl InnerAssembler<'_> {
 
 		let added =
 			self.builder
-				.build_int_add(current_cell_value, value_to_add, "change_cell_add")?;
+				.build_int_add(current_cell_value, value_to_add, "change_cell_add\0")?;
 
 		self.store_into(added, gep)?;
 
@@ -36,14 +36,14 @@ impl InnerAssembler<'_> {
 			let factor_value = i8_type.const_int(options.factor().into(), false);
 
 			self.builder
-				.build_int_mul(current_cell, factor_value, "sub_cell_at_mul")?
+				.build_int_mul(current_cell, factor_value, "sub_cell_at_mul\0")?
 		};
 
 		let (other_value, gep) = self.load_from(options.offset(), "sub_cell_at")?;
 
 		let value_to_store =
 			self.builder
-				.build_int_sub(other_value, subtractor, "sub_cell_at_sub")?;
+				.build_int_sub(other_value, subtractor, "sub_cell_at_sub\0")?;
 
 		self.store_into(value_to_store, gep)?;
 
@@ -62,14 +62,14 @@ impl InnerAssembler<'_> {
 			let factor_value = i8_type.const_int(options.factor().into(), false);
 
 			self.builder
-				.build_int_mul(current_cell, factor_value, "sub_from_cell_mul")?
+				.build_int_mul(current_cell, factor_value, "sub_from_cell_mul\0")?
 		};
 
 		let (other_value, gep) = self.load_from(0, "sub_from_cell")?;
 
 		let value_to_store =
 			self.builder
-				.build_int_sub(other_value, subtractor, "sub_from_cell_sub")?;
+				.build_int_sub(other_value, subtractor, "sub_from_cell_sub\0")?;
 
 		self.store_into(value_to_store, gep)?;
 
@@ -103,21 +103,24 @@ impl InnerAssembler<'_> {
 				0 => {
 					continue;
 				}
-				1 => {
-					self.builder
-						.build_int_add(other_value, value, "duplicate_cell_iterated_add")?
-				}
+				1 => self.builder.build_int_add(
+					other_value,
+					value,
+					"duplicate_cell_iterated_add\0",
+				)?,
 				x => {
 					let factor = i8_type.const_int(x as u64, false);
 
-					let factored_value =
-						self.builder
-							.build_int_mul(value, factor, "duplicate_cell_iterated_mul")?;
+					let factored_value = self.builder.build_int_mul(
+						value,
+						factor,
+						"duplicate_cell_iterated_mul\0",
+					)?;
 
 					self.builder.build_int_add(
 						other_value,
 						factored_value,
-						"duplicate_cell_iterated_add",
+						"duplicate_cell_iterated_add\0",
 					)?
 				}
 			};
@@ -156,7 +159,7 @@ impl InnerAssembler<'_> {
 
 		let loaded_values = self
 			.builder
-			.build_load(i8_vector_type, gep, "duplicate_cell_vectorized_load")?
+			.build_load(i8_vector_type, gep, "duplicate_cell_vectorized_load\0")?
 			.into_vector_value();
 
 		let vector_of_current_cells = {
@@ -164,14 +167,14 @@ impl InnerAssembler<'_> {
 				undef,
 				current_cell_value,
 				zero_index,
-				"duplicate_cell_vectorized_insertelement",
+				"duplicate_cell_vectorized_insertelement\0",
 			)?;
 
 			self.builder.build_shuffle_vector(
 				tmp,
 				undef,
 				i8_vector_type.const_zero(),
-				"duplicate_cell_vectorized_shufflevector",
+				"duplicate_cell_vectorized_shufflevector\0",
 			)?
 		};
 
@@ -203,19 +206,19 @@ impl InnerAssembler<'_> {
 			self.builder.build_int_add(
 				loaded_values,
 				vector_of_current_cells,
-				"duplicate_cell_vectorized_add",
+				"duplicate_cell_vectorized_add\0",
 			)?
 		} else {
 			let multiplied = self.builder.build_int_mul(
 				vector_of_current_cells,
 				vector_of_new_values,
-				"duplicate_cell_vectorized_add",
+				"duplicate_cell_vectorized_mul\0",
 			)?;
 
 			self.builder.build_int_add(
 				loaded_values,
 				multiplied,
-				"duplicate_cell_vectorized_add",
+				"duplicate_cell_vectorized_add\0",
 			)?
 		};
 

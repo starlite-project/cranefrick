@@ -24,7 +24,7 @@ impl InnerAssembler<'_> {
 
 		let global_constant =
 			self.module
-				.add_global(constant_string_ty, None, "output_str_global_value");
+				.add_global(constant_string_ty, None, "output_str_global_value\0");
 
 		self.setup_global_value(global_constant, &constant_string);
 

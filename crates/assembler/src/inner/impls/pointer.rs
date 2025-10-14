@@ -32,7 +32,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_ptr = self
 			.builder
-			.build_load(ptr_type, self.pointers.pointer, "offset_pointer_load")?
+			.build_load(ptr_type, self.pointers.pointer, "offset_pointer_load\0")?
 			.into_int_value();
 
 		if matches!(offset, 0) {
@@ -40,7 +40,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		} else {
 			let offset_ptr =
 				self.builder
-					.build_int_add(current_ptr, offset_value, "offset_pointer_add")?;
+					.build_int_add(current_ptr, offset_value, "offset_pointer_add\0")?;
 
 			if offset > 0 {
 				self.wrap_pointer_positive(offset_ptr)
@@ -59,7 +59,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(self.builder.build_int_unsigned_rem(
 			offset_ptr,
 			ptr_int_type.const_int(TAPE_SIZE as u64, false),
-			"wrap_pointer_positive_urem",
+			"wrap_pointer_positive_urem\0",
 		)?)
 	}
 
@@ -74,23 +74,23 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let tmp = self.builder.build_int_signed_rem(
 			offset_ptr,
 			tape_size,
-			"wrap_pointer_negative_srem",
+			"wrap_pointer_negative_srem\0",
 		)?;
 
 		let added_offset =
 			self.builder
-				.build_int_add(tmp, tape_size, "wrap_pointer_negative_add")?;
+				.build_int_add(tmp, tape_size, "wrap_pointer_negative_add\0")?;
 
 		let cmp = self.builder.build_int_compare(
 			IntPredicate::SLT,
 			tmp,
 			ptr_int_type.const_zero(),
-			"wrap_pointer_negative_cmp",
+			"wrap_pointer_negative_cmp\0",
 		)?;
 
 		Ok(self
 			.builder
-			.build_select(cmp, added_offset, tmp, "wrap_pointer_negative_select")
+			.build_select(cmp, added_offset, tmp, "wrap_pointer_negative_select\0")
 			.map(|i| i.into_int_value())?)
 	}
 }

@@ -24,13 +24,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let offset_value = i8_type.const_int(options.value() as u64, false);
 
 			self.builder
-				.build_int_add(current_cell_value, offset_value, "output_cell_add")?
+				.build_int_add(current_cell_value, offset_value, "output_cell_add\0")?
 		};
 
 		let extended_value = self.builder.build_int_z_extend_or_bit_cast(
 			offset_cell_value,
 			i32_type,
-			"output_cell_extend",
+			"output_cell_extend\0",
 		)?;
 
 		self.call_putchar(context, extended_value, "output_cell")?;
@@ -129,7 +129,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder.build_int_add(
 				current_value,
 				value_offset,
-				"setup_output_cells_puts_memset_add",
+				"setup_output_cells_puts_memset_add\0",
 			)?
 		};
 
@@ -159,7 +159,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				self.builder.build_int_add(
 					loaded_char,
 					offset_value,
-					"setup_output_cells_puts_iterated_add",
+					"setup_output_cells_puts_iterated_add\0",
 				)?
 			};
 

@@ -8,9 +8,9 @@ impl InnerAssembler<'_> {
 	pub fn if_not_zero(&self, ops: &[BrainIr], op_count: usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let header_block = context.append_basic_block(self.functions.main, "if_not_zero.header");
-		let body_block = context.append_basic_block(self.functions.main, "if_not_zero.body");
-		let exit_block = context.append_basic_block(self.functions.main, "if_not_zero.exit");
+		let header_block = context.append_basic_block(self.functions.main, "if_not_zero.header\0");
+		let body_block = context.append_basic_block(self.functions.main, "if_not_zero.body\0");
+		let exit_block = context.append_basic_block(self.functions.main, "if_not_zero.exit\0");
 
 		self.builder.build_unconditional_branch(header_block)?;
 
@@ -26,7 +26,7 @@ impl InnerAssembler<'_> {
 
 		let cmp =
 			self.builder
-				.build_int_compare(IntPredicate::NE, value, zero, "if_not_zero_cmp")?;
+				.build_int_compare(IntPredicate::NE, value, zero, "if_not_zero_cmp\0")?;
 
 		self.builder
 			.build_conditional_branch(cmp, body_block, exit_block)?;
@@ -59,9 +59,9 @@ impl InnerAssembler<'_> {
 	pub fn dynamic_loop(&self, ops: &[BrainIr], op_count: usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let header_block = context.append_basic_block(self.functions.main, "dynamic_loop.header");
-		let body_block = context.append_basic_block(self.functions.main, "dynamic_loop.body");
-		let exit_block = context.append_basic_block(self.functions.main, "dynamic_loop.exit");
+		let header_block = context.append_basic_block(self.functions.main, "dynamic_loop.header\0");
+		let body_block = context.append_basic_block(self.functions.main, "dynamic_loop.body\0");
+		let exit_block = context.append_basic_block(self.functions.main, "dynamic_loop.exit\0");
 
 		self.builder.build_unconditional_branch(header_block)?;
 
@@ -77,7 +77,7 @@ impl InnerAssembler<'_> {
 
 		let cmp =
 			self.builder
-				.build_int_compare(IntPredicate::NE, value, zero, "dynamic_loop_cmp")?;
+				.build_int_compare(IntPredicate::NE, value, zero, "dynamic_loop_cmp\0")?;
 
 		self.builder
 			.build_conditional_branch(cmp, body_block, exit_block)?;
@@ -120,19 +120,19 @@ impl InnerAssembler<'_> {
 			.build_load(
 				ptr_int_type,
 				self.pointers.pointer,
-				"find_zero_load_pointer",
+				"find_zero_load_pointer\0",
 			)?
 			.into_int_value();
 
-		let header_block = context.append_basic_block(self.functions.main, "find_zero.header");
-		let body_block = context.append_basic_block(self.functions.main, "find_zero.body");
-		let exit_block = context.append_basic_block(self.functions.main, "find_zero.exit");
+		let header_block = context.append_basic_block(self.functions.main, "find_zero.header\0");
+		let body_block = context.append_basic_block(self.functions.main, "find_zero.body\0");
+		let exit_block = context.append_basic_block(self.functions.main, "find_zero.exit\0");
 
 		self.builder.build_unconditional_branch(header_block)?;
 
 		self.builder.position_at_end(header_block);
 
-		let header_phi_value = self.builder.build_phi(ptr_int_type, "find_zero_phi")?;
+		let header_phi_value = self.builder.build_phi(ptr_int_type, "find_zero_phi\0")?;
 
 		let gep = self.tape_gep(
 			i8_type,
@@ -142,14 +142,14 @@ impl InnerAssembler<'_> {
 
 		let value = self
 			.builder
-			.build_load(i8_type, gep, "find_zero_cell_load")?
+			.build_load(i8_type, gep, "find_zero_cell_load\0")?
 			.into_int_value();
 
 		let zero = i8_type.const_zero();
 
-		let cmp = self
-			.builder
-			.build_int_compare(IntPredicate::NE, value, zero, "find_zero_cmp")?;
+		let cmp =
+			self.builder
+				.build_int_compare(IntPredicate::NE, value, zero, "find_zero_cmp\0")?;
 
 		self.builder
 			.build_conditional_branch(cmp, body_block, exit_block)?;
@@ -161,14 +161,14 @@ impl InnerAssembler<'_> {
 		let new_pointer_value = self.builder.build_int_add(
 			header_phi_value.as_basic_value().into_int_value(),
 			offset_value,
-			"find_zero_add",
+			"find_zero_add\0",
 		)?;
 
 		let wrapped_pointer_value = {
 			let tape_len = ptr_int_type.const_int(TAPE_SIZE as u64 - 1, false);
 
 			self.builder
-				.build_and(new_pointer_value, tape_len, "find_zero_and")?
+				.build_and(new_pointer_value, tape_len, "find_zero_and\0")?
 		};
 
 		self.builder.build_unconditional_branch(header_block)?;

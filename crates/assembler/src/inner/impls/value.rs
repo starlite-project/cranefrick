@@ -41,12 +41,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(current_value, factor, "duplicate_value_to_mul")?
+				.build_int_mul(current_value, factor, "duplicate_value_to_mul\0")?
 		};
 
 		let added =
 			self.builder
-				.build_int_add(other_value, value_to_add, "duplicate_value_to_add")?;
+				.build_int_add(other_value, value_to_add, "duplicate_value_to_add\0")?;
 
 		self.store_into(added, gep)?;
 
@@ -72,12 +72,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(current_value, factor, "take_value_to_mul")?
+				.build_int_mul(current_value, factor, "take_value_to_mul\0")?
 		};
 
 		let added = self
 			.builder
-			.build_int_add(other_cell, value_to_add, "take_value_to_add")?;
+			.build_int_add(other_cell, value_to_add, "take_value_to_add\0")?;
 
 		self.store_into(added, gep)?;
 
@@ -101,12 +101,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let factor = i8_type.const_int(factor.into(), false);
 
 			self.builder
-				.build_int_mul(other_cell, factor, "fetch_value_from_mul")?
+				.build_int_mul(other_cell, factor, "fetch_value_from_mul\0")?
 		};
 
 		let added =
 			self.builder
-				.build_int_add(current_cell, value_to_add, "fetch_value_from_add")?;
+				.build_int_add(current_cell, value_to_add, "fetch_value_from_add\0")?;
 
 		self.store_into(added, gep)?;
 
@@ -158,7 +158,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let factor = i8_type.const_int((options.factor()).into(), false);
 
 			self.builder
-				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul")?
+				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul\0")?
 		};
 
 		self.store(value_to_store, 0, "replace_value_from_factorized")
@@ -172,7 +172,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let factor = i8_type.const_int(factor.into(), false);
 
-			self.builder.build_int_mul(cell, factor, "scale_value_mul")
+			self.builder
+				.build_int_mul(cell, factor, "scale_value_mul\0")
 		}?;
 
 		self.store_into(value_to_store, gep)?;
