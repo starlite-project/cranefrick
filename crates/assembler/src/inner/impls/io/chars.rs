@@ -1,6 +1,7 @@
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
+	#[tracing::instrument(skip_all)]
 	pub(super) fn output_char(&self, c: u8) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -13,6 +14,7 @@ impl InnerAssembler<'_> {
 		self.call_putchar(context, char_value, "output_char")
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub(super) fn output_str(&self, c: &[u8]) -> Result<(), AssemblyError> {
 		let context = self.context();
 

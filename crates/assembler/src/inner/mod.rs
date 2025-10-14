@@ -213,7 +213,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn ops(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
 		for op in ops {
-			tracing::trace!(%op_count, ?op);
+			tracing::trace!(%op_count, op = op.name());
 			let debug_loc = self.debug_builder.create_debug_location(
 				self.context(),
 				1,

@@ -4,6 +4,7 @@ use inkwell::values::{IntValue, PointerValue};
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
+	#[tracing::instrument(skip_all)]
 	pub fn move_value_to(
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
@@ -15,6 +16,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.duplicate_value_to(current_value, other_cell, options.factor(), gep)
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn copy_value_to(
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
@@ -26,6 +28,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.duplicate_value_to(current_value, other_cell, options.factor(), gep)
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn duplicate_value_to(
 		&self,
 		current_value: IntValue<'ctx>,
@@ -53,6 +56,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn take_value_to(
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
@@ -84,6 +88,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn fetch_value_from(
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
@@ -113,6 +118,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn replace_value_from(
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
@@ -124,6 +130,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		}
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn replace_value_from_memcpyed(&self, offset: i32) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -146,6 +153,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn replace_value_from_factorized(
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
@@ -164,6 +172,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store(value_to_store, 0, "replace_value_from_factorized")
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn scale_value(&self, factor: u8) -> Result<(), AssemblyError> {
 		let (cell, gep) = self.load_from(0, "scale_value")?;
 

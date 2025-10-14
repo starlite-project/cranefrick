@@ -279,4 +279,34 @@ impl BrainIr {
 				| Self::CopyValueTo(..)
 		)
 	}
+
+	#[must_use]
+	pub const fn name(&self) -> &'static str {
+		match self {
+			Self::Boundary => "boundary",
+			Self::ChangeCell(..) => "change_cell",
+			Self::SetCell(..) => "set_cell",
+			Self::SubCell(SubType::CellAt(..)) => "sub_cell_at",
+			Self::SubCell(SubType::FromCell(..)) => "sub_from_cell",
+			Self::SubCell(SubType::Value(..)) => "sub_value",
+			Self::MovePointer(..) => "move_pointer",
+			Self::FindZero(..) => "find_zero",
+			Self::InputIntoCell => "input",
+			Self::Output(OutputOptions::Cell(..)) => "output_cell",
+			Self::Output(OutputOptions::Cells(..)) => "output_cells",
+			Self::Output(OutputOptions::Char(..)) => "output_char",
+			Self::Output(OutputOptions::Str(..)) => "output_str",
+			Self::MoveValueTo(..) => "move_value_to",
+			Self::CopyValueTo(..) => "copy_value_to",
+			Self::TakeValueTo(..) => "take_value_to",
+			Self::FetchValueFrom(..) => "fetch_value_from",
+			Self::ReplaceValueFrom(..) => "replace_value_from",
+			Self::ScaleValue(..) => "scale_value",
+			Self::DynamicLoop(..) => "dynamic_loop",
+			Self::IfNotZero(..) => "if_not_zero",
+			Self::SetRange(..) => "set_range",
+			Self::SetManyCells(..) => "set_many_cells",
+			Self::DuplicateCell { .. } => "duplicate_cell",
+		}
+	}
 }

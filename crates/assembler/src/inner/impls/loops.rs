@@ -4,6 +4,7 @@ use inkwell::{IntPredicate, debug_info::AsDIScope as _};
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
+		#[tracing::instrument(skip_all)]
 	pub fn if_not_zero(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -58,6 +59,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
+		#[tracing::instrument(skip_all)]
 	pub fn dynamic_loop(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -113,6 +115,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
+		#[tracing::instrument(skip_all)]
 	pub fn find_zero(&self, offset: i32) -> Result<(), AssemblyError> {
 		let context = self.context();
 

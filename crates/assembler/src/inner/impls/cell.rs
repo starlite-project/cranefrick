@@ -6,10 +6,12 @@ use frick_ir::{
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
+	#[tracing::instrument(skip_all)]
 	pub fn set_cell(&self, options: ValuedChangeCellOptions<u8>) -> Result<(), AssemblyError> {
 		self.store_value(options.value(), options.offset(), "set_cell")
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn change_cell(&self, options: ValuedChangeCellOptions<i8>) -> Result<(), AssemblyError> {
 		let (current_cell_value, gep) = self.load_from(options.offset(), "change_cell")?;
 
@@ -28,6 +30,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn sub_cell_at(&self, options: FactoredChangeCellOptions<u8>) -> Result<(), AssemblyError> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
@@ -51,6 +54,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn sub_from_cell(
 		&self,
 		options: FactoredChangeCellOptions<u8>,
@@ -77,13 +81,16 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn duplicate_cell(
 		&self,
 		values: &[FactoredChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		if is_vectorizable(values) {
+			tracing::debug!("vectorizing duplicate_cell");
 			self.duplicate_cell_vectorized(values)
 		} else {
+			tracing::warn!("unable to vectorize duplicate_cell");
 			self.duplicate_cell_iterated(values)
 		}
 	}
@@ -104,16 +111,29 @@ impl InnerAssembler<'_> {
 			let (other_value, other_value_gep) =
 				self.load_from(index, "duplicate_cell_iterated")?;
 
+			let span = tracing::debug_span!(
+				"duplicate_cell_iterated",
+				index,
+				factor = tracing::field::Empty
+			);
+			let _guard = span.enter();
+
 			let modified_value = match factor {
 				0 => {
+					tracing::trace!("skipping cell");
 					continue;
 				}
-				1 => self.builder.build_int_add(
-					other_value,
-					value,
-					"duplicate_cell_iterated_add\0",
-				)?,
+				1 => {
+					tracing::trace!("adding cells directly");
+					self.builder.build_int_add(
+						other_value,
+						value,
+						"duplicate_cell_iterated_add\0",
+					)?
+				}
 				x => {
+					tracing::trace!("factoring cell by {factor}");
+
 					let factor = i8_type.const_int(x as u64, false);
 
 					let factored_value = self.builder.build_int_mul(
@@ -138,6 +158,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn duplicate_cell_vectorized(
 		&self,
 		values: &[FactoredChangeCellOptions<i8>],
@@ -236,6 +257,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn set_many_cells(&self, options: &SetManyCellsOptions) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -253,6 +275,7 @@ impl InnerAssembler<'_> {
 		self.store(array_value, options.start(), "set_many_cells")
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn set_range(&self, options: SetRangeOptions) -> Result<(), AssemblyError> {
 		let start = *options.range().start();
 		let range_len = options.range().count();

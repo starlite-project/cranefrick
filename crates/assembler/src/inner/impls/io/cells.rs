@@ -7,6 +7,7 @@ use crate::{
 };
 
 impl<'ctx> InnerAssembler<'ctx> {
+	#[tracing::instrument(skip_all)]
 	pub(super) fn output_cell(
 		&self,
 		options: ValuedChangeCellOptions<i8>,
@@ -38,17 +39,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub(super) fn output_cells(
 		&self,
 		options: &[ValuedChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		if options.len() <= OUTPUT_ARRAY_LEN as usize {
+			tracing::debug!("output cells with frick_puts");
 			self.output_cells_puts(options)
 		} else {
+			tracing::warn!("unable to output cells with frick_puts");
 			self.output_cells_iterated(options)
 		}
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn output_cells_iterated(
 		&self,
 		options: &[ValuedChangeCellOptions<i8>],
@@ -58,6 +63,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.try_for_each(|x| self.output_cells(x))
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn output_cells_puts(
 		&self,
 		options: &[ValuedChangeCellOptions<i8>],
@@ -76,10 +82,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		if is_memcpyable(options) {
+			tracing::debug!("memcpying cells into output array");
 			self.setup_output_cells_puts_memcpy(i8_type, i64_type, options)
 		} else if is_memsettable(options) {
+			tracing::warn!("unable to memcpy cells");
+			tracing::debug!("memsetting cells of output array");
 			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
 		} else {
+			tracing::warn!("unable to memcpy or memset cells");
 			self.setup_output_cells_puts_iterated(i8_type, options)
 		}?;
 
@@ -93,6 +103,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn setup_output_cells_puts_memcpy(
 		&self,
 		i8_type: IntType<'ctx>,
@@ -112,6 +123,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn setup_output_cells_puts_memset(
 		&self,
 		i8_type: IntType<'ctx>,
@@ -141,6 +153,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn setup_output_cells_puts_iterated(
 		&self,
 		i8_type: IntType<'ctx>,
@@ -152,8 +165,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let loaded_char = self.load(char.offset(), "setup_output_cells_puts_iterated")?;
 
 			let offset_char = if matches!(char.value(), 0) {
+				tracing::trace!("using cell {} directly", char.offset());
 				loaded_char
 			} else {
+				tracing::trace!("offsetting cell {} by {}", char.offset(), char.value());
 				let offset_value = i8_type.const_int(char.value() as u64, false);
 
 				self.builder.build_int_add(

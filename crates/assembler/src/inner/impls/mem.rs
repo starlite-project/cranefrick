@@ -10,12 +10,14 @@ use crate::{
 };
 
 impl<'ctx> InnerAssembler<'ctx> {
+	#[tracing::instrument(skip_all)]
 	pub fn load(&self, offset: i32, fn_name: &str) -> Result<IntValue<'ctx>, AssemblyError> {
 		let (loaded_value, ..) = self.load_from(offset, fn_name)?;
 
 		Ok(loaded_value)
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn load_from(
 		&self,
 		offset: i32,
@@ -33,6 +35,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok((loaded_value, gep))
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn store_value_into(
 		&self,
 		value: u8,
@@ -47,6 +50,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_into(value, gep)
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn store_into(
 		&self,
 		value: impl BasicValue<'ctx>,
@@ -57,6 +61,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn take(&self, offset: i32, fn_name: &str) -> Result<IntValue<'ctx>, AssemblyError> {
 		let (value, gep) = self.load_from(offset, fn_name)?;
 
@@ -65,6 +70,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(value)
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn store_value(&self, value: u8, offset: i32, fn_name: &str) -> Result<(), AssemblyError> {
 		let value = {
 			let i8_type = self.context().i8_type();
@@ -75,6 +81,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_inner(value, offset, create_string(fn_name, "_store_value\0"))
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn store(
 		&self,
 		value: impl BasicValue<'ctx>,
@@ -84,6 +91,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_inner(value, offset, create_string(fn_name, "_store\0"))
 	}
 
+	#[tracing::instrument(skip_all)]
 	fn store_inner(
 		&self,
 		value: impl BasicValue<'ctx>,
@@ -98,6 +106,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
 	#[inline]
 	pub fn tape_gep(
 		&self,
@@ -108,6 +117,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.gep(ty, self.pointers.tape, offset, name)
 	}
 
+	#[tracing::instrument(skip_all)]
 	pub fn gep(
 		&self,
 		ty: impl BasicType<'ctx>,

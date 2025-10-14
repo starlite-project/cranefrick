@@ -11,7 +11,7 @@ use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
 use tracing_indicatif::IndicatifLayer;
-use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+use tracing_subscriber::{EnvFilter, fmt::{self, format::FmtSpan}, prelude::*};
 
 use self::args::Args;
 
@@ -104,7 +104,11 @@ fn install_tracing(folder_path: &Path) {
 		.progress_chars("#>-"),
 	);
 
-	let file_layer = fmt::layer().with_ansi(false).with_writer(log_file);
+	let file_layer = fmt::layer()
+		.with_target(false)
+		.with_ansi(false)
+		.with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+		.with_writer(log_file);
 
 	let fmt_layer = fmt::layer()
 		.with_target(false)
