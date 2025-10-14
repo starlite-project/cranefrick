@@ -171,6 +171,67 @@ where
 	fn expecting(&self, formatter: &mut Formatter<'_>) -> FmtResult {
 		formatter.write_str("struct ValuedChangeCellOptions")
 	}
+
+	fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+	where
+		A: SeqAccess<'de>,
+	{
+		let Some(value) = seq.next_element()? else {
+			return Err(DeError::invalid_length(
+				0,
+				&"struct ValuedChangeCellOptions with 2 elements",
+			));
+		};
+
+		let Some(offset) = seq.next_element()? else {
+			return Err(DeError::invalid_length(
+				1,
+				&"struct ValuedChangeCellOptions with 2 elements",
+			));
+		};
+
+		Ok(ValuedChangeCellOptions::new(value, offset))
+	}
+
+	fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+	where
+		A: MapAccess<'de>,
+	{
+		let mut value = None;
+		let mut offset = None;
+
+		while let Some(key) = map.next_key()? {
+			match key {
+				ValuedChangeCellOptionsField::Value => {
+					if value.is_some() {
+						return Err(DeError::duplicate_field("value"));
+					}
+
+					value = Some(map.next_value()?);
+				}
+				ValuedChangeCellOptionsField::Offset => {
+					if offset.is_some() {
+						return Err(DeError::duplicate_field("offset"));
+					}
+
+					offset = Some(map.next_value()?);
+				}
+				ValuedChangeCellOptionsField::Ignore => {
+					let _ = map.next_value::<IgnoredAny>()?;
+				}
+			}
+		}
+
+		let Some(value) = value else {
+			return Err(DeError::missing_field("value"));
+		};
+
+		let Some(offset) = offset else {
+			return Err(DeError::missing_field("offset"));
+		};
+
+		Ok(ValuedChangeCellOptions::new(value, offset))
+	}
 }
 
 struct FactoredChangeCellOptionsFieldVisitor;
