@@ -1,5 +1,4 @@
 use frick_ir::BrainIr;
-use frick_spec::TAPE_SIZE;
 use inkwell::{IntPredicate, debug_info::AsDIScope as _};
 
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
