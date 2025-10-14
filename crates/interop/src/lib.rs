@@ -18,8 +18,7 @@ unsafe extern "C" {
 }
 
 #[unsafe(no_mangle)]
-#[must_use]
-pub unsafe extern "C-unwind" fn rust_putchar(c: libc::c_int) -> libc::c_int {
+pub unsafe extern "C-unwind" fn rust_putchar(c: libc::c_int) {
 	let mut stdout = io::stdout().lock();
 
 	let c_trunc = c as u8;
@@ -28,6 +27,4 @@ pub unsafe extern "C-unwind" fn rust_putchar(c: libc::c_int) -> libc::c_int {
 		.write_all(slice::from_ref(&c_trunc))
 		.and_then(|()| stdout.flush())
 		.unwrap();
-
-	c
 }

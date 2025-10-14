@@ -10,9 +10,7 @@ impl InnerAssembler<'_> {
 			i32_type.const_int(c.into(), false)
 		};
 
-		self.call_putchar(context, char_value, "output_char")?;
-
-		Ok(())
+		self.call_putchar(context, char_value, "output_char")
 	}
 
 	pub(super) fn output_str(&self, c: &[u8]) -> Result<(), AssemblyError> {
@@ -30,13 +28,6 @@ impl InnerAssembler<'_> {
 
 		let global_value_pointer = global_constant.as_pointer_value();
 
-		let puts_value =
-			self.call_puts(context, global_value_pointer, c.len() as u64, "output_str")?;
-
-		let last = c.last().copied().unwrap();
-
-		self.add_range_io_metadata(context, puts_value, last.into(), last.into())?;
-
-		Ok(())
+		self.call_puts(context, global_value_pointer, c.len() as u64, "output_str")
 	}
 }

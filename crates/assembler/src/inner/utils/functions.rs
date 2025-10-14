@@ -31,14 +31,14 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let getchar_ty = i32_type.fn_type(&[], false);
 		let getchar = module.add_function("rust_getchar", getchar_ty, Some(Linkage::External));
 
-		let putchar_ty = i32_type.fn_type(&[i32_type.into()], false);
+		let putchar_ty = void_type.fn_type(&[i32_type.into()], false);
 		let putchar = module.add_function("rust_putchar", putchar_ty, Some(Linkage::External));
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
 
-		let puts_ty = i32_type.fn_type(&[ptr_type.into(), i64_type.into()], false);
-		let puts = module.add_function("puts", puts_ty, Some(Linkage::Private));
+		let puts_ty = void_type.fn_type(&[ptr_type.into(), i64_type.into()], false);
+		let puts = module.add_function("frick_puts", puts_ty, Some(Linkage::Private));
 
 		let eh_personality_ty = i32_type.fn_type(
 			&[
@@ -107,7 +107,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let readonly_attr = context.create_named_enum_attribute("readonly", 0);
 		let align_attr = context.create_named_enum_attribute("align", 1);
 		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
-		let returned_attr = context.create_named_enum_attribute("returned", 0);
 		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
 		let nonlazybind_attr = context.create_named_enum_attribute("nonlazybind", 0);
 
@@ -122,7 +121,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				arg_read_inaccessable_write_memory_attr,
 				uwtable_attr,
 			],
-			[(0, zeroext_attr), (0, noundef_attr), (0, returned_attr)],
+			[(0, zeroext_attr), (0, noundef_attr)],
 			[],
 		);
 		add_attributes_to(

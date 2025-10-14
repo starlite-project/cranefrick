@@ -86,7 +86,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		array_ptr: PointerValue<'ctx>,
 		array_len: u64,
 		fn_name: &'static str,
-	) -> Result<IntValue<'ctx>, AssemblyError> {
+	) -> Result<(), AssemblyError> {
 		let continue_block = context.append_basic_block(
 			self.functions.main,
 			&create_string(fn_name, ".puts.invoke.cont\0"),
@@ -110,7 +110,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(continue_block);
 
-		Ok(call.try_as_basic_value().unwrap_left().into_int_value())
+		Ok(())
 	}
 
 	fn call_putchar(
@@ -118,7 +118,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		context: ContextRef<'ctx>,
 		value: IntValue<'ctx>,
 		fn_name: &'static str,
-	) -> Result<IntValue<'ctx>, AssemblyError> {
+	) -> Result<(), AssemblyError> {
 		let continue_block = context.append_basic_block(
 			self.functions.main,
 			&create_string(fn_name, ".putchar.invoke.cont\0"),
@@ -136,6 +136,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(continue_block);
 
-		Ok(call.try_as_basic_value().unwrap_left().into_int_value())
+		Ok(())
 	}
 }

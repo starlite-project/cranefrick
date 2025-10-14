@@ -113,7 +113,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let puts_subprogram = self.create_function(
 			self.compile_unit.as_debug_info_scope(),
-			"puts",
+			"frick_puts",
 			None,
 			self.compile_unit.get_file(),
 			0,

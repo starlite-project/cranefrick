@@ -141,10 +141,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"\0",
 		)?;
 
-		let putchar_value = putchar_call
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_int_value();
+		putchar_call.set_tail_call(true);
 
 		self.builder.position_at_end(continue_block);
 
@@ -160,15 +157,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(exit_block);
 
-		let exit_block_phi = self.builder.build_phi(i32_type, "\0")?;
-
-		exit_block_phi.add_incoming(&[
-			(&i32_type.const_zero(), entry_block),
-			(&putchar_value, continue_block),
-		]);
-
-		self.builder
-			.build_return(Some(&exit_block_phi.as_basic_value()))?;
+		self.builder.build_return(None)?;
 
 		self.builder.position_at_end(catch_block);
 
