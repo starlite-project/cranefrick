@@ -124,7 +124,7 @@ impl InnerAssembler<'_> {
 					continue;
 				}
 				1 => {
-					tracing::debug!("adding cells directly");
+					tracing::debug!("adding value directly");
 					self.builder.build_int_add(
 						other_value,
 						value,
@@ -132,7 +132,7 @@ impl InnerAssembler<'_> {
 					)?
 				}
 				x => {
-					tracing::debug!("factoring cell by {factor}");
+					tracing::debug!("factoring value by {factor}, then adding");
 					let factor = i8_type.const_int(x as u64, false);
 
 					let factored_value = self.builder.build_int_mul(
@@ -302,7 +302,7 @@ fn is_vectorizable(values: &[ChangeCellOptions<i8, Factor>]) -> bool {
 		return false;
 	}
 
-	is_range(values) && values.len().is_power_of_two()
+	is_range(values)
 }
 
 const fn is_vector_size<T>(values: &[T]) -> bool {
