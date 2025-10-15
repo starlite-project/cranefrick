@@ -120,11 +120,11 @@ impl InnerAssembler<'_> {
 
 			let modified_value = match factor {
 				0 => {
-					tracing::trace!("skipping cell");
+					tracing::debug!("skipping cell");
 					continue;
 				}
 				1 => {
-					tracing::trace!("adding cells directly");
+					tracing::debug!("adding cells directly");
 					self.builder.build_int_add(
 						other_value,
 						value,
@@ -132,8 +132,7 @@ impl InnerAssembler<'_> {
 					)?
 				}
 				x => {
-					tracing::trace!("factoring cell by {factor}");
-
+					tracing::debug!("factoring cell by {factor}");
 					let factor = i8_type.const_int(x as u64, false);
 
 					let factored_value = self.builder.build_int_mul(

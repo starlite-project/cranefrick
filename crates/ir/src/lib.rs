@@ -281,37 +281,6 @@ impl BrainIr {
 				| Self::CopyValueTo(..)
 		)
 	}
-
-	#[deprecated = "use Display::fmt instead"]
-	#[must_use]
-	pub const fn name(&self) -> &'static str {
-		match self {
-			Self::Boundary => "boundary",
-			Self::ChangeCell(..) => "change_cell",
-			Self::SetCell(..) => "set_cell",
-			Self::SubCell(SubType::CellAt(..)) => "sub_cell_at",
-			Self::SubCell(SubType::FromCell(..)) => "sub_from_cell",
-			Self::SubCell(SubType::Value(..)) => "sub_value",
-			Self::MovePointer(..) => "move_pointer",
-			Self::FindZero(..) => "find_zero",
-			Self::InputIntoCell => "input",
-			Self::Output(OutputOptions::Cell(..)) => "output_cell",
-			Self::Output(OutputOptions::Cells(..)) => "output_cells",
-			Self::Output(OutputOptions::Char(..)) => "output_char",
-			Self::Output(OutputOptions::Str(..)) => "output_str",
-			Self::MoveValueTo(..) => "move_value_to",
-			Self::CopyValueTo(..) => "copy_value_to",
-			Self::TakeValueTo(..) => "take_value_to",
-			Self::FetchValueFrom(..) => "fetch_value_from",
-			Self::ReplaceValueFrom(..) => "replace_value_from",
-			Self::ScaleValue(..) => "scale_value",
-			Self::DynamicLoop(..) => "dynamic_loop",
-			Self::IfNotZero(..) => "if_not_zero",
-			Self::SetRange(..) => "set_range",
-			Self::SetManyCells(..) => "set_many_cells",
-			Self::DuplicateCell { .. } => "duplicate_cell",
-		}
-	}
 }
 
 impl Display for BrainIr {
@@ -442,7 +411,7 @@ impl Display for BrainIr {
 			}
 			Self::Output(OutputOptions::Char(char)) => {
 				f.write_str("output_char(")?;
-				Display::fmt(&(*char as char).escape_default(), f)?;
+				Display::fmt(&(*char as char).escape_debug(), f)?;
 				f.write_char(')')?;
 			}
 			Self::Output(OutputOptions::Str(chars)) => {
@@ -451,7 +420,7 @@ impl Display for BrainIr {
 					f.write_str("...")?;
 				} else {
 					for char in chars.iter().copied().map(|c| c as char) {
-						Display::fmt(&char.escape_default(), f)?;
+						Display::fmt(&char.escape_debug(), f)?;
 					}
 				}
 
@@ -459,19 +428,96 @@ impl Display for BrainIr {
 			}
 			Self::MoveValueTo(move_options) => {
 				f.write_str("move_value_to(")?;
-				match move_options.into_parts() {
-					(1, x) => Display::fmt(&x, f)?,
-					(a, x) => {
-						Display::fmt(&a, f)?;
-						f.write_str(", ")?;
-						Display::fmt(&x, f)?;
-					}
-				}
+				write_shift_options(*move_options, f)?;
+			}
+			Self::CopyValueTo(copy_options) => {
+				f.write_str("copy_value_to(")?;
+				write_shift_options(*copy_options, f)?;
+			}
+			Self::TakeValueTo(take_options) => {
+				f.write_str("take_value_to(")?;
+				write_shift_options(*take_options, f)?;
+			}
+			Self::FetchValueFrom(fetch_options) => {
+				f.write_str("fetch_value_from(")?;
+				write_shift_options(*fetch_options, f)?;
+			}
+			Self::ReplaceValueFrom(replace_options) => {
+				f.write_str("replace_value_from(")?;
+				write_shift_options(*replace_options, f)?;
+			}
+			Self::ScaleValue(factor) => {
+				f.write_str("scale_value(")?;
+				Display::fmt(&factor, f)?;
 				f.write_char(')')?;
 			}
-			_ => f.write_str(self.name())?,
+			Self::DynamicLoop(ops) => {
+				f.write_str("dynamic_loop(")?;
+				Display::fmt(&ops.len(), f)?;
+				f.write_char(')')?;
+			}
+			Self::IfNotZero(ops) => {
+				f.write_str("if_not_zero(")?;
+				Display::fmt(&ops.len(), f)?;
+				f.write_char(')')?;
+			}
+			Self::SetRange(set_range_options) => {
+				f.write_str("set_range(")?;
+				Display::fmt(&set_range_options.value(), f)?;
+				f.write_str(", ")?;
+				Display::fmt(&set_range_options.start(), f)?;
+				f.write_str("..")?;
+				Display::fmt(&set_range_options.end(), f)?;
+				f.write_char(')')?;
+			}
+			Self::SetManyCells(set_many_options) => {
+				f.write_str("set_many_cells((")?;
+				let mut is_first = true;
+				for value in set_many_options.values() {
+					if !is_first {
+						f.write_str(", ")?;
+					}
+
+					Display::fmt(value, f)?;
+					is_first = false;
+				}
+
+				f.write_str(") @ ")?;
+				Display::fmt(&set_many_options.start(), f)?;
+				f.write_char(')')?;
+			}
+			Self::DuplicateCell {values} => {
+				f.write_str("duplicate_cell(")?;
+				let mut is_first = true;
+				for option in values {
+					if !is_first {
+						f.write_str(", ")?;
+					}
+
+					f.write_char('(')?;
+					Display::fmt(&option.factor(), f)?;
+					f.write_str(", ")?;
+					Display::fmt(&option.offset(), f)?;
+					f.write_char(')')?;
+
+					is_first =false;
+				}
+			}
 		}
 
 		Ok(())
 	}
+}
+
+fn write_shift_options(options: FactoredChangeCellOptions<u8>, f: &mut Formatter<'_>) -> FmtResult {
+	match options.into_parts() {
+		(1, x) => Display::fmt(&x, f)?,
+		(a, x) => {
+			Display::fmt(&a, f)?;
+			f.write_str(", ")?;
+			Display::fmt(&x, f)?;
+		}
+	}
+
+	f.write_char(')')
 }
