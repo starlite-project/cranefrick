@@ -6,6 +6,8 @@ mod output;
 mod parse;
 mod sub;
 
+use std::fmt::{Display, Formatter, Result as FmtResult, Write as _};
+
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
@@ -280,6 +282,7 @@ impl BrainIr {
 		)
 	}
 
+	#[deprecated = "use Display::fmt instead"]
 	#[must_use]
 	pub const fn name(&self) -> &'static str {
 		match self {
@@ -308,5 +311,163 @@ impl BrainIr {
 			Self::SetManyCells(..) => "set_many_cells",
 			Self::DuplicateCell { .. } => "duplicate_cell",
 		}
+	}
+}
+
+impl Display for BrainIr {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		match self {
+			Self::Boundary => f.write_str("boundary")?,
+			Self::ChangeCell(change_options) => {
+				f.write_str("change_cell(")?;
+				match change_options.into_parts() {
+					(a, 0) => {
+						Display::fmt(&a, f)?;
+					}
+					(a, x) => {
+						Display::fmt(&a, f)?;
+						f.write_str(", ")?;
+						Display::fmt(&x, f)?;
+					}
+				}
+
+				f.write_char(')')?;
+			}
+			Self::SetCell(set_options) => match set_options.into_parts() {
+				(0, 0) => f.write_str("clear_cell")?,
+				(0, x) => {
+					f.write_str("clear_cell(")?;
+					Display::fmt(&x, f)?;
+					f.write_char(')')?;
+				}
+				(a, 0) => {
+					f.write_str("set_cell(")?;
+					Display::fmt(&a, f)?;
+					f.write_char(')')?;
+				}
+				(a, x) => {
+					f.write_str("set_cell(")?;
+					Display::fmt(&a, f)?;
+					f.write_str(", ")?;
+					Display::fmt(&x, f)?;
+					f.write_char(')')?;
+				}
+			},
+			Self::SubCell(SubType::CellAt(sub_at_options)) => {
+				f.write_str("sub_cell_at(")?;
+				match sub_at_options.into_parts() {
+					(1, x) => {
+						Display::fmt(&x, f)?;
+					}
+					(a, x) => {
+						Display::fmt(&a, f)?;
+						f.write_str(", ")?;
+						Display::fmt(&x, f)?;
+					}
+				}
+				f.write_char(')')?;
+			}
+			Self::SubCell(SubType::FromCell(sub_from_options)) => {
+				f.write_str("sub_from_cell(")?;
+				match sub_from_options.into_parts() {
+					(1, x) => {
+						Display::fmt(&x, f)?;
+					}
+					(a, x) => {
+						Display::fmt(&a, f)?;
+						f.write_str(", ")?;
+						Display::fmt(&x, f)?;
+					}
+				}
+				f.write_char(')')?;
+			}
+			Self::SubCell(SubType::Value(value)) => {
+				f.write_str("sub_value(")?;
+				Display::fmt(&value, f)?;
+				f.write_char(')')?;
+			}
+			Self::MovePointer(offset) => {
+				f.write_str("move_pointer(")?;
+				Display::fmt(&offset, f)?;
+				f.write_char(')')?;
+			}
+			Self::FindZero(offset) => {
+				f.write_str("find_zero(")?;
+				Display::fmt(&offset, f)?;
+				f.write_char(')')?;
+			}
+			Self::InputIntoCell => f.write_str("input")?,
+			Self::Output(OutputOptions::Cell(output_options)) => {
+				f.write_str("output_cell")?;
+				match output_options.into_parts() {
+					(0, 0) => {}
+					(a, 0) => {
+						f.write_char('(')?;
+						Display::fmt(&a, f)?;
+						f.write_char(')')?;
+					}
+					(0, x) => {
+						f.write_str("(0, ")?;
+						Display::fmt(&x, f)?;
+						f.write_char(')')?;
+					}
+					(a, x) => {
+						f.write_char('(')?;
+						Display::fmt(&a, f)?;
+						f.write_str(", ")?;
+						Display::fmt(&x, f)?;
+						f.write_char(')')?;
+					}
+				}
+			}
+			Self::Output(OutputOptions::Cells(output_options)) => {
+				f.write_str("output_cells(")?;
+
+				if output_options.len() > 5 {
+					f.write_str("...")?;
+				} else {
+					let mut is_first = true;
+					for (a, x) in output_options.iter().map(|option| option.into_parts()) {
+						if !is_first {
+							f.write_str(", ")?;
+						}
+
+						f.write_char('(')?;
+						Display::fmt(&a, f)?;
+						f.write_str(", ")?;
+						Display::fmt(&x, f)?;
+						f.write_char(')')?;
+
+						is_first = false;
+					}
+				}
+
+				f.write_char(')')?;
+			}
+			Self::Output(OutputOptions::Char(char)) => {
+				f.write_str("output_char(")?;
+				Display::fmt(&(*char as char).escape_default(), f)?;
+				f.write_char(')')?;
+			}
+			Self::Output(OutputOptions::Str(chars)) => {
+				f.write_str("output_str(")?;
+				if chars.len() > 5 {
+					f.write_str("...")?;
+				} else {
+					for char in chars.iter().copied().map(|c| c as char) {
+						Display::fmt(&char.escape_default(), f)?;
+					}
+				}
+
+				f.write_char(')')?;
+			}
+			Self::MoveValueTo(move_options) => {
+				f.write_str("move_value_to(")?;
+
+			}
+			_ => f.write_str(self.name())?,
+		}
+
+		Ok(())
 	}
 }
