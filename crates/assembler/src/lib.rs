@@ -72,7 +72,7 @@ impl Assembler {
 		this
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip_all, fields(indicatif.pb_show = tracing::field::Empty))]
 	pub fn assemble<'ctx>(
 		&'ctx self,
 		ops: &[BrainIr],

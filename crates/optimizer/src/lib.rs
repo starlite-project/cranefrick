@@ -33,7 +33,7 @@ impl Optimizer {
 		}
 	}
 
-	#[tracing::instrument("optimize mlir", skip(self))]
+	#[tracing::instrument("optimize mlir", skip(self), fields(indicatif.pb_show = tracing::field::Empty))]
 	pub fn run(&mut self) {
 		let mut iteration = 0;
 
@@ -47,7 +47,7 @@ impl Optimizer {
 		info!(iterations = iteration, "finished optimizing mlir");
 	}
 
-	#[tracing::instrument("run passes", skip(self))]
+	#[tracing::instrument("run passes", skip(self), fields(indicatif.pb_show = tracing::field::Empty))]
 	fn optimization_pass(&mut self, iteration: usize) -> bool {
 		let mut progress = false;
 

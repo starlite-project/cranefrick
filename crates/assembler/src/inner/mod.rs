@@ -136,7 +136,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		tracing::debug!("writing instructions");
 		let mut op_count = 1;
 
-		let ops_span = tracing::trace_span!("ops").entered();
+		let ops_span = tracing::info_span!("ops").entered();
 		self.ops(ops, &mut op_count)?;
 		drop(ops_span);
 

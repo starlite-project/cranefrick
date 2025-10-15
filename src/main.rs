@@ -10,7 +10,7 @@ use frick_optimizer::Optimizer;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
-use tracing_indicatif::IndicatifLayer;
+use tracing_indicatif::{IndicatifLayer, filter::IndicatifFilter};
 use tracing_subscriber::{
 	EnvFilter,
 	fmt::{self, format::FmtSpan},
@@ -122,7 +122,7 @@ fn install_tracing(folder_path: &Path) {
 	tracing_subscriber::registry()
 		.with(file_layer)
 		.with(fmt_layer)
-		.with(indicatif_layer)
+		.with(indicatif_layer.with_filter(IndicatifFilter::new(false)))
 		.with(ErrorLayer::default())
 		.init();
 }

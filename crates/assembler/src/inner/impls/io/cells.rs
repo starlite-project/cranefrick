@@ -48,7 +48,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			tracing::debug!("output cells with frick_puts");
 			self.output_cells_puts(options)
 		} else {
-			tracing::warn!("unable to output cells with frick_puts");
+			tracing::debug!("unable to output cells with frick_puts");
 			self.output_cells_iterated(options)
 		}
 	}

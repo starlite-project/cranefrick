@@ -90,7 +90,7 @@ impl InnerAssembler<'_> {
 			tracing::debug!("vectorizing duplicate_cell");
 			self.duplicate_cell_vectorized(values)
 		} else {
-			tracing::warn!("unable to vectorize duplicate_cell");
+			tracing::debug!("unable to vectorize duplicate_cell");
 			self.duplicate_cell_iterated(values)
 		}
 	}
