@@ -319,24 +319,24 @@ impl Display for BrainIr {
 		match self {
 			Self::Boundary => f.write_str("boundary")?,
 			Self::ChangeCell(change_options) => {
-				f.write_str("change_cell(")?;
 				match change_options.into_parts() {
 					(a, 0) => {
+						f.write_str("change_cell(")?;
 						Display::fmt(&a, f)?;
 					}
 					(a, x) => {
+						f.write_str("change_cell_at(")?;
 						Display::fmt(&a, f)?;
 						f.write_str(", ")?;
 						Display::fmt(&x, f)?;
 					}
 				}
-
 				f.write_char(')')?;
 			}
 			Self::SetCell(set_options) => match set_options.into_parts() {
 				(0, 0) => f.write_str("clear_cell")?,
 				(0, x) => {
-					f.write_str("clear_cell(")?;
+					f.write_str("clear_cell_at(")?;
 					Display::fmt(&x, f)?;
 					f.write_char(')')?;
 				}
@@ -346,7 +346,7 @@ impl Display for BrainIr {
 					f.write_char(')')?;
 				}
 				(a, x) => {
-					f.write_str("set_cell(")?;
+					f.write_str("set_cell_at(")?;
 					Display::fmt(&a, f)?;
 					f.write_str(", ")?;
 					Display::fmt(&x, f)?;
@@ -356,9 +356,7 @@ impl Display for BrainIr {
 			Self::SubCell(SubType::CellAt(sub_at_options)) => {
 				f.write_str("sub_cell_at(")?;
 				match sub_at_options.into_parts() {
-					(1, x) => {
-						Display::fmt(&x, f)?;
-					}
+					(1, x) => Display::fmt(&x, f)?,
 					(a, x) => {
 						Display::fmt(&a, f)?;
 						f.write_str(", ")?;
@@ -370,9 +368,7 @@ impl Display for BrainIr {
 			Self::SubCell(SubType::FromCell(sub_from_options)) => {
 				f.write_str("sub_from_cell(")?;
 				match sub_from_options.into_parts() {
-					(1, x) => {
-						Display::fmt(&x, f)?;
-					}
+					(1, x) => Display::fmt(&x, f)?,
 					(a, x) => {
 						Display::fmt(&a, f)?;
 						f.write_str(", ")?;
@@ -407,12 +403,12 @@ impl Display for BrainIr {
 						f.write_char(')')?;
 					}
 					(0, x) => {
-						f.write_str("(0, ")?;
+						f.write_str("_at(")?;
 						Display::fmt(&x, f)?;
 						f.write_char(')')?;
 					}
 					(a, x) => {
-						f.write_char('(')?;
+						f.write_str("_at(")?;
 						Display::fmt(&a, f)?;
 						f.write_str(", ")?;
 						Display::fmt(&x, f)?;
@@ -463,7 +459,15 @@ impl Display for BrainIr {
 			}
 			Self::MoveValueTo(move_options) => {
 				f.write_str("move_value_to(")?;
-
+				match move_options.into_parts() {
+					(1, x) => Display::fmt(&x, f)?,
+					(a, x) => {
+						Display::fmt(&a, f)?;
+						f.write_str(", ")?;
+						Display::fmt(&x, f)?;
+					}
+				}
+				f.write_char(')')?;
 			}
 			_ => f.write_str(self.name())?,
 		}
