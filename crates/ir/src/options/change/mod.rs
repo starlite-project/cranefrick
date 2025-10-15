@@ -30,8 +30,13 @@ impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> ChangeCellOptions<T, Mark
 		(self.value, self.offset)
 	}
 
+	#[must_use]
+	pub const fn is_offset(self) -> bool {
+		!matches!(self.offset(), 0)
+	}
+
 	pub fn is_default(self) -> bool {
-		self.value == T::default() && matches!(self.offset(), 0)
+		self.value == T::default() && !self.is_offset()
 	}
 }
 
