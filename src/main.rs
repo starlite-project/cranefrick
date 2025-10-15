@@ -10,7 +10,7 @@ use frick_optimizer::Optimizer;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
-use tracing_indicatif::{IndicatifLayer, filter::IndicatifFilter};
+use tracing_indicatif::{IndicatifLayer, filter::IndicatifFilter, style::ProgressStyle};
 use tracing_subscriber::{
 	EnvFilter,
 	fmt::{self, format::FmtSpan},
@@ -101,7 +101,7 @@ fn install_tracing(folder_path: &Path) {
 		.expect("failed to create log file");
 
 	let indicatif_layer = IndicatifLayer::new().with_progress_style(
-		tracing_indicatif::style::ProgressStyle::with_template(
+		ProgressStyle::with_template(
 			"{span_child_prefix}{spinner} {span_name}({span_fields}) [{elapsed_precise}]",
 		)
 		.unwrap()

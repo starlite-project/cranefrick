@@ -496,6 +496,7 @@ dependencies = [
  "serde",
  "smallvec",
  "tracing",
+ "tracing-indicatif",
 ]
 
 [[package]]

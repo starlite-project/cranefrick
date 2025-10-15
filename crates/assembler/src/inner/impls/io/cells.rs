@@ -85,11 +85,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			tracing::debug!("memcpying cells into output array");
 			self.setup_output_cells_puts_memcpy(i8_type, i64_type, options)
 		} else if is_memsettable(options) {
-			tracing::warn!("unable to memcpy cells");
+			tracing::debug!("unable to memcpy cells");
 			tracing::debug!("memsetting cells of output array");
 			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
 		} else {
-			tracing::warn!("unable to memcpy or memset cells");
+			tracing::debug!("unable to memcpy or memset cells");
 			self.setup_output_cells_puts_iterated(i8_type, options)
 		}?;
 
