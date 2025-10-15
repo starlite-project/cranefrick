@@ -13,7 +13,8 @@ use inkwell::{
 
 use crate::{AssemblyError, ContextExt as _, ContextGetter as _, inner::InnerAssembler};
 
-impl<'ctx> InnerAssembler<'ctx> {	#[tracing::instrument(skip_all)]
+impl<'ctx> InnerAssembler<'ctx> {
+	#[tracing::instrument(skip_all)]
 	fn start_lifetime(
 		&self,
 		alloc_len: IntValue<'ctx>,
@@ -53,6 +54,7 @@ impl<'ctx> InnerAssembler<'ctx> {	#[tracing::instrument(skip_all)]
 
 		Ok(lifetime_end)
 	}
+
 	#[tracing::instrument(skip_all)]
 	pub fn write_puts(&self) -> Result<(), AssemblyError> {
 		let context = self.context();

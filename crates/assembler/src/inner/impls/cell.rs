@@ -165,8 +165,10 @@ impl InnerAssembler<'_> {
 		let context = self.context();
 
 		let i8_type = context.i8_type();
+		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
 		let i8_vector_type = i8_type.vec_type(values.len() as u32);
+		let i32_vector_type = i32_type.vec_type(values.len() as u32);
 
 		let (current_cell_value, current_cell_gep) =
 			self.load_from(0, "duplicate_cell_vectorized")?;
@@ -195,12 +197,23 @@ impl InnerAssembler<'_> {
 				"duplicate_cell_vectorized_insertelement\0",
 			)?;
 
-			self.builder.build_shuffle_vector(
-				tmp,
-				undef,
-				i8_vector_type.const_zero(),
-				"duplicate_cell_vectorized_shufflevector\0",
-			)?
+			if matches!(values.len(), 2) {
+				let one_index = i64_type.const_int(1, false);
+
+				self.builder.build_insert_element(
+					tmp,
+					current_cell_value,
+					one_index,
+					"duplicate_cell_vectorized_insertelement\0",
+				)?
+			} else {
+				self.builder.build_shuffle_vector(
+					tmp,
+					undef,
+					i32_vector_type.const_zero(),
+					"duplicate_cell_vectorized_shufflevector\0",
+				)?
+			}
 		};
 
 		let vector_of_new_values = {
@@ -302,7 +315,7 @@ fn is_vectorizable(values: &[ChangeCellOptions<i8, Factor>]) -> bool {
 		return false;
 	}
 
-	is_range(values)
+	is_range(values) && values.len().is_power_of_two()
 }
 
 const fn is_vector_size<T>(values: &[T]) -> bool {

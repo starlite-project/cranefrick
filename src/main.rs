@@ -11,7 +11,11 @@ use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
 use tracing_indicatif::IndicatifLayer;
-use tracing_subscriber::{EnvFilter, fmt::{self, format::FmtSpan}, prelude::*};
+use tracing_subscriber::{
+	EnvFilter,
+	fmt::{self, format::FmtSpan},
+	prelude::*,
+};
 
 use self::args::Args;
 

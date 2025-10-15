@@ -486,7 +486,7 @@ impl Display for BrainIr {
 				Display::fmt(&set_many_options.start(), f)?;
 				f.write_char(')')?;
 			}
-			Self::DuplicateCell {values} => {
+			Self::DuplicateCell { values } => {
 				f.write_str("duplicate_cell(")?;
 				let mut is_first = true;
 				for option in values {
@@ -500,7 +500,7 @@ impl Display for BrainIr {
 					Display::fmt(&option.offset(), f)?;
 					f.write_char(')')?;
 
-					is_first =false;
+					is_first = false;
 				}
 			}
 		}
