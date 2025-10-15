@@ -9,6 +9,12 @@ pub fn calculate_ptr_movement(ops: &[BrainIr]) -> Option<i32> {
 				sum = sum.wrapping_add(*offset);
 			}
 			BrainIr::DynamicLoop(l) | BrainIr::IfNotZero(l) => {
+				if l.iter()
+					.any(|op| matches!(op, BrainIr::DynamicLoop(..) | BrainIr::IfNotZero(..)))
+				{
+					return None;
+				}
+
 				let loop_sum = calculate_ptr_movement(l)?;
 
 				sum = sum.wrapping_add(loop_sum);
