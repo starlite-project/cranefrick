@@ -65,7 +65,7 @@ frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
 frick_utils = { path = "crates/utils" }
 inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "075db5c0f535c500f9e801313e570206ab28f613", features = [
-    "llvm20-1"
+    "llvm20-1-force-dynamic"
 ] }
 libc = "0.2"
 serde = { version = "1", default-features = false }
@@ -140,9 +140,13 @@ opt-level = 1
 
 [profile.dev.package.inkwell]
 opt-level = 3
+debug-assertions = false
 
 [profile.dev.package.frick_optimizer]
 opt-level = 3
 
 [profile.dev.package.frick_interop]
 opt-level = 3
+
+[patch.crates-io]
+llvm-sys = { git = "https://gitlab.com/taricorp/llvm-sys.rs.git", branch = "llvm-20" }

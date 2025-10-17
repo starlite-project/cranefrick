@@ -53,6 +53,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			TargetMachine::normalize_triple(&default_target)
 		};
 
+		module.set_new_debug_format(true);
 		module.set_data_layout(&data_layout);
 		module.set_triple(&target_triple);
 
@@ -113,7 +114,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		builder.set_current_debug_location(debug_loc);
 		module.set_source_file_name(&file_name);
-		module.set_new_debug_format(true);
 
 		Ok(Self {
 			module,

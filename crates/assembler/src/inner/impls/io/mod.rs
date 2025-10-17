@@ -3,6 +3,7 @@ mod chars;
 
 use frick_ir::{BrainIr, OutputOptions};
 use inkwell::{
+	attributes::{Attribute, AttributeLoc},
 	context::ContextRef,
 	values::{InstructionValueError, IntValue, PointerValue},
 };
@@ -107,6 +108,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 		)?;
 
 		call.set_tail_call(true);
+
+		let array_type = {
+			let i8_type = context.i8_type();
+
+			i8_type.array_type(array_len as u32)
+		};
+
+		let byref_attr = context.create_type_attribute(
+			Attribute::get_named_enum_kind_id("byref"),
+			array_type.into(),
+		);
+
+		call.add_attribute(AttributeLoc::Param(0), byref_attr);
 
 		self.builder.position_at_end(continue_block);
 
