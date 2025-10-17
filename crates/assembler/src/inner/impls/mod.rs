@@ -88,76 +88,66 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"\0",
 		)?;
 
-		let end_of_string = self.gep(i8_type, ptr_param, string_len, "end_of_string")?;
-
 		let i64_zero = i64_type.const_zero();
 
-		let is_string_len_zero =
+		let is_str_empty =
 			self.builder
-				.build_int_compare(IntPredicate::EQ, string_len, i64_zero, "\0")?;
+				.build_int_compare(IntPredicate::EQ, i64_zero, string_len, "\0")?;
 
 		self.builder
-			.build_conditional_branch(is_string_len_zero, exit_block, try_block)?;
+			.build_conditional_branch(is_str_empty, exit_block, try_block)?;
 
 		self.builder.position_at_end(try_block);
 
-		let try_block_phi = self.builder.build_phi(ptr_type, "\0")?;
+		let idx_phi_value = self.builder.build_phi(i64_type, "\0")?;
 
-		let i64_one = i64_type.const_int(1, false);
-
-		let next_index_gep = self.gep(
+		let char_ptr = self.gep(
 			i8_type,
-			try_block_phi.as_basic_value().into_pointer_value(),
-			i64_one,
-			"next_char_index",
+			ptr_param,
+			idx_phi_value.as_basic_value().into_int_value(),
+			"\0",
 		)?;
 
-		try_block_phi.add_incoming(&[(&ptr_param, entry_block), (&next_index_gep, continue_block)]);
-
-		let actual_value = self
+		let raw_char = self
 			.builder
-			.build_load(
-				i8_type,
-				try_block_phi.as_basic_value().into_pointer_value(),
-				"\0",
-			)?
+			.build_load(i8_type, char_ptr, "\0")?
 			.into_int_value();
 
-		let extended_character = self
+		let extended_char = self
 			.builder
-			.build_int_z_extend(actual_value, i32_type, "\0")?;
+			.build_int_z_extend_or_bit_cast(raw_char, i32_type, "\0")?;
 
-		let putchar_call = self.builder.build_direct_invoke(
+		self.builder.build_direct_invoke(
 			self.functions.putchar,
-			&[extended_character.into()],
+			&[extended_char.into()],
 			continue_block,
 			catch_block,
 			"\0",
 		)?;
 
-		putchar_call.set_tail_call(true);
-
 		self.builder.position_at_end(continue_block);
 
-		let check_if_at_end = self.builder.build_int_compare(
-			IntPredicate::EQ,
-			next_index_gep,
-			end_of_string,
+		let i64_one = i64_type.const_int(1, false);
+
+		let next_index = self.builder.build_int_add(
+			idx_phi_value.as_basic_value().into_int_value(),
+			i64_one,
 			"\0",
 		)?;
 
+		idx_phi_value.add_incoming(&[(&i64_zero, entry_block), (&next_index, continue_block)]);
+
+		let is_done =
+			self.builder
+				.build_int_compare(IntPredicate::EQ, next_index, string_len, "\0")?;
+
 		self.builder
-			.build_conditional_branch(check_if_at_end, exit_block, try_block)?;
-
-		self.builder.position_at_end(exit_block);
-
-		self.builder.build_return(None)?;
+			.build_conditional_branch(is_done, exit_block, try_block)?;
 
 		self.builder.position_at_end(catch_block);
-
 		let exception_type = context.struct_type(&[ptr_type.into(), i32_type.into()], false);
 
-		let out = self.builder.build_landing_pad(
+		let exception = self.builder.build_landing_pad(
 			exception_type,
 			self.functions.eh_personality,
 			&[],
@@ -165,7 +155,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"\0",
 		)?;
 
-		self.builder.build_resume(out)?;
+		self.builder.build_resume(exception)?;
+
+		self.builder.position_at_end(exit_block);
+		self.builder.build_return(None)?;
 
 		Ok(())
 	}
