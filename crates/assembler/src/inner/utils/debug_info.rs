@@ -97,7 +97,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			.as_type();
 
 		let char_type = self
-			.create_basic_type("char", mem::size_of::<u32>() as u64 * 8, 7, i32::ZERO)?
+			.create_basic_type("char", mem::size_of::<u32>() as u64 * 8, 8, i32::ZERO)?
 			.as_type();
 
 		let usize_type = self
