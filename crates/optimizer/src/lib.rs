@@ -60,7 +60,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(45);
+		span.pb_set_length(44);
 
 		self.run_all_passes(&mut progress);
 
@@ -158,8 +158,7 @@ impl Optimizer {
 		*progress |= run_loop_pass(self, passes::optimize_sub_cell_at);
 		*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from);
 		*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from_with_set);
-		*progress |= run_peephole_pass(self, passes::optimize_constant_sub);
-		span.pb_inc(4);
+		span.pb_inc(3);
 
 		self.pass_info("optimize if not zero");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);

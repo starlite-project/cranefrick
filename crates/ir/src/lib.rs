@@ -4,7 +4,6 @@ mod options;
 mod output;
 #[cfg(feature = "parse")]
 mod parse;
-mod sub;
 
 use std::fmt::{Display, Formatter, Result as FmtResult, Write as _};
 
@@ -13,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "parse")]
 pub use self::parse::*;
-pub use self::{options::*, output::*, sub::*};
+pub use self::{options::*, output::*};
 
 /// Mid-level intermediate representation. Not 1 to 1 for it's brainfuck equivalent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -22,7 +21,7 @@ pub enum BrainIr {
 	Boundary,
 	ChangeCell(ValuedChangeCellOptions<i8>),
 	SetCell(ValuedChangeCellOptions<u8>),
-	SubCell(SubType),
+	SubCell(SubOptions),
 	MovePointer(i32),
 	FindZero(i32),
 	InputIntoCell,
@@ -75,14 +74,14 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn sub_from_cell(value: u8, offset: i32) -> Self {
-		Self::SubCell(SubType::FromCell(FactoredChangeCellOptions::new(
+		Self::SubCell(SubOptions::FromCell(FactoredChangeCellOptions::new(
 			value, offset,
 		)))
 	}
 
 	#[must_use]
 	pub const fn sub_cell_at(value: u8, offset: i32) -> Self {
-		Self::SubCell(SubType::CellAt(FactoredChangeCellOptions::new(
+		Self::SubCell(SubOptions::CellAt(FactoredChangeCellOptions::new(
 			value, offset,
 		)))
 	}
@@ -276,7 +275,7 @@ impl BrainIr {
 				| Self::FindZero(..)
 				| Self::MoveValueTo(..)
 				| Self::IfNotZero(..)
-				| Self::SubCell(SubType::CellAt(..))
+				| Self::SubCell(SubOptions::CellAt(..))
 				| Self::DuplicateCell { .. }
 				| Self::CopyValueTo(..)
 		)
@@ -322,7 +321,7 @@ impl Display for BrainIr {
 					f.write_char(')')?;
 				}
 			},
-			Self::SubCell(SubType::CellAt(sub_at_options)) => {
+			Self::SubCell(SubOptions::CellAt(sub_at_options)) => {
 				f.write_str("sub_cell_at(")?;
 				match sub_at_options.into_parts() {
 					(1, x) => Display::fmt(&x, f)?,
@@ -334,7 +333,7 @@ impl Display for BrainIr {
 				}
 				f.write_char(')')?;
 			}
-			Self::SubCell(SubType::FromCell(sub_from_options)) => {
+			Self::SubCell(SubOptions::FromCell(sub_from_options)) => {
 				f.write_str("sub_from_cell(")?;
 				match sub_from_options.into_parts() {
 					(1, x) => Display::fmt(&x, f)?,
@@ -344,11 +343,6 @@ impl Display for BrainIr {
 						Display::fmt(&x, f)?;
 					}
 				}
-				f.write_char(')')?;
-			}
-			Self::SubCell(SubType::Value(value)) => {
-				f.write_str("sub_value(")?;
-				Display::fmt(&value, f)?;
 				f.write_char(')')?;
 			}
 			Self::MovePointer(offset) => {

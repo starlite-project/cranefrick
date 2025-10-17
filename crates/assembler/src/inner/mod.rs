@@ -3,7 +3,7 @@ mod utils;
 
 use std::path::Path;
 
-use frick_ir::{BrainIr, SubType};
+use frick_ir::{BrainIr, SubOptions};
 use frick_spec::TAPE_SIZE;
 use inkwell::{
 	basic_block::BasicBlock,
@@ -233,8 +233,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::SetCell(options) => self.set_cell(*options)?,
 				BrainIr::ChangeCell(options) => self.change_cell(*options)?,
-				BrainIr::SubCell(SubType::CellAt(options)) => self.sub_cell_at(*options)?,
-				BrainIr::SubCell(SubType::FromCell(options)) => self.sub_from_cell(*options)?,
+				BrainIr::SubCell(SubOptions::CellAt(options)) => self.sub_cell_at(*options)?,
+				BrainIr::SubCell(SubOptions::FromCell(options)) => self.sub_from_cell(*options)?,
 				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
 				BrainIr::Output(options) => self.output(options)?,
 				BrainIr::InputIntoCell => self.input_into_cell()?,

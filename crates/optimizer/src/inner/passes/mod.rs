@@ -5,7 +5,9 @@ mod sort;
 
 use std::{cmp, iter};
 
-use frick_ir::{BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubType, is_range};
+use frick_ir::{
+	BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubOptions, is_range,
+};
 use frick_utils::{GetOrZero as _, InsertOrPush as _};
 
 pub use self::{loops::*, sort::*};
@@ -734,7 +736,7 @@ pub fn optimize_constant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 pub fn optimize_sub_cell_from(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::SubCell(SubType::CellAt(options)),
+			BrainIr::SubCell(SubOptions::CellAt(options)),
 			BrainIr::MovePointer(y),
 		] if options.offset() == *y => Some(Change::swap([
 			BrainIr::move_pointer(*y),
@@ -747,28 +749,13 @@ pub fn optimize_sub_cell_from(ops: [&BrainIr; 2]) -> Option<Change> {
 pub fn optimize_sub_cell_from_with_set(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::SubCell(SubType::CellAt(sub_options)),
+			BrainIr::SubCell(SubOptions::CellAt(sub_options)),
 			BrainIr::SetCell(set_options),
 			BrainIr::MovePointer(y),
 		] if sub_options.offset() == *y && !set_options.is_offset() => Some(Change::swap([
 			BrainIr::move_pointer(*y),
 			BrainIr::sub_from_cell(sub_options.factor(), -y),
 			BrainIr::set_cell_at(set_options.value(), -y),
-		])),
-		_ => None,
-	}
-}
-
-pub fn optimize_constant_sub(ops: [&BrainIr; 2]) -> Option<Change> {
-	match ops {
-		[
-			BrainIr::SetCell(set_options),
-			BrainIr::SubCell(SubType::CellAt(sub_options)),
-		] if !set_options.is_offset() => Some(Change::swap([
-			BrainIr::clear_cell(),
-			BrainIr::move_pointer(sub_options.offset()),
-			BrainIr::SubCell(SubType::Value(set_options.value())),
-			BrainIr::move_pointer(-sub_options.offset()),
 		])),
 		_ => None,
 	}

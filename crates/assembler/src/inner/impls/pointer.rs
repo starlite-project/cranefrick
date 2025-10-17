@@ -41,9 +41,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		if matches!(offset, 0) {
 			Ok(current_ptr)
 		} else {
-			let offset_ptr =
-				self.builder
-					.build_int_nsw_add(current_ptr, offset_value, "offset_pointer_add\0")?;
+			let offset_ptr = self.builder.build_int_nsw_add(
+				current_ptr,
+				offset_value,
+				"offset_pointer_add\0",
+			)?;
 
 			self.wrap_pointer(offset_ptr, offset > 0)
 		}
