@@ -75,9 +75,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
 
-		let array_len_value = i64_type.const_int(options.len() as u64, false);
-		let _lifetime = self.start_lifetime(array_len_value, self.pointers.output)?;
-
+		let _output_lifetime = self.start_output_lifetime(options.len() as u64)?;
 		let tape_invariant = self.start_tape_invariant()?;
 
 		if is_memcpyable(options) {
@@ -92,7 +90,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.setup_output_cells_puts_iterated(i8_type, options)
 		}?;
 
-		let _output_invariant = self.start_invariant(array_len_value, self.pointers.output)?;
+		let _output_invariant = {
+			let array_len_value = i64_type.const_int(options.len() as u64, false);
+
+			self.start_invariant(array_len_value, self.pointers.output)?
+		};
 
 		self.call_puts(
 			context,

@@ -28,6 +28,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 		})
 	}
 
+	pub(super) fn start_output_lifetime(&self, len: u64) -> Result<impl Drop, AssemblyError> {
+		let len_value = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(len, false)
+		};
+
+		self.start_lifetime(len_value, self.pointers.output)
+	}
+
 	pub(super) fn start_tape_invariant(&self) -> Result<impl Drop, AssemblyError> {
 		let tape_len = {
 			let i64_type = self.context().i64_type();
