@@ -38,9 +38,11 @@ pub fn run_peephole_pass<const N: usize>(
 		}
 	}
 
-	for child in v.iter_mut().filter_map(BrainIr::child_ops_mut) {
-		progress |= run_peephole_pass::<N>(child, pass);
-	}
+	v.iter_mut()
+		.filter_map(BrainIr::child_ops_mut)
+		.for_each(|child| {
+			progress |= run_peephole_pass::<N>(child, pass);
+		});
 
 	progress
 }

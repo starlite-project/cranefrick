@@ -9,7 +9,7 @@ use std::{
 
 use frick_ir::BrainIr;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info};
+use tracing::{debug, info, trace_span};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
 
 use self::inner::{passes, run_loop_pass, run_peephole_pass};
@@ -71,58 +71,97 @@ impl Optimizer {
 		let span = tracing::Span::current();
 
 		self.pass_info("combine relavent instructions");
+		let guard = trace_span!("optimize_consecutive_instructions").entered();
 		*progress |= run_peephole_pass(self, passes::optimize_consecutive_instructions);
 		span.pb_inc(1);
+		drop(guard);
 
 		self.pass_info("add relavent offsets");
+		let guard = trace_span!("add_offsets").entered();
 		*progress |= run_peephole_pass(self, passes::add_offsets);
 		span.pb_inc(1);
+		drop(guard);
 
 		self.pass_info("fix boundary instructions");
+		let guard = trace_span!("optimize_initial_sets").entered();
 		*progress |= run_peephole_pass(self, passes::optimize_initial_sets);
+		drop(guard);
+		let guard = trace_span!("fix_boundary_instructions").entered();
 		*progress |= run_peephole_pass(self, passes::fix_boundary_instructions);
+		drop(guard);
 		span.pb_inc(2);
 
 		self.pass_info("optimize clear cell instructions");
+		let guard = trace_span!("clear_cell").entered();
 		*progress |= run_loop_pass(self, passes::clear_cell);
+		drop(guard);
 		span.pb_inc(1);
 
 		self.pass_info("optimize set-based instructions");
+		let guard = trace_span!("optimize_sets").entered();
 		*progress |= run_peephole_pass(self, passes::optimize_sets);
+		drop(guard);
 		span.pb_inc(1);
 
 		self.pass_info("optimize find zero instructions");
+		let guard = trace_span!("optimize_find_zero").entered();
 		*progress |= run_loop_pass(self, passes::optimize_find_zero);
+		drop(guard);
 		span.pb_inc(1);
 
 		self.pass_info("remove no-op instructions");
+		let guard = trace_span!("remove_noop_instructions").entered();
 		*progress |= run_peephole_pass(self, passes::remove_noop_instructions);
+		drop(guard);
+		let guard = trace_span!("unroll_noop_loop").entered();
 		*progress |= run_loop_pass(self, passes::unroll_noop_loop);
+		drop(guard);
 		span.pb_inc(2);
 
 		self.pass_info("remove unreachable loops");
+		let guard = trace_span!("remove_unreachable_loops").entered();
 		*progress |= run_peephole_pass(self, passes::remove_unreachable_loops);
+		drop(guard);
 		span.pb_inc(1);
 
 		self.pass_info("remove infinite loops");
+		let guard = trace_span!("remove_infinite_loops").entered();
 		*progress |= run_loop_pass(self, passes::remove_infinite_loops);
+		drop(guard);
 		span.pb_inc(1);
 
 		self.pass_info("remove empty loops");
+		let guard = trace_span!("remove_empty_loops").entered();
 		*progress |= run_loop_pass(self, passes::remove_empty_loops);
+		drop(guard);
 		span.pb_inc(1);
 
 		self.pass_info("unroll no-move dynamic loops");
+		let guard = trace_span!("unroll_basic_dynamic_loop").entered();
 		*progress |= run_peephole_pass(self, passes::unroll_basic_dynamic_loop);
+		drop(guard);
 		span.pb_inc(1);
 
 		self.pass_info("sort cell changes");
+		let guard = trace_span!("sort_changes", i = 8).entered();
 		*progress |= run_peephole_pass(self, passes::sort_changes::<8>);
+		drop(guard);
+		let guard = trace_span!("sort_changes", i = 7).entered();
 		*progress |= run_peephole_pass(self, passes::sort_changes::<7>);
+		drop(guard);
+		let guard = trace_span!("sort_changes", i = 6).entered();
 		*progress |= run_peephole_pass(self, passes::sort_changes::<6>);
+		drop(guard);
+				let guard = trace_span!("sort_changes", i = 5).entered();
 		*progress |= run_peephole_pass(self, passes::sort_changes::<5>);
+		drop(guard);
+				let guard = trace_span!("sort_changes", i = 4).entered();
 		*progress |= run_peephole_pass(self, passes::sort_changes::<4>);
+		drop(guard);
+				let guard = trace_span!("sort_changes", i = 3).entered();
 		*progress |= run_peephole_pass(self, passes::sort_changes::<3>);
+		drop(guard);
+		let guard = trace_span!()
 		*progress |= run_peephole_pass(self, passes::sort_changes::<2>);
 		span.pb_inc(7);
 
@@ -254,4 +293,8 @@ impl FromIterator<BrainIr> for Optimizer {
 				.collect(),
 		}
 	}
+}
+
+fn run_with_span(name: &'static str) {
+	let span = trace_span!(target: name);
 }
