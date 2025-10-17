@@ -20,7 +20,7 @@ use inkwell::{
 pub use self::utils::AssemblerFunctions;
 use self::utils::{AssemblerDebugBuilder, AssemblerPointers};
 use super::AssemblyError;
-use crate::{ContextExt as _, ContextGetter as _};
+use crate::{ContextExt as _, ContextGetter as _, ModuleExt as _};
 
 pub struct InnerAssembler<'ctx> {
 	module: Module<'ctx>,
@@ -112,8 +112,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		);
 
 		builder.set_current_debug_location(debug_loc);
-
 		module.set_source_file_name(&file_name);
+		module.set_new_debug_format(true);
 
 		Ok(Self {
 			module,
