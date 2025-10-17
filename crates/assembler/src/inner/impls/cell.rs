@@ -262,8 +262,6 @@ impl InnerAssembler<'_> {
 
 		let vec_store_instr = self.builder.build_store(gep, modified_vector_of_values)?;
 
-		vec_store_instr.set_alignment(16)?;
-
 		self.store_value_into(0, current_cell_gep)?;
 
 		Ok(())
