@@ -1,60 +1,16 @@
 mod cell;
+mod intrinsics;
 mod io;
 mod loops;
 mod mem;
 mod pointer;
 mod value;
 
-use inkwell::{
-	IntPredicate,
-	builder::Builder,
-	values::{FunctionValue, IntValue, PointerValue},
-};
+use inkwell::IntPredicate;
 
 use crate::{AssemblyError, ContextExt as _, ContextGetter as _, inner::InnerAssembler};
 
-impl<'ctx> InnerAssembler<'ctx> {
-	#[tracing::instrument(skip_all)]
-	fn start_lifetime(
-		&self,
-		alloc_len: IntValue<'ctx>,
-		pointer: PointerValue<'ctx>,
-	) -> Result<impl Drop, AssemblyError> {
-		struct LifetimeEnd<'builder, 'ctx> {
-			builder: &'builder Builder<'ctx>,
-			end: FunctionValue<'ctx>,
-			pointer: PointerValue<'ctx>,
-			alloc_len: IntValue<'ctx>,
-		}
-
-		impl Drop for LifetimeEnd<'_, '_> {
-			fn drop(&mut self) {
-				self.builder
-					.build_call(
-						self.end,
-						&[self.alloc_len.into(), self.pointer.into()],
-						"\0",
-					)
-					.unwrap();
-			}
-		}
-
-		self.builder.build_call(
-			self.functions.lifetime.start,
-			&[alloc_len.into(), pointer.into()],
-			"\0",
-		)?;
-
-		let lifetime_end = LifetimeEnd {
-			builder: &self.builder,
-			end: self.functions.lifetime.end,
-			pointer,
-			alloc_len,
-		};
-
-		Ok(lifetime_end)
-	}
-
+impl InnerAssembler<'_> {
 	#[tracing::instrument(skip_all)]
 	pub fn write_puts(&self) -> Result<(), AssemblyError> {
 		let context = self.context();

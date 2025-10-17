@@ -1,4 +1,5 @@
 use frick_ir::ValuedChangeCellOptions;
+use frick_spec::TAPE_SIZE;
 use inkwell::types::IntType;
 
 use crate::{
@@ -79,6 +80,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let lifetime_array_len = i64_type.const_int(options.len() as u64, false);
 
 			self.start_lifetime(lifetime_array_len, self.pointers.output)?
+		};
+
+		let _invariant = {
+			let tape_imm_length = i64_type.const_int(TAPE_SIZE as u64, false);
+
+			self.start_invariant(tape_imm_length, self.pointers.tape)?
 		};
 
 		if is_memcpyable(options) {
