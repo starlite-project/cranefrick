@@ -31,7 +31,7 @@ pub fn run_peephole_pass<const N: usize>(
 		};
 
 		if let Some(change) = change {
-			change.apply(v, i, N);
+			change.apply::<N>(v, i);
 			progress = true;
 		} else {
 			i += 1;

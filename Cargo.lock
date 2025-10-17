@@ -494,7 +494,6 @@ dependencies = [
  "frick_ir",
  "frick_utils",
  "serde",
- "smallvec",
  "tracing",
  "tracing-indicatif",
 ]
