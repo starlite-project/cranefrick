@@ -12,6 +12,7 @@ use inkwell::{
 		DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
+	types::IntType,
 	values::{InstructionValue, PointerValue},
 };
 
@@ -179,8 +180,11 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 	pub fn declare_variables(
 		&self,
 		context: ContextRef<'ctx>,
+		ptr_int_type: IntType<'ctx>,
 		pointers: AssemblerPointers<'ctx>,
 	) -> Result<(), AssemblyError> {
+		let i8_type = context.i8_type();
+
 		let debug_loc = self.create_debug_location(
 			context,
 			1,
@@ -188,6 +192,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			self.main_subprogram.as_debug_info_scope(),
 			None,
 		);
+
+		let tape_value = {
+			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
+
+			i8_array_type.const_zero()
+		};
 
 		let right_after_tape_alloca = get_instruction_after_alloca(pointers.tape)?;
 
@@ -199,6 +209,16 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			right_after_tape_alloca,
 		);
 
+		self.insert_dbg_value_before(
+			tape_value.into(),
+			self.variables.tape,
+			None,
+			debug_loc,
+			right_after_tape_alloca,
+		);
+
+		let pointer_value = ptr_int_type.const_zero();
+
 		let right_after_pointer_alloca = get_instruction_after_alloca(pointers.pointer)?;
 
 		self.insert_declare_before_instruction(
@@ -209,11 +229,33 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			right_after_pointer_alloca,
 		);
 
+		self.insert_dbg_value_before(
+			pointer_value.into(),
+			self.variables.pointer,
+			None,
+			debug_loc,
+			right_after_pointer_alloca,
+		);
+
+		let output_array_value = {
+			let output_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN);
+
+			output_array_type.get_undef()
+		};
+
 		let right_after_output_alloca = get_instruction_after_alloca(pointers.output)?;
 
 		self.insert_declare_before_instruction(
 			pointers.output,
 			Some(self.variables.output),
+			None,
+			debug_loc,
+			right_after_output_alloca,
+		);
+
+		self.insert_dbg_value_before(
+			output_array_value.into(),
+			self.variables.output,
 			None,
 			debug_loc,
 			right_after_output_alloca,

@@ -142,7 +142,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		tracing::debug!("declaring variables");
 		self.debug_builder
-			.declare_variables(self.context(), self.pointers)?;
+			.declare_variables(self.context(), self.ptr_int_type, self.pointers)?;
 
 		let context = self.context();
 
