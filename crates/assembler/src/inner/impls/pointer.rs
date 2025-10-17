@@ -43,7 +43,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		} else {
 			let offset_ptr =
 				self.builder
-					.build_int_add(current_ptr, offset_value, "offset_pointer_add\0")?;
+					.build_int_nsw_add(current_ptr, offset_value, "offset_pointer_add\0")?;
 
 			self.wrap_pointer(offset_ptr, offset > 0)
 		}
@@ -95,7 +95,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let added_offset =
 			self.builder
-				.build_int_add(tmp, tape_size, "wrap_pointer_negative_add\0")?;
+				.build_int_nsw_add(tmp, tape_size, "wrap_pointer_negative_add\0")?;
 
 		let cmp = self.builder.build_int_compare(
 			IntPredicate::SLT,
