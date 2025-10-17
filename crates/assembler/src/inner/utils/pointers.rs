@@ -42,7 +42,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 				"",
 			)?;
 
-			builder.build_memset(tape_alloca, 16, i8_type.const_zero(), i8_array_size)?;
+			builder.build_memset(tape_alloca, 1, i8_type.const_zero(), i8_array_size)?;
 
 			tape_alloca
 		};
