@@ -50,16 +50,17 @@ impl Optimizer {
 
 	#[tracing::instrument("run passes", skip(self), fields(indicatif.pb_show = tracing::field::Empty))]
 	fn optimization_pass(&mut self, iteration: usize) -> bool {
+		let span = tracing::Span::current();
 		let mut progress = false;
 
-		tracing::Span::current().pb_set_style(
+		span.pb_set_style(
 			&ProgressStyle::with_template(
 				"{span_child_prefix}{spinner} {span_name}({span_fields}) [{bar}] ({pos}/{len}) [{elapsed_precise}]",
 			)
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		tracing::Span::current().pb_set_length(45);
+		span.pb_set_length(45);
 
 		self.run_all_passes(&mut progress);
 
@@ -67,51 +68,53 @@ impl Optimizer {
 	}
 
 	fn run_all_passes(&mut self, progress: &mut bool) {
+		let span = tracing::Span::current();
+
 		self.pass_info("combine relavent instructions");
 		*progress |= run_peephole_pass(self, passes::optimize_consecutive_instructions);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("add relavent offsets");
 		*progress |= run_peephole_pass(self, passes::add_offsets);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("fix boundary instructions");
 		*progress |= run_peephole_pass(self, passes::optimize_initial_sets);
 		*progress |= run_peephole_pass(self, passes::fix_boundary_instructions);
-		tracing::Span::current().pb_inc(2);
+		span.pb_inc(2);
 
 		self.pass_info("optimize clear cell instructions");
 		*progress |= run_loop_pass(self, passes::clear_cell);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("optimize set-based instructions");
 		*progress |= run_peephole_pass(self, passes::optimize_sets);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("optimize find zero instructions");
 		*progress |= run_loop_pass(self, passes::optimize_find_zero);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("remove no-op instructions");
 		*progress |= run_peephole_pass(self, passes::remove_noop_instructions);
 		*progress |= run_loop_pass(self, passes::unroll_noop_loop);
-		tracing::Span::current().pb_inc(2);
+		span.pb_inc(2);
 
 		self.pass_info("remove unreachable loops");
 		*progress |= run_peephole_pass(self, passes::remove_unreachable_loops);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("remove infinite loops");
 		*progress |= run_loop_pass(self, passes::remove_infinite_loops);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("remove empty loops");
 		*progress |= run_loop_pass(self, passes::remove_empty_loops);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("unroll no-move dynamic loops");
 		*progress |= run_peephole_pass(self, passes::unroll_basic_dynamic_loop);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("sort cell changes");
 		*progress |= run_peephole_pass(self, passes::sort_changes::<8>);
@@ -121,7 +124,7 @@ impl Optimizer {
 		*progress |= run_peephole_pass(self, passes::sort_changes::<4>);
 		*progress |= run_peephole_pass(self, passes::sort_changes::<3>);
 		*progress |= run_peephole_pass(self, passes::sort_changes::<2>);
-		tracing::Span::current().pb_inc(7);
+		span.pb_inc(7);
 
 		self.pass_info("optimize scale and shift value instructions");
 		*progress |= run_loop_pass(self, passes::optimize_move_value_from_loop);
@@ -131,52 +134,52 @@ impl Optimizer {
 		*progress |= run_peephole_pass(self, passes::optimize_fetch_value);
 		*progress |= run_peephole_pass(self, passes::optimize_replace_value);
 		*progress |= run_peephole_pass(self, passes::optimize_copy_value);
-		tracing::Span::current().pb_inc(7);
+		span.pb_inc(7);
 
 		self.pass_info("optimize write calls");
 		*progress |= run_peephole_pass(self, passes::optimize_writes);
 		*progress |= run_peephole_pass(self, passes::optimize_changes_and_writes);
 		*progress |= run_peephole_pass(self, passes::optimize_offset_writes);
-		tracing::Span::current().pb_inc(3);
+		span.pb_inc(3);
 
 		self.pass_info("remove redundant take instructions");
 		*progress |= run_peephole_pass(self, passes::remove_redundant_shifts);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("optimize constant shifts");
 		*progress |= run_peephole_pass(self, passes::optimize_constant_shifts);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("remove unnecessary offsets");
 		*progress |= run_peephole_pass(self, passes::remove_offsets);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 
 		self.pass_info("optimize sub cell");
 		*progress |= run_loop_pass(self, passes::optimize_sub_cell_at);
 		*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from);
 		*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from_with_set);
 		*progress |= run_peephole_pass(self, passes::optimize_constant_sub);
-		tracing::Span::current().pb_inc(4);
+		span.pb_inc(4);
 
 		self.pass_info("optimize if not zero");
 		*progress |= run_loop_pass(self, passes::optimize_if_nz);
 		*progress |= run_peephole_pass(self, passes::optimize_if_nz_when_zeroing);
-		tracing::Span::current().pb_inc(2);
+		span.pb_inc(2);
 
 		self.pass_info("optimize duplicate cell");
 		*progress |= run_loop_pass(self, passes::optimize_duplicate_cell);
 		*progress |= run_peephole_pass(self, passes::optimize_duplicate_cell_vectorization);
 		*progress |= run_peephole_pass(self, passes::unroll_constant_duplicate_cell);
-		tracing::Span::current().pb_inc(3);
+		span.pb_inc(3);
 
 		self.pass_info("optimize memory operations");
 		*progress |= run_peephole_pass(self, passes::optimize_mem_sets);
 		*progress |= run_peephole_pass(self, passes::optimize_mem_set_move_change);
-		tracing::Span::current().pb_inc(2);
+		span.pb_inc(2);
 
-		self.pass_info("unroll certail if nz");
+		self.pass_info("unroll certain if nz");
 		*progress |= run_peephole_pass(self, passes::unroll_constant_if_nz);
-		tracing::Span::current().pb_inc(1);
+		span.pb_inc(1);
 	}
 
 	fn pass_info(&self, pass: &str) {
