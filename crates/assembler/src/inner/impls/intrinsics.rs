@@ -1,9 +1,10 @@
+use frick_spec::TAPE_SIZE;
 use inkwell::{
 	builder::Builder,
 	values::{BasicMetadataValueEnum, FunctionValue, IntValue, PointerValue},
 };
 
-use crate::{AssemblyError, inner::InnerAssembler};
+use crate::{AssemblyError, ContextGetter, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip_all)]
@@ -25,6 +26,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 			alloc_len,
 			invariant_pointer: None,
 		})
+	}
+
+	pub(super) fn start_tape_invariant(&self) -> Result<impl Drop, AssemblyError> {
+		let tape_len = {
+			let i64_type = self.context().i64_type();
+
+			i64_type.const_int(TAPE_SIZE as u64, false)
+		};
+
+		self.start_invariant(tape_len, self.pointers.tape)
 	}
 
 	pub(super) fn start_invariant(

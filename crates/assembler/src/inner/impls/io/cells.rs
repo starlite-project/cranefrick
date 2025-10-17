@@ -1,5 +1,4 @@
 use frick_ir::ValuedChangeCellOptions;
-use frick_spec::TAPE_SIZE;
 use inkwell::types::IntType;
 
 use crate::{
@@ -76,17 +75,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
 
-		let _lifetime = {
-			let lifetime_array_len = i64_type.const_int(options.len() as u64, false);
+		let array_len_value = i64_type.const_int(options.len() as u64, false);
+		let _lifetime = self.start_lifetime(array_len_value, self.pointers.output)?;
 
-			self.start_lifetime(lifetime_array_len, self.pointers.output)?
-		};
-
-		let _invariant = {
-			let tape_imm_length = i64_type.const_int(TAPE_SIZE as u64, false);
-
-			self.start_invariant(tape_imm_length, self.pointers.tape)?
-		};
+		let tape_invariant = self.start_tape_invariant()?;
 
 		if is_memcpyable(options) {
 			tracing::debug!("memcpying cells into output array");
@@ -100,12 +92,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.setup_output_cells_puts_iterated(i8_type, options)
 		}?;
 
+		let _output_invariant = self.start_invariant(array_len_value, self.pointers.output)?;
+
 		self.call_puts(
 			context,
 			self.pointers.output,
 			options.len() as u64,
 			"output_cells_puts",
 		)?;
+
+		drop(tape_invariant);
 
 		Ok(())
 	}
@@ -125,7 +121,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let len_value = i64_type.const_int(len.into(), false);
 
 		self.builder
-			.build_memcpy(self.pointers.output, 16, current_gep, 16, len_value)?;
+			.build_memcpy(self.pointers.output, 1, current_gep, 1, len_value)?;
 
 		Ok(())
 	}

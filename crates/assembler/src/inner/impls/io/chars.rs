@@ -30,6 +30,8 @@ impl InnerAssembler<'_> {
 
 		let global_value_pointer = global_constant.as_pointer_value();
 
+		let _invariant = self.start_tape_invariant()?;
+
 		self.call_puts(context, global_value_pointer, c.len() as u64, "output_str")
 	}
 }
