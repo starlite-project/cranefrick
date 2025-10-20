@@ -28,14 +28,15 @@ use inkwell::{
 	},
 	values::InstructionValueError,
 };
-use inner::AssemblerFunctions;
-use module::MemoryManager;
 use send_wrapper::SendWrapper;
 use tracing::info;
 
 pub(crate) use self::ext::*;
-use self::inner::InnerAssembler;
 pub use self::module::AssembledModule;
+use self::{
+	inner::{AssemblerFunctions, InnerAssembler},
+	module::MemoryManager,
+};
 
 pub struct Assembler {
 	context: Context,
