@@ -87,7 +87,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
 		} else {
 			tracing::debug!("unable to memcpy or memset cells");
-			self.setup_output_cells_puts_iterated(options)
+			self.setup_output_cells_puts_vector_scattered(options)
 		}?;
 
 		let _output_invariant = {
@@ -159,7 +159,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	#[tracing::instrument(skip_all, fields(options = options.len()))]
-	fn setup_output_cells_puts_iterated(
+	fn setup_output_cells_puts_vector_scattered(
 		&self,
 		options: &[ValuedChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
@@ -184,14 +184,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 					ptr_int_vec_type.get_undef(),
 					offset,
 					zero_index,
-					"setup_output_cells_puts_iterated_insert_element\0",
+					"setup_output_cells_puts_vector_scattered_insert_element\0",
 				)?;
 
 				self.builder.build_shuffle_vector(
 					tmp,
 					ptr_int_vec_type.get_undef(),
 					i32_vec_type.const_zero(),
-					"setup_output_cells_puts_iterated_shuffle_vector\0",
+					"setup_output_cells_puts_vector_scattered_shuffle_vector\0",
 				)?
 			} else {
 				let mut vec = ptr_int_vec_type.get_undef();
@@ -210,7 +210,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 						vec,
 						offset,
 						index,
-						"setup_output_cells_puts_iterated_insert_element\0",
+						"setup_output_cells_puts_vector_scattered_insert_element\0",
 					)?;
 				}
 
@@ -223,7 +223,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				i8_type,
 				self.pointers.tape,
 				vec_of_indices,
-				"setup_output_cells_puts_iterated_gep\0",
+				"setup_output_cells_puts_vector_scattered_gep\0",
 			)?
 		};
 
@@ -247,7 +247,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 					bool_vec_all_on.into(),
 					i8_vec_type.get_undef().into(),
 				],
-				"setup_output_cells_puts_iterated_vector_load_call\0",
+				"setup_output_cells_puts_vector_scattered_vector_load_call\0",
 			)?
 			.try_as_basic_value()
 			.unwrap_left()
@@ -285,7 +285,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder.build_int_add(
 				vec_of_loaded_values,
 				vec_of_value_offsets,
-				"setup_output_cells_puts_iterated_add\0",
+				"setup_output_cells_puts_vector_scattered_add\0",
 			)?
 		};
 
