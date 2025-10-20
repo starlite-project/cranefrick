@@ -34,6 +34,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"output_cell_extend\0",
 		)?;
 
+		if let Some(extend_instr) = extended_value.as_instruction() {
+			extend_instr.set_non_negative_flag(true);
+		}
+
 		self.call_putchar(context, extended_value, "output_cell")?;
 
 		Ok(())

@@ -70,6 +70,10 @@ impl InnerAssembler<'_> {
 			.builder
 			.build_int_z_extend_or_bit_cast(raw_char, i32_type, "\0")?;
 
+		if let Some(extended_char_instr) = extended_char.as_instruction() {
+			extended_char_instr.set_non_negative_flag(true);
+		}
+
 		self.builder.build_direct_invoke(
 			self.functions.putchar,
 			&[extended_char.into()],
