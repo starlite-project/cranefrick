@@ -17,7 +17,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = context.i8_type();
 		let i32_type = context.i32_type();
 
-		let current_cell_value = self.load(options.offset(), "output_cell")?;
+		let current_cell_value = self.load_cell(options.offset(), "output_cell")?;
 
 		let offset_cell_value = if matches!(options.value(), 0) {
 			current_cell_value
@@ -136,7 +136,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		options: ValuedChangeCellOptions<i8>,
 		length: u64,
 	) -> Result<(), AssemblyError> {
-		let current_value = self.load(options.offset(), "setup_output_cells_puts_memset")?;
+		let current_value = self.load_cell(options.offset(), "setup_output_cells_puts_memset")?;
 
 		let value_to_memset = if matches!(options.value(), 0) {
 			current_value

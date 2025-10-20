@@ -13,7 +13,8 @@ impl InnerAssembler<'_> {
 
 	#[tracing::instrument(skip_all)]
 	pub fn change_cell(&self, options: ValuedChangeCellOptions<i8>) -> Result<(), AssemblyError> {
-		let (current_cell_value, gep) = self.load_from(options.offset(), "change_cell")?;
+		let (current_cell_value, gep) =
+			self.load_cell_and_pointer(options.offset(), "change_cell")?;
 
 		let value_to_add = {
 			let i8_type = self.context().i8_type();
@@ -43,7 +44,7 @@ impl InnerAssembler<'_> {
 				.build_int_mul(current_cell, factor_value, "sub_cell_at_mul\0")?
 		};
 
-		let (other_value, gep) = self.load_from(options.offset(), "sub_cell_at")?;
+		let (other_value, gep) = self.load_cell_and_pointer(options.offset(), "sub_cell_at")?;
 
 		let value_to_store =
 			self.builder
@@ -70,7 +71,7 @@ impl InnerAssembler<'_> {
 				.build_int_mul(current_cell, factor_value, "sub_from_cell_mul\0")?
 		};
 
-		let (other_value, gep) = self.load_from(0, "sub_from_cell")?;
+		let (other_value, gep) = self.load_cell_and_pointer(0, "sub_from_cell")?;
 
 		let value_to_store =
 			self.builder

@@ -6,31 +6,52 @@ use inkwell::{
 use super::create_string;
 use crate::{
 	AssemblyError, ContextGetter as _,
-	inner::{InnerAssembler, utils::CalculatedOffset},
+	inner::{
+		InnerAssembler,
+		utils::{CalculatedOffset, LoadableValue},
+	},
 };
 
 impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip_all)]
-	pub fn load(&self, offset: i32, fn_name: &str) -> Result<IntValue<'ctx>, AssemblyError> {
-		let (loaded_value, ..) = self.load_from(offset, fn_name)?;
+	pub fn load_cell(&self, offset: i32, fn_name: &str) -> Result<IntValue<'ctx>, AssemblyError> {
+		let (loaded_value, ..) = self.load_cell_and_pointer(offset, fn_name)?;
 
 		Ok(loaded_value)
 	}
 
+	pub fn load_from<T: LoadableValue<'ctx>>(
+		&self,
+		value_ty: T,
+		gep: PointerValue<'ctx>,
+		fn_name: &str,
+	) -> Result<T::Value, AssemblyError> {
+		let loaded_value =
+			self.builder
+				.build_load(value_ty, gep, &create_string(fn_name, "_load_from_load\0"))?;
+
+		Ok(T::from_basic_value_enum(loaded_value))
+	}
+
 	#[tracing::instrument(skip_all)]
-	pub fn load_from(
+	pub fn load_cell_and_pointer(
 		&self,
 		offset: i32,
 		fn_name: &str,
 	) -> Result<(IntValue<'ctx>, PointerValue<'ctx>), AssemblyError> {
 		let i8_type = self.context().i8_type();
 
-		let gep = self.tape_gep(i8_type, offset, &create_string(fn_name, "_load_from"))?;
+		let gep = self.tape_gep(
+			i8_type,
+			offset,
+			&create_string(fn_name, "_load_cell_and_pointer"),
+		)?;
 
-		let loaded_value = self
-			.builder
-			.build_load(i8_type, gep, &create_string(fn_name, "_load_from_load\0"))?
-			.into_int_value();
+		let loaded_value = self.load_from(
+			i8_type,
+			gep,
+			&create_string(fn_name, "_load_cell_and_pointer\0"),
+		)?;
 
 		Ok((loaded_value, gep))
 	}
@@ -63,7 +84,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	#[tracing::instrument(skip_all)]
 	pub fn take(&self, offset: i32, fn_name: &str) -> Result<IntValue<'ctx>, AssemblyError> {
-		let (value, gep) = self.load_from(offset, fn_name)?;
+		let (value, gep) = self.load_cell_and_pointer(offset, fn_name)?;
 
 		self.store_value_into(0, gep)?;
 

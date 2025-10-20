@@ -48,17 +48,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 		offset: i32,
 		fn_name: impl Display,
 	) -> Result<IntValue<'ctx>, AssemblyError> {
-		let ptr_type = self.ptr_int_type;
-		let offset_value = ptr_type.const_int(offset as u64, false);
+		let ptr_int_type = self.ptr_int_type;
+		let offset_value = ptr_int_type.const_int(offset as u64, false);
 
-		let current_ptr = self
-			.builder
-			.build_load(
-				ptr_type,
-				self.pointers.pointer,
-				&format!("{fn_name}_offset_pointer_load\0"),
-			)?
-			.into_int_value();
+		let current_ptr = self.load_from(
+			ptr_int_type,
+			self.pointers.pointer,
+			&format!("{fn_name}_offset_pointer_load"),
+		)?;
 
 		if matches!(offset, 0) {
 			Ok(current_ptr)

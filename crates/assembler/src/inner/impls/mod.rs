@@ -64,10 +64,7 @@ impl InnerAssembler<'_> {
 			"\0",
 		)?;
 
-		let raw_char = self
-			.builder
-			.build_load(i8_type, char_ptr, "\0")?
-			.into_int_value();
+		let raw_char = self.load_from(i8_type, char_ptr, "frick_puts_load")?;
 
 		let extended_char = self
 			.builder

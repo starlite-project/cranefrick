@@ -15,7 +15,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(header_block);
 
-		let value = self.load(0, "if_not_zero")?;
+		let value = self.load_cell(0, "if_not_zero")?;
 
 		let zero = {
 			let i8_type = context.i8_type();
@@ -69,7 +69,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(header_block);
 
-		let value = self.load(0, "dynamic_loop")?;
+		let value = self.load_cell(0, "dynamic_loop")?;
 
 		let zero = {
 			let i8_type = context.i8_type();
@@ -122,14 +122,11 @@ impl InnerAssembler<'_> {
 		let ptr_int_type = self.ptr_int_type;
 		let i8_type = context.i8_type();
 
-		let current_pointer_value = self
-			.builder
-			.build_load(
-				ptr_int_type,
-				self.pointers.pointer,
-				"find_zero_load_pointer\0",
-			)?
-			.into_int_value();
+		let current_pointer_value = self.load_from(
+			ptr_int_type,
+			self.pointers.pointer,
+			"find_zero_load_pointer",
+		)?;
 
 		let header_block = context.append_basic_block(self.functions.main, "find_zero.header\0");
 		let body_block = context.append_basic_block(self.functions.main, "find_zero.body\0");
@@ -147,10 +144,7 @@ impl InnerAssembler<'_> {
 			"find_zero",
 		)?;
 
-		let value = self
-			.builder
-			.build_load(i8_type, gep, "find_zero_cell_load\0")?
-			.into_int_value();
+		let value = self.load_from(i8_type, gep, "find_zero_cell_load")?;
 
 		let zero = i8_type.const_zero();
 
