@@ -1,9 +1,9 @@
 use frick_ir::{
-	ChangeCellOptions, Factor, FactoredChangeCellOptions, SetManyCellsOptions, SetRangeOptions,
-	ValuedChangeCellOptions, get_range, is_range,
+	FactoredChangeCellOptions, SetManyCellsOptions, SetRangeOptions, ValuedChangeCellOptions,
 };
+use inkwell::types::VectorType;
 
-use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
+use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
 	#[tracing::instrument(skip_all)]
@@ -86,183 +86,152 @@ impl InnerAssembler<'_> {
 		&self,
 		values: &[FactoredChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
-		if is_vectorizable(values) {
-			tracing::debug!("vectorizing duplicate_cell");
-			self.duplicate_cell_vectorized(values)
-		} else {
-			tracing::debug!("unable to vectorize duplicate_cell");
-			self.duplicate_cell_iterated(values)
-		}
-	}
-
-	fn duplicate_cell_iterated(
-		&self,
-		values: &[FactoredChangeCellOptions<i8>],
-	) -> Result<(), AssemblyError> {
-		let i8_type = self.context().i8_type();
-
-		let (value, value_gep) = self.load_from(0, "duplicate_cell_iterated")?;
-
-		for (factor, index) in values
-			.iter()
-			.copied()
-			.map(FactoredChangeCellOptions::into_parts)
-		{
-			let (other_value, other_value_gep) =
-				self.load_from(index, "duplicate_cell_iterated")?;
-
-			let span = tracing::debug_span!(
-				"duplicate_cell_iterated",
-				index,
-				factor = tracing::field::Empty
-			);
-			let _guard = span.enter();
-
-			let modified_value = match factor {
-				0 => {
-					tracing::debug!("skipping cell");
-					continue;
-				}
-				1 => {
-					tracing::debug!("adding value directly");
-					self.builder.build_int_add(
-						other_value,
-						value,
-						"duplicate_cell_iterated_add\0",
-					)?
-				}
-				x => {
-					tracing::debug!("factoring value by {factor}, then adding");
-					let factor = i8_type.const_int(x as u64, false);
-
-					let factored_value = self.builder.build_int_mul(
-						value,
-						factor,
-						"duplicate_cell_iterated_mul\0",
-					)?;
-
-					self.builder.build_int_add(
-						other_value,
-						factored_value,
-						"duplicate_cell_iterated_add\0",
-					)?
-				}
-			};
-
-			self.store_into(modified_value, other_value_gep)?;
-		}
-
-		self.store_value_into(0, value_gep)?;
-
-		Ok(())
-	}
-
-	#[tracing::instrument(skip_all)]
-	fn duplicate_cell_vectorized(
-		&self,
-		values: &[FactoredChangeCellOptions<i8>],
-	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
+		let ptr_int_type = self.ptr_int_type;
+		let bool_type = context.bool_type();
 		let i8_type = context.i8_type();
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
-		let i8_vector_type = i8_type.vec_type(values.len() as u32);
-		let i32_vector_type = i32_type.vec_type(values.len() as u32);
+		let i8_vec_type = i8_type.vec_type(values.len() as u32);
+		let i32_vec_type = i32_type.vec_type(values.len() as u32);
+		let ptr_int_vec_type = ptr_int_type.vec_type(values.len() as u32);
 
-		let (current_cell_value, current_cell_gep) =
-			self.load_from(0, "duplicate_cell_vectorized")?;
+		let vec_of_current_cell = {
+			let current_cell = self.take(0, "duplicate_cell")?;
 
-		let zero_index = i64_type.const_zero();
-		let undef = i8_vector_type.get_undef();
+			let zero_index = i64_type.const_zero();
 
-		let range_start = {
-			let range = get_range(values).unwrap();
-
-			*range.start()
-		};
-
-		let gep = self.tape_gep(i8_vector_type, range_start, "duplicate_cell_vectorized")?;
-
-		let loaded_values = self
-			.builder
-			.build_load(i8_vector_type, gep, "duplicate_cell_vectorized_load\0")?
-			.into_vector_value();
-
-		let vector_of_current_cells = {
 			let tmp = self.builder.build_insert_element(
-				undef,
-				current_cell_value,
+				i8_vec_type.get_undef(),
+				current_cell,
 				zero_index,
-				"duplicate_cell_vectorized_insertelement\0",
+				"duplicate_cell_insert_element\0",
 			)?;
 
-			if matches!(values.len(), 2) {
-				let one_index = i64_type.const_int(1, false);
-
-				self.builder.build_insert_element(
-					tmp,
-					current_cell_value,
-					one_index,
-					"duplicate_cell_vectorized_insertelement\0",
-				)?
-			} else {
-				self.builder.build_shuffle_vector(
-					tmp,
-					undef,
-					i32_vector_type.const_zero(),
-					"duplicate_cell_vectorized_shufflevector\0",
-				)?
-			}
+			self.builder.build_shuffle_vector(
+				tmp,
+				i8_vec_type.get_undef(),
+				i32_vec_type.const_zero(),
+				"duplicate_cell_shuffle_vector",
+			)?
 		};
 
-		let vector_of_new_values = {
-			let mut vec = i8_vector_type.const_zero();
+		let vec_of_indices = {
+			let mut vec = ptr_int_vec_type.const_zero();
 
-			for (i, factor) in values
+			for (i, offset) in values
 				.iter()
 				.copied()
-				.map(FactoredChangeCellOptions::factor)
+				.map(FactoredChangeCellOptions::offset)
 				.enumerate()
 			{
+				let offset = self.offset_pointer(offset)?;
+
 				let index = i64_type.const_int(i as u64, false);
 
-				let factor = i8_type.const_int(factor as u64, false);
-
-				vec = vec.const_insert_element(index, factor).into_vector_value();
+				vec = self.builder.build_insert_element(
+					vec,
+					offset,
+					index,
+					"duplicate_cell_insert_element\0",
+				)?;
 			}
 
 			vec
 		};
 
-		let modified_vector_of_values = if values
+		let vec_of_ptrs = unsafe {
+			self.builder.build_vec_gep(
+				i8_type,
+				self.pointers.tape,
+				vec_of_indices,
+				"duplicate_cell_gep\0",
+			)?
+		};
+
+		let vector_gather = self.vector_gather(i8_vec_type)?;
+
+		let vec_load_store_alignment = i32_type.const_int(1, false);
+
+		let bool_vec_all_on = {
+			let vec_of_trues = vec![bool_type.const_all_ones(); values.len()];
+
+			VectorType::const_vector(&vec_of_trues)
+		};
+
+		let vec_of_loaded_values = self
+			.builder
+			.build_call(
+				vector_gather,
+				&[
+					vec_of_ptrs.into(),
+					vec_load_store_alignment.into(),
+					bool_vec_all_on.into(),
+					i8_vec_type.get_undef().into(),
+				],
+				"duplicate_cell_vector_load_call\0",
+			)?
+			.try_as_basic_value()
+			.unwrap_left()
+			.into_vector_value();
+
+		let vec_of_modified_values = if values
 			.iter()
 			.copied()
 			.map(FactoredChangeCellOptions::factor)
 			.all(|x| matches!(x, 1))
 		{
 			self.builder.build_int_add(
-				loaded_values,
-				vector_of_current_cells,
-				"duplicate_cell_vectorized_add\0",
+				vec_of_current_cell,
+				vec_of_loaded_values,
+				"duplicate_cell_add\0",
 			)?
 		} else {
-			let multiplied = self.builder.build_int_mul(
-				vector_of_current_cells,
-				vector_of_new_values,
-				"duplicate_cell_vectorized_mul\0",
+			let vec_of_factors = {
+				let mut vec = i8_vec_type.const_zero();
+
+				for (i, factor) in values
+					.iter()
+					.copied()
+					.map(FactoredChangeCellOptions::factor)
+					.enumerate()
+				{
+					let index = i64_type.const_int(i as u64, false);
+
+					let factor = i8_type.const_int(factor as u64, false);
+
+					vec = vec.const_insert_element(index, factor).into_vector_value();
+				}
+
+				vec
+			};
+
+			let multiplied_vec = self.builder.build_int_mul(
+				vec_of_current_cell,
+				vec_of_factors,
+				"duplicate_cell_mul",
 			)?;
 
 			self.builder.build_int_add(
-				loaded_values,
-				multiplied,
-				"duplicate_cell_vectorized_add\0",
+				multiplied_vec,
+				vec_of_loaded_values,
+				"duplicate_cell_add\0",
 			)?
 		};
 
-		self.builder.build_store(gep, modified_vector_of_values)?;
+		let vec_scatter = self.vector_scatter(i8_vec_type)?;
 
-		self.store_value_into(0, current_cell_gep)?;
+		self.builder.build_call(
+			vec_scatter,
+			&[
+				vec_of_modified_values.into(),
+				vec_of_ptrs.into(),
+				vec_load_store_alignment.into(),
+				bool_vec_all_on.into(),
+			],
+			"duplicate_cell_store\0",
+		)?;
 
 		Ok(())
 	}
@@ -306,16 +275,4 @@ impl InnerAssembler<'_> {
 
 		Ok(())
 	}
-}
-
-fn is_vectorizable(values: &[ChangeCellOptions<i8, Factor>]) -> bool {
-	if !is_vector_size(values) {
-		return false;
-	}
-
-	is_range(values) && values.len().is_power_of_two()
-}
-
-const fn is_vector_size<T>(values: &[T]) -> bool {
-	values.len() >= 2
 }

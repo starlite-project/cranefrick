@@ -60,7 +60,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(44);
+		span.pb_set_length(43);
 
 		self.run_all_passes(&mut progress);
 
@@ -260,13 +260,13 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize duplicate cell", 3);
+			let _guard = self.pass_info("optimize duplicate cell", 2);
 			run_with_span("optimize_duplicate_cell", || {
 				*progress |= run_loop_pass(self, passes::optimize_duplicate_cell);
 			});
-			run_with_span("optimize_duplicate_cell_vectorization", || {
-				*progress |= run_peephole_pass(self, passes::optimize_duplicate_cell_vectorization);
-			});
+			// run_with_span("optimize_duplicate_cell_vectorization", || {
+			// 	*progress |= run_peephole_pass(self, passes::optimize_duplicate_cell_vectorization);
+			// });
 			run_with_span("unroll_constant_duplicate_cell", || {
 				*progress |= run_peephole_pass(self, passes::unroll_constant_duplicate_cell);
 			});

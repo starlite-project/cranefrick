@@ -17,7 +17,7 @@ pub struct AssemblerPointers<'ctx> {
 impl<'ctx> AssemblerPointers<'ctx> {
 	pub fn new(
 		module: &Module<'ctx>,
-		functions: AssemblerFunctions<'ctx>,
+		functions: &AssemblerFunctions<'ctx>,
 		builder: &Builder<'ctx>,
 		target_data: &TargetData,
 	) -> Result<(Self, IntType<'ctx>), AssemblyError> {

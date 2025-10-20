@@ -5,9 +5,7 @@ mod sort;
 
 use std::{cmp, iter};
 
-use frick_ir::{
-	BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubOptions, is_range,
-};
+use frick_ir::{BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubOptions};
 use frick_utils::{GetOrZero as _, InsertOrPush as _};
 
 pub use self::{loops::*, sort::*};
@@ -1002,36 +1000,6 @@ pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
 				BrainIr::set_many_cells(values, set_many_options.start()),
 				BrainIr::move_pointer(*x),
 			]))
-		}
-		_ => None,
-	}
-}
-
-pub fn optimize_duplicate_cell_vectorization(ops: [&BrainIr; 1]) -> Option<Change> {
-	match ops {
-		[BrainIr::DuplicateCell { values }] => {
-			if is_range(values) {
-				return None;
-			}
-
-			let mut out = Vec::with_capacity(values.len());
-
-			for w in values.windows(2) {
-				let a = w[0];
-				let b = w[1];
-
-				out.push(a);
-
-				for missing_offset in (a.offset() + 1)..b.offset() {
-					out.push(ChangeCellOptions::new(0, missing_offset));
-				}
-			}
-
-			if let Some(last) = values.last() {
-				out.push(*last);
-			}
-
-			Some(Change::replace(BrainIr::DuplicateCell { values: out }))
 		}
 		_ => None,
 	}

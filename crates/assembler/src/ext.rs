@@ -1,17 +1,23 @@
 #![allow(dead_code)]
 
+use std::{
+	borrow::Cow,
+	ffi::{CStr, CString},
+};
+
 use inkwell::{
 	AddressSpace,
 	attributes::Attribute,
+	builder::{Builder, BuilderError},
 	context::{AsContextRef, Context, ContextRef},
 	debug_info::{
 		DIBasicType, DICompileUnit, DICompositeType, DIDerivedType, DIExpression, DIFile,
 		DILexicalBlock, DILocalVariable, DILocation, DINamespace, DIScope, DIType,
 	},
-	llvm_sys::core::{LLVMIsNewDbgInfoFormat, LLVMSetIsNewDbgInfoFormat},
+	llvm_sys::core::{LLVMBuildGEP2, LLVMIsNewDbgInfoFormat, LLVMSetIsNewDbgInfoFormat},
 	module::Module,
-	types::PointerType,
-	values::MetadataValue,
+	types::{BasicType, PointerType},
+	values::{AsValueRef, MetadataValue, PointerValue, VectorValue},
 };
 
 pub trait ContextGetter<'ctx> {
@@ -103,4 +109,53 @@ impl<'ctx> ModuleExt<'ctx> for Module<'ctx> {
 	fn is_new_debug_format(&self) -> bool {
 		!matches!(unsafe { LLVMIsNewDbgInfoFormat(self.as_mut_ptr()) }, 0)
 	}
+}
+
+pub trait BuilderExt<'ctx> {
+	unsafe fn build_vec_gep<T: BasicType<'ctx>>(
+		&self,
+		pointee_ty: T,
+		ptr: PointerValue<'ctx>,
+		vec_of_indices: VectorValue<'ctx>,
+		name: &str,
+	) -> Result<VectorValue<'ctx>, BuilderError>;
+}
+
+impl<'ctx> BuilderExt<'ctx> for Builder<'ctx> {
+	unsafe fn build_vec_gep<T: BasicType<'ctx>>(
+		&self,
+		pointee_ty: T,
+		ptr: PointerValue<'ctx>,
+		vec_of_indices: VectorValue<'ctx>,
+		name: &str,
+	) -> Result<VectorValue<'ctx>, BuilderError> {
+		let c_string = to_c_string(name);
+
+		let mut index_values = [vec_of_indices.as_value_ref()];
+
+		let value = unsafe {
+			LLVMBuildGEP2(
+				self.as_mut_ptr(),
+				pointee_ty.as_type_ref(),
+				ptr.as_value_ref(),
+				index_values.as_mut_ptr(),
+				index_values.len() as u32,
+				c_string.as_ptr(),
+			)
+		};
+
+		Ok(unsafe { VectorValue::new(value) })
+	}
+}
+
+fn to_c_string(mut s: &str) -> Cow<'_, CStr> {
+	if s.is_empty() {
+		s = "\0";
+	}
+
+	if !s.chars().rev().any(|ch| matches!(ch, '\0')) {
+		return Cow::from(CString::new(s).expect("unreachable since null bytes are checked"));
+	}
+
+	Cow::from(unsafe { CStr::from_ptr(s.as_ptr().cast()) })
 }

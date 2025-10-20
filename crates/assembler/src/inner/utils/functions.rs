@@ -10,7 +10,7 @@ use inkwell::{
 
 use crate::{AssemblyError, ContextExt as _, ContextGetter as _};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct AssemblerFunctions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
@@ -100,7 +100,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		Ok(this)
 	}
 
-	fn setup(self) {
+	fn setup(&self) {
 		let context = self.context();
 
 		self.main.set_personality_function(self.eh_personality);
@@ -200,7 +200,7 @@ impl<'ctx> IntrinsicFunctionSet<'ctx> {
 }
 
 #[tracing::instrument(skip(module, types))]
-fn get_intrinsic_function_from_name<'ctx>(
+pub fn get_intrinsic_function_from_name<'ctx>(
 	name: &'static str,
 	module: &Module<'ctx>,
 	types: &[BasicTypeEnum<'ctx>],

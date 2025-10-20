@@ -235,14 +235,14 @@ impl Display for AssemblyError {
 			Self::Inkwell(..) => f.write_str("an error occurred during translation"),
 			Self::InvalidMetadata => f.write_str("invalid metadata type"),
 			Self::IntrinsicNotFound(intrinsic) => {
-				f.write_str("instrinsic '")?;
+				f.write_str("intrinsic \"")?;
 				f.write_str(intrinsic)?;
-				f.write_str("' was not found")
+				f.write_str("\" was not found")
 			}
 			Self::InvalidIntrinsicDeclaration(intrinsic) => {
-				f.write_str("invalid declaration for intrinsic '")?;
+				f.write_str("invalid declaration for intrinsic \"")?;
 				f.write_str(intrinsic)?;
-				f.write_char('\'')
+				f.write_char('"')
 			}
 			Self::InvalidGEPType(ty) => {
 				f.write_str("type ")?;

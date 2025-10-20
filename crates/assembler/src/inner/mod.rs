@@ -13,8 +13,8 @@ use inkwell::{
 	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Linkage, Module},
 	targets::TargetMachine,
-	types::IntType,
-	values::{BasicValue, GlobalValue},
+	types::{IntType, VectorType},
+	values::{BasicValue, FunctionValue, GlobalValue},
 };
 
 pub use self::utils::AssemblerFunctions;
@@ -63,7 +63,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let catch_block = context.append_basic_block(functions.main, "lpad\0");
 
 		let (pointers, ptr_int_type) =
-			AssemblerPointers::new(&module, functions, &builder, &target_data)?;
+			AssemblerPointers::new(&module, &functions, &builder, &target_data)?;
 
 		let debug_metadata_version = {
 			let i32_type = context.i32_type();
@@ -98,7 +98,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let debug_builder = AssemblerDebugBuilder::new(&module, &file_name, &directory)?;
 
-		debug_builder.declare_subprograms(functions)?;
+		debug_builder.declare_subprograms(&functions)?;
 
 		let debug_loc = debug_builder.create_debug_location(
 			module.get_context(),
@@ -256,6 +256,44 @@ impl<'ctx> InnerAssembler<'ctx> {
 		}
 
 		Ok(())
+	}
+
+	fn vector_scatter(
+		&self,
+		vec_type: VectorType<'ctx>,
+	) -> Result<FunctionValue<'ctx>, AssemblyError> {
+		let len = vec_type.get_size();
+
+		let ptr_vec_type = {
+			let ptr_type = self.context().default_ptr_type();
+
+			ptr_type.vec_type(len)
+		};
+
+		self::utils::get_intrinsic_function_from_name(
+			"llvm.masked.scatter",
+			&self.module,
+			&[vec_type.into(), ptr_vec_type.into()],
+		)
+	}
+
+	fn vector_gather(
+		&self,
+		vec_type: VectorType<'ctx>,
+	) -> Result<FunctionValue<'ctx>, AssemblyError> {
+		let len = vec_type.get_size();
+
+		let ptr_vec_type = {
+			let ptr_type = self.context().default_ptr_type();
+
+			ptr_type.vec_type(len)
+		};
+
+		self::utils::get_intrinsic_function_from_name(
+			"llvm.masked.gather",
+			&self.module,
+			&[vec_type.into(), ptr_vec_type.into()],
+		)
 	}
 
 	fn into_parts(self) -> (Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine) {
