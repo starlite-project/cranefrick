@@ -13,7 +13,7 @@ use crate::{
 };
 
 impl<'ctx> InnerAssembler<'ctx> {
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn load_cell(&self, offset: i32, fn_name: &str) -> Result<IntValue<'ctx>, AssemblyError> {
 		let (loaded_value, ..) = self.load_cell_and_pointer(offset, fn_name)?;
 
@@ -33,7 +33,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(T::from_basic_value_enum(loaded_value))
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn load_cell_and_pointer(
 		&self,
 		offset: i32,
@@ -56,7 +56,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok((loaded_value, gep))
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn store_value_into(
 		&self,
 		value: u8,
@@ -71,7 +71,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_into(value, gep)
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn store_into(
 		&self,
 		value: impl BasicValue<'ctx>,
@@ -82,7 +82,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn take(&self, offset: i32, fn_name: &str) -> Result<IntValue<'ctx>, AssemblyError> {
 		let (value, gep) = self.load_cell_and_pointer(offset, fn_name)?;
 
@@ -91,8 +91,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(value)
 	}
 
-	#[tracing::instrument(skip_all)]
-	pub fn store_value_into_cell(&self, value: u8, offset: i32, fn_name: &str) -> Result<(), AssemblyError> {
+	#[tracing::instrument(skip(self))]
+	pub fn store_value_into_cell(
+		&self,
+		value: u8,
+		offset: i32,
+		fn_name: &str,
+	) -> Result<(), AssemblyError> {
 		let value = {
 			let i8_type = self.context().i8_type();
 
@@ -102,7 +107,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_into_cell_inner(value, offset, create_string(fn_name, "_store_value\0"))
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn store_into_cell(
 		&self,
 		value: impl BasicValue<'ctx>,
@@ -112,7 +117,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.store_into_cell_inner(value, offset, create_string(fn_name, "_store\0"))
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	fn store_into_cell_inner(
 		&self,
 		value: impl BasicValue<'ctx>,
@@ -127,25 +132,33 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self), fields(offset = ?CalculatedOffset::from(offset)))]
 	#[inline]
-	pub fn tape_gep(
+	pub fn tape_gep<O>(
 		&self,
 		ty: impl BasicType<'ctx>,
-		offset: impl Into<CalculatedOffset<'ctx>>,
+		offset: O,
 		name: &str,
-	) -> Result<PointerValue<'ctx>, AssemblyError> {
+	) -> Result<PointerValue<'ctx>, AssemblyError>
+	where
+		CalculatedOffset<'ctx>: From<O>,
+		O: Copy,
+	{
 		self.gep(ty, self.pointers.tape, offset, &format!("{name}_tape"))
 	}
 
-	#[tracing::instrument(skip_all)]
-	pub fn gep(
+	#[tracing::instrument(skip(self), fields(offset = ?CalculatedOffset::from(offset)))]
+	pub fn gep<O>(
 		&self,
 		ty: impl BasicType<'ctx>,
 		ptr: PointerValue<'ctx>,
-		offset: impl Into<CalculatedOffset<'ctx>>,
+		offset: O,
 		name: &str,
-	) -> Result<PointerValue<'ctx>, AssemblyError> {
+	) -> Result<PointerValue<'ctx>, AssemblyError>
+	where
+		CalculatedOffset<'ctx>: From<O>,
+		O: Copy,
+	{
 		let offset = self.resolve_offset(offset.into(), format!("{name}_gep"))?;
 
 		let basic_type = ty.as_basic_type_enum();

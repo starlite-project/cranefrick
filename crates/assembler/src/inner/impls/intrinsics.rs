@@ -7,7 +7,7 @@ use inkwell::{
 use crate::{AssemblyError, ContextGetter, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub(super) fn start_lifetime(
 		&self,
 		alloc_len: IntValue<'ctx>,

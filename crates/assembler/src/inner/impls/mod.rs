@@ -11,7 +11,7 @@ use inkwell::IntPredicate;
 use crate::{AssemblyError, ContextExt as _, ContextGetter as _, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn write_puts(&self) -> Result<(), AssemblyError> {
 		let context = self.context();
 

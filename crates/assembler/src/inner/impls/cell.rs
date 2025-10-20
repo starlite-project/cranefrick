@@ -6,12 +6,12 @@ use inkwell::types::VectorType;
 use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn set_cell(&self, options: ValuedChangeCellOptions<u8>) -> Result<(), AssemblyError> {
 		self.store_value_into_cell(options.value(), options.offset(), "set_cell")
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn change_cell(&self, options: ValuedChangeCellOptions<i8>) -> Result<(), AssemblyError> {
 		let (current_cell_value, gep) =
 			self.load_cell_and_pointer(options.offset(), "change_cell")?;
@@ -31,7 +31,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn sub_cell_at(&self, options: FactoredChangeCellOptions<u8>) -> Result<(), AssemblyError> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
@@ -55,7 +55,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn sub_from_cell(
 		&self,
 		options: FactoredChangeCellOptions<u8>,
@@ -82,7 +82,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn duplicate_cell(
 		&self,
 		values: &[FactoredChangeCellOptions<i8>],
@@ -237,7 +237,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn set_many_cells(&self, options: &SetManyCellsOptions) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -255,7 +255,7 @@ impl InnerAssembler<'_> {
 		self.store_into_cell(array_value, options.start(), "set_many_cells")
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn set_range(&self, options: SetRangeOptions) -> Result<(), AssemblyError> {
 		let start = *options.range().start();
 		let range_len = options.range().count();

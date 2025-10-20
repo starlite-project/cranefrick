@@ -113,7 +113,7 @@ impl InnerAssembler<'_> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn find_zero(&self, offset: i32) -> Result<(), AssemblyError> {
 		let context = self.context();
 

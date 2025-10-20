@@ -9,7 +9,7 @@ use crate::{
 };
 
 impl<'ctx> InnerAssembler<'ctx> {
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub fn move_pointer(&self, offset: i32) -> Result<(), AssemblyError> {
 		let wrapped_ptr = self.offset_pointer(offset, "move_pointer")?;
 
@@ -28,7 +28,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self), fields(fn_name = %fn_name))]
 	pub fn resolve_offset(
 		&self,
 		offset: CalculatedOffset<'ctx>,
@@ -42,7 +42,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		}
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self), fields(fn_name = %fn_name))]
 	pub fn offset_pointer(
 		&self,
 		offset: i32,
@@ -70,7 +70,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		}
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self), fields(fn_name = %fn_name))]
 	pub fn wrap_pointer(
 		&self,
 		offset_ptr: IntValue<'ctx>,
@@ -84,7 +84,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		}
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	fn wrap_pointer_positive(
 		&self,
 		offset_ptr: IntValue<'ctx>,
@@ -101,7 +101,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		)?)
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	fn wrap_pointer_negative(
 		&self,
 		offset_ptr: IntValue<'ctx>,
