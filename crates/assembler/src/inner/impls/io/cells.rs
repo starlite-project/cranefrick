@@ -171,30 +171,51 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
 		let i8_vec_type = i8_type.vec_type(options.len() as u32);
+		let i32_vec_type = i32_type.vec_type(options.len() as u32);
 		let ptr_int_vec_type = ptr_int_type.vec_type(options.len() as u32);
 
 		let vec_of_indices = {
-			let mut vec = ptr_int_vec_type.const_zero();
+			if options.windows(2).all(|x| x[0].offset() == x[1].offset()) {
+				let offset = self.offset_pointer(options[0].offset())?;
 
-			for (i, offset) in options
-				.iter()
-				.copied()
-				.map(ValuedChangeCellOptions::offset)
-				.enumerate()
-			{
-				let offset = self.offset_pointer(offset)?;
+				let zero_index = i64_type.const_zero();
 
-				let index = i64_type.const_int(i as u64, false);
-
-				vec = self.builder.build_insert_element(
-					vec,
+				let tmp = self.builder.build_insert_element(
+					ptr_int_vec_type.get_undef(),
 					offset,
-					index,
-					"setup_output_cells_puts_iterated_insert_element",
+					zero_index,
+					"setup_output_cells_puts_iterated_insert_element\0",
 				)?;
-			}
 
-			vec
+				self.builder.build_shuffle_vector(
+					tmp,
+					ptr_int_vec_type.get_undef(),
+					i32_vec_type.const_zero(),
+					"setup_output_cells_puts_iterated_shuffle_vector\0",
+				)?
+			} else {
+				let mut vec = ptr_int_vec_type.get_undef();
+
+				for (i, offset) in options
+					.iter()
+					.copied()
+					.map(ValuedChangeCellOptions::offset)
+					.enumerate()
+				{
+					let index = i64_type.const_int(i as u64, false);
+
+					let offset = self.offset_pointer(offset)?;
+
+					vec = self.builder.build_insert_element(
+						vec,
+						offset,
+						index,
+						"setup_output_cells_puts_iterated_insert_element\0",
+					)?;
+				}
+
+				vec
+			}
 		};
 
 		let vec_of_ptrs = unsafe {
