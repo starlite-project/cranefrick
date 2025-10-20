@@ -92,28 +92,28 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	#[tracing::instrument(skip_all)]
-	pub fn store_value(&self, value: u8, offset: i32, fn_name: &str) -> Result<(), AssemblyError> {
+	pub fn store_value_into_cell(&self, value: u8, offset: i32, fn_name: &str) -> Result<(), AssemblyError> {
 		let value = {
 			let i8_type = self.context().i8_type();
 
 			i8_type.const_int(value.into(), false)
 		};
 
-		self.store_inner(value, offset, create_string(fn_name, "_store_value\0"))
+		self.store_into_cell_inner(value, offset, create_string(fn_name, "_store_value\0"))
 	}
 
 	#[tracing::instrument(skip_all)]
-	pub fn store(
+	pub fn store_into_cell(
 		&self,
 		value: impl BasicValue<'ctx>,
 		offset: i32,
 		fn_name: &str,
 	) -> Result<(), AssemblyError> {
-		self.store_inner(value, offset, create_string(fn_name, "_store\0"))
+		self.store_into_cell_inner(value, offset, create_string(fn_name, "_store\0"))
 	}
 
 	#[tracing::instrument(skip_all)]
-	fn store_inner(
+	fn store_into_cell_inner(
 		&self,
 		value: impl BasicValue<'ctx>,
 		offset: i32,

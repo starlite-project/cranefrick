@@ -78,7 +78,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"input_into_cell_truncate\0",
 		)?;
 
-		self.store(truncated_value, 0, "input_into_cell")
+		self.store_into_cell(truncated_value, 0, "input_into_cell")
 	}
 
 	fn call_puts(

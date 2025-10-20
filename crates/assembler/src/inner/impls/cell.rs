@@ -8,7 +8,7 @@ use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAsse
 impl InnerAssembler<'_> {
 	#[tracing::instrument(skip_all)]
 	pub fn set_cell(&self, options: ValuedChangeCellOptions<u8>) -> Result<(), AssemblyError> {
-		self.store_value(options.value(), options.offset(), "set_cell")
+		self.store_value_into_cell(options.value(), options.offset(), "set_cell")
 	}
 
 	#[tracing::instrument(skip_all)]
@@ -252,7 +252,7 @@ impl InnerAssembler<'_> {
 
 		let array_value = i8_type.const_array(&values_value);
 
-		self.store(array_value, options.start(), "set_many_cells")
+		self.store_into_cell(array_value, options.start(), "set_many_cells")
 	}
 
 	#[tracing::instrument(skip_all)]

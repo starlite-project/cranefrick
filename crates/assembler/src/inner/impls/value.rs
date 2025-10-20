@@ -169,7 +169,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul\0")?
 		};
 
-		self.store(value_to_store, 0, "replace_value_from_factorized")
+		self.store_into_cell(value_to_store, 0, "replace_value_from_factorized")
 	}
 
 	#[tracing::instrument(skip_all)]
