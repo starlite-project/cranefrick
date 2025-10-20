@@ -1,10 +1,12 @@
+use std::{cell::RefCell, collections::HashMap};
+
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	context::{AsContextRef, Context},
 	intrinsics::Intrinsic,
 	llvm_sys::prelude::LLVMContextRef,
 	module::{Linkage, Module},
-	types::BasicTypeEnum,
+	types::{BasicType as _, BasicTypeEnum, VectorType},
 	values::FunctionValue,
 };
 
@@ -20,6 +22,7 @@ pub struct AssemblerFunctions<'ctx> {
 	pub invariant: IntrinsicFunctionSet<'ctx>,
 	pub assume: FunctionValue<'ctx>,
 	pub eh_personality: FunctionValue<'ctx>,
+	masked_vector_functions: RefCell<HashMap<(u32, VectorFunctionType), FunctionValue<'ctx>>>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -93,11 +96,64 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			invariant,
 			assume,
 			eh_personality,
+			masked_vector_functions: RefCell::default(),
 		};
 
 		this.setup();
 
 		Ok(this)
+	}
+
+	pub fn get_vector_scatter(&self, vec_type: VectorType<'ctx>) -> Option<FunctionValue<'ctx>> {
+		self.get_vector_function(vec_type, VectorFunctionType::Scatter)
+	}
+
+	pub fn insert_vector_scatter(&self, vec_type: VectorType<'ctx>, fn_value: FunctionValue<'ctx>) {
+		self.insert_vector_function(vec_type, VectorFunctionType::Scatter, fn_value);
+	}
+
+	pub fn get_vector_gather(&self, vec_type: VectorType<'ctx>) -> Option<FunctionValue<'ctx>> {
+		self.get_vector_function(vec_type, VectorFunctionType::Gather)
+	}
+
+	pub fn insert_vector_gather(&self, vec_type: VectorType<'ctx>, fn_value: FunctionValue<'ctx>) {
+		self.insert_vector_function(vec_type, VectorFunctionType::Gather, fn_value);
+	}
+
+	fn get_vector_function(
+		&self,
+		vec_type: VectorType<'ctx>,
+		fn_type: VectorFunctionType,
+	) -> Option<FunctionValue<'ctx>> {
+		assert_eq!(
+			self.context().i8_type().as_basic_type_enum(),
+			vec_type.get_element_type()
+		);
+
+		let size = vec_type.get_size();
+
+		self.masked_vector_functions
+			.borrow()
+			.get(&(size, fn_type))
+			.copied()
+	}
+
+	fn insert_vector_function(
+		&self,
+		vec_type: VectorType<'ctx>,
+		fn_type: VectorFunctionType,
+		fn_value: FunctionValue<'ctx>,
+	) {
+		assert_eq!(
+			self.context().i8_type().as_basic_type_enum(),
+			vec_type.get_element_type()
+		);
+
+		let size = vec_type.get_size();
+
+		self.masked_vector_functions
+			.borrow_mut()
+			.insert((size, fn_type), fn_value);
 	}
 
 	fn setup(&self) {
@@ -234,4 +290,10 @@ fn add_attributes_to(
 	for attribute in return_attrs {
 		func.add_attribute(AttributeLoc::Return, attribute);
 	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum VectorFunctionType {
+	Gather,
+	Scatter,
 }

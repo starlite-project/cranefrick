@@ -150,7 +150,7 @@ impl InnerAssembler<'_> {
 			)?
 		};
 
-		let vector_gather = self.vector_gather(i8_vec_type)?;
+		let vector_gather = self.get_vector_gather(i8_vec_type)?;
 
 		let vec_load_store_alignment = i32_type.const_int(1, false);
 
@@ -220,7 +220,7 @@ impl InnerAssembler<'_> {
 			)?
 		};
 
-		let vec_scatter = self.vector_scatter(i8_vec_type)?;
+		let vec_scatter = self.get_vector_scatter(i8_vec_type)?;
 
 		self.builder.build_call(
 			vec_scatter,

@@ -258,42 +258,58 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn vector_scatter(
+	fn get_vector_scatter(
 		&self,
 		vec_type: VectorType<'ctx>,
 	) -> Result<FunctionValue<'ctx>, AssemblyError> {
-		let len = vec_type.get_size();
+		if let Some(known_fn) = self.functions.get_vector_scatter(vec_type) {
+			return Ok(known_fn);
+		}
+
+		let size = vec_type.get_size();
 
 		let ptr_vec_type = {
 			let ptr_type = self.context().default_ptr_type();
 
-			ptr_type.vec_type(len)
+			ptr_type.vec_type(size)
 		};
 
-		self::utils::get_intrinsic_function_from_name(
+		let fn_value = self::utils::get_intrinsic_function_from_name(
 			"llvm.masked.scatter",
 			&self.module,
 			&[vec_type.into(), ptr_vec_type.into()],
-		)
+		)?;
+
+		self.functions.insert_vector_scatter(vec_type, fn_value);
+
+		Ok(fn_value)
 	}
 
-	fn vector_gather(
+	fn get_vector_gather(
 		&self,
 		vec_type: VectorType<'ctx>,
 	) -> Result<FunctionValue<'ctx>, AssemblyError> {
-		let len = vec_type.get_size();
+		if let Some(known_fn) = self.functions.get_vector_gather(vec_type) {
+			return Ok(known_fn);
+		}
+
+		let size = vec_type.get_size();
 
 		let ptr_vec_type = {
 			let ptr_type = self.context().default_ptr_type();
 
-			ptr_type.vec_type(len)
+			ptr_type.vec_type(size)
 		};
 
-		self::utils::get_intrinsic_function_from_name(
+		let fn_value = self::utils::get_intrinsic_function_from_name(
 			"llvm.masked.gather",
 			&self.module,
 			&[vec_type.into(), ptr_vec_type.into()],
-		)
+		)?;
+
+		self.functions.insert_vector_gather(vec_type, fn_value);
+
+		Ok(fn_value)
 	}
 
 	fn into_parts(self) -> (Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine) {
