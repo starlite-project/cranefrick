@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 mod memory;
 
 // use frick_assembler::AssembledModule;

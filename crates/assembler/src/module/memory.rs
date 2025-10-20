@@ -1,163 +1,140 @@
-#![allow(unused)]
-
 use std::{
-	alloc::{self, Layout},
-	mem,
+	cell::RefCell,
 	ptr::{self, NonNull},
+	rc::Rc,
 };
 
 use inkwell::memory_manager::McjitMemoryManager;
 
-#[derive(Debug, Default)]
+const CAPACITY_IN_BYTES: usize = 1024 * 128;
+
+#[derive(Debug, Clone)]
+#[repr(transparent)]
 pub struct MemoryManager {
-	allocs: Vec<MemoryRecord>,
+	data: Rc<RefCell<MemoryManagerData>>,
 }
 
 impl MemoryManager {
-	fn alloc_memory_segment(
-		&mut self,
-		ptr: *mut libc::c_void,
-		layout: Layout,
-		writable: bool,
-		executable: bool,
-		section_name: String,
-	) -> *mut u8 {
-		let mut prot = libc::PROT_READ;
-
-		if writable {
-			prot |= libc::PROT_WRITE;
-		}
-
-		if executable {
-			prot |= libc::PROT_EXEC;
-		}
-
-		let ptr = unsafe {
-			libc::mmap(
-				ptr,
-				layout.size(),
-				prot,
-				libc::MAP_PRIVATE | libc::MAP_ANON,
-				-1,
-				0,
+	pub fn new() -> Self {
+		let page_size = unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize };
+		let code_buffer_pointer = unsafe {
+			NonNull::new_unchecked(
+				libc::mmap(
+					ptr::null_mut(),
+					CAPACITY_IN_BYTES,
+					libc::PROT_READ | libc::PROT_WRITE,
+					libc::MAP_PRIVATE | libc::MAP_ANONYMOUS,
+					-1,
+					0,
+				)
+				.cast::<u8>(),
 			)
 		};
 
-		if ptr::eq(ptr, libc::MAP_FAILED) {
-			return ptr::null_mut();
-		}
-
-		let ptr = ptr.cast::<u8>();
-
-		let Some(record) = MemoryRecord::new(ptr, layout, executable, section_name) else {
-			return ptr::null_mut();
+		let data_buffer_pointer = unsafe {
+			NonNull::new_unchecked(
+				libc::mmap(
+					ptr::null_mut(),
+					CAPACITY_IN_BYTES,
+					libc::PROT_READ | libc::PROT_WRITE,
+					libc::MAP_PRIVATE | libc::MAP_ANONYMOUS,
+					-1,
+					0,
+				)
+				.cast::<u8>(),
+			)
 		};
 
-		self.allocs.push(record);
-
-		ptr
+		Self {
+			data: Rc::new(RefCell::new(MemoryManagerData {
+				fixed_capacity_in_bytes: CAPACITY_IN_BYTES,
+				fixed_page_size: page_size,
+				code_buffer_pointer,
+				code_offset: 0,
+				data_buffer_pointer,
+				data_offset: 0,
+			})),
+		}
 	}
 }
 
 impl McjitMemoryManager for MemoryManager {
-	#[tracing::instrument(skip(self))]
 	fn allocate_code_section(
 		&mut self,
 		size: libc::uintptr_t,
-		alignment: libc::c_uint,
-		section_id: libc::c_uint,
-		section_name: &str,
+		_: libc::c_uint,
+		_: libc::c_uint,
+		_: &str,
 	) -> *mut u8 {
-		let layout = unsafe { Layout::from_size_align_unchecked(size, alignment as usize) };
+		let mut data = self.data.borrow_mut();
 
-		tracing::trace!(layout = ?layout);
+		let alloc_size = size.div_ceil(data.fixed_page_size) * data.fixed_page_size;
+		let ptr = unsafe { data.code_buffer_pointer.as_ptr().add(data.code_offset) };
+		data.code_offset += alloc_size;
 
-		let ptr = unsafe { alloc::alloc(layout) };
-
-		self.alloc_memory_segment(ptr.cast(), layout, true, true, section_name.to_owned())
+		ptr
 	}
 
-	#[tracing::instrument(skip(self))]
 	fn allocate_data_section(
 		&mut self,
 		size: libc::uintptr_t,
-		alignment: libc::c_uint,
-		section_id: libc::c_uint,
-		section_name: &str,
-		is_read_only: bool,
+		_: libc::c_uint,
+		_: libc::c_uint,
+		_: &str,
+		_: bool,
 	) -> *mut u8 {
-		let layout = unsafe { Layout::from_size_align_unchecked(size, alignment as usize) };
+		let mut data = self.data.borrow_mut();
 
-		tracing::trace!(layout = ?layout);
+		let alloc_size = size.div_ceil(data.fixed_page_size) * data.fixed_page_size;
+		let ptr = unsafe { data.data_buffer_pointer.as_ptr().add(data.data_offset) };
+		data.data_offset += alloc_size;
 
-		let ptr = unsafe { alloc::alloc(layout) };
-
-		self.alloc_memory_segment(
-			ptr.cast(),
-			layout,
-			!is_read_only,
-			false,
-			section_name.to_owned(),
-		)
+		ptr
 	}
 
-	#[tracing::instrument]
-	fn destroy(&mut self) {
-		tracing::trace!("deallocating memory");
-
-		for record in mem::take(&mut self.allocs) {
-			unsafe { libc::munmap(record.ptr.as_ptr().cast(), record.layout.size()) };
-
-			unsafe { alloc::dealloc(record.ptr.as_ptr(), record.layout) }
-		}
-	}
-
-	#[tracing::instrument]
 	fn finalize_memory(&mut self) -> Result<(), String> {
-		tracing::trace!("finalizing memory");
+		let data = self.data.borrow_mut();
 
-		for record in &self.allocs {
-			let mut prot = libc::PROT_READ;
+		unsafe {
+			libc::mprotect(
+				data.code_buffer_pointer.as_ptr().cast::<libc::c_void>(),
+				data.fixed_capacity_in_bytes,
+				libc::PROT_READ | libc::PROT_EXEC,
+			);
 
-			if record.executable {
-				prot |= libc::PROT_EXEC;
-			}
-
-			let res =
-				unsafe { libc::mprotect(record.ptr.as_ptr().cast(), record.layout.size(), prot) };
-
-			if !matches!(res, 0) {
-				return Err(format!(
-					"failed to protect memory for section {}",
-					record.section_name
-				));
-			}
+			libc::mprotect(
+				data.data_buffer_pointer.as_ptr().cast::<libc::c_void>(),
+				data.fixed_capacity_in_bytes,
+				libc::PROT_READ | libc::PROT_WRITE,
+			);
 		}
 
 		Ok(())
 	}
+
+	fn destroy(&mut self) {
+		let data = self.data.borrow_mut();
+
+		unsafe {
+			libc::munmap(
+				data.code_buffer_pointer.as_ptr().cast::<libc::c_void>(),
+				data.fixed_capacity_in_bytes,
+			);
+
+			libc::munmap(
+				data.data_buffer_pointer.as_ptr().cast::<libc::c_void>(),
+				data.fixed_capacity_in_bytes,
+			);
+		}
+	}
 }
 
 #[derive(Debug)]
-struct MemoryRecord {
-	ptr: NonNull<u8>,
-	layout: Layout,
-	executable: bool,
-	section_name: String,
-}
-
-impl MemoryRecord {
-	pub fn new(
-		ptr: *mut u8,
-		layout: Layout,
-		executable: bool,
-		section_name: String,
-	) -> Option<Self> {
-		Some(Self {
-			ptr: NonNull::new(ptr)?,
-			layout,
-			executable,
-			section_name,
-		})
-	}
+struct MemoryManagerData {
+	fixed_capacity_in_bytes: usize,
+	fixed_page_size: usize,
+	code_buffer_pointer: NonNull<u8>,
+	code_offset: usize,
+	data_buffer_pointer: NonNull<u8>,
+	data_offset: usize,
 }

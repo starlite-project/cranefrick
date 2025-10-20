@@ -29,6 +29,7 @@ use inkwell::{
 	values::InstructionValueError,
 };
 use inner::AssemblerFunctions;
+use module::MemoryManager;
 use send_wrapper::SendWrapper;
 use tracing::info;
 
@@ -160,7 +161,13 @@ impl Assembler {
 		}
 
 		info!("creating JIT execution engine");
-		let execution_engine = module.create_jit_execution_engine(OptimizationLevel::Aggressive)?;
+		let execution_engine = module.create_mcjit_execution_engine_with_memory_manager(
+			MemoryManager::new(),
+			OptimizationLevel::Aggressive,
+			CodeModel::JITDefault,
+			false,
+			true,
+		)?;
 
 		if let Some(getchar) = module.get_function("rust_getchar\0") {
 			info!("adding rust_getchar to execution engine");
