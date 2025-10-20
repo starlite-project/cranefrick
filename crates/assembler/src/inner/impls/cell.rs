@@ -126,7 +126,7 @@ impl InnerAssembler<'_> {
 				.map(FactoredChangeCellOptions::offset)
 				.enumerate()
 			{
-				let offset = self.offset_pointer(offset)?;
+				let offset = self.offset_pointer(offset, "duplicate_cell")?;
 
 				let index = i64_type.const_int(i as u64, false);
 

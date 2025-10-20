@@ -114,7 +114,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		offset: impl Into<CalculatedOffset<'ctx>>,
 		name: &str,
 	) -> Result<PointerValue<'ctx>, AssemblyError> {
-		self.gep(ty, self.pointers.tape, offset, name)
+		self.gep(ty, self.pointers.tape, offset, &format!("{name}_tape"))
 	}
 
 	#[tracing::instrument(skip_all)]
@@ -125,7 +125,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		offset: impl Into<CalculatedOffset<'ctx>>,
 		name: &str,
 	) -> Result<PointerValue<'ctx>, AssemblyError> {
-		let offset = self.resolve_offset(offset.into())?;
+		let offset = self.resolve_offset(offset.into(), format!("{name}_gep"))?;
 
 		let basic_type = ty.as_basic_type_enum();
 

@@ -171,7 +171,8 @@ impl InnerAssembler<'_> {
 			"find_zero_add\0",
 		)?;
 
-		let wrapped_pointer_value = self.wrap_pointer(new_pointer_value, offset > 0)?;
+		let wrapped_pointer_value =
+			self.wrap_pointer(new_pointer_value, offset > 0, "find_zero")?;
 
 		self.builder.build_unconditional_branch(header_block)?;
 
