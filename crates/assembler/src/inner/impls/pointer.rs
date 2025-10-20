@@ -54,7 +54,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let current_ptr = self.load_from(
 			ptr_int_type,
 			self.pointers.pointer,
-			&format!("{fn_name}_offset_pointer_load"),
+			&format!("{fn_name}_offset_pointer"),
 		)?;
 
 		if matches!(offset, 0) {
