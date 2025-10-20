@@ -1,8 +1,8 @@
 use frick_ir::ValuedChangeCellOptions;
-use inkwell::types::IntType;
+use inkwell::types::{IntType, VectorType};
 
 use crate::{
-	AssemblyError, ContextGetter as _,
+	AssemblyError, BuilderExt as _, ContextGetter as _,
 	inner::{InnerAssembler, utils::OUTPUT_ARRAY_LEN},
 };
 
@@ -87,7 +87,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
 		} else {
 			tracing::debug!("unable to memcpy or memset cells");
-			self.setup_output_cells_puts_iterated(i8_type, options)
+			self.setup_output_cells_puts_iterated(options)
 		}?;
 
 		let _output_invariant = {
@@ -158,44 +158,117 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip_all, fields(options = options.len()))]
 	fn setup_output_cells_puts_iterated(
 		&self,
-		i8_type: IntType<'ctx>,
 		options: &[ValuedChangeCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
+		let context = self.context();
+
 		let ptr_int_type = self.ptr_int_type;
+		let bool_type = context.bool_type();
+		let i8_type = context.i8_type();
+		let i32_type = context.i32_type();
+		let i64_type = context.i64_type();
+		let i8_vec_type = i8_type.vec_type(options.len() as u32);
+		let ptr_int_vec_type = ptr_int_type.vec_type(options.len() as u32);
 
-		for (i, char) in options.iter().copied().enumerate() {
-			let loaded_char = self.load(char.offset(), "setup_output_cells_puts_iterated")?;
+		let vec_of_indices = {
+			let mut vec = ptr_int_vec_type.const_zero();
 
-			let offset_char = if matches!(char.value(), 0) {
-				tracing::trace!("using cell {} directly", char.offset());
-				loaded_char
-			} else {
-				tracing::trace!("offsetting cell {} by {}", char.offset(), char.value());
-				let offset_value = i8_type.const_int(char.value() as u64, false);
+			for (i, offset) in options
+				.iter()
+				.copied()
+				.map(ValuedChangeCellOptions::offset)
+				.enumerate()
+			{
+				let offset = self.offset_pointer(offset)?;
 
-				self.builder.build_int_add(
-					loaded_char,
-					offset_value,
-					"setup_output_cells_puts_iterated_add\0",
-				)?
+				let index = i64_type.const_int(i as u64, false);
+
+				vec = self.builder.build_insert_element(
+					vec,
+					offset,
+					index,
+					"setup_output_cells_puts_iterated_insert_element",
+				)?;
+			}
+
+			vec
+		};
+
+		let vec_of_ptrs = unsafe {
+			self.builder.build_vec_gep(
+				i8_type,
+				self.pointers.tape,
+				vec_of_indices,
+				"setup_output_cells_puts_iterated_gep\0",
+			)?
+		};
+
+		let vector_gather = self.vector_gather(i8_vec_type)?;
+
+		let vec_load_alignment = i32_type.const_int(1, false);
+
+		let bool_vec_all_on = {
+			let vec_of_trues = vec![bool_type.const_all_ones(); options.len()];
+
+			VectorType::const_vector(&vec_of_trues)
+		};
+
+		let vec_of_loaded_values = self
+			.builder
+			.build_call(
+				vector_gather,
+				&[
+					vec_of_ptrs.into(),
+					vec_load_alignment.into(),
+					bool_vec_all_on.into(),
+					i8_vec_type.get_undef().into(),
+				],
+				"setup_output_cells_puts_iterated_vector_load_call\0",
+			)?
+			.try_as_basic_value()
+			.unwrap_left()
+			.into_vector_value();
+
+		let vec_of_values_for_output = if options
+			.iter()
+			.copied()
+			.map(ValuedChangeCellOptions::value)
+			.all(|x| matches!(x, 0))
+		{
+			vec_of_loaded_values
+		} else {
+			let vec_of_value_offsets = {
+				let mut vec = i8_vec_type.const_zero();
+
+				for (i, value_offset) in options
+					.iter()
+					.copied()
+					.map(ValuedChangeCellOptions::value)
+					.enumerate()
+				{
+					let index = i64_type.const_int(i as u64, false);
+
+					let value_offset = i8_type.const_int(value_offset as u64, false);
+
+					vec = vec
+						.const_insert_element(index, value_offset)
+						.into_vector_value();
+				}
+
+				vec
 			};
 
-			let array_offset = ptr_int_type.const_int(i as u64, false);
+			self.builder.build_int_add(
+				vec_of_loaded_values,
+				vec_of_value_offsets,
+				"setup_output_cells_puts_iterated_add\0",
+			)?
+		};
 
-			let output_array_gep = self.gep(
-				i8_type,
-				self.pointers.output,
-				array_offset,
-				"setup_output_cells_puts_iterated",
-			)?;
-
-			self.store_into(offset_char, output_array_gep)?;
-		}
-
-		Ok(())
+		self.store_into(vec_of_values_for_output, self.pointers.output)
 	}
 }
 
