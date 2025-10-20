@@ -59,33 +59,37 @@ impl MemoryManager {
 }
 
 impl McjitMemoryManager for MemoryManager {
+	#[tracing::instrument(skip(self))]
 	fn allocate_code_section(
 		&mut self,
 		size: libc::uintptr_t,
-		_: libc::c_uint,
-		_: libc::c_uint,
-		_: &str,
+		alignment: libc::c_uint,
+		section_id: libc::c_uint,
+		section_name: &str,
 	) -> *mut u8 {
 		let mut data = self.data.borrow_mut();
 
 		let alloc_size = size.div_ceil(data.fixed_page_size) * data.fixed_page_size;
+		tracing::trace!(alloc_size);
 		let ptr = unsafe { data.code_buffer_pointer.as_ptr().add(data.code_offset) };
 		data.code_offset += alloc_size;
 
 		ptr
 	}
 
+	#[tracing::instrument(skip(self))]
 	fn allocate_data_section(
 		&mut self,
 		size: libc::uintptr_t,
-		_: libc::c_uint,
-		_: libc::c_uint,
-		_: &str,
-		_: bool,
+		alignment: libc::c_uint,
+		section_id: libc::c_uint,
+		section_name: &str,
+		is_read_only: bool,
 	) -> *mut u8 {
 		let mut data = self.data.borrow_mut();
 
 		let alloc_size = size.div_ceil(data.fixed_page_size) * data.fixed_page_size;
+		tracing::trace!(alloc_size);
 		let ptr = unsafe { data.data_buffer_pointer.as_ptr().add(data.data_offset) };
 		data.data_offset += alloc_size;
 
