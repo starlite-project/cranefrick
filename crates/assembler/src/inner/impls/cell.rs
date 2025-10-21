@@ -1,11 +1,14 @@
 use frick_ir::{
 	FactoredChangeCellOptions, SetManyCellsOptions, SetRangeOptions, ValuedChangeCellOptions,
 };
-use inkwell::types::VectorType;
+use inkwell::{
+	types::{IntType, VectorType},
+	values::VectorValue,
+};
 
 use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAssembler};
 
-impl InnerAssembler<'_> {
+impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn set_cell(&self, options: ValuedChangeCellOptions<u8>) -> Result<(), AssemblyError> {
 		self.store_value_into_cell(options.value(), options.offset(), "set_cell")
@@ -89,65 +92,89 @@ impl InnerAssembler<'_> {
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let ptr_int_type = self.ptr_int_type;
-		let bool_type = context.bool_type();
 		let i8_type = context.i8_type();
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
 		let i8_vec_type = i8_type.vec_type(values.len() as u32);
 		let i32_vec_type = i32_type.vec_type(values.len() as u32);
+
+		let current_cell = self.take(0, "duplicate_cell")?;
+
+		let i64_zero = i64_type.const_zero();
+
+		let tmp = self.builder.build_insert_element(
+			i8_vec_type.get_undef(),
+			current_cell,
+			i64_zero,
+			"duplicate_cell_insert_element\0",
+		)?;
+
+		let vec_of_current_cell = self.builder.build_shuffle_vector(
+			tmp,
+			i8_vec_type.get_undef(),
+			i32_vec_type.const_zero(),
+			"duplicate_cell_shuffle_vector\0",
+		)?;
+
+		if is_contiguous(values) {
+			self.duplicate_cell_contiguous(values, vec_of_current_cell, i8_type, i8_vec_type)
+		} else {
+			let bool_type = context.bool_type();
+
+			self.duplicate_cell_scattered(
+				values,
+				vec_of_current_cell,
+				bool_type,
+				i8_type,
+				i32_type,
+				i64_type,
+				i8_vec_type,
+			)
+		}
+	}
+
+	fn duplicate_cell_scattered(
+		&self,
+		values: &[FactoredChangeCellOptions<i8>],
+		vec_of_current_cell: VectorValue<'ctx>,
+		bool_type: IntType<'ctx>,
+		i8_type: IntType<'ctx>,
+		i32_type: IntType<'ctx>,
+		i64_type: IntType<'ctx>,
+		i8_vec_type: VectorType<'ctx>,
+	) -> Result<(), AssemblyError> {
+		let ptr_int_type = self.ptr_int_type;
 		let ptr_int_vec_type = ptr_int_type.vec_type(values.len() as u32);
 
-		let vec_of_current_cell = {
-			let current_cell = self.take(0, "duplicate_cell")?;
-
-			let zero_index = i64_type.const_zero();
-
-			let tmp = self.builder.build_insert_element(
-				i8_vec_type.get_undef(),
-				current_cell,
-				zero_index,
-				"duplicate_cell_insert_element\0",
-			)?;
-
-			self.builder.build_shuffle_vector(
-				tmp,
-				i8_vec_type.get_undef(),
-				i32_vec_type.const_zero(),
-				"duplicate_cell_shuffle_vector",
-			)?
-		};
-
 		let vec_of_indices = {
-			let mut vec = ptr_int_vec_type.const_zero();
+			let mut vec = ptr_int_vec_type.get_undef();
 
-			for (i, offset) in values
+			let offsets = values
 				.iter()
 				.copied()
-				.map(FactoredChangeCellOptions::offset)
-				.enumerate()
-			{
-				let offset = self.offset_pointer(offset, "duplicate_cell")?;
+				.map(|v| self.offset_pointer(v.offset(), "duplicate_cell_scattered"))
+				.collect::<Result<Vec<_>, _>>()?;
 
+			for (i, offset) in offsets.into_iter().enumerate() {
 				let index = i64_type.const_int(i as u64, false);
 
 				vec = self.builder.build_insert_element(
 					vec,
 					offset,
 					index,
-					"duplicate_cell_insert_element\0",
+					"duplicate_cell_scattered_insert_element\0",
 				)?;
 			}
 
 			vec
 		};
 
-		let vec_of_ptrs = unsafe {
+		let vec_of_pointers = unsafe {
 			self.builder.build_vec_gep(
 				i8_type,
 				self.pointers.tape,
 				vec_of_indices,
-				"duplicate_cell_gep\0",
+				"duplicate_cell_scattered_gep\0",
 			)?
 		};
 
@@ -166,12 +193,12 @@ impl InnerAssembler<'_> {
 			.build_call(
 				vector_gather,
 				&[
-					vec_of_ptrs.into(),
+					vec_of_pointers.into(),
 					vec_load_store_alignment.into(),
 					bool_vec_all_on.into(),
 					i8_vec_type.get_undef().into(),
 				],
-				"duplicate_cell_vector_load_call\0",
+				"duplicate_cell_scattered_vector_load_call\0",
 			)?
 			.try_as_basic_value()
 			.unwrap_left()
@@ -186,55 +213,103 @@ impl InnerAssembler<'_> {
 			self.builder.build_int_add(
 				vec_of_current_cell,
 				vec_of_loaded_values,
-				"duplicate_cell_add\0",
+				"duplicate_cell_scattered_vector_add\0",
 			)?
 		} else {
 			let vec_of_factors = {
-				let mut vec = i8_vec_type.const_zero();
-
-				for (i, factor) in values
+				let vec_of_values = values
 					.iter()
 					.copied()
-					.map(FactoredChangeCellOptions::factor)
-					.enumerate()
-				{
-					let index = i64_type.const_int(i as u64, false);
+					.map(|v| i8_type.const_int(v.factor() as u64, false))
+					.collect::<Vec<_>>();
 
-					let factor = i8_type.const_int(factor as u64, false);
-
-					vec = vec.const_insert_element(index, factor).into_vector_value();
-				}
-
-				vec
+				VectorType::const_vector(&vec_of_values)
 			};
 
-			let multiplied_vec = self.builder.build_int_mul(
+			let vec_of_scaled_current_cell = self.builder.build_int_mul(
 				vec_of_current_cell,
 				vec_of_factors,
-				"duplicate_cell_mul",
+				"duplicate_cell_scattered_vector_mul\0",
 			)?;
 
 			self.builder.build_int_add(
-				multiplied_vec,
 				vec_of_loaded_values,
-				"duplicate_cell_add\0",
+				vec_of_scaled_current_cell,
+				"duplicate_cell_scattered_vector_add\0",
 			)?
 		};
 
-		let vec_scatter = self.get_vector_scatter(i8_vec_type)?;
+		let vector_scatter = self.get_vector_scatter(i8_vec_type)?;
 
 		self.builder.build_call(
-			vec_scatter,
+			vector_scatter,
 			&[
 				vec_of_modified_values.into(),
-				vec_of_ptrs.into(),
+				vec_of_pointers.into(),
 				vec_load_store_alignment.into(),
 				bool_vec_all_on.into(),
 			],
-			"duplicate_cell_store\0",
+			"duplicate_cell_scattered_vector_store\0",
 		)?;
 
 		Ok(())
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn duplicate_cell_contiguous(
+		&self,
+		values: &[FactoredChangeCellOptions<i8>],
+		vec_of_current_cell: VectorValue<'ctx>,
+		i8_type: IntType<'ctx>,
+		i8_vec_type: VectorType<'ctx>,
+	) -> Result<(), AssemblyError> {
+		let start_of_range = values
+			.iter()
+			.copied()
+			.map(FactoredChangeCellOptions::offset)
+			.min()
+			.unwrap();
+
+		let gep = self.tape_gep(i8_vec_type, start_of_range, "duplicate_cell_contiguous")?;
+
+		let vec_of_loaded_values = self.load_from(i8_vec_type, gep, "duplicate_cell_contiguous")?;
+
+		let vec_of_modified_values = if values
+			.iter()
+			.copied()
+			.map(FactoredChangeCellOptions::factor)
+			.all(|x| matches!(x, 1))
+		{
+			self.builder.build_int_add(
+				vec_of_current_cell,
+				vec_of_loaded_values,
+				"duplicate_cell_contiguous_vector_add\0",
+			)?
+		} else {
+			let vec_of_factors = {
+				let vec_of_values = values
+					.iter()
+					.copied()
+					.map(|v| i8_type.const_int(v.factor() as u64, false))
+					.collect::<Vec<_>>();
+
+				VectorType::const_vector(&vec_of_values)
+			};
+
+			let vec_of_scaled_current_cell = self.builder.build_int_mul(
+				vec_of_current_cell,
+				vec_of_factors,
+				"duplicate_cell_contiguous_vector_mul\0",
+			)?;
+
+			self.builder.build_int_add(
+				vec_of_loaded_values,
+				vec_of_scaled_current_cell,
+				"duplicate_cell_contiguous_vector_add\0",
+			)?
+		};
+
+		self.store_into(vec_of_modified_values, gep)
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -276,4 +351,10 @@ impl InnerAssembler<'_> {
 
 		Ok(())
 	}
+}
+
+fn is_contiguous(values: &[FactoredChangeCellOptions<i8>]) -> bool {
+	values
+		.windows(2)
+		.all(|w| w[0].offset() + 1 == w[1].offset())
 }
