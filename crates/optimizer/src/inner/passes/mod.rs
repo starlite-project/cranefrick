@@ -682,6 +682,29 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			))),
 			BrainIr::boundary(),
 		])),
+		[
+			BrainIr::ChangeCell(change_options),
+			BrainIr::Output(OutputOptions::Cells(output_options)),
+			BrainIr::Boundary,
+		] => {
+			let mut new_offsets = Vec::with_capacity(output_options.len());
+
+			for option in output_options {
+				if option.offset() == change_options.offset() {
+					new_offsets.push(ChangeCellOptions::new(
+						option.value().wrapping_add(change_options.value()),
+						option.offset(),
+					));
+				} else {
+					new_offsets.push(*option);
+				}
+			}
+
+			Some(Change::swap([
+				BrainIr::output_cells(new_offsets),
+				BrainIr::boundary(),
+			]))
+		}
 		_ => None,
 	}
 }
