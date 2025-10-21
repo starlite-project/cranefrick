@@ -672,17 +672,6 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			]))
 		}
 		[
-			BrainIr::MovePointer(offset),
-			BrainIr::Output(OutputOptions::Cell(output_options)),
-			BrainIr::Boundary,
-		] => Some(Change::swap([
-			BrainIr::Output(OutputOptions::Cell(ChangeCellOptions::new(
-				output_options.value(),
-				offset.wrapping_add(output_options.offset()),
-			))),
-			BrainIr::boundary(),
-		])),
-		[
 			BrainIr::ChangeCell(change_options),
 			BrainIr::Output(OutputOptions::Cells(output_options)),
 			BrainIr::Boundary,
@@ -702,6 +691,40 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			Some(Change::swap([
 				BrainIr::output_cells(new_offsets),
+				BrainIr::boundary(),
+			]))
+		}
+		[
+			BrainIr::ChangeCell(change_options),
+			BrainIr::Output(OutputOptions::Cell(output_options)),
+			BrainIr::Boundary,
+		] if change_options.offset() == output_options.offset() => Some(Change::swap([
+			BrainIr::output_offset_cell_at(
+				output_options.value().wrapping_add(change_options.value()),
+				output_options.offset(),
+			),
+			BrainIr::boundary(),
+		])),
+		[
+			BrainIr::MovePointer(offset),
+			BrainIr::Output(OutputOptions::Cell(output_options)),
+			BrainIr::Boundary,
+		] => Some(Change::swap([
+			BrainIr::output_offset_cell_at(
+				output_options.value(),
+				offset.wrapping_add(output_options.offset()),
+			),
+			BrainIr::boundary(),
+		])),
+		[
+			BrainIr::MovePointer(offset),
+			BrainIr::Output(OutputOptions::Cells(output_options)),
+			BrainIr::Boundary,
+		] => {
+			Some(Change::swap([
+				BrainIr::output_cells(output_options.iter().copied().map(|opt| {
+					ChangeCellOptions::new(opt.value(), offset.wrapping_add(opt.offset()))
+				})),
 				BrainIr::boundary(),
 			]))
 		}
