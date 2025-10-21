@@ -12,6 +12,7 @@ use super::create_string;
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
+	#[tracing::instrument(skip(self))]
 	pub fn output(&self, options: &OutputOptions) -> Result<(), AssemblyError> {
 		match options {
 			OutputOptions::Cell(options) => self.output_cell(*options)?,
