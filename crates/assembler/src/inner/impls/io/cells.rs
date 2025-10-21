@@ -1,5 +1,8 @@
 use frick_ir::ValuedChangeCellOptions;
-use inkwell::types::{IntType, VectorType};
+use inkwell::{
+	types::{IntType, VectorType},
+	values::VectorValue,
+};
 
 use crate::{
 	AssemblyError, BuilderExt as _, ContextGetter as _,
@@ -91,7 +94,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.setup_output_cells_puts_memset(i8_type, i64_type, options[0], options.len() as u64)
 		} else {
 			tracing::debug!("unable to memcpy or memset cells");
-			self.setup_output_cells_puts_vector(options)
+			let vec_of_values_to_output =
+				if options.windows(2).all(|w| w[0].offset() == w[1].offset()) {
+					self.setup_output_cells_puts_vector_splat(options)
+				} else {
+					self.setup_output_cells_puts_vector_scatter(options)
+				}?;
+
+			self.store_into(vec_of_values_to_output, self.pointers.output)
 		}?;
 
 		let _output_invariant = {
@@ -162,11 +172,73 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	#[tracing::instrument(skip_all, fields(options = options.len()))]
-	fn setup_output_cells_puts_vector(
+	fn setup_output_cells_puts_vector_splat(
 		&self,
 		options: &[ValuedChangeCellOptions<i8>],
-	) -> Result<(), AssemblyError> {
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		let context = self.context();
+
+		let i8_type = context.i8_type();
+		let i32_type = context.i32_type();
+		let i64_type = context.i64_type();
+		let i8_vec_type = i8_type.vec_type(options.len() as u32);
+		let i32_vec_type = i32_type.vec_type(options.len() as u32);
+
+		let offset = options[0].offset();
+
+		let current_cell_value = self.load_cell(offset, "setup_output_cells_puts_vector_splat")?;
+
+		let vec_of_current_cell = {
+			let i64_zero = i64_type.const_zero();
+
+			let tmp = self.builder.build_insert_element(
+				i8_vec_type.get_undef(),
+				current_cell_value,
+				i64_zero,
+				"setup_output_cells_puts_vector_splat_insert_element\0",
+			)?;
+
+			self.builder.build_shuffle_vector(
+				tmp,
+				i8_vec_type.get_undef(),
+				i32_vec_type.const_zero(),
+				"setup_output_cells_puts_vector_splat_shuffle_vector",
+			)?
+		};
+
+		Ok(
+			if options
+				.iter()
+				.copied()
+				.map(ValuedChangeCellOptions::value)
+				.all(|x| matches!(x, 0))
+			{
+				vec_of_current_cell
+			} else {
+				let vec_of_value_offsets = {
+					let vec_of_value_offsets = options
+						.iter()
+						.copied()
+						.map(|v| i8_type.const_int(v.value() as u64, false))
+						.collect::<Vec<_>>();
+
+					VectorType::const_vector(&vec_of_value_offsets)
+				};
+
+				self.builder.build_int_add(
+					vec_of_current_cell,
+					vec_of_value_offsets,
+					"setup_output_cells_puts_vector_splat_add\0",
+				)?
+			},
+		)
+	}
+
+	#[tracing::instrument(skip_all, fields(options = options.len()))]
+	fn setup_output_cells_puts_vector_scatter(
+		&self,
+		options: &[ValuedChangeCellOptions<i8>],
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
 		let context = self.context();
 
 		let ptr_int_type = self.ptr_int_type;
@@ -175,60 +247,37 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
 		let i8_vec_type = i8_type.vec_type(options.len() as u32);
-		let i32_vec_type = i32_type.vec_type(options.len() as u32);
 		let ptr_int_vec_type = ptr_int_type.vec_type(options.len() as u32);
 
 		let vec_of_indices = {
-			if options.windows(2).all(|x| x[0].offset() == x[1].offset()) {
-				let offset =
-					self.offset_pointer(options[0].offset(), "setup_output_cells_puts_vector")?;
+			let mut vec = ptr_int_vec_type.get_undef();
 
-				let zero_index = i64_type.const_zero();
+			let offsets = options
+				.iter()
+				.copied()
+				.map(|v| self.offset_pointer(v.offset(), "setup_output_cells_puts_vector_scatter"))
+				.collect::<Result<Vec<_>, _>>()?;
 
-				let tmp = self.builder.build_insert_element(
-					ptr_int_vec_type.get_undef(),
+			for (i, offset) in offsets.into_iter().enumerate() {
+				let index = i64_type.const_int(i as u64, false);
+
+				vec = self.builder.build_insert_element(
+					vec,
 					offset,
-					zero_index,
-					"setup_output_cells_puts_vector_insert_element\0",
+					index,
+					"setup_output_cells_puts_vector_scatter_insert_element\0",
 				)?;
-
-				self.builder.build_shuffle_vector(
-					tmp,
-					ptr_int_vec_type.get_undef(),
-					i32_vec_type.const_zero(),
-					"setup_output_cells_puts_vector_shuffle_vector\0",
-				)?
-			} else {
-				let mut vec = ptr_int_vec_type.get_undef();
-
-				for (i, offset) in options
-					.iter()
-					.copied()
-					.map(ValuedChangeCellOptions::offset)
-					.enumerate()
-				{
-					let index = i64_type.const_int(i as u64, false);
-
-					let offset = self.offset_pointer(offset, "setup_output_cells_puts_vector")?;
-
-					vec = self.builder.build_insert_element(
-						vec,
-						offset,
-						index,
-						"setup_output_cells_puts_vector_insert_element\0",
-					)?;
-				}
-
-				vec
 			}
+
+			vec
 		};
 
-		let vec_of_ptrs = unsafe {
+		let vec_of_pointers = unsafe {
 			self.builder.build_vec_gep(
 				i8_type,
 				self.pointers.tape,
 				vec_of_indices,
-				"setup_output_cells_puts_vector_gep\0",
+				"setup_output_cells_puts_vector_scatter_gep\0",
 			)?
 		};
 
@@ -247,54 +296,43 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_call(
 				vector_gather,
 				&[
-					vec_of_ptrs.into(),
+					vec_of_pointers.into(),
 					vec_load_alignment.into(),
 					bool_vec_all_on.into(),
 					i8_vec_type.get_undef().into(),
 				],
-				"setup_output_cells_puts_vector_vector_load_call\0",
+				"setup_output_cells_puts_vector_scatter_vector_load_call\0",
 			)?
 			.try_as_basic_value()
 			.unwrap_left()
 			.into_vector_value();
 
-		let vec_of_values_for_output = if options
-			.iter()
-			.copied()
-			.map(ValuedChangeCellOptions::value)
-			.all(|x| matches!(x, 0))
-		{
-			vec_of_loaded_values
-		} else {
-			let vec_of_value_offsets = {
-				let mut vec = i8_vec_type.const_zero();
+		Ok(
+			if options
+				.iter()
+				.copied()
+				.map(ValuedChangeCellOptions::value)
+				.all(|x| matches!(x, 0))
+			{
+				vec_of_loaded_values
+			} else {
+				let vec_of_value_offsets = {
+					let vec_of_value_offsets = options
+						.iter()
+						.copied()
+						.map(|v| i8_type.const_int(v.value() as u64, false))
+						.collect::<Vec<_>>();
 
-				for (i, value_offset) in options
-					.iter()
-					.copied()
-					.map(ValuedChangeCellOptions::value)
-					.enumerate()
-				{
-					let index = i64_type.const_int(i as u64, false);
+					VectorType::const_vector(&vec_of_value_offsets)
+				};
 
-					let value_offset = i8_type.const_int(value_offset as u64, false);
-
-					vec = vec
-						.const_insert_element(index, value_offset)
-						.into_vector_value();
-				}
-
-				vec
-			};
-
-			self.builder.build_int_add(
-				vec_of_loaded_values,
-				vec_of_value_offsets,
-				"setup_output_cells_puts_vector_add\0",
-			)?
-		};
-
-		self.store_into(vec_of_values_for_output, self.pointers.output)
+				self.builder.build_int_add(
+					vec_of_loaded_values,
+					vec_of_value_offsets,
+					"setup_output_cells_puts_vector_scatter_add\0",
+				)?
+			},
+		)
 	}
 }
 
