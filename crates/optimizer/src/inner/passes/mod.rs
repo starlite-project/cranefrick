@@ -1057,12 +1057,16 @@ pub fn unroll_constant_if_nz(ops: [&BrainIr; 2]) -> Option<Change> {
 
 pub fn unroll_basic_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::SetCell(set_options), BrainIr::DynamicLoop(ops)]
+		[BrainIr::SetCell(set_options), l @ BrainIr::DynamicLoop(ops)]
 			if matches!(set_options.into_parts(), (1..=u8::MAX, 0))
 				&& matches!(calculate_ptr_movement(ops)?, 0)
-				&& matches!(ops.as_slice(), [.., BrainIr::ChangeCell(change_options)] if matches!(change_options.into_parts(), (i8::MIN..0, 0))) =>
+				&& matches!(ops.as_slice(), [.., BrainIr::ChangeCell(change_options)] if matches!(change_options.into_parts(), (i8::MIN..0, 0)))
+				&& !l.loop_has_movement()? =>
 		{
-			if ops.iter().any(|op| matches!(op, BrainIr::DynamicLoop(..))) {
+			if ops
+				.iter()
+				.any(|op| matches!(op, BrainIr::DynamicLoop(..) | BrainIr::IfNotZero(..)))
+			{
 				return None;
 			}
 
@@ -1086,12 +1090,16 @@ pub fn unroll_basic_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::swap(out))
 		}
-		[BrainIr::SetCell(set_options), BrainIr::DynamicLoop(ops)]
+		[BrainIr::SetCell(set_options), l @ BrainIr::DynamicLoop(ops)]
 			if matches!(set_options.into_parts(), (1..=u8::MAX, 0))
 				&& matches!(calculate_ptr_movement(ops)?, 0)
-				&& matches!(ops.as_slice(), [BrainIr::ChangeCell(change_options), ..] if matches!(change_options.into_parts(), (i8::MIN..0, 0))) =>
+				&& matches!(ops.as_slice(), [BrainIr::ChangeCell(change_options), ..] if matches!(change_options.into_parts(), (i8::MIN..0, 0)))
+				&& !l.loop_has_movement()? =>
 		{
-			if ops.iter().any(|op| matches!(op, BrainIr::DynamicLoop(..))) {
+			if ops
+				.iter()
+				.any(|op| matches!(op, BrainIr::DynamicLoop(..) | BrainIr::IfNotZero(..)))
+			{
 				return None;
 			}
 

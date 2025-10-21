@@ -252,6 +252,24 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub fn loop_has_movement(&self) -> Option<bool> {
+		let child_ops = self.child_ops()?;
+
+		let mut movement = 0i32;
+
+		for op in child_ops {
+			match op {
+				Self::MovePointer(offset) => movement = movement.wrapping_add(*offset),
+				Self::TakeValueTo(options) => movement = movement.wrapping_add(options.offset()),
+				Self::DynamicLoop(..) | Self::IfNotZero(..) => return None,
+				_ => {}
+			}
+		}
+
+		Some(!matches!(movement, 0))
+	}
+
+	#[must_use]
 	pub fn is_zeroing_cell(&self) -> bool {
 		match self {
 			Self::DynamicLoop(..)
