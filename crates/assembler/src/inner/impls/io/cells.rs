@@ -180,10 +180,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let vec_of_indices = {
 			if options.windows(2).all(|x| x[0].offset() == x[1].offset()) {
-				let offset = self.offset_pointer(
-					options[0].offset(),
-					"setup_output_cells_puts_vector",
-				)?;
+				let offset =
+					self.offset_pointer(options[0].offset(), "setup_output_cells_puts_vector")?;
 
 				let zero_index = i64_type.const_zero();
 
@@ -211,8 +209,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				{
 					let index = i64_type.const_int(i as u64, false);
 
-					let offset =
-						self.offset_pointer(offset, "setup_output_cells_puts_vector")?;
+					let offset = self.offset_pointer(offset, "setup_output_cells_puts_vector")?;
 
 					vec = self.builder.build_insert_element(
 						vec,

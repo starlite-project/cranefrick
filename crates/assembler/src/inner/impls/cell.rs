@@ -314,20 +314,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	#[tracing::instrument(skip(self))]
 	pub fn set_many_cells(&self, options: &SetManyCellsOptions) -> Result<(), AssemblyError> {
-		let context = self.context();
+		let i8_type = self.context().i8_type();
 
-		let i8_type = context.i8_type();
-
-		let values_value = options
+		let values_to_store = options
 			.values()
 			.iter()
 			.copied()
 			.map(|x| i8_type.const_int(x.into(), false))
 			.collect::<Vec<_>>();
 
-		let array_value = i8_type.const_array(&values_value);
+		let vec_to_store = VectorType::const_vector(&values_to_store);
 
-		self.store_into_cell(array_value, options.start(), "set_many_cells")
+		self.store_into_cell(vec_to_store, options.start(), "set_many_cells")
 	}
 
 	#[tracing::instrument(skip(self))]
