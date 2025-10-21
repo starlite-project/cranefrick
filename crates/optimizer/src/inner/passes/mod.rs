@@ -56,6 +56,9 @@ pub fn optimize_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 		[BrainIr::SetCell(options), BrainIr::InputIntoCell] if !options.is_offset() => {
 			Some(Change::remove_offset(0))
 		}
+		[BrainIr::ChangeCell(options), BrainIr::InputIntoCell] if !options.is_offset() => {
+			Some(Change::remove_offset(0))
+		}
 		[l, BrainIr::SetCell(options)] if options.is_default() && l.is_zeroing_cell() => {
 			Some(Change::remove_offset(1))
 		}
