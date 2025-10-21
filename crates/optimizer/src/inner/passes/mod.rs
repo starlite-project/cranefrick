@@ -671,6 +671,17 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 				BrainIr::move_pointer(*x),
 			]))
 		}
+		[
+			BrainIr::MovePointer(offset),
+			BrainIr::Output(OutputOptions::Cell(output_options)),
+			BrainIr::Boundary,
+		] => Some(Change::swap([
+			BrainIr::Output(OutputOptions::Cell(ChangeCellOptions::new(
+				output_options.value(),
+				offset.wrapping_add(output_options.offset()),
+			))),
+			BrainIr::boundary(),
+		])),
 		_ => None,
 	}
 }
