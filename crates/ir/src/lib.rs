@@ -258,8 +258,7 @@ impl BrainIr {
 			| Self::MoveValueTo(..)
 			| Self::FindZero(..)
 			| Self::IfNotZero(..)
-			| Self::SubCell(..)
-			| Self::Boundary => true,
+			| Self::SubCell(..) => true,
 			Self::SetRange(options) => options.is_zeroing_cell(),
 			Self::SetManyCells(options) => options.is_zeroing_cell(),
 			Self::SetCell(options) => options.is_default(),
