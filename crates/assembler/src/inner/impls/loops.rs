@@ -90,10 +90,12 @@ impl InnerAssembler<'_> {
 
 		self.ops(ops, op_count)?;
 
+		*op_count -= 1;
+
 		let debug_loc = self.debug_builder.create_debug_location(
 			context,
 			1,
-			*op_count as u32 + 1,
+			*op_count as u32 + 2,
 			self.functions
 				.main
 				.get_subprogram()
@@ -102,11 +104,7 @@ impl InnerAssembler<'_> {
 			None,
 		);
 
-		*op_count -= 1;
-
 		self.builder.set_current_debug_location(debug_loc);
-
-		self.builder.build_unconditional_branch(header_block)?;
 
 		self.builder.position_at_end(exit_block);
 
