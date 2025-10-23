@@ -27,8 +27,15 @@ impl InnerAssembler<'_> {
 			self.builder
 				.build_int_compare(IntPredicate::NE, value, zero, "if_not_zero_cmp\0")?;
 
-		self.builder
+		let initial_branch_instr = self
+			.builder
 			.build_conditional_branch(cmp, body_block, exit_block)?;
+
+		let unpredictable_metadata_node = context.metadata_node(&[]);
+		let unpredictable_metadata_id = context.get_kind_id("unpredictable");
+
+		initial_branch_instr
+			.set_metadata(unpredictable_metadata_node, unpredictable_metadata_id)?;
 
 		self.builder.position_at_end(body_block);
 		*op_count += 1;
@@ -81,8 +88,15 @@ impl InnerAssembler<'_> {
 			self.builder
 				.build_int_compare(IntPredicate::NE, value, zero, "dynamic_loop_cmp\0")?;
 
-		self.builder
+		let initial_branch_instr = self
+			.builder
 			.build_conditional_branch(cmp, body_block, exit_block)?;
+
+		let unpredictable_metadata_node = context.metadata_node(&[]);
+		let unpredictable_metadata_id = context.get_kind_id("unpredictable");
+
+		initial_branch_instr
+			.set_metadata(unpredictable_metadata_node, unpredictable_metadata_id)?;
 
 		self.builder.position_at_end(body_block);
 
