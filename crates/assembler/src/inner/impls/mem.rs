@@ -77,7 +77,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 		value: impl BasicValue<'ctx>,
 		gep: PointerValue<'ctx>,
 	) -> Result<(), AssemblyError> {
-		self.builder.build_store(gep, value)?;
+		let store_instr = self.builder.build_store(gep, value)?;
+
+		let context = self.context();
+
+		let nontemporal_metadata_node = context.metadata_node(&[]);
+		let nontemporal_metadata_id = context.get_kind_id("nontemporal");
+
+		store_instr.set_metadata(nontemporal_metadata_node, nontemporal_metadata_id)?;
 
 		Ok(())
 	}
