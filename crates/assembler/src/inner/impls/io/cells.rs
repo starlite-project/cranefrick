@@ -167,7 +167,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let array_len = i64_type.const_int(length, false);
 
 		self.builder
-			.build_memset(self.pointers.output, 16, value_to_memset, array_len)?;
+			.build_memset(self.pointers.output, 1, value_to_memset, array_len)?;
 
 		Ok(())
 	}
