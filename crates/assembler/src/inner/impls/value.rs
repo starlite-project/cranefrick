@@ -124,14 +124,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 		options: ChangeCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
 		if matches!(options.factor(), 1) {
-			self.replace_value_from_memcpyed(options.offset())
+			self.replace_value_from_memmoved(options.offset())
 		} else {
 			self.replace_value_from_factorized(options)
 		}
 	}
 
 	#[tracing::instrument(skip(self))]
-	fn replace_value_from_memcpyed(&self, offset: i32) -> Result<(), AssemblyError> {
+	fn replace_value_from_memmoved(&self, offset: i32) -> Result<(), AssemblyError> {
 		let context = self.context();
 
 		let i8_type = context.i8_type();
@@ -141,12 +141,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i64_type.const_int(1, false)
 		};
 
-		let current_cell_gep = self.tape_gep(i8_type, 0, "replace_value_from_memcpyed")?;
+		let current_cell_gep = self.tape_gep(i8_type, 0, "replace_value_from_memmoved")?;
 
-		let other_value_gep = self.tape_gep(i8_type, offset, "replace_value_from_memcpyed")?;
+		let other_value_gep = self.tape_gep(i8_type, offset, "replace_value_from_memmoved")?;
 
 		self.builder
-			.build_memcpy(current_cell_gep, 1, other_value_gep, 1, i8_size)?;
+			.build_memmove(current_cell_gep, 1, other_value_gep, 1, i8_size)?;
 
 		self.store_value_into(0, other_value_gep)?;
 
