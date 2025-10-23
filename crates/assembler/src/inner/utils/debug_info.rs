@@ -240,7 +240,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		let output_array_value = {
 			let output_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN);
 
-			output_array_type.get_poison()
+			output_array_type.const_zero()
 		};
 
 		let right_after_output_alloca = get_instruction_after_alloca(pointers.output)?;

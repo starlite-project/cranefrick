@@ -26,6 +26,8 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let i64_type = context.i64_type();
 		let ptr_int_type = context.ptr_sized_int_type(target_data, None);
 
+		let i8_zero = i8_type.const_zero();
+
 		let tape = {
 			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
 			let i8_array_size = i64_type.const_int(TAPE_SIZE as u64, false);
@@ -42,7 +44,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 				"",
 			)?;
 
-			builder.build_memset(tape_alloca, 1, i8_type.const_zero(), i8_array_size)?;
+			builder.build_memset(tape_alloca, 1, i8_zero, i8_array_size)?;
 
 			tape_alloca
 		};
@@ -64,12 +66,15 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		let output = {
 			let i8_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN.into());
+			let i8_array_size = i64_type.const_int(OUTPUT_ARRAY_LEN.into(), false);
 
 			let output_alloca = builder.build_alloca(i8_array_type, "output")?;
 
 			if let Some(output_instr) = output_alloca.as_instruction() {
 				output_instr.set_alignment(16)?;
 			}
+
+			builder.build_memset(output_alloca, 1, i8_zero, i8_array_size)?;
 
 			output_alloca
 		};
