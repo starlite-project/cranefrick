@@ -106,6 +106,8 @@ impl InnerAssembler<'_> {
 
 		self.builder.set_current_debug_location(debug_loc);
 
+		self.builder.build_unconditional_branch(exit_block)?;
+
 		self.builder.position_at_end(exit_block);
 
 		Ok(())
