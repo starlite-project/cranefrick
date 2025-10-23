@@ -192,7 +192,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let i64_zero = i64_type.const_zero();
 
 			let tmp = self.builder.build_insert_element(
-				i8_vec_type.get_undef(),
+				i8_vec_type.get_poison(),
 				current_cell_value,
 				i64_zero,
 				"setup_output_cells_puts_vector_splat_insert_element\0",
@@ -250,7 +250,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let ptr_int_vec_type = ptr_int_type.vec_type(options.len() as u32);
 
 		let vec_of_indices = {
-			let mut vec = ptr_int_vec_type.get_undef();
+			let mut vec = ptr_int_vec_type.get_poison();
 
 			let offsets = options
 				.iter()

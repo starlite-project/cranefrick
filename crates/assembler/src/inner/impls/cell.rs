@@ -103,7 +103,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i64_zero = i64_type.const_zero();
 
 		let tmp = self.builder.build_insert_element(
-			i8_vec_type.get_undef(),
+			i8_vec_type.get_poison(),
 			current_cell,
 			i64_zero,
 			"duplicate_cell_insert_element\0",
@@ -147,7 +147,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let ptr_int_vec_type = ptr_int_type.vec_type(values.len() as u32);
 
 		let vec_of_indices = {
-			let mut vec = ptr_int_vec_type.get_undef();
+			let mut vec = ptr_int_vec_type.get_poison();
 
 			let offsets = values
 				.iter()
@@ -196,7 +196,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 					vec_of_pointers.into(),
 					vec_load_store_alignment.into(),
 					bool_vec_all_on.into(),
-					i8_vec_type.get_undef().into(),
+					i8_vec_type.get_poison().into(),
 				],
 				"duplicate_cell_scattered_vector_load_call\0",
 			)?
