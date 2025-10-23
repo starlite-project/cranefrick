@@ -81,22 +81,8 @@ impl InnerAssembler<'_> {
 			self.builder
 				.build_int_compare(IntPredicate::NE, value, zero, "dynamic_loop_cmp\0")?;
 
-		let initial_branch_instr = self
-			.builder
+		self.builder
 			.build_conditional_branch(cmp, body_block, exit_block)?;
-
-		{
-			let mustprogress_metadata_string = context.metadata_string("llvm.loop.mustprogress");
-
-			let mustprogress_metadata_node =
-				context.metadata_node(&[mustprogress_metadata_string.into()]);
-
-			let llvm_loop_metadata_node =
-				context.metadata_node(&[mustprogress_metadata_node.into()]);
-			let llvm_loop_metadata_id = context.get_kind_id("llvm.loop");
-
-			initial_branch_instr.set_metadata(llvm_loop_metadata_node, llvm_loop_metadata_id)?;
-		}
 
 		self.builder.position_at_end(body_block);
 
