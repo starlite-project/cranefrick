@@ -95,6 +95,18 @@ pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::output_char(0),
 			BrainIr::set_cell(0),
 		])),
+		[
+			BrainIr::Boundary,
+			BrainIr::DynamicLoop(..)
+			| BrainIr::CopyValueTo(..)
+			| BrainIr::MoveValueTo(..)
+			| BrainIr::FetchValueFrom(..)
+			| BrainIr::ReplaceValueFrom(..),
+		] => Some(Change::remove_offset(1)),
+		[BrainIr::Boundary, BrainIr::TakeValueTo(take_options)] => Some(Change::swap([
+			BrainIr::boundary(),
+			BrainIr::move_pointer(take_options.offset()),
+		])),
 		_ => None,
 	}
 }
