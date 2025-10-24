@@ -1,6 +1,6 @@
 use inkwell::{
 	types::{BasicType, BasicTypeEnum},
-	values::{BasicValue, InstructionValue, IntValue, PointerValue},
+	values::{BasicValue, IntValue, PointerValue},
 };
 
 use super::create_string;
