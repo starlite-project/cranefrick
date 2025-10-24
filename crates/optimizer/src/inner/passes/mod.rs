@@ -1301,6 +1301,20 @@ pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 				BrainIr::scale_value(second_take_options.factor()),
 			]))
 		}
+		[
+			BrainIr::TakeValueTo(take_options),
+			BrainIr::MoveValueTo(move_options),
+		] if matches!(take_options.offset().wrapping_add(move_options.offset()), 0) => {
+			Some(Change::swap([
+				BrainIr::scale_value(take_options.factor()),
+				BrainIr::fetch_value_from(1, take_options.offset()),
+				BrainIr::scale_value(move_options.factor()),
+				BrainIr::move_pointer(take_options.offset()),
+			]))
+		}
+		[BrainIr::ScaleValue(a), BrainIr::ScaleValue(b)] => {
+			Some(Change::replace(BrainIr::scale_value(a.wrapping_mul(*b))))
+		}
 		_ => None,
 	}
 }
