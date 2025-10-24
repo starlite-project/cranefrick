@@ -440,6 +440,12 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 			other.iter().copied().chain(iter::once(*x)),
 		))),
 		[
+			BrainIr::Output(OutputOptions::Cells(a)),
+			BrainIr::Output(OutputOptions::Cells(b)),
+		] => Some(Change::replace(BrainIr::output_cells(
+			a.iter().copied().chain(b.iter().copied()),
+		))),
+		[
 			BrainIr::SetCell(set_options),
 			BrainIr::Output(OutputOptions::Cells(output_options)),
 		] if output_options

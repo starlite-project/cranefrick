@@ -96,4 +96,4 @@ unsafe impl<'ctx> AsContextRef<'ctx> for AssemblerPointers<'ctx> {
 	}
 }
 
-pub const OUTPUT_ARRAY_LEN: u32 = 8;
+pub const OUTPUT_ARRAY_LEN: u32 = 16;
