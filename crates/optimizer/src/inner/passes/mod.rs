@@ -751,6 +751,11 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
 			BrainIr::Boundary,
 		] => Some(Change::remove_offset(0)),
+		[
+			l,
+			BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
+			BrainIr::Boundary,
+		] if !l.has_io() => Some(Change::remove_offset(0)),
 		_ => None,
 	}
 }
