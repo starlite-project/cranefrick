@@ -1,3 +1,5 @@
+#![allow(non_contiguous_range_endpoints)]
+
 use std::iter;
 
 use super::{BrainIr, Change};
@@ -13,8 +15,10 @@ pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 			BrainIr::ChangeCell(offset_cell_options),
 			BrainIr::ChangeCell(current_cell_options),
 		] if matches!(current_cell_options.into_parts(), (-1, 0))
-			&& matches!(offset_cell_options.value(), i8::MIN..0)
-			&& !matches!(offset_cell_options.offset(), 0) =>
+			&& matches!(
+				offset_cell_options.into_parts(),
+				(i8::MIN..0, i32::MIN..0 | 1..=i32::MAX)
+			) =>
 		{
 			Some(Change::replace(BrainIr::sub_cell_at(
 				offset_cell_options.value().unsigned_abs(),
@@ -119,7 +123,6 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
-#[allow(non_contiguous_range_endpoints)]
 pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
