@@ -60,7 +60,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(44);
+		span.pb_set_length(45);
 
 		self.run_all_passes(&mut progress);
 
@@ -177,7 +177,7 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize scale and shift value instructions", 7);
+			let _guard = self.pass_info("optimize scale and shift value instructions", 8);
 			run_with_span("optimize_move_value_from_loop", || {
 				*progress |= run_loop_pass(self, passes::optimize_move_value_from_loop);
 			});
@@ -199,6 +199,9 @@ impl Optimizer {
 			});
 			run_with_span("optimize_copy_value", || {
 				*progress |= run_peephole_pass(self, passes::optimize_copy_value);
+			});
+			run_with_span("optimize_scale_value", || {
+				*progress |= run_peephole_pass(self, passes::optimize_scale_value);
 			});
 		}
 

@@ -1282,3 +1282,25 @@ pub fn unroll_if_nz(ops: [&BrainIr; 2]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::TakeValueTo(first_take_options),
+			BrainIr::TakeValueTo(second_take_options),
+		] if matches!(
+			first_take_options
+				.offset()
+				.wrapping_add(second_take_options.offset()),
+			0
+		) =>
+		{
+			Some(Change::swap([
+				BrainIr::scale_value(first_take_options.factor()),
+				BrainIr::fetch_value_from(1, first_take_options.offset()),
+				BrainIr::scale_value(second_take_options.factor()),
+			]))
+		}
+		_ => None,
+	}
+}
