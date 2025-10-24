@@ -1,6 +1,7 @@
 use std::iter;
 
 use super::{BrainIr, Change};
+use crate::inner::utils::calculate_ptr_movement;
 
 pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
@@ -114,6 +115,13 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 		[rest @ .., i] if i.is_zeroing_cell() => Some(Change::swap([BrainIr::if_not_zero(
 			rest.iter().cloned().chain(iter::once(i.clone())),
 		)])),
+		l @ [i, rest @ ..]
+			if i.is_zeroing_cell() && matches!(calculate_ptr_movement(l), Some(0)) =>
+		{
+			Some(Change::swap([BrainIr::if_not_zero(
+				iter::once(i.clone()).chain(rest.iter().cloned()),
+			)]))
+		}
 		_ => None,
 	}
 }
