@@ -30,12 +30,13 @@ mimalloc = "0.1"
 [build-dependencies]
 build-rs = "0.3"
 
-[features]
-heap_profiling = ["dep:dhat"]
-
 [dev-dependencies]
 criterion.workspace = true
 rand = "0.9"
+rusty-hook = "0.11"
+
+[features]
+heap_profiling = ["dep:dhat"]
 
 [[bench]]
 harness = false
@@ -139,8 +140,8 @@ all-features = true
 opt-level = 1
 
 [profile.dev.package.inkwell]
-opt-level = 3
 debug-assertions = false
+opt-level = 3
 
 [profile.dev.package.frick_optimizer]
 opt-level = 3
