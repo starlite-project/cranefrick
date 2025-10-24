@@ -14,11 +14,13 @@ pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 		| [
 			BrainIr::ChangeCell(offset_cell_options),
 			BrainIr::ChangeCell(current_cell_options),
-		] if matches!(current_cell_options.into_parts(), (-1, 0))
-			&& matches!(
-				offset_cell_options.into_parts(),
-				(i8::MIN..0, i32::MIN..0 | 1..=i32::MAX)
-			) =>
+		] if matches!(
+			(
+				current_cell_options.into_parts(),
+				offset_cell_options.into_parts()
+			),
+			((-1, 0), (i8::MIN..0, i32::MIN..0 | 1..=i32::MAX))
+		) =>
 		{
 			Some(Change::replace(BrainIr::sub_cell_at(
 				offset_cell_options.value().unsigned_abs(),
@@ -52,9 +54,7 @@ pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 		| [
 			BrainIr::SetCell(set_options),
 			BrainIr::ChangeCell(change_options),
-		] if matches!(change_options.into_parts(), (-1, 0))
-			&& !matches!(set_options.offset(), 0) =>
-		{
+		] if matches!(change_options.into_parts(), (-1, 0)) && !set_options.is_offset() => {
 			Some(Change::swap([
 				BrainIr::set_cell(0),
 				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
