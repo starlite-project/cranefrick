@@ -1315,6 +1315,13 @@ pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 		[BrainIr::ScaleValue(a), BrainIr::ScaleValue(b)] => {
 			Some(Change::replace(BrainIr::scale_value(a.wrapping_mul(*b))))
 		}
+		[
+			BrainIr::ScaleValue(factor),
+			BrainIr::TakeValueTo(take_options),
+		] if matches!(take_options.factor(), 2..=u8::MAX) => Some(Change::swap([
+			BrainIr::scale_value(factor.wrapping_mul(take_options.factor())),
+			BrainIr::take_value_to(1, take_options.offset()),
+		])),
 		_ => None,
 	}
 }
