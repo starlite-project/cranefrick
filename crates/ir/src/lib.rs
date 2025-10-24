@@ -26,12 +26,11 @@ pub enum BrainIr {
 	FindZero(i32),
 	InputIntoCell,
 	Output(OutputOptions),
-	ScaleAndMoveValueTo(FactoredChangeCellOptions<u8>),
-	ScaleAndCopyValueTo(FactoredChangeCellOptions<u8>),
-	ScaleAndTakeValueTo(FactoredChangeCellOptions<u8>),
-	ScaleAndFetchValueFrom(FactoredChangeCellOptions<u8>),
-	ScaleAndReplaceValueFrom(FactoredChangeCellOptions<u8>),
-	ReduceAndMoveValueTo(FactoredChangeCellOptions<u8>),
+	MoveValueTo(FactoredChangeCellOptions<u8>),
+	CopyValueTo(FactoredChangeCellOptions<u8>),
+	TakeValueTo(FactoredChangeCellOptions<u8>),
+	FetchValueFrom(FactoredChangeCellOptions<u8>),
+	ReplaceValueFrom(FactoredChangeCellOptions<u8>),
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
@@ -138,33 +137,28 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn scale_and_fetch_value_from(value: u8, offset: i32) -> Self {
-		Self::ScaleAndFetchValueFrom(FactoredChangeCellOptions::new(value, offset))
+	pub const fn fetch_value_from(value: u8, offset: i32) -> Self {
+		Self::FetchValueFrom(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
-	pub const fn scale_and_replace_value_from(value: u8, offset: i32) -> Self {
-		Self::ScaleAndReplaceValueFrom(FactoredChangeCellOptions::new(value, offset))
+	pub const fn replace_value_from(value: u8, offset: i32) -> Self {
+		Self::ReplaceValueFrom(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
-	pub const fn scale_and_take_value_to(value: u8, offset: i32) -> Self {
-		Self::ScaleAndTakeValueTo(FactoredChangeCellOptions::new(value, offset))
+	pub const fn take_value_to(value: u8, offset: i32) -> Self {
+		Self::TakeValueTo(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
-	pub const fn scale_and_move_value_to(value: u8, offset: i32) -> Self {
-		Self::ScaleAndMoveValueTo(FactoredChangeCellOptions::new(value, offset))
+	pub const fn move_value_to(value: u8, offset: i32) -> Self {
+		Self::MoveValueTo(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
-	pub const fn scale_and_copy_value_to(value: u8, offset: i32) -> Self {
-		Self::ScaleAndCopyValueTo(FactoredChangeCellOptions::new(value, offset))
-	}
-
-	#[must_use]
-	pub const fn reduce_and_move_value_to(value: u8, offset: i32) -> Self {
-		Self::ReduceAndMoveValueTo(FactoredChangeCellOptions::new(value, offset))
+	pub const fn copy_value_to(value: u8, offset: i32) -> Self {
+		Self::CopyValueTo(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -266,7 +260,7 @@ impl BrainIr {
 		for op in child_ops {
 			match op {
 				Self::MovePointer(offset) => movement = movement.wrapping_add(*offset),
-				Self::ScaleAndTakeValueTo(options) => {
+				Self::TakeValueTo(options) => {
 					movement = movement.wrapping_add(options.offset());
 				}
 				Self::DynamicLoop(..) | Self::IfNotZero(..) => return None,
@@ -281,7 +275,7 @@ impl BrainIr {
 	pub fn is_zeroing_cell(&self) -> bool {
 		match self {
 			Self::DynamicLoop(..)
-			| Self::ScaleAndMoveValueTo(..)
+			| Self::MoveValueTo(..)
 			| Self::FindZero(..)
 			| Self::IfNotZero(..)
 			| Self::SubCell(..) => true,
@@ -298,11 +292,11 @@ impl BrainIr {
 			self,
 			Self::DynamicLoop(..)
 				| Self::FindZero(..)
-				| Self::ScaleAndMoveValueTo(..)
+				| Self::MoveValueTo(..)
 				| Self::IfNotZero(..)
 				| Self::SubCell(SubOptions::CellAt(..))
 				| Self::DuplicateCell { .. }
-				| Self::ScaleAndCopyValueTo(..)
+				| Self::CopyValueTo(..)
 		)
 	}
 }
@@ -445,29 +439,25 @@ impl Display for BrainIr {
 
 				f.write_char(')')?;
 			}
-			Self::ScaleAndMoveValueTo(move_options) => {
+			Self::MoveValueTo(move_options) => {
 				f.write_str("move_value_to(")?;
 				write_shift_options(*move_options, f)?;
 			}
-			Self::ScaleAndCopyValueTo(copy_options) => {
+			Self::CopyValueTo(copy_options) => {
 				f.write_str("copy_value_to(")?;
 				write_shift_options(*copy_options, f)?;
 			}
-			Self::ScaleAndTakeValueTo(take_options) => {
+			Self::TakeValueTo(take_options) => {
 				f.write_str("take_value_to(")?;
 				write_shift_options(*take_options, f)?;
 			}
-			Self::ScaleAndFetchValueFrom(fetch_options) => {
+			Self::FetchValueFrom(fetch_options) => {
 				f.write_str("fetch_value_from(")?;
 				write_shift_options(*fetch_options, f)?;
 			}
-			Self::ScaleAndReplaceValueFrom(replace_options) => {
+			Self::ReplaceValueFrom(replace_options) => {
 				f.write_str("replace_value_from(")?;
 				write_shift_options(*replace_options, f)?;
-			}
-			Self::ReduceAndMoveValueTo(move_options) => {
-				f.write_str("reduce_and_move_value_to(")?;
-				write_shift_options(*move_options, f)?;
 			}
 			Self::ScaleValue(factor) => {
 				f.write_str("scale_value(")?;

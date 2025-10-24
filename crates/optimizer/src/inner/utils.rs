@@ -19,16 +19,16 @@ pub fn calculate_ptr_movement(ops: &[BrainIr]) -> Option<i32> {
 
 				sum = sum.wrapping_add(loop_sum);
 			}
-			BrainIr::ScaleAndTakeValueTo(options) => sum += options.offset(),
+			BrainIr::TakeValueTo(options) => sum += options.offset(),
 			BrainIr::ChangeCell(..)
 			| BrainIr::SetCell(..)
 			| BrainIr::InputIntoCell
 			| BrainIr::Output(..)
-			| BrainIr::ScaleAndMoveValueTo(..)
-			| BrainIr::ScaleAndFetchValueFrom(..)
+			| BrainIr::MoveValueTo(..)
+			| BrainIr::FetchValueFrom(..)
 			| BrainIr::SubCell(..)
-			| BrainIr::ScaleAndCopyValueTo(..)
-			| BrainIr::ScaleAndReplaceValueFrom(..)
+			| BrainIr::CopyValueTo(..)
+			| BrainIr::ReplaceValueFrom(..)
 			| BrainIr::ScaleValue(..)
 			| BrainIr::SetRange { .. }
 			| BrainIr::SetManyCells { .. }

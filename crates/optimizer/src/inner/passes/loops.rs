@@ -54,7 +54,11 @@ pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
 		| [
 			BrainIr::SetCell(set_options),
 			BrainIr::ChangeCell(change_options),
-		] if matches!(change_options.into_parts(), (-1, 0)) && !set_options.is_offset() => {
+		] if matches!(
+			(change_options.into_parts(), set_options.is_offset()),
+			((-1, 0), false)
+		) =>
+		{
 			Some(Change::swap([
 				BrainIr::set_cell(0),
 				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
@@ -113,7 +117,10 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 			rest.iter().cloned().chain(iter::once(i.clone())),
 		)])),
 		l @ [i, rest @ ..]
-			if i.is_zeroing_cell() && matches!(calculate_ptr_movement(l), Some(0)) =>
+			if matches!(
+				(i.is_zeroing_cell(), calculate_ptr_movement(l)),
+				(true, Some(0))
+			) =>
 		{
 			Some(Change::swap([BrainIr::if_not_zero(
 				iter::once(i.clone()).chain(rest.iter().cloned()),
@@ -128,13 +135,15 @@ pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 		[
 			BrainIr::ChangeCell(current_cell_options),
 			BrainIr::ChangeCell(offset_cell_options),
-		] if matches!(current_cell_options.into_parts(), (-1, 0))
-			&& matches!(
-				offset_cell_options.into_parts(),
-				(1..=i8::MAX, i32::MIN..0 | 1..=i32::MAX)
-			) =>
+		] if matches!(
+			(
+				current_cell_options.into_parts(),
+				offset_cell_options.into_parts()
+			),
+			((-1, 0), (1..=i8::MAX, i32::MIN..0 | 1..=i32::MAX))
+		) =>
 		{
-			Some(Change::replace(BrainIr::scale_and_move_value_to(
+			Some(Change::replace(BrainIr::move_value_to(
 				offset_cell_options.value().unsigned_abs(),
 				offset_cell_options.offset(),
 			)))
