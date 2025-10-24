@@ -119,6 +119,7 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
+#[allow(non_contiguous_range_endpoints)]
 pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[
@@ -135,12 +136,6 @@ pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 				offset_cell_options.offset(),
 			)))
 		}
-		_ => None,
-	}
-}
-
-pub fn optimize_reduce_and_move_value_to(ops: &[BrainIr]) -> Option<Change> {
-	match ops {
 		_ => None,
 	}
 }
