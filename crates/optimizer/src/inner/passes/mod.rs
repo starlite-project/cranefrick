@@ -1096,6 +1096,37 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				None
 			}
 		}
+		[
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::MovePointer(x),
+		] if set_many_options.start() == *x => Some(Change::swap([
+			BrainIr::move_pointer(*x),
+			BrainIr::set_many_cells(set_many_options.values().iter().copied(), 0),
+		])),
+		[
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::FetchValueFrom(fetch_options),
+		] if set_many_options.range().contains(&fetch_options.offset()) => {
+			let fetched_value = set_many_options.value_at(fetch_options.offset())?;
+
+			let current_cell = set_many_options.value_at(0)?;
+
+			let mut set_many_options = set_many_options.clone();
+
+			if !set_many_options.set_value_at(fetch_options.offset(), 0) {
+				return None;
+			}
+
+			let scaled_fetched_value = fetched_value.wrapping_mul(fetch_options.factor());
+
+			let added_value = current_cell.wrapping_add(scaled_fetched_value);
+
+			if !set_many_options.set_value_at(0, added_value) {
+				return None;
+			}
+
+			Some(Change::replace(BrainIr::SetManyCells(set_many_options)))
+		}
 		_ => None,
 	}
 }
@@ -1121,6 +1152,22 @@ pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			Some(Change::swap([
 				BrainIr::set_many_cells(values, set_many_options.start()),
+				BrainIr::move_pointer(*x),
+			]))
+		}
+		[
+			BrainIr::SetRange(set_range_options),
+			BrainIr::MovePointer(x),
+			BrainIr::ChangeCell(change_options),
+		] if !change_options.is_offset() => {
+			let mut set_many_options = SetManyCellsOptions::from(*set_range_options);
+
+			if !set_many_options.set_value_at(*x, change_options.value() as u8) {
+				return None;
+			}
+
+			Some(Change::swap([
+				BrainIr::SetManyCells(set_many_options),
 				BrainIr::move_pointer(*x),
 			]))
 		}
@@ -1322,6 +1369,22 @@ pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::scale_value(factor.wrapping_mul(take_options.factor())),
 			BrainIr::take_value_to(1, take_options.offset()),
 		])),
+		[
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::ScaleValue(factor),
+		] => {
+			let value = set_many_options.value_at(0)?;
+
+			let mut set_many_options = set_many_options.clone();
+
+			let new_value = value.wrapping_mul(*factor);
+
+			if !set_many_options.set_value_at(0, new_value) {
+				return None;
+			}
+
+			Some(Change::replace(BrainIr::SetManyCells(set_many_options)))
+		}
 		_ => None,
 	}
 }

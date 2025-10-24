@@ -7,6 +7,8 @@ use std::{
 use frick_utils::{GetOrZero, IntoIteratorExt as _};
 use serde::{Deserialize, Serialize};
 
+use super::SetRangeOptions;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetManyCellsOptions {
 	values: Vec<u8>,
@@ -73,6 +75,16 @@ impl SetManyCellsOptions {
 			iter: self.values.iter().copied().enumerate(),
 			start: self.start.get_or_zero(),
 		}
+	}
+}
+
+impl From<SetRangeOptions> for SetManyCellsOptions {
+	fn from(value: SetRangeOptions) -> Self {
+		let range = value.range();
+
+		let values = range.map(|_| value.value());
+
+		Self::new(values, value.start())
 	}
 }
 
