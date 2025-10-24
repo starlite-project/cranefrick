@@ -74,11 +74,15 @@ pub fn optimize_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 		[
 			BrainIr::ChangeCell(change_options),
 			BrainIr::SetManyCells(set_many_options),
-		] if set_many_options.range().contains(&change_options.offset()) => Some(Change::remove_offset(0)),
+		] if set_many_options.range().contains(&change_options.offset()) => {
+			Some(Change::remove_offset(0))
+		}
 		[
 			BrainIr::ChangeCell(change_options),
-			BrainIr::SetRange(set_range_options)
-		]if set_range_options.range().contains(&change_options.offset()) => Some(Change::remove_offset(0)),
+			BrainIr::SetRange(set_range_options),
+		] if set_range_options.range().contains(&change_options.offset()) => {
+			Some(Change::remove_offset(0))
+		}
 		_ => None,
 	}
 }
