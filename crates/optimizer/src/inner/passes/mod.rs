@@ -87,6 +87,13 @@ pub fn optimize_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 	}
 }
 
+pub fn remove_unreachable_loops(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[a, b] if a.is_zeroing_cell() && b.needs_nonzero_cell() => Some(Change::remove_offset(1)),
+		_ => None,
+	}
+}
+
 pub const fn remove_noop_instructions(ops: [&BrainIr; 1]) -> Option<Change> {
 	match ops {
 		[BrainIr::ChangeCell(options)] if matches!(options.value(), 0) => Some(Change::remove()),

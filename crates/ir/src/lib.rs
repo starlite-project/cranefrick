@@ -31,6 +31,7 @@ pub enum BrainIr {
 	ScaleAndTakeValueTo(FactoredChangeCellOptions<u8>),
 	ScaleAndFetchValueFrom(FactoredChangeCellOptions<u8>),
 	ScaleAndReplaceValueFrom(FactoredChangeCellOptions<u8>),
+	ReduceAndMoveValueTo(FactoredChangeCellOptions<u8>),
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
@@ -159,6 +160,11 @@ impl BrainIr {
 	#[must_use]
 	pub const fn scale_and_copy_value_to(value: u8, offset: i32) -> Self {
 		Self::ScaleAndCopyValueTo(FactoredChangeCellOptions::new(value, offset))
+	}
+
+	#[must_use]
+	pub const fn reduce_and_move_value_to(value: u8, offset: i32) -> Self {
+		Self::ReduceAndMoveValueTo(FactoredChangeCellOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -458,6 +464,10 @@ impl Display for BrainIr {
 			Self::ScaleAndReplaceValueFrom(replace_options) => {
 				f.write_str("replace_value_from(")?;
 				write_shift_options(*replace_options, f)?;
+			}
+			Self::ReduceAndMoveValueTo(move_options) => {
+				f.write_str("reduce_and_move_value_to(")?;
+				write_shift_options(*move_options, f)?;
 			}
 			Self::ScaleValue(factor) => {
 				f.write_str("scale_value(")?;

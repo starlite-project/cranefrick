@@ -25,13 +25,6 @@ pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
-pub fn remove_unreachable_loops(ops: [&BrainIr; 2]) -> Option<Change> {
-	match ops {
-		[a, b] if a.is_zeroing_cell() && b.needs_nonzero_cell() => Some(Change::remove_offset(1)),
-		_ => None,
-	}
-}
-
 pub const fn remove_infinite_loops(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[.., BrainIr::InputIntoCell] => Some(Change::remove()),
@@ -132,14 +125,22 @@ pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 			BrainIr::ChangeCell(current_cell_options),
 			BrainIr::ChangeCell(offset_cell_options),
 		] if matches!(current_cell_options.into_parts(), (-1, 0))
-			&& matches!(offset_cell_options.value(), 1..=i8::MAX)
-			&& !matches!(offset_cell_options.offset(), 0) =>
+			&& matches!(
+				offset_cell_options.into_parts(),
+				(1..=i8::MAX, i32::MIN..0 | 1..=i32::MAX)
+			) =>
 		{
 			Some(Change::replace(BrainIr::scale_and_move_value_to(
 				offset_cell_options.value().unsigned_abs(),
 				offset_cell_options.offset(),
 			)))
 		}
+		_ => None,
+	}
+}
+
+pub fn optimize_reduce_and_move_value_to(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
 		_ => None,
 	}
 }
