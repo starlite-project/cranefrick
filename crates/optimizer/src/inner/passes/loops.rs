@@ -135,7 +135,7 @@ pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 			&& matches!(offset_cell_options.value(), 1..=i8::MAX)
 			&& !matches!(offset_cell_options.offset(), 0) =>
 		{
-			Some(Change::replace(BrainIr::move_value_to(
+			Some(Change::replace(BrainIr::scale_and_move_value_to(
 				offset_cell_options.value().unsigned_abs(),
 				offset_cell_options.offset(),
 			)))
