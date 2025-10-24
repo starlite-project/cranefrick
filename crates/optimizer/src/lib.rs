@@ -60,7 +60,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(43);
+		span.pb_set_length(44);
 
 		self.run_all_passes(&mut progress);
 
@@ -250,12 +250,15 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize if not zero", 2);
+			let _guard = self.pass_info("optimize if not zero", 3);
 			run_with_span("optimize_if_nz", || {
 				*progress |= run_loop_pass(self, passes::optimize_if_nz);
 			});
 			run_with_span("optimize_if_nz_when_zeroing", || {
 				*progress |= run_peephole_pass(self, passes::optimize_if_nz_when_zeroing);
+			});
+			run_with_span("unroll_if_nz", || {
+				*progress |= run_peephole_pass(self, passes::unroll_if_nz);
 			});
 		}
 

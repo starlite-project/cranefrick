@@ -1211,3 +1211,16 @@ pub fn unroll_basic_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+#[tracing::instrument]
+pub fn unroll_if_nz(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[
+			set @ BrainIr::SetManyCells(set_many_options),
+			BrainIr::IfNotZero(ops),
+		] if !matches!(set_many_options.value_at(0)?, 0) => Some(Change::swap(
+			iter::once(set.clone()).chain(ops.iter().cloned()),
+		)),
+		_ => None,
+	}
+}
