@@ -115,7 +115,10 @@ pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 			| BrainIr::ScaleAndFetchValueFrom(..)
 			| BrainIr::ScaleAndReplaceValueFrom(..),
 		] => Some(Change::remove_offset(1)),
-		[BrainIr::Boundary, BrainIr::ScaleAndTakeValueTo(take_options)] => Some(Change::swap([
+		[
+			BrainIr::Boundary,
+			BrainIr::ScaleAndTakeValueTo(take_options),
+		] => Some(Change::swap([
 			BrainIr::boundary(),
 			BrainIr::move_pointer(take_options.offset()),
 		])),
@@ -287,7 +290,10 @@ pub fn remove_offsets(ops: [&BrainIr; 2]) -> Option<Change> {
 
 pub fn optimize_move_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::ScaleAndTakeValueTo(take_options), BrainIr::MovePointer(y)] => Some(Change::swap([
+		[
+			BrainIr::ScaleAndTakeValueTo(take_options),
+			BrainIr::MovePointer(y),
+		] => Some(Change::swap([
 			BrainIr::scale_and_move_value_to(take_options.factor(), take_options.offset()),
 			BrainIr::move_pointer(take_options.offset().wrapping_add(*y)),
 		])),
@@ -318,42 +324,49 @@ pub fn optimize_move_value_from_duplicate_cells(ops: [&BrainIr; 1]) -> Option<Ch
 
 pub const fn optimize_take_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::ScaleAndMoveValueTo(options), BrainIr::MovePointer(y)] if options.offset() == *y => Some(
-			Change::replace(BrainIr::scale_and_take_value_to(options.factor(), options.offset())),
-		),
+		[
+			BrainIr::ScaleAndMoveValueTo(options),
+			BrainIr::MovePointer(y),
+		] if options.offset() == *y => Some(Change::replace(BrainIr::scale_and_take_value_to(
+			options.factor(),
+			options.offset(),
+		))),
 		_ => None,
 	}
 }
 
 pub fn optimize_fetch_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::MovePointer(x), BrainIr::ScaleAndTakeValueTo(take_options)] => Some(Change::swap([
+		[
+			BrainIr::MovePointer(x),
+			BrainIr::ScaleAndTakeValueTo(take_options),
+		] => Some(Change::swap([
 			BrainIr::move_pointer(x.wrapping_add(take_options.offset())),
 			BrainIr::scale_and_fetch_value_from(take_options.factor(), -take_options.offset()),
 		])),
-		[BrainIr::MovePointer(x), BrainIr::ScaleAndMoveValueTo(move_options)]
-			if *x == -move_options.offset() =>
-		{
-			Some(Change::swap([
-				BrainIr::scale_and_fetch_value_from(move_options.factor(), *x),
-				BrainIr::move_pointer(*x),
-			]))
-		}
+		[
+			BrainIr::MovePointer(x),
+			BrainIr::ScaleAndMoveValueTo(move_options),
+		] if *x == -move_options.offset() => Some(Change::swap([
+			BrainIr::scale_and_fetch_value_from(move_options.factor(), *x),
+			BrainIr::move_pointer(*x),
+		])),
 		_ => None,
 	}
 }
 
 pub fn optimize_replace_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[l, BrainIr::ScaleAndFetchValueFrom(options)] if l.is_zeroing_cell() => Some(Change::swap([
-			l.clone(),
-			BrainIr::ScaleAndReplaceValueFrom(*options),
-		])),
-		[BrainIr::SetCell(set_options), BrainIr::ScaleAndReplaceValueFrom(..)]
-			if !set_options.is_offset() =>
-		{
-			Some(Change::remove_offset(0))
+		[l, BrainIr::ScaleAndFetchValueFrom(options)] if l.is_zeroing_cell() => {
+			Some(Change::swap([
+				l.clone(),
+				BrainIr::ScaleAndReplaceValueFrom(*options),
+			]))
 		}
+		[
+			BrainIr::SetCell(set_options),
+			BrainIr::ScaleAndReplaceValueFrom(..),
+		] if !set_options.is_offset() => Some(Change::remove_offset(0)),
 		_ => None,
 	}
 }
