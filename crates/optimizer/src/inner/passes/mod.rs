@@ -995,6 +995,22 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			Some(Change::replace(BrainIr::set_many_cells([a, b], min)))
 		}
 		[
+			BrainIr::SetCell(set_options),
+			BrainIr::SetManyCells(set_many_options),
+		]
+		| [
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::SetCell(set_options),
+		] if set_many_options.range().contains(&set_options.offset()) => {
+			let mut set_many_options = set_many_options.clone();
+
+			if !set_many_options.set_value_at(set_options.offset(), set_options.value()) {
+				return None;
+			}
+
+			Some(Change::replace(BrainIr::SetManyCells(set_many_options)))
+		}
+		[
 			BrainIr::SetManyCells(set_many_options),
 			BrainIr::SetCell(set_options),
 		]
@@ -1122,6 +1138,29 @@ pub fn unroll_constant_duplicate_cell(ops: [&BrainIr; 2]) -> Option<Change> {
 			}
 
 			Some(Change::swap(output))
+		}
+		[
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::DuplicateCell { values },
+		] if values
+			.iter()
+			.all(|x| set_many_options.value_at(x.offset()).is_some()) =>
+		{
+			let current_cell_value = set_many_options.value_at(0)?;
+
+			let mut set_many_options = set_many_options.clone();
+
+			if !set_many_options.set_value_at(0, 0) {
+				return None;
+			}
+
+			for dupe_option in values.iter().copied() {
+				let new_value_to_set = current_cell_value.wrapping_mul(dupe_option.factor() as u8);
+
+				set_many_options.set_value_at(dupe_option.offset(), new_value_to_set);
+			}
+
+			Some(Change::replace(BrainIr::SetManyCells(set_many_options)))
 		}
 		_ => None,
 	}
