@@ -1,6 +1,6 @@
 use inkwell::{
 	types::{BasicType, BasicTypeEnum},
-	values::{BasicValue, IntValue, PointerValue},
+	values::{BasicValue, InstructionValue, IntValue, PointerValue},
 };
 
 use super::create_string;
@@ -77,14 +77,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		value: impl BasicValue<'ctx>,
 		gep: PointerValue<'ctx>,
 	) -> Result<(), AssemblyError> {
-		let store_instr = self.builder.build_store(gep, value)?;
-
-		let context = self.context();
-
-		let nontemporal_metadata_node = context.metadata_node(&[]);
-		let nontemporal_metadata_id = context.get_kind_id("nontemporal");
-
-		store_instr.set_metadata(nontemporal_metadata_node, nontemporal_metadata_id)?;
+		self.builder.build_store(gep, value)?;
 
 		Ok(())
 	}
