@@ -27,3 +27,41 @@ pub fn optimize_change_write_sets(ops: [&BrainIr; 4]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_initial_mem_set_move_change(ops: [&BrainIr; 4]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::Boundary,
+			set @ BrainIr::SetManyCells(set_many_options),
+			BrainIr::MovePointer(move_offset),
+			BrainIr::ChangeCell(change_options),
+		] if !set_many_options
+			.range()
+			.contains(&move_offset.wrapping_add(change_options.offset())) =>
+		{
+			Some(Change::swap([
+				BrainIr::boundary(),
+				set.clone(),
+				BrainIr::move_pointer(*move_offset),
+				BrainIr::set_cell_at(change_options.value() as u8, change_options.offset()),
+			]))
+		}
+		[
+			BrainIr::Boundary,
+			set @ BrainIr::SetRange(set_range_options),
+			BrainIr::MovePointer(move_offset),
+			BrainIr::ChangeCell(change_options),
+		] if !set_range_options
+			.range()
+			.contains(&move_offset.wrapping_add(change_options.offset())) =>
+		{
+			Some(Change::swap([
+				BrainIr::boundary(),
+				set.clone(),
+				BrainIr::move_pointer(*move_offset),
+				BrainIr::set_cell_at(change_options.value() as u8, change_options.offset()),
+			]))
+		}
+		_ => None,
+	}
+}
