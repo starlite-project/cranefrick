@@ -185,3 +185,10 @@ pub const fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn unroll_nested_loops(ops: &[BrainIr]) -> Option<Change> {
+	match ops {
+		[l] if l.is_zeroing_cell() => Some(Change::replace(l.clone())),
+		_ => None,
+	}
+}

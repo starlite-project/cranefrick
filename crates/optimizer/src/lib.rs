@@ -155,6 +155,13 @@ impl Optimizer {
 		}
 
 		{
+			let _guard = self.pass_info("unroll nested one-op loops", 1);
+			run_with_span("unroll_nested_loops", || {
+				*progress |= run_loop_pass(self, passes::unroll_nested_loops);
+			});
+		}
+
+		{
 			let _guard = self.pass_info("sort cell changes", 7);
 			run_with_span("sort_changes<8>", || {
 				*progress |= run_peephole_pass(self, passes::sort_changes::<8>);
