@@ -4,7 +4,7 @@ use std::{
 	slice,
 };
 
-use frick_utils::{GetOrZero, IntoIteratorExt as _};
+use frick_utils::{Convert as _, GetOrZero, IntoIteratorExt as _};
 use serde::{Deserialize, Serialize};
 
 use super::SetRangeOptions;
@@ -85,6 +85,12 @@ impl From<SetRangeOptions> for SetManyCellsOptions {
 		let values = range.map(|_| value.value());
 
 		Self::new(values, value.start())
+	}
+}
+
+impl<'a> From<&'a SetRangeOptions> for SetManyCellsOptions {
+	fn from(value: &'a SetRangeOptions) -> Self {
+		(*value).convert::<Self>()
 	}
 }
 
