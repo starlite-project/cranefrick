@@ -1,6 +1,7 @@
 #![allow(clippy::trivially_copy_pass_by_ref)]
 
 mod loops;
+mod misc;
 mod sort;
 
 use std::{cmp, iter};
@@ -8,9 +9,8 @@ use std::{cmp, iter};
 use frick_ir::{BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubOptions};
 use frick_utils::{Convert as _, GetOrZero as _, InsertOrPush as _};
 
-pub use self::{loops::*, sort::*};
-use super::Change;
-use crate::inner::utils::calculate_ptr_movement;
+pub use self::{loops::*, misc::*, sort::*};
+use crate::inner::{Change, utils::calculate_ptr_movement};
 
 pub const fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {

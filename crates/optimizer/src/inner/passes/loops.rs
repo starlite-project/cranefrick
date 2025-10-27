@@ -2,8 +2,9 @@
 
 use std::iter;
 
-use super::{BrainIr, Change};
-use crate::inner::utils::calculate_ptr_movement;
+use frick_ir::BrainIr;
+
+use crate::inner::{Change, utils::calculate_ptr_movement};
 
 pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 	match ops {

@@ -1,8 +1,9 @@
 use std::cmp::{self, Ordering};
 
+use frick_ir::BrainIr;
 use frick_utils::IteratorExt as _;
 
-use super::{BrainIr, Change};
+use crate::inner::Change;
 
 pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 	if !ops.iter().all(|i| {

@@ -522,6 +522,12 @@ impl Display for BrainIr {
 	}
 }
 
+impl From<OutputOptions> for BrainIr {
+	fn from(value: OutputOptions) -> Self {
+		Self::Output(value)
+	}
+}
+
 impl From<SetManyCellsOptions> for BrainIr {
 	fn from(value: SetManyCellsOptions) -> Self {
 		Self::SetManyCells(value)
