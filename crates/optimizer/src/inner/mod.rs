@@ -13,8 +13,8 @@ pub fn run_loop_pass(
 	v: &mut Vec<BrainIr>,
 	pass: impl Fn(&[BrainIr]) -> Option<Change> + Copy,
 ) -> bool {
-	run_peephole_pass_inner(v, |ops: [&BrainIr; 1]| match &ops[0] {
-		BrainIr::DynamicLoop(i) => pass(i),
+	run_peephole_pass_inner(v, |ops| match ops {
+		[BrainIr::DynamicLoop(i)] => pass(i),
 		_ => None,
 	})
 }
