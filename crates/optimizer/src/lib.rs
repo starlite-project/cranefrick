@@ -60,7 +60,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(47);
+		span.pb_set_length(49);
 
 		self.run_all_passes(&mut progress);
 
@@ -187,7 +187,7 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize scale and shift value instructions", 8);
+			let _guard = self.pass_info("optimize scale and shift value instructions", 9);
 			run_with_span("optimize_move_value_from_loop", || {
 				*progress |= run_loop_pass(self, passes::optimize_move_value_from_loop);
 			});
@@ -197,6 +197,9 @@ impl Optimizer {
 			run_with_span("optimize_move_value_from_duplicate_cells", || {
 				*progress |=
 					run_peephole_pass(self, passes::optimize_move_value_from_duplicate_cells);
+			});
+			run_with_span("optimize_duplicate_cell_replace_from", || {
+				*progress |= run_peephole_pass(self, passes::optimize_duplicate_cell_replace_from);
 			});
 			run_with_span("optimize_take_value", || {
 				*progress |= run_peephole_pass(self, passes::optimize_take_value);

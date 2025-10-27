@@ -7,7 +7,7 @@ mod parse;
 
 use std::fmt::{Display, Formatter, Result as FmtResult, Write as _};
 
-use frick_utils::IntoIteratorExt as _;
+use frick_utils::{IntoIteratorExt as _, IteratorExt as _};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "parse")]
@@ -184,7 +184,7 @@ impl BrainIr {
 	#[must_use]
 	pub fn duplicate_cell(values: impl IntoIterator<Item = FactoredChangeCellOptions<i8>>) -> Self {
 		Self::DuplicateCell {
-			values: values.collect_to(),
+			values: values.into_iter().sorted_by_key(|x| x.offset()).collect(),
 		}
 	}
 
@@ -278,7 +278,8 @@ impl BrainIr {
 			| Self::MoveValueTo(..)
 			| Self::FindZero(..)
 			| Self::IfNotZero(..)
-			| Self::SubCell(..) => true,
+			| Self::SubCell(..)
+			| Self::DuplicateCell { .. } => true,
 			Self::SetRange(options) => options.is_zeroing_cell(),
 			Self::SetManyCells(options) => options.is_zeroing_cell(),
 			Self::SetCell(options) => options.is_default(),

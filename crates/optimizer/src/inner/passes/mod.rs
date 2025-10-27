@@ -302,6 +302,34 @@ pub fn optimize_move_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	}
 }
 
+pub fn optimize_duplicate_cell_replace_from(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::DuplicateCell { values },
+			BrainIr::ReplaceValueFrom(replace_options),
+		] if values
+			.iter()
+			.any(|x| x.offset() == replace_options.offset() && matches!(x.factor(), 1))
+			&& matches!(replace_options.factor(), 1) =>
+		{
+			let mut values = values.clone();
+
+			let position_of_replaced_cell = values
+				.iter()
+				.position(|x| x.offset() == replace_options.offset())?;
+
+			values.remove(position_of_replaced_cell);
+
+			let new_values = values
+				.into_iter()
+				.chain(iter::once(ChangeCellOptions::new(1, 0)));
+
+			Some(Change::replace(BrainIr::duplicate_cell(new_values)))
+		}
+		_ => None,
+	}
+}
+
 pub fn optimize_move_value_from_duplicate_cells(ops: [&BrainIr; 1]) -> Option<Change> {
 	match ops {
 		[BrainIr::DuplicateCell { values }] if matches!(values.len(), 1) => {
