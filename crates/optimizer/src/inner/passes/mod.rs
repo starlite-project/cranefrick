@@ -865,6 +865,21 @@ pub fn optimize_constant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
 			]))
 		}
+		[
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::TakeValueTo(take_options),
+		] if set_many_options.range().contains(&0) => {
+			let mut set_many_options = set_many_options.clone();
+
+			if !set_many_options.set_value_at(0, 0) {
+				return None;
+			}
+
+			Some(Change::swap([
+				set_many_options.convert::<BrainIr>(),
+				BrainIr::move_pointer(take_options.offset()),
+			]))
+		}
 		_ => None,
 	}
 }
