@@ -278,7 +278,7 @@ impl BrainIr {
 			| Self::MoveValueTo(..)
 			| Self::FindZero(..)
 			| Self::IfNotZero(..)
-			| Self::SubCell(..)
+			| Self::SubCell(SubOptions::CellAt(..))
 			| Self::DuplicateCell { .. } => true,
 			Self::SetRange(options) => options.is_zeroing_cell(),
 			Self::SetManyCells(options) => options.is_zeroing_cell(),
