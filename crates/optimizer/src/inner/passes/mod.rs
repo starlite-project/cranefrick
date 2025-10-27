@@ -1320,7 +1320,6 @@ pub fn unroll_basic_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 	}
 }
 
-#[tracing::instrument]
 pub fn unroll_if_nz(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
