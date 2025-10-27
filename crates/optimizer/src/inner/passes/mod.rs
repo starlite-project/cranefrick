@@ -1158,6 +1158,18 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(set_many_options.convert::<BrainIr>()))
 		}
+		[
+			BrainIr::SubCell(SubOptions::FromCell(sub_options)),
+			BrainIr::SetManyCells(set_many_options),
+		] => {
+			let range = set_many_options.range();
+
+			if !range.contains(&0) || !range.contains(&sub_options.offset()) {
+				return None;
+			}
+
+			Some(Change::remove_offset(0))
+		}
 		_ => None,
 	}
 }
