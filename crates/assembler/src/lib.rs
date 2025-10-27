@@ -1,4 +1,4 @@
-#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod ext;
 mod inner;
@@ -15,6 +15,7 @@ use std::{
 };
 
 use frick_ir::BrainIr;
+use frick_utils::Convert as _;
 use inkwell::{
 	OptimizationLevel,
 	builder::BuilderError,
@@ -308,7 +309,7 @@ impl From<LLVMString> for AssemblyError {
 
 impl From<BuilderError> for AssemblyError {
 	fn from(value: BuilderError) -> Self {
-		Self::Inkwell(value.into())
+		Self::Inkwell(value.convert::<inkwell::Error>())
 	}
 }
 
@@ -320,7 +321,7 @@ impl From<inkwell::Error> for AssemblyError {
 
 impl From<InstructionValueError> for AssemblyError {
 	fn from(value: InstructionValueError) -> Self {
-		Self::Inkwell(value.into())
+		Self::Inkwell(value.convert::<inkwell::Error>())
 	}
 }
 

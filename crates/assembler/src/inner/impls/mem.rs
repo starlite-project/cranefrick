@@ -1,3 +1,4 @@
+use frick_utils::Convert as _;
 use inkwell::{
 	types::{BasicType, BasicTypeEnum},
 	values::{BasicValue, IntValue, PointerValue},
@@ -65,7 +66,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value = {
 			let i8_type = self.context().i8_type();
 
-			i8_type.const_int(value.into(), false)
+			i8_type.const_int(value.convert::<u64>(), false)
 		};
 
 		self.store_into(value, gep)
@@ -101,7 +102,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value = {
 			let i8_type = self.context().i8_type();
 
-			i8_type.const_int(value.into(), false)
+			i8_type.const_int(value.convert::<u64>(), false)
 		};
 
 		self.store_into_cell_inner(value, offset, create_string(fn_name, "_store_value\0"))
@@ -159,7 +160,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		CalculatedOffset<'ctx>: From<O>,
 		O: Copy,
 	{
-		let offset = self.resolve_offset(offset.into(), format!("{name}_gep"))?;
+		let offset = self.resolve_offset(
+			offset.convert::<CalculatedOffset<'ctx>>(),
+			format!("{name}_gep"),
+		)?;
 
 		let basic_type = ty.as_basic_type_enum();
 

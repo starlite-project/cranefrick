@@ -1,7 +1,8 @@
 use frick_ir::ValuedChangeCellOptions;
+use frick_utils::Convert as _;
 use inkwell::{
 	types::{IntType, VectorType},
-	values::VectorValue,
+	values::{BasicMetadataValueEnum, VectorValue},
 };
 
 use crate::{
@@ -134,7 +135,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let current_gep = self.tape_gep(i8_type, start, "setup_output_cells_puts_memcpy")?;
 
-		let len_value = i64_type.const_int(len.into(), false);
+		let len_value = i64_type.const_int(len.convert::<u64>(), false);
 
 		self.builder
 			.build_memcpy(self.pointers.output, 1, current_gep, 1, len_value)?;
@@ -296,10 +297,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_call(
 				vector_gather,
 				&[
-					vec_of_pointers.into(),
-					vec_load_alignment.into(),
-					bool_vec_all_on.into(),
-					i8_vec_type.get_undef().into(),
+					vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
+					vec_load_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
+					bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
+					i8_vec_type
+						.get_poison()
+						.convert::<BasicMetadataValueEnum<'ctx>>(),
 				],
 				"setup_output_cells_puts_vector_scatter_vector_load_call\0",
 			)?

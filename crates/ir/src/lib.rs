@@ -1,4 +1,4 @@
-#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod options;
 mod output;
@@ -519,6 +519,18 @@ impl Display for BrainIr {
 		}
 
 		Ok(())
+	}
+}
+
+impl From<SetManyCellsOptions> for BrainIr {
+	fn from(value: SetManyCellsOptions) -> Self {
+		Self::SetManyCells(value)
+	}
+}
+
+impl From<SetRangeOptions> for BrainIr {
+	fn from(value: SetRangeOptions) -> Self {
+		Self::SetRange(value)
 	}
 }
 

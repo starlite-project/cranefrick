@@ -9,7 +9,11 @@ version.workspace = true
 
 [dependencies]
 frick_ir.workspace = true
-frick_utils = { workspace = true, features = ["insert_or_push", "iter"] }
+frick_utils = { workspace = true, features = [
+    "convert",
+    "insert_or_push",
+    "iter"
+] }
 serde.workspace = true
 tracing = { workspace = true, features = ["attributes"] }
 tracing-indicatif.workspace = true

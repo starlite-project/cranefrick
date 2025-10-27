@@ -2,10 +2,14 @@ mod cells;
 mod chars;
 
 use frick_ir::{BrainIr, OutputOptions};
+use frick_utils::Convert as _;
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	context::ContextRef,
-	values::{InstructionValueError, IntValue, PointerValue},
+	types::AnyTypeEnum,
+	values::{
+		BasicMetadataValueEnum, BasicValueEnum, InstructionValueError, IntValue, PointerValue,
+	},
 };
 
 use super::create_string;
@@ -48,9 +52,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let range_metadata_id = context.get_kind_id("range");
 
-		let range_metadata_node = self
-			.context()
-			.metadata_node(&[i32_i8_min.into(), i32_i8_max.into()]);
+		let range_metadata_node = self.context().metadata_node(&[
+			i32_i8_min.convert::<BasicMetadataValueEnum<'ctx>>(),
+			i32_i8_max.convert::<BasicMetadataValueEnum<'ctx>>(),
+		]);
 
 		char_instr.set_metadata(range_metadata_node, range_metadata_id)
 	}
@@ -71,7 +76,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.unwrap_left()
 			.into_int_value();
 
-		self.add_range_io_metadata(context, getchar_value, u8::MIN.into(), u8::MAX.into())?;
+		self.add_range_io_metadata(
+			context,
+			getchar_value,
+			u8::MIN.convert::<u64>(),
+			u8::MAX.convert::<u64>(),
+		)?;
 
 		let truncated_value = self.builder.build_int_truncate(
 			getchar_value,
@@ -102,7 +112,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let call = self.builder.build_direct_invoke(
 			self.functions.puts,
-			&[array_ptr.into(), array_len_value.into()],
+			&[
+				array_ptr.convert::<BasicValueEnum<'ctx>>(),
+				array_len_value.convert::<BasicValueEnum<'ctx>>(),
+			],
 			continue_block,
 			self.catch_block,
 			&create_string(fn_name, "_puts_invoke\0"),
@@ -118,7 +131,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let byref_attr = context.create_type_attribute(
 			Attribute::get_named_enum_kind_id("byref"),
-			array_type.into(),
+			array_type.convert::<AnyTypeEnum<'ctx>>(),
 		);
 
 		call.add_attribute(AttributeLoc::Param(0), byref_attr);
@@ -141,7 +154,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let call = self.builder.build_direct_invoke(
 			self.functions.putchar,
-			&[value.into()],
+			&[value.convert::<BasicValueEnum<'ctx>>()],
 			continue_block,
 			self.catch_block,
 			&create_string(fn_name, "_putchar_invoke\0"),

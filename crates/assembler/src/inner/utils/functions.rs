@@ -1,12 +1,13 @@
 use std::{cell::RefCell, collections::HashMap};
 
+use frick_utils::Convert as _;
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
 	context::{AsContextRef, Context},
 	intrinsics::Intrinsic,
 	llvm_sys::prelude::LLVMContextRef,
 	module::{Linkage, Module},
-	types::{BasicType as _, BasicTypeEnum, VectorType},
+	types::{BasicMetadataTypeEnum, BasicType as _, BasicTypeEnum, VectorType},
 	values::FunctionValue,
 };
 
@@ -35,23 +36,33 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let getchar_ty = i32_type.fn_type(&[], false);
 		let getchar = module.add_function("rust_getchar", getchar_ty, Some(Linkage::External));
 
-		let putchar_ty = void_type.fn_type(&[i32_type.into()], false);
+		let putchar_ty =
+			void_type.fn_type(&[i32_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
 		let putchar = module.add_function("rust_putchar", putchar_ty, Some(Linkage::External));
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
 
-		let puts_ty = void_type.fn_type(&[ptr_type.into(), i64_type.into()], false);
+		let puts_ty = void_type.fn_type(
+			&[
+				ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
+				i64_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
+			],
+			false,
+		);
 		let puts = module.add_function("frick_puts", puts_ty, Some(Linkage::Private));
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(
 				"llvm.lifetime.start",
 				module,
-				&[ptr_type.into()],
+				&[ptr_type.convert::<BasicTypeEnum<'ctx>>()],
 			)?;
-			let lifetime_end =
-				get_intrinsic_function_from_name("llvm.lifetime.end", module, &[ptr_type.into()])?;
+			let lifetime_end = get_intrinsic_function_from_name(
+				"llvm.lifetime.end",
+				module,
+				&[ptr_type.convert::<BasicTypeEnum<'ctx>>()],
+			)?;
 
 			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
 		};
@@ -60,11 +71,14 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			let invariant_start = get_intrinsic_function_from_name(
 				"llvm.invariant.start",
 				module,
-				&[ptr_type.into()],
+				&[ptr_type.convert::<BasicTypeEnum<'ctx>>()],
 			)?;
 
-			let invariant_end =
-				get_intrinsic_function_from_name("llvm.invariant.end", module, &[ptr_type.into()])?;
+			let invariant_end = get_intrinsic_function_from_name(
+				"llvm.invariant.end",
+				module,
+				&[ptr_type.convert::<BasicTypeEnum<'ctx>>()],
+			)?;
 
 			IntrinsicFunctionSet::new(invariant_start, invariant_end)
 		};
@@ -73,11 +87,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 		let eh_personality_ty = i32_type.fn_type(
 			&[
-				i32_type.into(),
-				i32_type.into(),
-				i64_type.into(),
-				ptr_type.into(),
-				ptr_type.into(),
+				i32_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
+				i32_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
+				i64_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
+				ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
+				ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
 			],
 			false,
 		);

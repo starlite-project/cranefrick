@@ -5,6 +5,7 @@ use std::{
 	ffi::{CStr, CString},
 };
 
+use frick_utils::Convert as _;
 use inkwell::{
 	AddressSpace,
 	attributes::Attribute,
@@ -102,7 +103,7 @@ pub trait ModuleExt<'ctx> {
 impl<'ctx> ModuleExt<'ctx> for Module<'ctx> {
 	fn set_new_debug_format(&self, value: bool) {
 		unsafe {
-			LLVMSetIsNewDbgInfoFormat(self.as_mut_ptr(), value.into());
+			LLVMSetIsNewDbgInfoFormat(self.as_mut_ptr(), value.convert::<i32>());
 		}
 	}
 

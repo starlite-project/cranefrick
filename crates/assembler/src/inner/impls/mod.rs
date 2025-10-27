@@ -6,11 +6,16 @@ mod mem;
 mod pointer;
 mod value;
 
-use inkwell::IntPredicate;
+use frick_utils::Convert as _;
+use inkwell::{
+	IntPredicate,
+	types::BasicTypeEnum,
+	values::{BasicMetadataValueEnum, BasicValueEnum},
+};
 
 use crate::{AssemblyError, ContextExt as _, ContextGetter as _, inner::InnerAssembler};
 
-impl InnerAssembler<'_> {
+impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn write_puts(&self) -> Result<(), AssemblyError> {
 		let context = self.context();
@@ -40,7 +45,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.build_direct_call(
 			self.functions.assume,
-			&[assert_ptr_not_null.into()],
+			&[assert_ptr_not_null.convert::<BasicMetadataValueEnum<'ctx>>()],
 			"\0",
 		)?;
 
@@ -76,7 +81,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.build_direct_invoke(
 			self.functions.putchar,
-			&[extended_char.into()],
+			&[extended_char.convert::<BasicValueEnum<'ctx>>()],
 			continue_block,
 			catch_block,
 			"\0",
@@ -102,7 +107,13 @@ impl InnerAssembler<'_> {
 			.build_conditional_branch(is_done, exit_block, try_block)?;
 
 		self.builder.position_at_end(catch_block);
-		let exception_type = context.struct_type(&[ptr_type.into(), i32_type.into()], false);
+		let exception_type = context.struct_type(
+			&[
+				ptr_type.convert::<BasicTypeEnum<'ctx>>(),
+				i32_type.convert::<BasicTypeEnum<'ctx>>(),
+			],
+			false,
+		);
 
 		let exception = self.builder.build_landing_pad(
 			exception_type,

@@ -5,6 +5,7 @@ use std::path::Path;
 
 use frick_ir::{BrainIr, SubOptions};
 use frick_spec::TAPE_SIZE;
+use frick_utils::Convert as _;
 use inkwell::{
 	basic_block::BasicBlock,
 	builder::Builder,
@@ -13,8 +14,8 @@ use inkwell::{
 	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Linkage, Module},
 	targets::TargetMachine,
-	types::{IntType, VectorType},
-	values::{BasicValue, FunctionValue, GlobalValue},
+	types::{BasicTypeEnum, IntType, VectorType},
+	values::{BasicMetadataValueEnum, BasicValue, FunctionValue, GlobalValue},
 };
 
 pub use self::utils::AssemblerFunctions;
@@ -68,7 +69,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let debug_metadata_version = {
 			let i32_type = context.i32_type();
 
-			i32_type.const_int(inkwell::debug_info::debug_metadata_version().into(), false)
+			i32_type.const_int(
+				inkwell::debug_info::debug_metadata_version().convert::<u64>(),
+				false,
+			)
 		};
 
 		module.add_basic_value_flag(
@@ -157,12 +161,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 		tracing::debug!("ending lifetimes in exit block");
 		self.builder.build_call(
 			self.functions.lifetime.end,
-			&[tape_size.into(), self.pointers.tape.into()],
+			&[
+				tape_size.convert::<BasicMetadataValueEnum<'ctx>>(),
+				self.pointers.tape.convert::<BasicMetadataValueEnum<'ctx>>(),
+			],
 			"\0",
 		)?;
 		self.builder.build_call(
 			self.functions.lifetime.end,
-			&[i64_size.into(), self.pointers.pointer.into()],
+			&[
+				i64_size.convert::<BasicMetadataValueEnum<'ctx>>(),
+				self.pointers
+					.pointer
+					.convert::<BasicMetadataValueEnum<'ctx>>(),
+			],
 			"\0",
 		)?;
 
@@ -179,7 +191,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.position_at_end(self.catch_block);
 
-		let exception_type = context.struct_type(&[ptr_type.into(), i32_type.into()], false);
+		let exception_type = context.struct_type(
+			&[
+				ptr_type.convert::<BasicTypeEnum<'ctx>>(),
+				i32_type.convert::<BasicTypeEnum<'ctx>>(),
+			],
+			false,
+		);
 
 		let exception = self.builder.build_landing_pad(
 			exception_type,
@@ -192,12 +210,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 		tracing::debug!("ending the lifetimes in catch block");
 		self.builder.build_call(
 			self.functions.lifetime.end,
-			&[tape_size.into(), self.pointers.tape.into()],
+			&[
+				tape_size.convert::<BasicMetadataValueEnum<'ctx>>(),
+				self.pointers.tape.convert::<BasicMetadataValueEnum<'ctx>>(),
+			],
 			"\0",
 		)?;
 		self.builder.build_call(
 			self.functions.lifetime.end,
-			&[i64_size.into(), self.pointers.pointer.into()],
+			&[
+				i64_size.convert::<BasicMetadataValueEnum<'ctx>>(),
+				self.pointers
+					.pointer
+					.convert::<BasicMetadataValueEnum<'ctx>>(),
+			],
 			"\0",
 		)?;
 
@@ -277,7 +303,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let fn_value = self::utils::get_intrinsic_function_from_name(
 			"llvm.masked.scatter",
 			&self.module,
-			&[vec_type.into(), ptr_vec_type.into()],
+			&[
+				vec_type.convert::<BasicTypeEnum<'ctx>>(),
+				ptr_vec_type.convert::<BasicTypeEnum<'ctx>>(),
+			],
 		)?;
 
 		self.functions.insert_vector_scatter(vec_type, fn_value);
@@ -304,7 +333,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let fn_value = self::utils::get_intrinsic_function_from_name(
 			"llvm.masked.gather",
 			&self.module,
-			&[vec_type.into(), ptr_vec_type.into()],
+			&[
+				vec_type.convert::<BasicTypeEnum<'ctx>>(),
+				ptr_vec_type.convert::<BasicTypeEnum<'ctx>>(),
+			],
 		)?;
 
 		self.functions.insert_vector_gather(vec_type, fn_value);

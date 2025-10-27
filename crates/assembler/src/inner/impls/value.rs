@@ -1,4 +1,5 @@
 use frick_ir::{ChangeCellOptions, Factor};
+use frick_utils::Convert as _;
 use inkwell::values::{IntValue, PointerValue};
 
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
@@ -41,7 +42,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		} else {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int(factor.into(), false);
+			let factor = i8_type.const_int(factor.convert::<u64>(), false);
 
 			self.builder
 				.build_int_mul(current_value, factor, "duplicate_value_to_mul\0")?
@@ -73,7 +74,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		} else {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int(factor.into(), false);
+			let factor = i8_type.const_int(factor.convert::<u64>(), false);
 
 			self.builder
 				.build_int_mul(current_value, factor, "take_value_to_mul\0")?
@@ -103,7 +104,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		} else {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int(factor.into(), false);
+			let factor = i8_type.const_int(factor.convert::<u64>(), false);
 
 			self.builder
 				.build_int_mul(other_cell, factor, "fetch_value_from_mul\0")?
@@ -163,7 +164,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value_to_store = {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int((options.factor()).into(), false);
+			let factor = i8_type.const_int((options.factor()).convert::<u64>(), false);
 
 			self.builder
 				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul\0")?
@@ -179,7 +180,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let value_to_store = {
 			let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int(factor.into(), false);
+			let factor = i8_type.const_int(factor.convert::<u64>(), false);
 
 			self.builder
 				.build_int_mul(cell, factor, "scale_value_mul\0")

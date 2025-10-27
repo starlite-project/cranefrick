@@ -1,3 +1,5 @@
+use frick_utils::Convert as _;
+
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl InnerAssembler<'_> {
@@ -8,7 +10,7 @@ impl InnerAssembler<'_> {
 		let char_value = {
 			let i32_type = context.i32_type();
 
-			i32_type.const_int(c.into(), false)
+			i32_type.const_int(c.convert::<u64>(), false)
 		};
 
 		self.call_putchar(context, char_value, "output_char")

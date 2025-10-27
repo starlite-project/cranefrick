@@ -1,9 +1,10 @@
 use frick_ir::{
 	FactoredChangeCellOptions, SetManyCellsOptions, SetRangeOptions, ValuedChangeCellOptions,
 };
+use frick_utils::Convert as _;
 use inkwell::{
 	types::{IntType, VectorType},
-	values::VectorValue,
+	values::{BasicMetadataValueEnum, VectorValue},
 };
 
 use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAssembler};
@@ -41,7 +42,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let current_cell = self.take(0, "sub_cell_at")?;
 
-			let factor_value = i8_type.const_int(options.factor().into(), false);
+			let factor_value = i8_type.const_int(options.factor().convert::<u64>(), false);
 
 			self.builder
 				.build_int_mul(current_cell, factor_value, "sub_cell_at_mul\0")?
@@ -68,7 +69,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let current_cell = self.take(options.offset(), "sub_from_cell")?;
 
-			let factor_value = i8_type.const_int(options.factor().into(), false);
+			let factor_value = i8_type.const_int(options.factor().convert::<u64>(), false);
 
 			self.builder
 				.build_int_mul(current_cell, factor_value, "sub_from_cell_mul\0")?
@@ -193,10 +194,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_call(
 				vector_gather,
 				&[
-					vec_of_pointers.into(),
-					vec_load_store_alignment.into(),
-					bool_vec_all_on.into(),
-					i8_vec_type.get_poison().into(),
+					vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
+					vec_load_store_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
+					bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
+					i8_vec_type
+						.get_poison()
+						.convert::<BasicMetadataValueEnum<'ctx>>(),
 				],
 				"duplicate_cell_scattered_vector_load_call\0",
 			)?
@@ -244,10 +247,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder.build_call(
 			vector_scatter,
 			&[
-				vec_of_modified_values.into(),
-				vec_of_pointers.into(),
-				vec_load_store_alignment.into(),
-				bool_vec_all_on.into(),
+				vec_of_modified_values.convert::<BasicMetadataValueEnum<'ctx>>(),
+				vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
+				vec_load_store_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
+				bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
 			],
 			"duplicate_cell_scattered_vector_store\0",
 		)?;
@@ -320,7 +323,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.values()
 			.iter()
 			.copied()
-			.map(|x| i8_type.const_int(x.into(), false))
+			.map(|x| i8_type.const_int(x.convert::<u64>(), false))
 			.collect::<Vec<_>>();
 
 		let vec_to_store = VectorType::const_vector(&values_to_store);
@@ -340,7 +343,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			ptr_int_type.const_int(range_len as u64, false)
 		};
 
-		let value_value = i8_type.const_int(options.value().into(), false);
+		let value_value = i8_type.const_int(options.value().convert::<u64>(), false);
 
 		let gep = self.tape_gep(i8_type, start, "set_range")?;
 

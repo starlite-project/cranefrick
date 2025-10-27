@@ -1,7 +1,13 @@
 use frick_spec::TAPE_SIZE;
+use frick_utils::Convert as _;
 use inkwell::{
-	builder::Builder, context::AsContextRef, llvm_sys::prelude::LLVMContextRef, module::Module,
-	targets::TargetData, types::IntType, values::PointerValue,
+	builder::Builder,
+	context::AsContextRef,
+	llvm_sys::prelude::LLVMContextRef,
+	module::Module,
+	targets::TargetData,
+	types::IntType,
+	values::{BasicMetadataValueEnum, PointerValue},
 };
 
 use super::AssemblerFunctions;
@@ -40,7 +46,10 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 			builder.build_call(
 				functions.lifetime.start,
-				&[i8_array_size.into(), tape_alloca.into()],
+				&[
+					i8_array_size.convert::<BasicMetadataValueEnum<'ctx>>(),
+					tape_alloca.convert::<BasicMetadataValueEnum<'ctx>>(),
+				],
 				"",
 			)?;
 
@@ -55,7 +64,10 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 			builder.build_call(
 				functions.lifetime.start,
-				&[pointer_size.into(), pointer_alloca.into()],
+				&[
+					pointer_size.convert::<BasicMetadataValueEnum<'ctx>>(),
+					pointer_alloca.convert::<BasicMetadataValueEnum<'ctx>>(),
+				],
 				"",
 			)?;
 
@@ -65,8 +77,8 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		};
 
 		let output = {
-			let i8_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN.into());
-			let i8_array_size = i64_type.const_int(OUTPUT_ARRAY_LEN.into(), false);
+			let i8_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN.convert::<u32>());
+			let i8_array_size = i64_type.const_int(OUTPUT_ARRAY_LEN.convert::<u64>(), false);
 
 			let output_alloca = builder.build_alloca(i8_array_type, "output")?;
 

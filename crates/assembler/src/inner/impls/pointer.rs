@@ -1,7 +1,11 @@
 use std::fmt::Display;
 
 use frick_spec::TAPE_SIZE;
-use inkwell::{IntPredicate, values::IntValue};
+use frick_utils::Convert as _;
+use inkwell::{
+	IntPredicate,
+	values::{BasicValueEnum, IntValue},
+};
 
 use crate::{
 	AssemblyError,
@@ -18,7 +22,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_store(self.pointers.pointer, wrapped_ptr)?;
 
 		self.debug_builder.insert_dbg_value_before(
-			wrapped_ptr.into(),
+			wrapped_ptr.convert::<BasicValueEnum<'ctx>>(),
 			self.debug_builder.variables.pointer,
 			None,
 			self.builder.get_current_debug_location().unwrap(),

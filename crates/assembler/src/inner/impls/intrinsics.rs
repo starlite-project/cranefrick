@@ -1,4 +1,5 @@
 use frick_spec::TAPE_SIZE;
+use frick_utils::Convert as _;
 use inkwell::{
 	builder::Builder,
 	values::{BasicMetadataValueEnum, FunctionValue, IntValue, PointerValue},
@@ -15,7 +16,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<impl Drop, AssemblyError> {
 		self.builder.build_call(
 			self.functions.lifetime.start,
-			&[alloc_len.into(), pointer.into()],
+			&[
+				alloc_len.convert::<BasicMetadataValueEnum<'ctx>>(),
+				pointer.convert::<BasicMetadataValueEnum<'ctx>>(),
+			],
 			"\0",
 		)?;
 
@@ -57,7 +61,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_call(
 				self.functions.invariant.start,
-				&[alloc_len.into(), pointer.into()],
+				&[
+					alloc_len.convert::<BasicMetadataValueEnum<'ctx>>(),
+					pointer.convert::<BasicMetadataValueEnum<'ctx>>(),
+				],
 				"\0",
 			)?
 			.try_as_basic_value()

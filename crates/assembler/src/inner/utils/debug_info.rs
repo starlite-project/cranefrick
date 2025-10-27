@@ -4,6 +4,7 @@ use std::{
 };
 
 use frick_spec::TAPE_SIZE;
+use frick_utils::Convert as _;
 use inkwell::{
 	AddressSpace,
 	context::ContextRef,
@@ -13,7 +14,7 @@ use inkwell::{
 	},
 	module::Module,
 	types::IntType,
-	values::{InstructionValue, PointerValue},
+	values::{BasicValueEnum, InstructionValue, PointerValue},
 };
 
 use super::{AssemblerFunctions, AssemblerPointers, OUTPUT_ARRAY_LEN};
@@ -210,7 +211,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		);
 
 		self.insert_dbg_value_before(
-			tape_value.into(),
+			tape_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.tape,
 			None,
 			debug_loc,
@@ -230,7 +231,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		);
 
 		self.insert_dbg_value_before(
-			pointer_value.into(),
+			pointer_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.pointer,
 			None,
 			debug_loc,
@@ -254,7 +255,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		);
 
 		self.insert_dbg_value_before(
-			output_array_value.into(),
+			output_array_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.output,
 			None,
 			debug_loc,

@@ -6,7 +6,7 @@ mod sort;
 use std::{cmp, iter};
 
 use frick_ir::{BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubOptions};
-use frick_utils::{GetOrZero as _, InsertOrPush as _};
+use frick_utils::{Convert as _, GetOrZero as _, InsertOrPush as _};
 
 pub use self::{loops::*, sort::*};
 use super::Change;
@@ -1027,7 +1027,7 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				return None;
 			}
 
-			Some(Change::replace(BrainIr::SetManyCells(set_many_options)))
+			Some(Change::replace(set_many_options.convert::<BrainIr>()))
 		}
 		[
 			BrainIr::SetManyCells(set_many_options),
@@ -1125,7 +1125,7 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				return None;
 			}
 
-			Some(Change::replace(BrainIr::SetManyCells(set_many_options)))
+			Some(Change::replace(set_many_options.convert::<BrainIr>()))
 		}
 		_ => None,
 	}
