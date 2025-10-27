@@ -224,6 +224,7 @@ pub enum AssemblyError {
 	},
 	NotImplemented(BrainIr),
 	Io(IoError),
+	SlotAlreadySet,
 }
 
 impl AssemblyError {
@@ -280,6 +281,7 @@ impl Display for AssemblyError {
 				f.write_str(" is not yet implemented")
 			}
 			Self::Io(..) => f.write_str("an IO error has occurred"),
+			Self::SlotAlreadySet => f.write_str("the slot has already been written to"),
 		}
 	}
 }
@@ -296,7 +298,8 @@ impl StdError for AssemblyError {
 			| Self::InvalidGEPType(..)
 			| Self::InvalidIntrinsicDeclaration(..)
 			| Self::NotImplemented(..)
-			| Self::MissingPointerInstruction { .. } => None,
+			| Self::MissingPointerInstruction { .. }
+			| Self::SlotAlreadySet => None,
 		}
 	}
 }
