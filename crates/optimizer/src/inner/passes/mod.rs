@@ -1,7 +1,7 @@
 #![allow(clippy::trivially_copy_pass_by_ref)]
 
+mod long;
 mod loops;
-mod misc;
 mod sort;
 
 use std::{cmp, iter};
@@ -9,7 +9,7 @@ use std::{cmp, iter};
 use frick_ir::{BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubOptions};
 use frick_utils::{Convert as _, GetOrZero as _, InsertOrPush as _};
 
-pub use self::{loops::*, misc::*, sort::*};
+pub use self::{long::*, loops::*, sort::*};
 use crate::inner::{Change, utils::calculate_ptr_movement};
 
 pub const fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
@@ -1184,6 +1184,42 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			}
 
 			Some(Change::remove_offset(0))
+		}
+		_ => None,
+	}
+}
+
+pub fn optimize_set_move_op(ops: [&BrainIr; 3]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::SetCell(set_options),
+			BrainIr::MovePointer(move_offset),
+			BrainIr::ChangeCell(change_options),
+		] if move_offset.wrapping_add(change_options.offset()) == set_options.offset() => {
+			Some(Change::swap([
+				BrainIr::set_cell_at(
+					set_options
+						.value()
+						.wrapping_add_signed(change_options.value()),
+					set_options.offset(),
+				),
+				BrainIr::move_pointer(*move_offset),
+			]))
+		}
+		[
+			BrainIr::SetCell(set_options),
+			BrainIr::MovePointer(move_offset),
+			BrainIr::Output(OutputOptions::Cell(output_options)),
+		] if move_offset.wrapping_add(output_options.offset()) == set_options.offset() => {
+			Some(Change::swap([
+				BrainIr::output_char(
+					set_options
+						.value()
+						.wrapping_add_signed(output_options.value()),
+				),
+				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
+				BrainIr::move_pointer(*move_offset),
+			]))
 		}
 		_ => None,
 	}

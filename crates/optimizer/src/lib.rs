@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info, trace_span};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
 
-use self::inner::{passes, run_loop_pass, run_peephole_pass};
+use self::inner::{Change, LoopPass, PeepholePass, passes, run_loop_pass, run_peephole_pass};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(transparent)]
@@ -70,95 +70,120 @@ impl Optimizer {
 	fn run_all_passes(&mut self, progress: &mut bool) {
 		{
 			let _guard = self.pass_info("combine relavent instructions", 1);
-			run_with_span("optimize_consecutive_instructions", || {
-				*progress |= run_peephole_pass(self, passes::optimize_consecutive_instructions);
-			});
+			run_peephole_pass_with_span(
+				"optimize_consecutive_instructions",
+				progress,
+				self,
+				passes::optimize_consecutive_instructions,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("add relative offsets", 1);
-			run_with_span("add_offsets", || {
-				*progress |= run_peephole_pass(self, passes::add_offsets);
-			});
+			run_peephole_pass_with_span("add_offsets", progress, self, passes::add_offsets);
 		}
 
 		{
 			let _guard = self.pass_info("fix boundary instructions", 2);
-			run_with_span("optimize_initial_sets", || {
-				*progress |= run_peephole_pass(self, passes::optimize_initial_sets);
-			});
-			run_with_span("fix_boundary_instructions", || {
-				*progress |= run_peephole_pass(self, passes::fix_boundary_instructions);
-			});
+			run_peephole_pass_with_span(
+				"optimize_initial_sets",
+				progress,
+				self,
+				passes::optimize_initial_sets,
+			);
+			run_peephole_pass_with_span(
+				"fix_boundary_instructions",
+				progress,
+				self,
+				passes::fix_boundary_instructions,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("optimize clear cell instructions", 1);
-			run_with_span("clear_cell", || {
-				*progress |= run_loop_pass(self, passes::clear_cell);
-			});
+			run_loop_pass_with_span("clear_cell", progress, self, passes::clear_cell);
 		}
 
 		{
 			let _guard = self.pass_info("optimize set-based instructions", 2);
-			run_with_span("optimize_sets", || {
-				*progress |= run_peephole_pass(self, passes::optimize_sets);
-			});
-			run_with_span("optimize_set_move_op", || {
-				*progress |= run_peephole_pass(self, passes::optimize_set_move_op);
-			});
+			run_peephole_pass_with_span("optimize_sets", progress, self, passes::optimize_sets);
+			run_peephole_pass_with_span(
+				"optimize_set_move_op",
+				progress,
+				self,
+				passes::optimize_set_move_op,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("optimize find zero instructions", 1);
-			run_with_span("optimize_find_zero", || {
-				*progress |= run_loop_pass(self, passes::optimize_find_zero);
-			});
+			run_loop_pass_with_span(
+				"optimize_find_zero",
+				progress,
+				self,
+				passes::optimize_find_zero,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("remove no-op instructions", 2);
-			run_with_span("remove_noop_instructions", || {
-				*progress |= run_peephole_pass(self, passes::remove_noop_instructions);
-			});
-			run_with_span("unroll_noop_loop", || {
-				*progress |= run_loop_pass(self, passes::unroll_noop_loop);
-			});
+			run_peephole_pass_with_span(
+				"remove_noop_instructions",
+				progress,
+				self,
+				passes::remove_noop_instructions,
+			);
+			run_loop_pass_with_span("unroll_noop_loop", progress, self, passes::unroll_noop_loop);
 		}
 
 		{
 			let _guard = self.pass_info("remove unreachable loops", 1);
-			run_with_span("remove_unreachable_loops", || {
-				*progress |= run_peephole_pass(self, passes::remove_unreachable_loops);
-			});
+			run_peephole_pass_with_span(
+				"remove_unreachable_loops",
+				progress,
+				self,
+				passes::remove_unreachable_loops,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("remove infinite loops", 1);
-			run_with_span("remove_infinite_loops", || {
-				*progress |= run_loop_pass(self, passes::remove_infinite_loops);
-			});
+			run_loop_pass_with_span(
+				"remove_infinite_loops",
+				progress,
+				self,
+				passes::remove_infinite_loops,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("remove empty loops", 1);
-			run_with_span("remove_empty_loops", || {
-				*progress |= run_loop_pass(self, passes::remove_empty_loops);
-			});
+			run_loop_pass_with_span(
+				"remove_empty_loops",
+				progress,
+				self,
+				passes::remove_empty_loops,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("unroll no-move dynamic loops", 1);
-			run_with_span("unroll_basic_dynamic_loop", || {
-				*progress |= run_peephole_pass(self, passes::unroll_basic_dynamic_loop);
-			});
+			run_peephole_pass_with_span(
+				"unroll_basic_dynamic_loop",
+				progress,
+				self,
+				passes::unroll_basic_dynamic_loop,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("unroll nested one-op loops", 1);
-			run_with_span("unroll_nested_loops", || {
-				*progress |= run_loop_pass(self, passes::unroll_nested_loops);
-			});
+			run_loop_pass_with_span(
+				"unroll_nested_loops",
+				progress,
+				self,
+				passes::unroll_nested_loops,
+			);
 		}
 
 		{
@@ -400,5 +425,27 @@ impl FromIterator<BrainIr> for Optimizer {
 fn run_with_span(pass_name: &'static str, mut f: impl FnMut()) {
 	let span = trace_span!("run_pass", pass = pass_name).entered();
 	f();
+	drop(span);
+}
+
+fn run_peephole_pass_with_span<const N: usize>(
+	pass_name: &'static str,
+	progress: &mut bool,
+	optimizer: &mut Vec<BrainIr>,
+	pass: impl PeepholePass<N>,
+) {
+	let span = trace_span!("run_pass", pass = pass_name).entered();
+	*progress |= run_peephole_pass(optimizer, pass);
+	drop(span);
+}
+
+fn run_loop_pass_with_span(
+	pass_name: &'static str,
+	progress: &mut bool,
+	optimizer: &mut Vec<BrainIr>,
+	pass: impl LoopPass,
+) {
+	let span = trace_span!("run_pass", pass = pass_name).entered();
+	*progress |= run_loop_pass(optimizer, pass);
 	drop(span);
 }

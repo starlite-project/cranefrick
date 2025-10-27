@@ -9,10 +9,7 @@ use frick_ir::BrainIr;
 pub use self::change::*;
 
 #[tracing::instrument(skip_all)]
-pub fn run_loop_pass(
-	v: &mut Vec<BrainIr>,
-	pass: impl Fn(&[BrainIr]) -> Option<Change> + Copy,
-) -> bool {
+pub fn run_loop_pass(v: &mut Vec<BrainIr>, pass: impl LoopPass) -> bool {
 	run_peephole_pass_inner(v, |ops| match ops {
 		[BrainIr::DynamicLoop(i)] => pass(i),
 		_ => None,
@@ -20,16 +17,13 @@ pub fn run_loop_pass(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn run_peephole_pass<const N: usize>(
-	v: &mut Vec<BrainIr>,
-	pass: impl Fn([&BrainIr; N]) -> Option<Change> + Copy,
-) -> bool {
+pub fn run_peephole_pass<const N: usize>(v: &mut Vec<BrainIr>, pass: impl PeepholePass<N>) -> bool {
 	run_peephole_pass_inner(v, pass)
 }
 
 fn run_peephole_pass_inner<const N: usize>(
 	v: &mut Vec<BrainIr>,
-	pass: impl Fn([&BrainIr; N]) -> Option<Change> + Copy,
+	pass: impl PeepholePass<N>,
 ) -> bool {
 	let mut i = 0;
 	let mut progress = false;
@@ -58,3 +52,14 @@ fn run_peephole_pass_inner<const N: usize>(
 
 	progress
 }
+
+pub(crate) trait PeepholePass<const N: usize>:
+	Copy + Fn([&BrainIr; N]) -> Option<Change>
+{
+}
+
+impl<T, const N: usize> PeepholePass<N> for T where T: Copy + Fn([&BrainIr; N]) -> Option<Change> {}
+
+pub(crate) trait LoopPass: Copy + Fn(&[BrainIr]) -> Option<Change> {}
+
+impl<T> LoopPass for T where T: Copy + Fn(&[BrainIr]) -> Option<Change> {}
