@@ -60,7 +60,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(46);
+		span.pb_set_length(48);
 
 		self.run_all_passes(&mut progress);
 
@@ -100,9 +100,12 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize set-based instructions", 1);
+			let _guard = self.pass_info("optimize set-based instructions", 2);
 			run_with_span("optimize_sets", || {
 				*progress |= run_peephole_pass(self, passes::optimize_sets);
+			});
+			run_with_span("optimize_set_move_op", || {
+				*progress |= run_peephole_pass(self, passes::optimize_set_move_op);
 			});
 		}
 

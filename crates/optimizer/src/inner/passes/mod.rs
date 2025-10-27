@@ -517,7 +517,10 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 				BrainIr::set_many_cells(set_options.values().iter().copied(), set_options.start()),
 			]))
 		}
-
+		[
+			change @ (BrainIr::SetCell(..) | BrainIr::ChangeCell(..)),
+			out @ BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
+		] => Some(Change::swap([out.clone(), change.clone()])),
 		_ => None,
 	}
 }
