@@ -60,7 +60,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(48);
+		span.pb_set_length(47);
 
 		self.run_all_passes(&mut progress);
 
