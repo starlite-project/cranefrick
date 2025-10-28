@@ -4,7 +4,8 @@ mod long;
 mod loops;
 mod sort;
 
-use std::{cmp, iter};
+use alloc::{borrow::ToOwned as _, vec::Vec};
+use core::{cmp, iter};
 
 use frick_ir::{BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubOptions};
 use frick_utils::{Convert as _, GetOrZero as _, InsertOrPush as _};

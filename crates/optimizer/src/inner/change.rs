@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use frick_ir::BrainIr;
 use frick_utils::{InsertOrPush as _, IntoIteratorExt as _};
 use tracing::trace;

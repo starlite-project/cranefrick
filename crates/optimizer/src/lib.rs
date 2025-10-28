@@ -1,8 +1,12 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![no_std]
+
+extern crate alloc;
 
 mod inner;
 
-use std::{
+use alloc::vec::Vec;
+use core::{
 	iter,
 	ops::{Deref, DerefMut},
 };

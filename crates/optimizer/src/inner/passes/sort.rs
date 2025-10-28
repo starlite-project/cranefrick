@@ -1,4 +1,4 @@
-use std::cmp::{self, Ordering};
+use core::cmp::{self, Ordering};
 
 use frick_ir::BrainIr;
 use frick_utils::IteratorExt as _;

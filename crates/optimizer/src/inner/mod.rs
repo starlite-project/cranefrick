@@ -2,7 +2,8 @@ mod change;
 pub mod passes;
 mod utils;
 
-use std::array;
+use alloc::vec::Vec;
+use core::array;
 
 use frick_ir::BrainIr;
 
