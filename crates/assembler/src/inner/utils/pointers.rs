@@ -38,7 +38,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
 			let i8_array_size = i64_type.const_int(TAPE_SIZE as u64, false);
 
-			let tape_alloca = builder.build_alloca(i8_array_type, "tape")?;
+			let tape_alloca = builder.build_alloca(i8_array_type, "tape\0")?;
 
 			if let Some(tape_instr) = tape_alloca.as_instruction() {
 				tape_instr.set_alignment(16)?;
@@ -50,7 +50,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 					i8_array_size.convert::<BasicMetadataValueEnum<'ctx>>(),
 					tape_alloca.convert::<BasicMetadataValueEnum<'ctx>>(),
 				],
-				"",
+				"\0",
 			)?;
 
 			builder.build_memset(tape_alloca, 1, i8_zero, i8_array_size)?;
@@ -59,7 +59,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		};
 
 		let pointer = {
-			let pointer_alloca = builder.build_alloca(ptr_int_type, "pointer")?;
+			let pointer_alloca = builder.build_alloca(ptr_int_type, "pointer\0")?;
 			let pointer_size = i64_type.const_int(8, false);
 
 			builder.build_call(
@@ -68,7 +68,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 					pointer_size.convert::<BasicMetadataValueEnum<'ctx>>(),
 					pointer_alloca.convert::<BasicMetadataValueEnum<'ctx>>(),
 				],
-				"",
+				"\0",
 			)?;
 
 			builder.build_store(pointer_alloca, ptr_int_type.const_zero())?;
@@ -80,7 +80,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			let i8_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN.convert::<u32>());
 			let i8_array_size = i64_type.const_int(OUTPUT_ARRAY_LEN.convert::<u64>(), false);
 
-			let output_alloca = builder.build_alloca(i8_array_type, "output")?;
+			let output_alloca = builder.build_alloca(i8_array_type, "output\0")?;
 
 			if let Some(output_instr) = output_alloca.as_instruction() {
 				output_instr.set_alignment(16)?;

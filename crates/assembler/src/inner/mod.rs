@@ -355,7 +355,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	{
 		global.set_thread_local(false);
 		global.set_unnamed_addr(true);
-		global.set_linkage(Linkage::Private);
+		global.set_linkage(Linkage::Internal);
 		global.set_initializer(initializer);
 		global.set_constant(true);
 	}

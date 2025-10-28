@@ -50,7 +50,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			],
 			false,
 		);
-		let puts = module.add_function("frick_puts", puts_ty, Some(Linkage::Private));
+		let puts = module.add_function("frick_puts", puts_ty, Some(Linkage::Internal));
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(

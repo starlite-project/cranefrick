@@ -198,7 +198,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				tmp,
 				i8_vec_type.get_undef(),
 				i32_vec_type.const_zero(),
-				"setup_output_cells_puts_vector_splat_shuffle_vector",
+				"setup_output_cells_puts_vector_splat_shuffle_vector\0",
 			)?
 		};
 
