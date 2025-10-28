@@ -214,7 +214,7 @@ pub fn add_offsets(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::MovePointer(y),
 		] => {
 			let start = options.start().wrapping_add(*x);
-			let end = options.end().wrapping_add(*y);
+			let end = options.end().wrapping_add(*x);
 
 			let set_range_instr = BrainIr::set_range(options.value(), start, end);
 
