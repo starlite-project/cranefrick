@@ -126,6 +126,9 @@ pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::boundary(),
 			BrainIr::move_pointer(take_options.offset()),
 		])),
+		[BrainIr::Boundary, BrainIr::SetCell(set_options)] if matches!(set_options.value(), 0) => {
+			Some(Change::remove_offset(1))
+		}
 		_ => None,
 	}
 }
