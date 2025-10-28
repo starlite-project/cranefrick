@@ -1,11 +1,18 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![no_std]
+
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 mod options;
 mod output;
 #[cfg(feature = "parse")]
 mod parse;
 
-use std::fmt::{Display, Formatter, Result as FmtResult, Write as _};
+use alloc::vec::Vec;
+use core::fmt::{Display, Formatter, Result as FmtResult, Write as _};
 
 use frick_utils::{IntoIteratorExt as _, IteratorExt as _};
 use serde::{Deserialize, Serialize};

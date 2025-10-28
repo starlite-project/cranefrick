@@ -29,7 +29,8 @@ tracing = { workspace = true, features = ["attributes"] }
 criterion.workspace = true
 
 [features]
-parse = ["dep:ariadne", "dep:chumsky"]
+parse = ["dep:ariadne", "dep:chumsky", "std"]
+std = []
 
 [[bench]]
 harness = false

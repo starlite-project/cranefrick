@@ -1,3 +1,7 @@
+use alloc::{
+	string::{String, ToString},
+	vec::Vec,
+};
 use std::io;
 
 use ariadne::{Color, Label, Report, ReportKind, Source};

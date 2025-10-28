@@ -1,4 +1,5 @@
-use std::{
+use alloc::vec::Vec;
+use core::{
 	iter::{Copied, Enumerate, FusedIterator},
 	ops::Range,
 	slice,

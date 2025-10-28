@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
