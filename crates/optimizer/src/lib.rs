@@ -64,7 +64,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(49);
+		span.pb_set_length(50);
 
 		self.run_all_passes(&mut progress);
 
@@ -248,7 +248,7 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize write calls", 4);
+			let _guard = self.pass_info("optimize write calls", 5);
 			run_with_span("optimize_writes", || {
 				*progress |= run_peephole_pass(self, passes::optimize_writes);
 			});
@@ -261,6 +261,12 @@ impl Optimizer {
 			run_with_span("optimize_change_write_sets", || {
 				*progress |= run_peephole_pass(self, passes::optimize_change_write_sets);
 			});
+			run_peephole_pass_with_span(
+				"optimize_boundary_writes",
+				progress,
+				self,
+				passes::optimize_boundary_writes,
+			);
 		}
 
 		{
