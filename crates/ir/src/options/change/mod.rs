@@ -37,6 +37,11 @@ impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> OffsetCellOptions<T, Mark
 	pub fn is_default(self) -> bool {
 		self.value == T::default() && !self.is_offset()
 	}
+
+	#[must_use]
+	pub fn wrapping_add(self, rhs: Self) -> Self {
+		Self::new(T::wrapping_add(self.value, rhs.value), self.offset)
+	}
 }
 
 impl<T: ChangeCellPrimitive> OffsetCellOptions<T, Factor> {
@@ -95,10 +100,25 @@ pub trait ChangeCellMarker: self::sealed::MarkerSealed {}
 
 impl<T: self::sealed::MarkerSealed> ChangeCellMarker for T {}
 
-pub trait ChangeCellPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSealed {}
-
-impl<T> ChangeCellPrimitive for T where T: Copy + Default + Eq + self::sealed::PrimitiveSealed {}
+pub trait ChangeCellPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSealed {
+	#[must_use]
+	fn wrapping_add(self, rhs: Self) -> Self;
+}
 
 pub type FactoredOffsetCellOptions<T> = OffsetCellOptions<T, Factor>;
 
 pub type ValuedOffsetCellOptions<T> = OffsetCellOptions<T, Value>;
+
+macro_rules! impl_change_cell_primitive {
+	($($ty:ty)*) => {
+		$(
+			impl $crate::options::change::ChangeCellPrimitive for $ty {
+				fn wrapping_add(self, rhs: Self) -> Self {
+					<$ty>::wrapping_add(self, rhs)
+				}
+			}
+		)*
+	};
+}
+
+impl_change_cell_primitive!(i8 u8);

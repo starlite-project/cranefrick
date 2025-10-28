@@ -207,10 +207,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			for option in output_options {
 				if option.offset() == x {
-					output.push(OffsetCellOptions::new(
-						option.value().wrapping_add(a.value()),
-						x,
-					));
+					output.push(option.wrapping_add(*a));
 				} else {
 					output.push(*option);
 				}
@@ -338,10 +335,7 @@ pub fn optimize_boundary_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			for option in output_options {
 				if option.offset() == change_options.offset() {
-					new_offsets.push(OffsetCellOptions::new(
-						option.value().wrapping_add(change_options.value()),
-						option.offset(),
-					));
+					new_offsets.push(option.wrapping_add(*change_options));
 				} else {
 					new_offsets.push(*option);
 				}
