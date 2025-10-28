@@ -64,7 +64,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(50);
+		span.pb_set_length(49);
 
 		self.run_all_passes(&mut progress);
 
@@ -130,14 +130,13 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("remove no-op instructions", 2);
+			let _guard = self.pass_info("remove no-op instructions", 1);
 			run_peephole_pass_with_span(
 				"remove_noop_instructions",
 				progress,
 				self,
 				passes::remove_noop_instructions,
 			);
-			run_loop_pass_with_span("unroll_noop_loop", progress, self, passes::unroll_noop_loop);
 		}
 
 		{

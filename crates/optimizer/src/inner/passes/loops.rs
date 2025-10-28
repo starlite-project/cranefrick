@@ -47,63 +47,6 @@ pub fn remove_empty_loops(ops: &[BrainIr]) -> Option<Change> {
 	ops.is_empty().then_some(Change::remove())
 }
 
-pub fn unroll_noop_loop(ops: &[BrainIr]) -> Option<Change> {
-	match ops {
-		[
-			BrainIr::ChangeCell(change_options),
-			BrainIr::SetCell(set_options),
-		]
-		| [
-			BrainIr::SetCell(set_options),
-			BrainIr::ChangeCell(change_options),
-		] if matches!(
-			(change_options.into_parts(), set_options.is_offset()),
-			((-1, 0), false)
-		) =>
-		{
-			Some(Change::swap([
-				BrainIr::set_cell(0),
-				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
-			]))
-		}
-		[
-			BrainIr::ChangeCell(change_options),
-			BrainIr::SetManyCells(set_options),
-		]
-		| [
-			BrainIr::SetManyCells(set_options),
-			BrainIr::ChangeCell(change_options),
-		] if matches!(change_options.into_parts(), (-1, 0))
-			&& !set_options.range().contains(&0) =>
-		{
-			Some(Change::swap([
-				BrainIr::clear_cell(),
-				BrainIr::set_many_cells(set_options.values().iter().copied(), set_options.start()),
-			]))
-		}
-		[
-			BrainIr::ChangeCell(change_options),
-			BrainIr::SetRange(set_range_options),
-		]
-		| [
-			BrainIr::SetRange(set_range_options),
-			BrainIr::ChangeCell(change_options),
-		] if matches!(change_options.into_parts(), (-1, 0))
-			&& !set_range_options.range().contains(&0) =>
-		{
-			Some(Change::swap([
-				BrainIr::clear_cell(),
-				BrainIr::set_range(
-					set_range_options.value(),
-					set_range_options.start(),
-					set_range_options.end(),
-				),
-			]))
-		}
-		_ => None,
-	}
-}
-
 pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {
