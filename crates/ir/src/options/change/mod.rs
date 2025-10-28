@@ -4,7 +4,6 @@ mod serde;
 use std::{
 	fmt::{Debug, Formatter, Result as FmtResult},
 	marker::PhantomData,
-	ops::RangeInclusive,
 };
 
 pub struct OffsetCellOptions<T: ChangeCellPrimitive, Marker: ChangeCellMarker> {
@@ -103,33 +102,3 @@ impl<T> ChangeCellPrimitive for T where T: Copy + Default + Eq + self::sealed::P
 pub type FactoredOffsetCellOptions<T> = OffsetCellOptions<T, Factor>;
 
 pub type ValuedOffsetCellOptions<T> = OffsetCellOptions<T, Value>;
-
-pub fn is_range<T: ChangeCellPrimitive, Marker: ChangeCellMarker>(
-	values: &[OffsetCellOptions<T, Marker>],
-) -> bool {
-	let Some(range) = get_range(values) else {
-		return false;
-	};
-
-	for offset in values.iter().map(|options| options.offset()) {
-		if !range.contains(&offset) {
-			return false;
-		}
-	}
-
-	let len_of_values = values.len();
-
-	range.count() == len_of_values
-}
-
-pub fn get_range<T: ChangeCellPrimitive, Marker: ChangeCellMarker>(
-	values: &[OffsetCellOptions<T, Marker>],
-) -> Option<RangeInclusive<i32>> {
-	assert!(values.len() > 1);
-
-	let first = values.first().copied()?;
-
-	let last = values.last().copied()?;
-
-	Some(first.offset()..=last.offset())
-}
