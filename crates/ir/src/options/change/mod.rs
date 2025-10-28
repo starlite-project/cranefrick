@@ -7,13 +7,13 @@ use std::{
 	ops::RangeInclusive,
 };
 
-pub struct ChangeCellOptions<T: ChangeCellPrimitive, Marker: ChangeCellMarker> {
+pub struct OffsetCellOptions<T: ChangeCellPrimitive, Marker: ChangeCellMarker> {
 	value: T,
 	offset: i32,
 	marker: PhantomData<Marker>,
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> ChangeCellOptions<T, Marker> {
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> OffsetCellOptions<T, Marker> {
 	pub const fn new(value: T, offset: i32) -> Self {
 		Self {
 			value,
@@ -40,35 +40,35 @@ impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> ChangeCellOptions<T, Mark
 	}
 }
 
-impl<T: ChangeCellPrimitive> ChangeCellOptions<T, Factor> {
+impl<T: ChangeCellPrimitive> OffsetCellOptions<T, Factor> {
 	pub const fn factor(self) -> T {
 		self.value
 	}
 
-	pub const fn into_value(self) -> ChangeCellOptions<T, Value> {
-		ChangeCellOptions::new(self.value, self.offset)
+	pub const fn into_value(self) -> OffsetCellOptions<T, Value> {
+		OffsetCellOptions::new(self.value, self.offset)
 	}
 }
 
-impl<T: ChangeCellPrimitive> ChangeCellOptions<T, Value> {
+impl<T: ChangeCellPrimitive> OffsetCellOptions<T, Value> {
 	pub const fn value(self) -> T {
 		self.value
 	}
 
-	pub const fn into_factor(self) -> ChangeCellOptions<T, Factor> {
-		ChangeCellOptions::new(self.value, self.offset)
+	pub const fn into_factor(self) -> OffsetCellOptions<T, Factor> {
+		OffsetCellOptions::new(self.value, self.offset)
 	}
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Clone for ChangeCellOptions<T, Marker> {
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Clone for OffsetCellOptions<T, Marker> {
 	fn clone(&self) -> Self {
 		*self
 	}
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Copy for ChangeCellOptions<T, Marker> {}
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Copy for OffsetCellOptions<T, Marker> {}
 
-impl<T, Marker: ChangeCellMarker> Debug for ChangeCellOptions<T, Marker>
+impl<T, Marker: ChangeCellMarker> Debug for OffsetCellOptions<T, Marker>
 where
 	T: ChangeCellPrimitive + Debug,
 {
@@ -80,9 +80,9 @@ where
 	}
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Eq for ChangeCellOptions<T, Marker> {}
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Eq for OffsetCellOptions<T, Marker> {}
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> PartialEq for ChangeCellOptions<T, Marker> {
+impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> PartialEq for OffsetCellOptions<T, Marker> {
 	fn eq(&self, other: &Self) -> bool {
 		PartialEq::eq(&self.value, &other.value) && PartialEq::eq(&self.offset, &other.offset)
 	}
@@ -100,12 +100,12 @@ pub trait ChangeCellPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSeal
 
 impl<T> ChangeCellPrimitive for T where T: Copy + Default + Eq + self::sealed::PrimitiveSealed {}
 
-pub type FactoredChangeCellOptions<T> = ChangeCellOptions<T, Factor>;
+pub type FactoredOffsetCellOptions<T> = OffsetCellOptions<T, Factor>;
 
-pub type ValuedChangeCellOptions<T> = ChangeCellOptions<T, Value>;
+pub type ValuedOffsetCellOptions<T> = OffsetCellOptions<T, Value>;
 
 pub fn is_range<T: ChangeCellPrimitive, Marker: ChangeCellMarker>(
-	values: &[ChangeCellOptions<T, Marker>],
+	values: &[OffsetCellOptions<T, Marker>],
 ) -> bool {
 	let Some(range) = get_range(values) else {
 		return false;
@@ -123,7 +123,7 @@ pub fn is_range<T: ChangeCellPrimitive, Marker: ChangeCellMarker>(
 }
 
 pub fn get_range<T: ChangeCellPrimitive, Marker: ChangeCellMarker>(
-	values: &[ChangeCellOptions<T, Marker>],
+	values: &[OffsetCellOptions<T, Marker>],
 ) -> Option<RangeInclusive<i32>> {
 	assert!(values.len() > 1);
 

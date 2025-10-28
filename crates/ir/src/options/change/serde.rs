@@ -9,9 +9,9 @@ use serde::{
 	ser::SerializeStruct as _,
 };
 
-use super::{ChangeCellPrimitive, FactoredChangeCellOptions, ValuedChangeCellOptions};
+use super::{ChangeCellPrimitive, FactoredOffsetCellOptions, ValuedOffsetCellOptions};
 
-impl<'de, T> Deserialize<'de> for FactoredChangeCellOptions<T>
+impl<'de, T> Deserialize<'de> for FactoredOffsetCellOptions<T>
 where
 	T: ChangeCellPrimitive + Deserialize<'de>,
 {
@@ -31,7 +31,7 @@ where
 	}
 }
 
-impl<'de, T> Deserialize<'de> for ValuedChangeCellOptions<T>
+impl<'de, T> Deserialize<'de> for ValuedOffsetCellOptions<T>
 where
 	T: ChangeCellPrimitive + Deserialize<'de>,
 {
@@ -51,7 +51,7 @@ where
 	}
 }
 
-impl<T> Serialize for FactoredChangeCellOptions<T>
+impl<T> Serialize for FactoredOffsetCellOptions<T>
 where
 	T: ChangeCellPrimitive + Serialize,
 {
@@ -65,7 +65,7 @@ where
 	}
 }
 
-impl<T> Serialize for ValuedChangeCellOptions<T>
+impl<T> Serialize for ValuedOffsetCellOptions<T>
 where
 	T: ChangeCellPrimitive + Serialize,
 {
@@ -80,14 +80,14 @@ where
 }
 
 struct FactoredChangeCellOptionsVisitor<T: ChangeCellPrimitive> {
-	marker: PhantomData<FactoredChangeCellOptions<T>>,
+	marker: PhantomData<FactoredOffsetCellOptions<T>>,
 }
 
 impl<'de, T> Visitor<'de> for FactoredChangeCellOptionsVisitor<T>
 where
 	T: ChangeCellPrimitive + Deserialize<'de>,
 {
-	type Value = FactoredChangeCellOptions<T>;
+	type Value = FactoredOffsetCellOptions<T>;
 
 	fn expecting(&self, formatter: &mut Formatter<'_>) -> FmtResult {
 		formatter.write_str("struct FactoredChangeCellOptions")
@@ -111,7 +111,7 @@ where
 			));
 		};
 
-		Ok(FactoredChangeCellOptions::new(factor, offset))
+		Ok(FactoredOffsetCellOptions::new(factor, offset))
 	}
 
 	fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -151,19 +151,19 @@ where
 			return Err(DeError::missing_field("offset"));
 		};
 
-		Ok(FactoredChangeCellOptions::new(factor, offset))
+		Ok(FactoredOffsetCellOptions::new(factor, offset))
 	}
 }
 
 struct ValuedChangeCellOptionsVisitor<T: ChangeCellPrimitive> {
-	marker: PhantomData<ValuedChangeCellOptions<T>>,
+	marker: PhantomData<ValuedOffsetCellOptions<T>>,
 }
 
 impl<'de, T> Visitor<'de> for ValuedChangeCellOptionsVisitor<T>
 where
 	T: ChangeCellPrimitive + Deserialize<'de>,
 {
-	type Value = ValuedChangeCellOptions<T>;
+	type Value = ValuedOffsetCellOptions<T>;
 
 	fn expecting(&self, formatter: &mut Formatter<'_>) -> FmtResult {
 		formatter.write_str("struct ValuedChangeCellOptions")
@@ -187,7 +187,7 @@ where
 			));
 		};
 
-		Ok(ValuedChangeCellOptions::new(value, offset))
+		Ok(ValuedOffsetCellOptions::new(value, offset))
 	}
 
 	fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -227,7 +227,7 @@ where
 			return Err(DeError::missing_field("offset"));
 		};
 
-		Ok(ValuedChangeCellOptions::new(value, offset))
+		Ok(ValuedOffsetCellOptions::new(value, offset))
 	}
 }
 

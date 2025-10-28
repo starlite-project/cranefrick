@@ -1,5 +1,5 @@
 use frick_ir::{
-	FactoredChangeCellOptions, SetManyCellsOptions, SetRangeOptions, ValuedChangeCellOptions,
+	FactoredOffsetCellOptions, SetManyCellsOptions, SetRangeOptions, ValuedOffsetCellOptions,
 };
 use frick_utils::Convert as _;
 use inkwell::{
@@ -11,12 +11,12 @@ use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAsse
 
 impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
-	pub fn set_cell(&self, options: ValuedChangeCellOptions<u8>) -> Result<(), AssemblyError> {
+	pub fn set_cell(&self, options: ValuedOffsetCellOptions<u8>) -> Result<(), AssemblyError> {
 		self.store_value_into_cell(options.value(), options.offset())
 	}
 
 	#[tracing::instrument(skip(self))]
-	pub fn change_cell(&self, options: ValuedChangeCellOptions<i8>) -> Result<(), AssemblyError> {
+	pub fn change_cell(&self, options: ValuedOffsetCellOptions<i8>) -> Result<(), AssemblyError> {
 		let (current_cell_value, gep) = self.load_cell_and_pointer(options.offset())?;
 
 		let value_to_add = {
@@ -35,7 +35,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	#[tracing::instrument(skip(self))]
-	pub fn sub_cell_at(&self, options: FactoredChangeCellOptions<u8>) -> Result<(), AssemblyError> {
+	pub fn sub_cell_at(&self, options: FactoredOffsetCellOptions<u8>) -> Result<(), AssemblyError> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
 
@@ -61,7 +61,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn sub_from_cell(
 		&self,
-		options: FactoredChangeCellOptions<u8>,
+		options: FactoredOffsetCellOptions<u8>,
 	) -> Result<(), AssemblyError> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
@@ -88,7 +88,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn duplicate_cell(
 		&self,
-		values: &[FactoredChangeCellOptions<i8>],
+		values: &[FactoredOffsetCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -135,7 +135,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn duplicate_cell_scattered(
 		&self,
-		values: &[FactoredChangeCellOptions<i8>],
+		values: &[FactoredOffsetCellOptions<i8>],
 		vec_of_current_cell: VectorValue<'ctx>,
 		bool_type: IntType<'ctx>,
 		i8_type: IntType<'ctx>,
@@ -209,7 +209,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let vec_of_modified_values = if values
 			.iter()
 			.copied()
-			.map(FactoredChangeCellOptions::factor)
+			.map(FactoredOffsetCellOptions::factor)
 			.all(|x| matches!(x, 1))
 		{
 			self.builder.build_int_add(
@@ -260,7 +260,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	fn duplicate_cell_contiguous(
 		&self,
-		values: &[FactoredChangeCellOptions<i8>],
+		values: &[FactoredOffsetCellOptions<i8>],
 		vec_of_current_cell: VectorValue<'ctx>,
 		i8_type: IntType<'ctx>,
 		i8_vec_type: VectorType<'ctx>,
@@ -268,7 +268,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let start_of_range = values
 			.iter()
 			.copied()
-			.map(FactoredChangeCellOptions::offset)
+			.map(FactoredOffsetCellOptions::offset)
 			.min()
 			.unwrap();
 
@@ -279,7 +279,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let vec_of_modified_values = if values
 			.iter()
 			.copied()
-			.map(FactoredChangeCellOptions::factor)
+			.map(FactoredOffsetCellOptions::factor)
 			.all(|x| matches!(x, 1))
 		{
 			self.builder.build_int_add(
@@ -353,7 +353,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 }
 
-fn is_contiguous(values: &[FactoredChangeCellOptions<i8>]) -> bool {
+fn is_contiguous(values: &[FactoredOffsetCellOptions<i8>]) -> bool {
 	values
 		.windows(2)
 		.all(|w| w[0].offset() + 1 == w[1].offset())

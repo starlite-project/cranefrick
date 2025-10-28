@@ -1,4 +1,4 @@
-use frick_ir::{ChangeCellOptions, Factor};
+use frick_ir::{Factor, OffsetCellOptions};
 use frick_utils::Convert as _;
 use inkwell::values::{IntValue, PointerValue};
 
@@ -8,7 +8,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn move_value_to(
 		&self,
-		options: ChangeCellOptions<u8, Factor>,
+		options: OffsetCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
 		let current_value = self.take(0)?;
 
@@ -20,7 +20,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn copy_value_to(
 		&self,
-		options: ChangeCellOptions<u8, Factor>,
+		options: OffsetCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
 		let current_value = self.load_cell(0)?;
 
@@ -60,7 +60,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn take_value_to(
 		&self,
-		options: ChangeCellOptions<u8, Factor>,
+		options: OffsetCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
 		let current_value = self.take(0)?;
 
@@ -92,7 +92,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn fetch_value_from(
 		&self,
-		options: ChangeCellOptions<u8, Factor>,
+		options: OffsetCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
 		let other_cell = self.take(options.offset())?;
 
@@ -122,7 +122,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn replace_value_from(
 		&self,
-		options: ChangeCellOptions<u8, Factor>,
+		options: OffsetCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
 		if matches!(options.factor(), 1) {
 			self.replace_value_from_memmoved(options.offset())
@@ -157,7 +157,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	fn replace_value_from_factorized(
 		&self,
-		options: ChangeCellOptions<u8, Factor>,
+		options: OffsetCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
 		let other_cell = self.take(options.offset())?;
 

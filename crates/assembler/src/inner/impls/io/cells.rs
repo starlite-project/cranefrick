@@ -1,4 +1,4 @@
-use frick_ir::ValuedChangeCellOptions;
+use frick_ir::ValuedOffsetCellOptions;
 use frick_utils::Convert as _;
 use inkwell::{
 	types::{IntType, VectorType},
@@ -14,7 +14,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip_all)]
 	pub(super) fn output_cell(
 		&self,
-		options: ValuedChangeCellOptions<i8>,
+		options: ValuedOffsetCellOptions<i8>,
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -50,7 +50,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip_all)]
 	pub(super) fn output_cells(
 		&self,
-		options: &[ValuedChangeCellOptions<i8>],
+		options: &[ValuedOffsetCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		if options.len() <= OUTPUT_ARRAY_LEN as usize {
 			tracing::debug!("output cells with frick_puts");
@@ -64,7 +64,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip_all)]
 	fn output_cells_iterated(
 		&self,
-		options: &[ValuedChangeCellOptions<i8>],
+		options: &[ValuedOffsetCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		options
 			.chunks(OUTPUT_ARRAY_LEN as usize)
@@ -74,7 +74,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip_all)]
 	fn output_cells_puts(
 		&self,
-		options: &[ValuedChangeCellOptions<i8>],
+		options: &[ValuedOffsetCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		assert!(options.len() <= OUTPUT_ARRAY_LEN as usize);
 
@@ -123,7 +123,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		i8_type: IntType<'ctx>,
 		i64_type: IntType<'ctx>,
-		options: &[ValuedChangeCellOptions<i8>],
+		options: &[ValuedOffsetCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
 		let start = options.first().unwrap().offset();
 		let len = (start..=options.last().unwrap().offset()).count() as u32;
@@ -143,7 +143,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		i8_type: IntType<'ctx>,
 		i64_type: IntType<'ctx>,
-		options: ValuedChangeCellOptions<i8>,
+		options: ValuedOffsetCellOptions<i8>,
 		length: u64,
 	) -> Result<(), AssemblyError> {
 		let current_value = self.load_cell(options.offset())?;
@@ -170,7 +170,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn setup_output_cells_puts_vector_splat(
 		&self,
-		options: &[ValuedChangeCellOptions<i8>],
+		options: &[ValuedOffsetCellOptions<i8>],
 	) -> Result<VectorValue<'ctx>, AssemblyError> {
 		let context = self.context();
 
@@ -206,7 +206,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			if options
 				.iter()
 				.copied()
-				.map(ValuedChangeCellOptions::value)
+				.map(ValuedOffsetCellOptions::value)
 				.all(|x| matches!(x, 0))
 			{
 				vec_of_current_cell
@@ -233,7 +233,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip_all, fields(options = options.len()))]
 	fn setup_output_cells_puts_vector_scatter(
 		&self,
-		options: &[ValuedChangeCellOptions<i8>],
+		options: &[ValuedOffsetCellOptions<i8>],
 	) -> Result<VectorValue<'ctx>, AssemblyError> {
 		let context = self.context();
 
@@ -309,7 +309,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			if options
 				.iter()
 				.copied()
-				.map(ValuedChangeCellOptions::value)
+				.map(ValuedOffsetCellOptions::value)
 				.all(|x| matches!(x, 0))
 			{
 				vec_of_loaded_values
@@ -334,7 +334,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 }
 
-fn is_memcpyable(options: &[ValuedChangeCellOptions<i8>]) -> bool {
+fn is_memcpyable(options: &[ValuedOffsetCellOptions<i8>]) -> bool {
 	if options.len() <= 1 {
 		return false;
 	}
@@ -348,7 +348,7 @@ fn is_memcpyable(options: &[ValuedChangeCellOptions<i8>]) -> bool {
 		.all(|w| w[0].offset() + 1 == w[1].offset())
 }
 
-fn is_memsettable(options: &[ValuedChangeCellOptions<i8>]) -> bool {
+fn is_memsettable(options: &[ValuedOffsetCellOptions<i8>]) -> bool {
 	if options.len() <= 1 {
 		return false;
 	}

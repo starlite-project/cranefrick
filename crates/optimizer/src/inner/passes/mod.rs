@@ -7,7 +7,7 @@ mod sort;
 use alloc::{borrow::ToOwned as _, vec::Vec};
 use core::{cmp, iter};
 
-use frick_ir::{BrainIr, ChangeCellOptions, OutputOptions, SetManyCellsOptions, SubOptions};
+use frick_ir::{BrainIr, OffsetCellOptions, OutputOptions, SetManyCellsOptions, SubOptions};
 use frick_utils::{Convert as _, GetOrZero as _, InsertOrPush as _};
 
 pub use self::{long::*, loops::*, sort::*};
@@ -177,7 +177,7 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 		] => Some(Change::swap([
 			BrainIr::boundary(),
 			BrainIr::move_pointer(*y),
-			BrainIr::SetCell(ChangeCellOptions::new(
+			BrainIr::SetCell(OffsetCellOptions::new(
 				change_options.value() as u8,
 				change_options.offset(),
 			)),
@@ -259,7 +259,7 @@ pub fn remove_offsets(ops: [&BrainIr; 2]) -> Option<Change> {
 				output_options
 					.iter()
 					.copied()
-					.map(|x| ChangeCellOptions::new(x.value(), 0)),
+					.map(|x| OffsetCellOptions::new(x.value(), 0)),
 			),
 		])),
 		_ => None,
@@ -296,7 +296,7 @@ pub fn optimize_duplicate_cell_replace_from(ops: [&BrainIr; 2]) -> Option<Change
 
 			let new_values = values
 				.into_iter()
-				.chain(iter::once(ChangeCellOptions::new(1, 0)));
+				.chain(iter::once(OffsetCellOptions::new(1, 0)));
 
 			Some(Change::replace(BrainIr::duplicate_cell(new_values)))
 		}
@@ -596,7 +596,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			for option in options {
 				if option.offset() == x {
-					output.push(ChangeCellOptions::new(
+					output.push(OffsetCellOptions::new(
 						option.value().wrapping_add(a.value()),
 						x,
 					));
@@ -616,7 +616,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::MovePointer(y),
 		] => Some(Change::swap([
 			BrainIr::output_cells(options.iter().map(|option| {
-				ChangeCellOptions::new(option.value(), option.offset().wrapping_add(*x))
+				OffsetCellOptions::new(option.value(), option.offset().wrapping_add(*x))
 			})),
 			BrainIr::move_pointer(x.wrapping_add(*y)),
 		])),
@@ -631,7 +631,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 				if option.is_offset() {
 					output.push(*option);
 				} else {
-					output.push(ChangeCellOptions::new(
+					output.push(OffsetCellOptions::new(
 						option.value().wrapping_add(change_options.value()),
 						0,
 					));
@@ -721,7 +721,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			for option in output_options {
 				if option.offset() == change_options.offset() {
-					new_offsets.push(ChangeCellOptions::new(
+					new_offsets.push(OffsetCellOptions::new(
 						option.value().wrapping_add(change_options.value()),
 						option.offset(),
 					));
@@ -764,7 +764,7 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 		] => {
 			Some(Change::swap([
 				BrainIr::output_cells(output_options.iter().copied().map(|opt| {
-					ChangeCellOptions::new(opt.value(), offset.wrapping_add(opt.offset()))
+					OffsetCellOptions::new(opt.value(), offset.wrapping_add(opt.offset()))
 				})),
 				BrainIr::boundary(),
 			]))

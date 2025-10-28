@@ -27,25 +27,25 @@ pub use self::{options::*, output::*};
 #[non_exhaustive]
 pub enum BrainIr {
 	Boundary,
-	ChangeCell(ValuedChangeCellOptions<i8>),
-	SetCell(ValuedChangeCellOptions<u8>),
+	ChangeCell(ValuedOffsetCellOptions<i8>),
+	SetCell(ValuedOffsetCellOptions<u8>),
 	SubCell(SubOptions),
 	MovePointer(i32),
 	FindZero(i32),
 	InputIntoCell,
 	Output(OutputOptions),
-	MoveValueTo(FactoredChangeCellOptions<u8>),
-	CopyValueTo(FactoredChangeCellOptions<u8>),
-	TakeValueTo(FactoredChangeCellOptions<u8>),
-	FetchValueFrom(FactoredChangeCellOptions<u8>),
-	ReplaceValueFrom(FactoredChangeCellOptions<u8>),
+	MoveValueTo(FactoredOffsetCellOptions<u8>),
+	CopyValueTo(FactoredOffsetCellOptions<u8>),
+	TakeValueTo(FactoredOffsetCellOptions<u8>),
+	FetchValueFrom(FactoredOffsetCellOptions<u8>),
+	ReplaceValueFrom(FactoredOffsetCellOptions<u8>),
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
 	SetRange(SetRangeOptions),
 	SetManyCells(SetManyCellsOptions),
 	DuplicateCell {
-		values: Vec<FactoredChangeCellOptions<i8>>,
+		values: Vec<FactoredOffsetCellOptions<i8>>,
 	},
 }
 
@@ -62,7 +62,7 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn change_cell_at(value: i8, offset: i32) -> Self {
-		Self::ChangeCell(ValuedChangeCellOptions::new(value, offset))
+		Self::ChangeCell(ValuedOffsetCellOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -77,19 +77,19 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn set_cell_at(value: u8, offset: i32) -> Self {
-		Self::SetCell(ValuedChangeCellOptions::new(value, offset))
+		Self::SetCell(ValuedOffsetCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn sub_from_cell(value: u8, offset: i32) -> Self {
-		Self::SubCell(SubOptions::FromCell(FactoredChangeCellOptions::new(
+		Self::SubCell(SubOptions::FromCell(FactoredOffsetCellOptions::new(
 			value, offset,
 		)))
 	}
 
 	#[must_use]
 	pub const fn sub_cell_at(value: u8, offset: i32) -> Self {
-		Self::SubCell(SubOptions::CellAt(FactoredChangeCellOptions::new(
+		Self::SubCell(SubOptions::CellAt(FactoredOffsetCellOptions::new(
 			value, offset,
 		)))
 	}
@@ -130,7 +130,7 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub fn output_cells(c: impl IntoIterator<Item = ValuedChangeCellOptions<i8>>) -> Self {
+	pub fn output_cells(c: impl IntoIterator<Item = ValuedOffsetCellOptions<i8>>) -> Self {
 		Self::Output(OutputOptions::cells(c))
 	}
 
@@ -146,27 +146,27 @@ impl BrainIr {
 
 	#[must_use]
 	pub const fn fetch_value_from(value: u8, offset: i32) -> Self {
-		Self::FetchValueFrom(FactoredChangeCellOptions::new(value, offset))
+		Self::FetchValueFrom(FactoredOffsetCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn replace_value_from(value: u8, offset: i32) -> Self {
-		Self::ReplaceValueFrom(FactoredChangeCellOptions::new(value, offset))
+		Self::ReplaceValueFrom(FactoredOffsetCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn take_value_to(value: u8, offset: i32) -> Self {
-		Self::TakeValueTo(FactoredChangeCellOptions::new(value, offset))
+		Self::TakeValueTo(FactoredOffsetCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn move_value_to(value: u8, offset: i32) -> Self {
-		Self::MoveValueTo(FactoredChangeCellOptions::new(value, offset))
+		Self::MoveValueTo(FactoredOffsetCellOptions::new(value, offset))
 	}
 
 	#[must_use]
 	pub const fn copy_value_to(value: u8, offset: i32) -> Self {
-		Self::CopyValueTo(FactoredChangeCellOptions::new(value, offset))
+		Self::CopyValueTo(FactoredOffsetCellOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -190,7 +190,7 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub fn duplicate_cell(values: impl IntoIterator<Item = FactoredChangeCellOptions<i8>>) -> Self {
+	pub fn duplicate_cell(values: impl IntoIterator<Item = FactoredOffsetCellOptions<i8>>) -> Self {
 		Self::DuplicateCell {
 			values: values.into_iter().sorted_by_key(|x| x.offset()).collect(),
 		}
@@ -487,7 +487,7 @@ impl From<SetRangeOptions> for BrainIr {
 	}
 }
 
-fn write_shift_options(options: FactoredChangeCellOptions<u8>, f: &mut Formatter<'_>) -> FmtResult {
+fn write_shift_options(options: FactoredOffsetCellOptions<u8>, f: &mut Formatter<'_>) -> FmtResult {
 	match options.into_parts() {
 		(1, x) => Display::fmt(&x, f)?,
 		(a, x) => {
