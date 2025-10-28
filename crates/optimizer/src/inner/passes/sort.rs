@@ -1,4 +1,4 @@
-use core::cmp::{self, Ordering};
+use core::cmp::Ordering;
 
 use frick_ir::BrainIr;
 use frick_utils::IteratorExt as _;
@@ -9,10 +9,7 @@ pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 	if !ops.iter().all(|i| {
 		matches!(
 			i,
-			BrainIr::SetCell(..)
 				| BrainIr::ChangeCell(..)
-				| BrainIr::SetRange { .. }
-				| BrainIr::SetManyCells { .. }
 		)
 	}) {
 		return None;
@@ -27,43 +24,26 @@ pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 	))
 }
 
-fn sorter_key(i: &BrainIr) -> Priority {
+fn sorter_key(i: &BrainIr) -> OffsetSorterKey {
 	match i {
-		BrainIr::ChangeCell(options) => Priority::High(options.offset()),
-		BrainIr::SetCell(options) => Priority::High(options.offset()),
-		BrainIr::SetRange(options) => {
-			let range = options.range();
-			let start = *range.start();
-			let end = *range.end();
-
-			let min = cmp::min(start, end);
-
-			Priority::Low(min)
-		}
-		BrainIr::SetManyCells(options) => Priority::Low(options.start()),
+		BrainIr::ChangeCell(change_options) => OffsetSorterKey(change_options.offset()),
 		_ => unreachable!(),
 	}
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Priority {
-	Low(i32),
-	High(i32),
-}
+#[derive(PartialEq, Eq)]
+struct OffsetSorterKey(i32);
 
-impl Ord for Priority {
+impl Ord for OffsetSorterKey {
 	fn cmp(&self, other: &Self) -> Ordering {
-		match (self, other) {
-			(Self::High(..), Self::Low(..)) => Ordering::Less,
-			(Self::Low(..), Self::High(..)) => Ordering::Greater,
-			(Self::Low(lhs), Self::Low(rhs)) | (Self::High(lhs), Self::High(rhs)) => {
-				lhs.abs().cmp(&rhs.abs()).then_with(|| lhs.cmp(rhs))
-			}
-		}
+		let lhs = self.0;
+		let rhs = other.0;
+
+		lhs.abs().cmp(&rhs.abs()).then_with(|| lhs.cmp(&rhs))
 	}
 }
 
-impl PartialOrd for Priority {
+impl PartialOrd for OffsetSorterKey {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 		Some(self.cmp(other))
 	}

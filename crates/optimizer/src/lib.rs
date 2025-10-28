@@ -64,7 +64,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(50);
+		span.pb_set_length(49);
 
 		self.run_all_passes(&mut progress);
 
@@ -321,19 +321,13 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize memory operations", 3);
+			let _guard = self.pass_info("optimize memory operations", 2);
 			run_with_span("optimize_mem_sets", || {
 				*progress |= run_peephole_pass(self, passes::optimize_mem_sets);
 			});
 			run_with_span("optimize_mem_set_move_change", || {
 				*progress |= run_peephole_pass(self, passes::optimize_mem_set_move_change);
 			});
-			run_peephole_pass_with_span(
-				"optimize_initial_mem_set_move_change",
-				progress,
-				self,
-				passes::optimize_initial_mem_set_move_change,
-			);
 		}
 
 		{

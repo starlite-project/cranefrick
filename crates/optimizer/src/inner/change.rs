@@ -39,7 +39,7 @@ impl Change {
 			Self::RemoveOffset(offset) => {
 				let removed = ops.remove(i.wrapping_add_signed(offset));
 
-				trace!("removing instruction {removed:?}");
+				trace!("removing instruction {removed:?} at offset {offset}");
 			}
 			Self::Swap(instrs) => {
 				let mut replaced = Vec::with_capacity(N);
