@@ -1,4 +1,5 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![allow(unreachable_patterns)]
 #![no_std]
 
 extern crate alloc;
@@ -383,70 +384,7 @@ impl Display for BrainIr {
 				f.write_char(')')?;
 			}
 			Self::InputIntoCell => f.write_str("input")?,
-			Self::Output(OutputOptions::Cell(output_options)) => {
-				f.write_str("output_cell")?;
-				match output_options.into_parts() {
-					(0, 0) => {}
-					(a, 0) => {
-						f.write_char('(')?;
-						Display::fmt(&a, f)?;
-						f.write_char(')')?;
-					}
-					(0, x) => {
-						f.write_str("_at(")?;
-						Display::fmt(&x, f)?;
-						f.write_char(')')?;
-					}
-					(a, x) => {
-						f.write_str("_at(")?;
-						Display::fmt(&a, f)?;
-						f.write_str(", ")?;
-						Display::fmt(&x, f)?;
-						f.write_char(')')?;
-					}
-				}
-			}
-			Self::Output(OutputOptions::Cells(output_options)) => {
-				f.write_str("output_cells(")?;
-
-				if output_options.len() > 5 {
-					f.write_str("...")?;
-				} else {
-					let mut is_first = true;
-					for (a, x) in output_options.iter().map(|option| option.into_parts()) {
-						if !is_first {
-							f.write_str(", ")?;
-						}
-
-						f.write_char('(')?;
-						Display::fmt(&a, f)?;
-						f.write_str(", ")?;
-						Display::fmt(&x, f)?;
-						f.write_char(')')?;
-
-						is_first = false;
-					}
-				}
-
-				f.write_char(')')?;
-			}
-			Self::Output(OutputOptions::Char(char)) => {
-				f.write_str("output_char(")?;
-				Display::fmt(&(*char as char).escape_debug(), f)?;
-				f.write_char(')')?;
-			}
-			Self::Output(OutputOptions::Str(chars)) => {
-				f.write_str("output_str(")?;
-				if chars.len() > 5 {
-					f.write_str("...")?;
-				} else {
-					for char in chars.iter().copied().map(|c| c as char) {
-						Display::fmt(&char.escape_debug(), f)?;
-					}
-				}
-
-				f.write_char(')')?;
-			}
+			Self::Output(output_options) => Display::fmt(&output_options, f)?,
 			Self::MoveValueTo(move_options) => {
 				f.write_str("move_value_to(")?;
 				write_shift_options(*move_options, f)?;
@@ -524,6 +462,7 @@ impl Display for BrainIr {
 					is_first = false;
 				}
 			}
+			_ => f.write_str("unknown_instr")?,
 		}
 
 		Ok(())
