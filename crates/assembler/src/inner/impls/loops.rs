@@ -15,7 +15,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(header_block);
 
-		let value = self.load_cell(0, "if_not_zero")?;
+		let value = self.load_cell(0)?;
 
 		let zero = {
 			let i8_type = context.i8_type();
@@ -69,7 +69,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(header_block);
 
-		let value = self.load_cell(0, "dynamic_loop")?;
+		let value = self.load_cell(0)?;
 
 		let zero = {
 			let i8_type = context.i8_type();
@@ -122,11 +122,7 @@ impl InnerAssembler<'_> {
 		let ptr_int_type = self.ptr_int_type;
 		let i8_type = context.i8_type();
 
-		let current_pointer_value = self.load_from(
-			ptr_int_type,
-			self.pointers.pointer,
-			"find_zero_load_pointer",
-		)?;
+		let current_pointer_value = self.load_from(ptr_int_type, self.pointers.pointer)?;
 
 		let header_block = context.append_basic_block(self.functions.main, "find_zero.header\0");
 		let body_block = context.append_basic_block(self.functions.main, "find_zero.body\0");
@@ -138,13 +134,9 @@ impl InnerAssembler<'_> {
 
 		let header_phi_value = self.builder.build_phi(ptr_int_type, "find_zero_phi\0")?;
 
-		let gep = self.tape_gep(
-			i8_type,
-			header_phi_value.as_basic_value().into_int_value(),
-			"find_zero",
-		)?;
+		let gep = self.tape_gep(i8_type, header_phi_value.as_basic_value().into_int_value())?;
 
-		let value = self.load_from(i8_type, gep, "find_zero_cell_load")?;
+		let value = self.load_from(i8_type, gep)?;
 
 		let zero = i8_type.const_zero();
 
@@ -165,8 +157,7 @@ impl InnerAssembler<'_> {
 			"find_zero_add\0",
 		)?;
 
-		let wrapped_pointer_value =
-			self.wrap_pointer(new_pointer_value, offset > 0, "find_zero")?;
+		let wrapped_pointer_value = self.wrap_pointer(new_pointer_value, offset > 0)?;
 
 		self.builder.build_unconditional_branch(header_block)?;
 

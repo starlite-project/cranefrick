@@ -10,9 +10,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
-		let current_value = self.take(0, "move_value_to")?;
+		let current_value = self.take(0)?;
 
-		let (other_cell, gep) = self.load_cell_and_pointer(options.offset(), "move_value_to")?;
+		let (other_cell, gep) = self.load_cell_and_pointer(options.offset())?;
 
 		self.duplicate_value_to(current_value, other_cell, options.factor(), gep)
 	}
@@ -22,9 +22,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
-		let current_value = self.load_cell(0, "copy_value_to")?;
+		let current_value = self.load_cell(0)?;
 
-		let (other_cell, gep) = self.load_cell_and_pointer(options.offset(), "copy_value_to")?;
+		let (other_cell, gep) = self.load_cell_and_pointer(options.offset())?;
 
 		self.duplicate_value_to(current_value, other_cell, options.factor(), gep)
 	}
@@ -62,11 +62,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
-		let current_value = self.take(0, "take_value_to")?;
+		let current_value = self.take(0)?;
 
 		self.move_pointer(options.offset())?;
 
-		let (other_cell, gep) = self.load_cell_and_pointer(0, "take_value_to")?;
+		let (other_cell, gep) = self.load_cell_and_pointer(0)?;
 
 		let factor = options.factor();
 		let value_to_add = if matches!(factor, 1) {
@@ -94,9 +94,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
-		let other_cell = self.take(options.offset(), "fetch_value_from")?;
+		let other_cell = self.take(options.offset())?;
 
-		let (current_cell, gep) = self.load_cell_and_pointer(0, "fetch_value_from")?;
+		let (current_cell, gep) = self.load_cell_and_pointer(0)?;
 
 		let factor = options.factor();
 		let value_to_add = if matches!(factor, 1) {
@@ -142,9 +142,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i64_type.const_int(1, false)
 		};
 
-		let current_cell_gep = self.tape_gep(i8_type, 0, "replace_value_from_memmoved")?;
+		let current_cell_gep = self.tape_gep(i8_type, 0)?;
 
-		let other_value_gep = self.tape_gep(i8_type, offset, "replace_value_from_memmoved")?;
+		let other_value_gep = self.tape_gep(i8_type, offset)?;
 
 		self.builder
 			.build_memmove(current_cell_gep, 1, other_value_gep, 1, i8_size)?;
@@ -159,7 +159,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		options: ChangeCellOptions<u8, Factor>,
 	) -> Result<(), AssemblyError> {
-		let other_cell = self.take(options.offset(), "replace_value_from_factorized")?;
+		let other_cell = self.take(options.offset())?;
 
 		let value_to_store = {
 			let i8_type = self.context().i8_type();
@@ -170,12 +170,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul\0")?
 		};
 
-		self.store_into_cell(value_to_store, 0, "replace_value_from_factorized")
+		self.store_into_cell(value_to_store, 0)
 	}
 
 	#[tracing::instrument(skip(self))]
 	pub fn scale_value(&self, factor: u8) -> Result<(), AssemblyError> {
-		let (cell, gep) = self.load_cell_and_pointer(0, "scale_value")?;
+		let (cell, gep) = self.load_cell_and_pointer(0)?;
 
 		let value_to_store = {
 			let i8_type = self.context().i8_type();

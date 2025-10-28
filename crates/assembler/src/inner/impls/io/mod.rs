@@ -12,7 +12,6 @@ use inkwell::{
 	},
 };
 
-use super::create_string;
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -89,7 +88,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"input_into_cell_truncate\0",
 		)?;
 
-		self.store_into_cell(truncated_value, 0, "input_into_cell")
+		self.store_into_cell(truncated_value, 0)
 	}
 
 	fn call_puts(
@@ -97,12 +96,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		context: ContextRef<'ctx>,
 		array_ptr: PointerValue<'ctx>,
 		array_len: u64,
-		fn_name: &'static str,
 	) -> Result<(), AssemblyError> {
-		let continue_block = context.append_basic_block(
-			self.functions.main,
-			&create_string(fn_name, ".puts.invoke.cont\0"),
-		);
+		let continue_block = context.append_basic_block(self.functions.main, "puts.invoke.cont\0");
 
 		let array_len_value = {
 			let i64_type = context.i64_type();
@@ -118,7 +113,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			],
 			continue_block,
 			self.catch_block,
-			&create_string(fn_name, "_puts_invoke\0"),
+			"puts_invoke\0",
 		)?;
 
 		call.set_tail_call(true);
@@ -145,19 +140,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		context: ContextRef<'ctx>,
 		value: IntValue<'ctx>,
-		fn_name: &'static str,
 	) -> Result<(), AssemblyError> {
-		let continue_block = context.append_basic_block(
-			self.functions.main,
-			&create_string(fn_name, ".putchar.invoke.cont\0"),
-		);
+		let continue_block =
+			context.append_basic_block(self.functions.main, "putchar.invoke.cont\0");
 
 		let call = self.builder.build_direct_invoke(
 			self.functions.putchar,
 			&[value.convert::<BasicValueEnum<'ctx>>()],
 			continue_block,
 			self.catch_block,
-			&create_string(fn_name, "_putchar_invoke\0"),
+			"putchar_invoke\0",
 		)?;
 
 		call.set_tail_call(true);

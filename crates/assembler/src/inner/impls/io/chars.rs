@@ -13,7 +13,7 @@ impl InnerAssembler<'_> {
 			i32_type.const_int(c.convert::<u64>(), false)
 		};
 
-		self.call_putchar(context, char_value, "output_char")
+		self.call_putchar(context, char_value)
 	}
 
 	#[tracing::instrument(skip_all)]
@@ -32,6 +32,6 @@ impl InnerAssembler<'_> {
 
 		let global_value_pointer = global_constant.as_pointer_value();
 
-		self.call_puts(context, global_value_pointer, c.len() as u64, "output_str")
+		self.call_puts(context, global_value_pointer, c.len() as u64)
 	}
 }

@@ -12,13 +12,12 @@ use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAsse
 impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn set_cell(&self, options: ValuedChangeCellOptions<u8>) -> Result<(), AssemblyError> {
-		self.store_value_into_cell(options.value(), options.offset(), "set_cell")
+		self.store_value_into_cell(options.value(), options.offset())
 	}
 
 	#[tracing::instrument(skip(self))]
 	pub fn change_cell(&self, options: ValuedChangeCellOptions<i8>) -> Result<(), AssemblyError> {
-		let (current_cell_value, gep) =
-			self.load_cell_and_pointer(options.offset(), "change_cell")?;
+		let (current_cell_value, gep) = self.load_cell_and_pointer(options.offset())?;
 
 		let value_to_add = {
 			let i8_type = self.context().i8_type();
@@ -40,7 +39,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
 
-			let current_cell = self.take(0, "sub_cell_at")?;
+			let current_cell = self.take(0)?;
 
 			let factor_value = i8_type.const_int(options.factor().convert::<u64>(), false);
 
@@ -48,7 +47,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_mul(current_cell, factor_value, "sub_cell_at_mul\0")?
 		};
 
-		let (other_value, gep) = self.load_cell_and_pointer(options.offset(), "sub_cell_at")?;
+		let (other_value, gep) = self.load_cell_and_pointer(options.offset())?;
 
 		let value_to_store =
 			self.builder
@@ -67,7 +66,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let subtractor = {
 			let i8_type = self.context().i8_type();
 
-			let current_cell = self.take(options.offset(), "sub_from_cell")?;
+			let current_cell = self.take(options.offset())?;
 
 			let factor_value = i8_type.const_int(options.factor().convert::<u64>(), false);
 
@@ -75,7 +74,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_mul(current_cell, factor_value, "sub_from_cell_mul\0")?
 		};
 
-		let (other_value, gep) = self.load_cell_and_pointer(0, "sub_from_cell")?;
+		let (other_value, gep) = self.load_cell_and_pointer(0)?;
 
 		let value_to_store =
 			self.builder
@@ -99,7 +98,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_vec_type = i8_type.vec_type(values.len() as u32);
 		let i32_vec_type = i32_type.vec_type(values.len() as u32);
 
-		let current_cell = self.take(0, "duplicate_cell")?;
+		let current_cell = self.take(0)?;
 
 		let i64_zero = i64_type.const_zero();
 
@@ -153,7 +152,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let offsets = values
 				.iter()
 				.copied()
-				.map(|v| self.offset_pointer(v.offset(), "duplicate_cell_scattered"))
+				.map(|v| self.offset_pointer(v.offset()))
 				.collect::<Result<Vec<_>, _>>()?;
 
 			for (i, offset) in offsets.into_iter().enumerate() {
@@ -273,9 +272,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.min()
 			.unwrap();
 
-		let gep = self.tape_gep(i8_vec_type, start_of_range, "duplicate_cell_contiguous")?;
+		let gep = self.tape_gep(i8_vec_type, start_of_range)?;
 
-		let vec_of_loaded_values = self.load_from(i8_vec_type, gep, "duplicate_cell_contiguous")?;
+		let vec_of_loaded_values = self.load_from(i8_vec_type, gep)?;
 
 		let vec_of_modified_values = if values
 			.iter()
@@ -328,7 +327,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let vec_to_store = VectorType::const_vector(&values_to_store);
 
-		self.store_into_cell(vec_to_store, options.start(), "set_many_cells")
+		self.store_into_cell(vec_to_store, options.start())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -345,7 +344,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let value_value = i8_type.const_int(options.value().convert::<u64>(), false);
 
-		let gep = self.tape_gep(i8_type, start, "set_range")?;
+		let gep = self.tape_gep(i8_type, start)?;
 
 		self.builder
 			.build_memset(gep, 1, value_value, range_len_value)?;

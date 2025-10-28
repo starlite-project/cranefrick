@@ -66,10 +66,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i8_type,
 			ptr_param,
 			idx_phi_value.as_basic_value().into_int_value(),
-			"\0",
 		)?;
 
-		let raw_char = self.load_from(i8_type, char_ptr, "frick_puts_load")?;
+		let raw_char = self.load_from(i8_type, char_ptr)?;
 
 		let extended_char = self
 			.builder
@@ -130,13 +129,4 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		Ok(())
 	}
-}
-
-fn create_string(prefix: &str, suffix: &'static str) -> String {
-	let mut out = String::with_capacity(prefix.len() + suffix.len());
-
-	out.push_str(prefix);
-	out.push_str(suffix);
-
-	out
 }

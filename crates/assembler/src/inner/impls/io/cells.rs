@@ -21,7 +21,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = context.i8_type();
 		let i32_type = context.i32_type();
 
-		let current_cell_value = self.load_cell(options.offset(), "output_cell")?;
+		let current_cell_value = self.load_cell(options.offset())?;
 
 		let offset_cell_value = if matches!(options.value(), 0) {
 			current_cell_value
@@ -42,7 +42,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			extend_instr.set_non_negative_flag(true);
 		}
 
-		self.call_putchar(context, extended_value, "output_cell")?;
+		self.call_putchar(context, extended_value)?;
 
 		Ok(())
 	}
@@ -111,12 +111,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.start_invariant(array_len_value, self.pointers.output)?
 		};
 
-		self.call_puts(
-			context,
-			self.pointers.output,
-			options.len() as u64,
-			"output_cells_puts",
-		)?;
+		self.call_puts(context, self.pointers.output, options.len() as u64)?;
 
 		drop(tape_invariant);
 
@@ -133,7 +128,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let start = options.first().unwrap().offset();
 		let len = (start..=options.last().unwrap().offset()).count() as u32;
 
-		let current_gep = self.tape_gep(i8_type, start, "setup_output_cells_puts_memcpy")?;
+		let current_gep = self.tape_gep(i8_type, start)?;
 
 		let len_value = i64_type.const_int(len.convert::<u64>(), false);
 
@@ -151,7 +146,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		options: ValuedChangeCellOptions<i8>,
 		length: u64,
 	) -> Result<(), AssemblyError> {
-		let current_value = self.load_cell(options.offset(), "setup_output_cells_puts_memset")?;
+		let current_value = self.load_cell(options.offset())?;
 
 		let value_to_memset = if matches!(options.value(), 0) {
 			current_value
@@ -187,7 +182,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let offset = options[0].offset();
 
-		let current_cell_value = self.load_cell(offset, "setup_output_cells_puts_vector_splat")?;
+		let current_cell_value = self.load_cell(offset)?;
 
 		let vec_of_current_cell = {
 			let i64_zero = i64_type.const_zero();
@@ -256,7 +251,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let offsets = options
 				.iter()
 				.copied()
-				.map(|v| self.offset_pointer(v.offset(), "setup_output_cells_puts_vector_scatter"))
+				.map(|v| self.offset_pointer(v.offset()))
 				.collect::<Result<Vec<_>, _>>()?;
 
 			for (i, offset) in offsets.into_iter().enumerate() {
