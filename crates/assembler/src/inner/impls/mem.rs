@@ -1,9 +1,6 @@
-use std::{cell::RefCell, sync::Once};
-
 use frick_utils::Convert as _;
 use inkwell::{
-	builder::Builder,
-	types::{BasicType, BasicTypeEnum, IntType},
+	types::{BasicType, BasicTypeEnum},
 	values::{BasicValue, IntValue, PointerValue},
 };
 
@@ -212,37 +209,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 				})
 			}
 			other => Err(AssemblyError::InvalidGEPType(other.to_string())),
-		}
-	}
-}
-
-pub struct Slot<'builder, 'ctx> {
-	builder: &'builder Builder<'ctx>,
-	ptr: PointerValue<'ctx>,
-	was_set: RefCell<bool>,
-	i8_type: IntType<'ctx>,
-}
-
-impl<'ctx> Slot<'_, 'ctx> {
-	pub fn set(&self, value: impl BasicValue<'ctx>) -> Result<(), AssemblyError> {
-		if *self.was_set.borrow() {
-			return Err(AssemblyError::SlotAlreadySet);
-		}
-
-		self.builder.build_store(self.ptr, value)?;
-
-		*self.was_set.borrow_mut() = true;
-
-		Ok(())
-	}
-}
-
-impl Drop for Slot<'_, '_> {
-	fn drop(&mut self) {
-		if !*self.was_set.borrow() {
-			self.builder
-				.build_store(self.ptr, self.i8_type.get_poison())
-				.unwrap();
 		}
 	}
 }
