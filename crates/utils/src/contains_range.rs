@@ -34,3 +34,16 @@ fn check<T: Step>(left: Bound<&T>, right: Bound<&T>, end: bool) -> bool {
 		| (Bound::Excluded(l), Bound::Included(r), true) => l <= r || l == &Step::forward(r.clone(), 1),
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::ContainsRange as _;
+
+	#[test]
+	fn basic() {
+		let a = 0..6;
+		let b = 1..=5;
+
+		assert!(a.contains_range(&b));
+	}
+}
