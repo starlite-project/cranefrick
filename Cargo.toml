@@ -26,9 +26,6 @@ tracing-subscriber = { workspace = true, features = [
 [target.'cfg(target_os = "windows")'.dependencies]
 mimalloc = "0.1"
 
-[build-dependencies]
-build-rs = "0.3"
-
 [dev-dependencies]
 criterion.workspace = true
 rand = "0.9"
