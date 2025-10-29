@@ -1,5 +1,5 @@
 use alloc::{borrow::ToOwned as _, vec::Vec};
-use core::{cmp, iter};
+use core::cmp;
 
 use frick_ir::{BrainIr, SetManyCellsOptions, SubOptions};
 use frick_utils::{

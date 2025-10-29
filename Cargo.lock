@@ -470,7 +470,6 @@ dependencies = [
  "frick_assembler",
  "frick_ir",
  "frick_optimizer",
- "indicatif",
  "mimalloc",
  "rand",
  "ron",
