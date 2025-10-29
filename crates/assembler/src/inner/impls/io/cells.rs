@@ -196,7 +196,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			self.builder.build_shuffle_vector(
 				tmp,
-				i8_vec_type.get_undef(),
+				i8_vec_type.get_poison(),
 				i32_vec_type.const_zero(),
 				"setup_output_cells_puts_vector_splat_shuffle_vector\0",
 			)?

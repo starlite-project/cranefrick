@@ -65,7 +65,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(58);
+		span.pb_set_length(65);
 
 		self.run_all_passes(&mut progress);
 
@@ -175,7 +175,7 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("sort cell changes", 7);
+			let _guard = self.pass_info("sort cell changes", 14);
 			run_with_span("sort_changes<8>", || {
 				*progress |= run_peephole_pass(self, passes::sort_changes::<8>);
 			});
@@ -196,6 +196,27 @@ impl Optimizer {
 			});
 			run_with_span("sort_changes<2>", || {
 				*progress |= run_peephole_pass(self, passes::sort_changes::<2>);
+			});
+			run_with_span("sort_sets<8>", || {
+				*progress |= run_peephole_pass(self, passes::sort_sets::<8>);
+			});
+			run_with_span("sort_sets<7>", || {
+				*progress |= run_peephole_pass(self, passes::sort_sets::<7>);
+			});
+			run_with_span("sort_sets<6>", || {
+				*progress |= run_peephole_pass(self, passes::sort_sets::<6>);
+			});
+			run_with_span("sort_sets<5>", || {
+				*progress |= run_peephole_pass(self, passes::sort_sets::<5>);
+			});
+			run_with_span("sort_sets<4>", || {
+				*progress |= run_peephole_pass(self, passes::sort_sets::<4>);
+			});
+			run_with_span("sort_sets<3>", || {
+				*progress |= run_peephole_pass(self, passes::sort_sets::<3>);
+			});
+			run_with_span("sort_sets<2>", || {
+				*progress |= run_peephole_pass(self, passes::sort_sets::<2>);
 			});
 		}
 

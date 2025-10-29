@@ -112,7 +112,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let vec_of_current_cell = self.builder.build_shuffle_vector(
 			tmp,
-			i8_vec_type.get_undef(),
+			i8_vec_type.get_poison(),
 			i32_vec_type.const_zero(),
 			"duplicate_cell_shuffle_vector\0",
 		)?;

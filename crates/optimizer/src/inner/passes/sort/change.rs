@@ -1,8 +1,7 @@
-use core::cmp::Ordering;
-
 use frick_ir::BrainIr;
 use frick_utils::IteratorExt as _;
 
+use super::OffsetSorterKey;
 use crate::inner::Change;
 
 pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
@@ -31,23 +30,5 @@ fn sorter_key(i: &BrainIr) -> OffsetSorterKey {
 			OffsetSorterKey(change_many_options.start())
 		}
 		_ => unreachable!(),
-	}
-}
-
-#[derive(PartialEq, Eq)]
-struct OffsetSorterKey(i32);
-
-impl Ord for OffsetSorterKey {
-	fn cmp(&self, other: &Self) -> Ordering {
-		let lhs = self.0;
-		let rhs = other.0;
-
-		lhs.abs().cmp(&rhs.abs()).then_with(|| lhs.cmp(&rhs))
-	}
-}
-
-impl PartialOrd for OffsetSorterKey {
-	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-		Some(self.cmp(other))
 	}
 }
