@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 use core::iter;
 
 use frick_ir::{BrainIr, OffsetCellOptions, OutputOptions, SetManyCellsOptions};
+use frick_utils::IteratorExt as _;
 
 use crate::inner::Change;
 
@@ -34,7 +35,7 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::Output(OutputOptions::Str(chars)),
 			BrainIr::Output(OutputOptions::Char(c)),
 		] => Some(Change::replace(BrainIr::output_str(
-			chars.iter().chain(iter::once(c)).copied(),
+			chars.iter().chain_once(c).copied(),
 		))),
 		[
 			BrainIr::Output(OutputOptions::Char(c)),
@@ -62,7 +63,7 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::Output(OutputOptions::Cells(other)),
 			BrainIr::Output(OutputOptions::Cell(x)),
 		] => Some(Change::replace(BrainIr::output_cells(
-			other.iter().chain(iter::once(x)).copied(),
+			other.iter().chain_once(x).copied(),
 		))),
 		[
 			BrainIr::Output(OutputOptions::Cells(a)),

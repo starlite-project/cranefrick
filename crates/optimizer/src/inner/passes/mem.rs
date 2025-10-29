@@ -2,7 +2,9 @@ use alloc::{borrow::ToOwned as _, vec::Vec};
 use core::{cmp, iter};
 
 use frick_ir::{BrainIr, SetManyCellsOptions, SubOptions};
-use frick_utils::{ContainsRange as _, Convert as _, GetOrZero as _, InsertOrPush as _};
+use frick_utils::{
+	ContainsRange as _, Convert as _, GetOrZero as _, InsertOrPush as _, IteratorExt as _,
+};
 
 use crate::inner::Change;
 
@@ -154,7 +156,7 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 					.values()
 					.iter()
 					.copied()
-					.chain(iter::once(set_options.value())),
+					.chain_once(set_options.value()),
 				range.start,
 			)))
 		}

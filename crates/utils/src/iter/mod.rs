@@ -2,6 +2,7 @@ mod adapters;
 
 #[cfg(feature = "alloc")]
 use core::cmp::Ordering;
+use core::iter::{self, Chain};
 
 #[cfg(feature = "alloc")]
 pub use self::adapters::*;
@@ -32,6 +33,13 @@ pub trait IteratorExt: Iterator {
 		F: FnMut(&Self::Item) -> K,
 	{
 		SortedByKey::new(self, sorter)
+	}
+
+	fn chain_once(self, item: Self::Item) -> Chain<Self, iter::Once<Self::Item>>
+	where
+		Self: Sized,
+	{
+		self.chain(iter::once(item))
 	}
 }
 

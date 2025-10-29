@@ -12,6 +12,7 @@ use core::{
 };
 
 use frick_ir::BrainIr;
+use frick_utils::IteratorExt as _;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, trace_span};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
@@ -473,7 +474,7 @@ impl FromIterator<BrainIr> for Optimizer {
 		Self {
 			inner: iter::once(BrainIr::boundary())
 				.chain(iter)
-				.chain(iter::once(BrainIr::boundary()))
+				.chain_once(BrainIr::boundary())
 				.collect(),
 		}
 	}

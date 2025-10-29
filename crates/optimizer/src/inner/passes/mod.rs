@@ -10,7 +10,7 @@ use alloc::vec::Vec;
 use core::iter;
 
 use frick_ir::{BrainIr, OffsetCellOptions, OutputOptions, SubOptions};
-use frick_utils::Convert as _;
+use frick_utils::{Convert as _, IteratorExt as _};
 
 pub use self::{long::*, loops::*, mem::*, sort::*, writes::*};
 use crate::inner::{Change, utils::calculate_ptr_movement};
@@ -296,9 +296,7 @@ pub fn optimize_duplicate_cell_replace_from(ops: [&BrainIr; 2]) -> Option<Change
 
 			values.remove(position_of_replaced_cell);
 
-			let new_values = values
-				.into_iter()
-				.chain(iter::once(OffsetCellOptions::new(1, 0)));
+			let new_values = values.into_iter().chain_once(OffsetCellOptions::new(1, 0));
 
 			Some(Change::replace(BrainIr::duplicate_cell(new_values)))
 		}
@@ -792,10 +790,10 @@ pub fn optimize_initial_change_to_sets<const N: usize>(ops: [&BrainIr; N]) -> Op
 			Some(Change::swap(
 				iter::once(BrainIr::boundary())
 					.chain(rest.iter().map(|x| (*x).clone()))
-					.chain(iter::once(BrainIr::set_cell_at(
+					.chain_once(BrainIr::set_cell_at(
 						change_options.value() as u8,
 						change_options.offset(),
-					))),
+					)),
 			))
 		}
 		_ => None,

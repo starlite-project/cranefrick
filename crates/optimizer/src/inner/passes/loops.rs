@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use core::iter;
 
 use frick_ir::BrainIr;
+use frick_utils::IteratorExt as _;
 
 use crate::inner::{Change, utils::calculate_ptr_movement};
 
@@ -59,7 +60,7 @@ pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
 pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		[rest @ .., i] if i.is_zeroing_cell() => Some(Change::swap([BrainIr::if_not_zero(
-			rest.iter().cloned().chain(iter::once(i.clone())),
+			rest.iter().cloned().chain_once(i.clone()),
 		)])),
 		l @ [i, rest @ ..]
 			if matches!(
