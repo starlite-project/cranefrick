@@ -186,6 +186,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let i8_type = context.i8_type();
 
+		let entry_block = pointers
+			.tape
+			.as_instruction()
+			.and_then(InstructionValue::get_parent)
+			.unwrap();
+
 		let debug_loc = self.create_debug_location(
 			context,
 			1,
@@ -202,12 +208,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let right_after_tape_alloca = get_instruction_after_alloca(pointers.tape)?;
 
-		self.insert_declare_before_instruction(
+		self.insert_declare_at_end(
 			pointers.tape,
 			Some(self.variables.tape),
 			None,
 			debug_loc,
-			right_after_tape_alloca,
+			entry_block,
 		);
 
 		self.insert_dbg_value_before(
@@ -222,12 +228,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let right_after_pointer_alloca = get_instruction_after_alloca(pointers.pointer)?;
 
-		self.insert_declare_before_instruction(
+		self.insert_declare_at_end(
 			pointers.pointer,
 			Some(self.variables.pointer),
 			None,
 			debug_loc,
-			right_after_pointer_alloca,
+			entry_block,
 		);
 
 		self.insert_dbg_value_before(
@@ -246,12 +252,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let right_after_output_alloca = get_instruction_after_alloca(pointers.output)?;
 
-		self.insert_declare_before_instruction(
+		self.insert_declare_at_end(
 			pointers.output,
 			Some(self.variables.output),
 			None,
 			debug_loc,
-			right_after_output_alloca,
+			entry_block,
 		);
 
 		self.insert_dbg_value_before(

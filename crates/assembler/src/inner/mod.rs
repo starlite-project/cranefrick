@@ -63,8 +63,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let catch_block = context.append_basic_block(functions.main, "lpad\0");
 
-		let (pointers, ptr_int_type) =
-			AssemblerPointers::new(&module, &functions, &builder, &target_data)?;
+		let (pointers, ptr_int_type) = AssemblerPointers::new(&module, &builder, &target_data)?;
+
+		pointers.setup(&builder, &functions, ptr_int_type)?;
 
 		let debug_metadata_version = {
 			let i32_type = context.i32_type();

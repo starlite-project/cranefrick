@@ -9,16 +9,24 @@ use frick_utils::Convert as _;
 use inkwell::{
 	AddressSpace,
 	attributes::Attribute,
+	basic_block::BasicBlock,
 	builder::{Builder, BuilderError},
 	context::{AsContextRef, Context, ContextRef},
 	debug_info::{
 		DIBasicType, DICompileUnit, DICompositeType, DIDerivedType, DIExpression, DIFile,
 		DILexicalBlock, DILocalVariable, DILocation, DINamespace, DIScope, DIType,
+		DebugInfoBuilder,
 	},
-	llvm_sys::core::{LLVMBuildGEP2, LLVMIsNewDbgInfoFormat, LLVMSetIsNewDbgInfoFormat},
+	llvm_sys::{
+		core::{LLVMBuildGEP2, LLVMIsNewDbgInfoFormat, LLVMSetIsNewDbgInfoFormat},
+		debuginfo::LLVMDIBuilderInsertDbgValueRecordAtEnd,
+		prelude::LLVMValueRef,
+	},
 	module::Module,
 	types::{BasicType, PointerType},
-	values::{AsValueRef, MetadataValue, PointerValue, VectorValue},
+	values::{
+		AsValueRef, BasicValueEnum, InstructionValue, MetadataValue, PointerValue, VectorValue,
+	},
 };
 
 pub trait ContextGetter<'ctx> {
