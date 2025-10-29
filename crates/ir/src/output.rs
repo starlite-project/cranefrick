@@ -1,5 +1,5 @@
 use alloc::vec::Vec;
-use core::fmt::{Display, Formatter, Result as FmtResult, Write as _};
+use core::fmt::{Display, Error as FmtError, Formatter, Result as FmtResult, Write as _};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
@@ -96,7 +96,7 @@ impl Display for OutputOptions {
 
 				f.write_char(')')?;
 			}
-			_ => return Err(core::fmt::Error),
+			_ => return Err(FmtError),
 		}
 
 		Ok(())
