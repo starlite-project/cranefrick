@@ -1,3 +1,4 @@
+#[cfg(feature = "convert")]
 use core::convert::TryInto;
 
 #[cfg(feature = "get_or_zero")]
@@ -25,8 +26,10 @@ where
 	}
 }
 
+#[cfg(feature = "convert")]
 impl<T> Convert for T {}
 
+#[cfg(feature = "convert")]
 pub trait TryConvert
 where
 	Self: Sized,
@@ -41,4 +44,5 @@ where
 	}
 }
 
+#[cfg(feature = "convert")]
 impl<T> TryConvert for T {}

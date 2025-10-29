@@ -116,7 +116,7 @@ where
 			iter.sort_by(sorter);
 
 			iter.into_iter()
-		}
+		};
 	}
 }
 
@@ -212,7 +212,7 @@ where
 			iter.sort_by_key(sorter);
 
 			iter.into_iter()
-		}
+		};
 	}
 }
 
@@ -343,6 +343,10 @@ impl<T: Ord> Iterator for SortedUnstable<T> {
 	fn last(mut self) -> Option<Self::Item> {
 		self.next_back()
 	}
+
+	fn is_sorted(self) -> bool {
+		Self::is_sorted(&self)
+	}
 }
 
 pub struct SortedUnstableBy<T, F> {
@@ -413,6 +417,102 @@ impl<T, F> FusedIterator for SortedUnstableBy<T, F> where F: FnMut(&T, &T) -> Or
 impl<T, F> Iterator for SortedUnstableBy<T, F>
 where
 	F: FnMut(&T, &T) -> Ordering,
+{
+	type Item = T;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if !Self::is_sorted(self) {
+			unsafe {
+				self.sort_unchecked();
+			}
+		}
+
+		self.iter.next()
+	}
+
+	fn size_hint(&self) -> (usize, Option<usize>) {
+		self.iter.size_hint()
+	}
+
+	fn count(self) -> usize {
+		self.iter.count()
+	}
+
+	fn last(mut self) -> Option<Self::Item> {
+		self.next_back()
+	}
+}
+
+pub struct SortedUnstableByKey<T, K, F> {
+	pub(crate) iter: VecIntoIter<T>,
+	sorter: Option<F>,
+	marker: PhantomData<K>,
+}
+
+impl<T, K, F> SortedUnstableByKey<T, K, F> {
+	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: F) -> Self {
+		Self {
+			iter: iter.collect_to::<Vec<_>>().into_iter(),
+			sorter: Some(sorter),
+			marker: PhantomData,
+		}
+	}
+
+	const fn is_sorted(&self) -> bool {
+		self.sorter.is_none()
+	}
+}
+
+impl<T, K: Ord, F> SortedUnstableByKey<T, K, F>
+where
+	F: FnMut(&T) -> K,
+{
+	unsafe fn sort_unchecked(&mut self) {
+		let sorter = unsafe { self.sorter.take().unwrap_unchecked() };
+
+		self.sort_with(sorter);
+	}
+
+	fn sort_with(&mut self, sorter: F) {
+		self.iter = {
+			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
+
+			iter.sort_unstable_by_key(sorter);
+
+			iter.into_iter()
+		};
+	}
+}
+
+impl<T, K: Ord, F> DoubleEndedIterator for SortedUnstableByKey<T, K, F>
+where
+	F: FnMut(&T) -> K,
+{
+	fn next_back(&mut self) -> Option<Self::Item> {
+		if !Self::is_sorted(self) {
+			unsafe {
+				self.sort_unchecked();
+			}
+		}
+
+		self.iter.next_back()
+	}
+}
+
+impl<T, K: Ord, F> ExactSizeIterator for SortedUnstableByKey<T, K, F>
+where
+	F: FnMut(&T) -> K,
+{
+	fn len(&self) -> usize {
+		self.iter.len()
+	}
+}
+
+impl<T, K: Ord, F> FusedIterator for SortedUnstableByKey<T, K, F> where F: FnMut(&T) -> K {}
+
+impl<T, K: Ord, F> Iterator for SortedUnstableByKey<T, K, F>
+where
+	F: FnMut(&T) -> K,
 {
 	type Item = T;
 

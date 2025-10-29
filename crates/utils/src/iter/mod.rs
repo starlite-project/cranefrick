@@ -53,6 +53,15 @@ pub trait IteratorExt: Iterator {
 		SortedByKey::new(self, sorter)
 	}
 
+	#[cfg(feature = "alloc")]
+	fn sorted_unstable_by_key<K: Ord, F>(self, sorter: F) -> SortedUnstableByKey<Self::Item, K, F>
+	where
+		Self: Sized,
+		F: FnMut(&Self::Item) -> K,
+	{
+		SortedUnstableByKey::new(self, sorter)
+	}
+
 	fn chain_once(self, item: Self::Item) -> Chain<Self, iter::Once<Self::Item>>
 	where
 		Self: Sized,
