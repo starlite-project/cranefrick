@@ -20,7 +20,9 @@ pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 	}
 
 	Some(Change::swap(
-		ops.iter().map(|i| (*i).clone()).sorted_by_key(sorter_key),
+		ops.iter()
+			.map(|i| (*i).clone())
+			.sorted_unstable_by_key(sorter_key),
 	))
 }
 
