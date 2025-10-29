@@ -18,12 +18,30 @@ pub trait IteratorExt: Iterator {
 	}
 
 	#[cfg(feature = "alloc")]
+	fn sorted_unstable(self) -> SortedUnstable<Self::Item>
+	where
+		Self: Sized,
+		Self::Item: Ord,
+	{
+		SortedUnstable::new(self)
+	}
+
+	#[cfg(feature = "alloc")]
 	fn sorted_by<F>(self, sorter: F) -> SortedBy<Self::Item, F>
 	where
 		Self: Sized,
 		F: FnMut(&Self::Item, &Self::Item) -> Ordering,
 	{
 		SortedBy::new(self, sorter)
+	}
+
+	#[cfg(feature = "alloc")]
+	fn sorted_unstable_by<F>(self, sorter: F) -> SortedUnstableBy<Self::Item, F>
+	where
+		Self: Sized,
+		F: FnMut(&Self::Item, &Self::Item) -> Ordering,
+	{
+		SortedUnstableBy::new(self, sorter)
 	}
 
 	#[cfg(feature = "alloc")]

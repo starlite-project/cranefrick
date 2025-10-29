@@ -257,6 +257,174 @@ where
 	}
 }
 
+pub struct SortedUnstable<T> {
+	pub(crate) iter: VecIntoIter<T>,
+	sorted: bool,
+}
+
+impl<T> SortedUnstable<T> {
+	pub(crate) fn new(iter: impl IntoIterator<Item = T>) -> Self {
+		Self {
+			iter: iter.collect_to::<Vec<_>>().into_iter(),
+			sorted: false,
+		}
+	}
+
+	const fn is_sorted(&self) -> bool {
+		self.sorted
+	}
+}
+
+impl<T: Ord> SortedUnstable<T> {
+	fn sort(&mut self) {
+		self.iter = {
+			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
+
+			iter.sort_unstable();
+
+			iter.into_iter()
+		};
+
+		self.sorted = true;
+	}
+}
+
+impl<T: Ord> DoubleEndedIterator for SortedUnstable<T> {
+	fn next_back(&mut self) -> Option<Self::Item> {
+		if !Self::is_sorted(self) {
+			self.sort();
+		}
+
+		self.iter.next_back()
+	}
+}
+
+impl<T: Ord> ExactSizeIterator for SortedUnstable<T> {
+	fn len(&self) -> usize {
+		self.iter.len()
+	}
+}
+
+impl<T: Ord> FusedIterator for SortedUnstable<T> {}
+
+impl<T: Ord> Iterator for SortedUnstable<T> {
+	type Item = T;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if !Self::is_sorted(self) {
+			self.sort();
+		}
+
+		self.iter.next()
+	}
+
+	fn size_hint(&self) -> (usize, Option<usize>) {
+		self.iter.size_hint()
+	}
+
+	fn count(self) -> usize {
+		self.iter.count()
+	}
+
+	fn last(mut self) -> Option<Self::Item> {
+		self.next_back()
+	}
+}
+
+pub struct SortedUnstableBy<T, F> {
+	pub(crate) iter: VecIntoIter<T>,
+	sorter: Option<F>,
+}
+
+impl<T, F> SortedUnstableBy<T, F> {
+	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: F) -> Self {
+		Self {
+			iter: iter.collect_to::<Vec<_>>().into_iter(),
+			sorter: Some(sorter),
+		}
+	}
+
+	const fn is_sorted(&self) -> bool {
+		self.sorter.is_none()
+	}
+}
+
+impl<T, F> SortedUnstableBy<T, F>
+where
+	F: FnMut(&T, &T) -> Ordering,
+{
+	unsafe fn sort_unchecked(&mut self) {
+		let sorter = unsafe { self.sorter.take().unwrap_unchecked() };
+
+		self.sort_with(sorter);
+	}
+
+	fn sort_with(&mut self, sorter: F) {
+		self.iter = {
+			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
+
+			iter.sort_unstable_by(sorter);
+
+			iter.into_iter()
+		};
+	}
+}
+
+impl<T, F> DoubleEndedIterator for SortedUnstableBy<T, F>
+where
+	F: FnMut(&T, &T) -> Ordering,
+{
+	fn next_back(&mut self) -> Option<Self::Item> {
+		if !Self::is_sorted(self) {
+			unsafe {
+				self.sort_unchecked();
+			}
+		}
+
+		self.iter.next_back()
+	}
+}
+
+impl<T, F> ExactSizeIterator for SortedUnstableBy<T, F>
+where
+	F: FnMut(&T, &T) -> Ordering,
+{
+	fn len(&self) -> usize {
+		self.iter.len()
+	}
+}
+
+impl<T, F> FusedIterator for SortedUnstableBy<T, F> where F: FnMut(&T, &T) -> Ordering {}
+
+impl<T, F> Iterator for SortedUnstableBy<T, F>
+where
+	F: FnMut(&T, &T) -> Ordering,
+{
+	type Item = T;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if !Self::is_sorted(self) {
+			unsafe {
+				self.sort_unchecked();
+			}
+		}
+
+		self.iter.next()
+	}
+
+	fn size_hint(&self) -> (usize, Option<usize>) {
+		self.iter.size_hint()
+	}
+
+	fn count(self) -> usize {
+		self.iter.count()
+	}
+
+	fn last(mut self) -> Option<Self::Item> {
+		self.next_back()
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use alloc::vec::Vec;
