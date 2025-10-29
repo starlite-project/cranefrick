@@ -27,3 +27,34 @@ pub fn optimize_change_write_sets(ops: [&BrainIr; 4]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_offset_writes_set(ops: [&BrainIr; 4]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::MovePointer(x),
+			BrainIr::Output(OutputOptions::Cells(output_options)),
+			BrainIr::SetRange(set_range_options),
+			BrainIr::MovePointer(y),
+		] if *x == -y => {
+			let range = set_range_options.range();
+
+			if output_options.iter().any(|x| !range.contains(&x.offset())) {
+				return None;
+			}
+
+			let mut output_options = output_options.clone();
+
+			for option in &mut output_options {
+				*option.offset_mut() = option.offset().wrapping_add(*x);
+			}
+
+			let range = range.start().wrapping_add(*x)..=range.end().wrapping_add(*x);
+
+			Some(Change::swap([
+				BrainIr::output_cells(output_options),
+				BrainIr::set_range(set_range_options.value(), *range.start(), *range.end()),
+			]))
+		}
+		_ => None,
+	}
+}

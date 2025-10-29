@@ -25,6 +25,10 @@ impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> OffsetCellOptions<T, Mark
 		self.offset
 	}
 
+	pub const fn offset_mut(&mut self) -> &mut i32 {
+		&mut self.offset
+	}
+
 	pub const fn into_parts(self) -> (T, i32) {
 		(self.value, self.offset)
 	}
