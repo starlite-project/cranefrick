@@ -2,7 +2,7 @@ use alloc::{borrow::ToOwned as _, vec::Vec};
 use core::{cmp, iter};
 
 use frick_ir::{BrainIr, SetManyCellsOptions, SubOptions};
-use frick_utils::{Convert as _, GetOrZero as _, InsertOrPush as _};
+use frick_utils::{ContainsRange as _, Convert as _, GetOrZero as _, InsertOrPush as _};
 
 use crate::inner::Change;
 
@@ -268,18 +268,19 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			let set_many_range = set_many_options.range();
 			let set_range_range = set_range_options.range();
 
-			let set_many_count = set_many_range.len();
-			let set_range_count = set_range_range.clone().count();
+			if !set_many_range.contains_range(&set_range_range) {
+				return None;
+			}
 
-			tracing::warn!(
-				?set_many_range,
-				?set_range_range,
-				set_many_count,
-				set_range_count,
-				"made it"
-			);
+			let mut set_many_options = set_many_options.clone();
 
-			None
+			for offset in set_range_range {
+				if !set_many_options.set_value_at(offset, set_range_options.value()) {
+					return None;
+				}
+			}
+
+			Some(Change::replace(set_many_options.convert::<BrainIr>()))
 		}
 		_ => None,
 	}
@@ -324,6 +325,25 @@ pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
 				BrainIr::SetManyCells(set_many_options),
 				BrainIr::move_pointer(*x),
 			]))
+		}
+		_ => None,
+	}
+}
+
+pub fn optimize_set_many_to_set_range(ops: [&BrainIr; 1]) -> Option<Change> {
+	match ops {
+		[BrainIr::SetManyCells(set_many_options)]
+			if set_many_options.values().windows(2).all(|w| w[0] == w[1]) =>
+		{
+			let range = set_many_options.range();
+
+			let new_range = range.start..=(range.end.wrapping_sub(1));
+
+			Some(Change::replace(BrainIr::set_range(
+				set_many_options.values().first().copied()?,
+				*new_range.start(),
+				*new_range.end(),
+			)))
 		}
 		_ => None,
 	}
