@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use core::iter;
 
 use frick_ir::{BrainIr, OffsetCellOptions, OutputOptions, SetManyCellsOptions};
-use frick_utils::IteratorExt as _;
+use frick_utils::{Convert as _, IteratorExt as _};
 
 use crate::inner::Change;
 
@@ -319,6 +319,28 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 					set_many_options.start(),
 				),
 				BrainIr::move_pointer(*x),
+			]))
+		}
+		[
+			BrainIr::ChangeCell(change_options),
+			BrainIr::Output(OutputOptions::Cells(output_options)),
+			BrainIr::SetRange(set_range_options),
+		] if set_range_options.range().contains(&change_options.offset()) => {
+			tracing::warn!(?ops, "made it");
+
+			let mut new_output_options = Vec::with_capacity(output_options.len());
+
+			for option in output_options {
+				if option.offset() == change_options.offset() {
+					new_output_options.push(option.wrapping_add(*change_options));
+				} else {
+					new_output_options.push(*option);
+				}
+			}
+
+			Some(Change::swap([
+				BrainIr::output_cells(new_output_options),
+				(*set_range_options).convert::<BrainIr>(),
 			]))
 		}
 		_ => None,
