@@ -4,7 +4,6 @@ use std::{
 };
 
 use frick_spec::TAPE_SIZE;
-use frick_utils::Convert as _;
 use inkwell::{
 	AddressSpace,
 	context::ContextRef,
@@ -13,8 +12,7 @@ use inkwell::{
 		DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
-	types::IntType,
-	values::{BasicValueEnum, InstructionValue, PointerValue},
+	values::{InstructionValue, PointerValue},
 };
 
 use super::{AssemblerFunctions, AssemblerPointers, OUTPUT_ARRAY_LEN};
@@ -181,11 +179,8 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 	pub fn declare_variables(
 		&self,
 		context: ContextRef<'ctx>,
-		ptr_int_type: IntType<'ctx>,
 		pointers: AssemblerPointers<'ctx>,
 	) -> Result<(), AssemblyError> {
-		let i8_type = context.i8_type();
-
 		let entry_block = pointers
 			.tape
 			.as_instruction()
@@ -200,14 +195,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			None,
 		);
 
-		let tape_value = {
-			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
-
-			i8_array_type.const_zero()
-		};
-
-		let right_after_tape_alloca = get_instruction_after_alloca(pointers.tape)?;
-
 		self.insert_declare_at_end(
 			pointers.tape,
 			Some(self.variables.tape),
@@ -215,18 +202,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			debug_loc,
 			entry_block,
 		);
-
-		self.insert_dbg_value_before(
-			tape_value.convert::<BasicValueEnum<'ctx>>(),
-			self.variables.tape,
-			None,
-			debug_loc,
-			right_after_tape_alloca,
-		);
-
-		let pointer_value = ptr_int_type.const_zero();
-
-		let right_after_pointer_alloca = get_instruction_after_alloca(pointers.pointer)?;
 
 		self.insert_declare_at_end(
 			pointers.pointer,
@@ -236,36 +211,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			entry_block,
 		);
 
-		self.insert_dbg_value_before(
-			pointer_value.convert::<BasicValueEnum<'ctx>>(),
-			self.variables.pointer,
-			None,
-			debug_loc,
-			right_after_pointer_alloca,
-		);
-
-		let output_array_value = {
-			let output_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN);
-
-			output_array_type.const_zero()
-		};
-
-		let right_after_output_alloca = get_instruction_after_alloca(pointers.output)?;
-
 		self.insert_declare_at_end(
 			pointers.output,
 			Some(self.variables.output),
 			None,
 			debug_loc,
 			entry_block,
-		);
-
-		self.insert_dbg_value_before(
-			output_array_value.convert::<BasicValueEnum<'ctx>>(),
-			self.variables.output,
-			None,
-			debug_loc,
-			right_after_output_alloca,
 		);
 
 		Ok(())
@@ -371,6 +322,8 @@ impl<'ctx> AssemblerDebugVariables<'ctx> {
 	}
 }
 
+// Leaving this here in case I want to use it again
+#[allow(unused)]
 fn get_instruction_after_alloca(
 	alloca: PointerValue<'_>,
 ) -> Result<InstructionValue<'_>, AssemblyError> {
