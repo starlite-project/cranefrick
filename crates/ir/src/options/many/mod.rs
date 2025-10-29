@@ -1,3 +1,4 @@
+mod change;
 mod set;
 
-pub use self::set::*;
+pub use self::{change::*, set::*};

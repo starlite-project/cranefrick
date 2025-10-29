@@ -284,6 +284,62 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(set_many_options.convert::<BrainIr>()))
 		}
+		[BrainIr::ChangeCell(a), BrainIr::ChangeCell(b)]
+			if a.offset().wrapping_add(1) == b.offset() =>
+		{
+			Some(Change::replace(BrainIr::change_many_cells(
+				[a.value(), b.value()],
+				a.offset(),
+			)))
+		}
+		[
+			BrainIr::ChangeCell(change_options),
+			BrainIr::ChangeManyCells(change_many_options),
+		]
+		| [
+			BrainIr::ChangeManyCells(change_many_options),
+			BrainIr::ChangeCell(change_options),
+		] if change_many_options
+			.range()
+			.contains(&change_options.offset()) =>
+		{
+			let mut change_many_options = change_many_options.clone();
+
+			let current_value = change_many_options.value_at(change_options.offset())?;
+
+			if !change_many_options.set_value_at(
+				change_options.offset(),
+				current_value.wrapping_add(change_options.value()),
+			) {
+				return None;
+			}
+
+			Some(Change::replace(change_many_options.convert::<BrainIr>()))
+		}
+		[
+			BrainIr::ChangeCell(change_options),
+			BrainIr::ChangeManyCells(change_many_options),
+		]
+		| [
+			BrainIr::ChangeManyCells(change_many_options),
+			BrainIr::ChangeCell(change_options),
+		] => {
+			let x = change_options.offset();
+			let range = change_many_options.range();
+
+			if x != range.end {
+				return None;
+			}
+
+			Some(Change::replace(BrainIr::change_many_cells(
+				change_many_options
+					.values()
+					.iter()
+					.copied()
+					.chain_once(change_options.value()),
+				range.start,
+			)))
+		}
 		_ => None,
 	}
 }

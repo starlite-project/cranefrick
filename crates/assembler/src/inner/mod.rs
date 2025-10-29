@@ -273,6 +273,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				BrainIr::FetchValueFrom(options) => self.fetch_value_from(*options)?,
 				BrainIr::ReplaceValueFrom(options) => self.replace_value_from(*options)?,
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
+				BrainIr::ChangeManyCells(options) => self.change_many_cells(options)?,
 				BrainIr::SetRange(options) => self.set_range(*options)?,
 				BrainIr::SetManyCells(options) => self.set_many_cells(options)?,
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),

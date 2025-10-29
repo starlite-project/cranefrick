@@ -42,6 +42,7 @@ pub enum BrainIr {
 	ScaleValue(u8),
 	DynamicLoop(Vec<Self>),
 	IfNotZero(Vec<Self>),
+	ChangeManyCells(ChangeManyCellsOptions),
 	SetRange(SetRangeOptions),
 	SetManyCells(SetManyCellsOptions),
 	DuplicateCell {
@@ -182,6 +183,11 @@ impl BrainIr {
 	#[must_use]
 	pub const fn set_range(value: u8, start: i32, end: i32) -> Self {
 		Self::SetRange(SetRangeOptions::new(value, start, end))
+	}
+
+	#[must_use]
+	pub fn change_many_cells(values: impl IntoIterator<Item = i8>, offset: i32) -> Self {
+		Self::ChangeManyCells(ChangeManyCellsOptions::new(values, offset))
 	}
 
 	#[must_use]
@@ -466,6 +472,12 @@ impl Display for BrainIr {
 		}
 
 		Ok(())
+	}
+}
+
+impl From<ChangeManyCellsOptions> for BrainIr {
+	fn from(value: ChangeManyCellsOptions) -> Self {
+		Self::ChangeManyCells(value)
 	}
 }
 

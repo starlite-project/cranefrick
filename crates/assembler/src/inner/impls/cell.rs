@@ -1,5 +1,6 @@
 use frick_ir::{
-	FactoredOffsetCellOptions, SetManyCellsOptions, SetRangeOptions, ValuedOffsetCellOptions,
+	ChangeManyCellsOptions, FactoredOffsetCellOptions, SetManyCellsOptions, SetRangeOptions,
+	ValuedOffsetCellOptions,
 };
 use frick_utils::Convert as _;
 use inkwell::{
@@ -350,6 +351,36 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_memset(gep, 1, value_value, range_len_value)?;
 
 		Ok(())
+	}
+
+	pub fn change_many_cells(&self, options: &ChangeManyCellsOptions) -> Result<(), AssemblyError> {
+		let context = self.context();
+
+		let i8_type = context.i8_type();
+		let i8_vector_type = i8_type.vec_type(options.values().len() as u32);
+
+		let gep = self.tape_gep(i8_vector_type, options.start())?;
+
+		let vec_of_tape_values = self.load_from(i8_vector_type, gep)?;
+
+		let vec_of_change_values = {
+			let vec_of_values = options
+				.values()
+				.iter()
+				.copied()
+				.map(|x| i8_type.const_int(x as u64, false))
+				.collect::<Vec<_>>();
+
+			VectorType::const_vector(&vec_of_values)
+		};
+
+		let vec_of_values_to_store = self.builder.build_int_add(
+			vec_of_tape_values,
+			vec_of_change_values,
+			"change_many_cells_vector_add",
+		)?;
+
+		self.store_into(vec_of_values_to_store, gep)
 	}
 }
 
