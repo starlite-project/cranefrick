@@ -6,12 +6,10 @@ use frick_utils::IteratorExt as _;
 use crate::inner::Change;
 
 pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
-	if !ops.iter().all(|i| {
-		matches!(
-			i,
-				| BrainIr::ChangeCell(..)
-		)
-	}) {
+	if !ops
+		.iter()
+		.all(|i| matches!(i, BrainIr::ChangeCell(..) | BrainIr::ChangeManyCells(..)))
+	{
 		return None;
 	}
 
@@ -29,6 +27,9 @@ pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 fn sorter_key(i: &BrainIr) -> OffsetSorterKey {
 	match i {
 		BrainIr::ChangeCell(change_options) => OffsetSorterKey(change_options.offset()),
+		BrainIr::ChangeManyCells(change_many_options) => {
+			OffsetSorterKey(change_many_options.start())
+		}
 		_ => unreachable!(),
 	}
 }

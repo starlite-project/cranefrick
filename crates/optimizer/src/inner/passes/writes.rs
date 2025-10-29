@@ -326,8 +326,6 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::Output(OutputOptions::Cells(output_options)),
 			BrainIr::SetRange(set_range_options),
 		] if set_range_options.range().contains(&change_options.offset()) => {
-			tracing::warn!(?ops, "made it");
-
 			let mut new_output_options = Vec::with_capacity(output_options.len());
 
 			for option in output_options {
