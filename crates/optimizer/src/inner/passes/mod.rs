@@ -6,7 +6,7 @@ mod mem;
 mod sort;
 mod writes;
 
-use alloc::{vec, vec::Vec};
+use alloc::vec::Vec;
 use core::iter;
 
 use frick_ir::{BrainIr, OffsetCellOptions, OutputOptions, SubOptions};
@@ -789,18 +789,14 @@ pub fn optimize_initial_change_to_sets<const N: usize>(ops: [&BrainIr; N]) -> Op
 			)
 		}) =>
 		{
-			tracing::warn!(?ops, "made it");
-
-			let mut output = vec![BrainIr::boundary()];
-
-			output.extend(rest.iter().map(|x| (*x).clone()));
-
-			output.push(BrainIr::set_cell_at(
-				change_options.value() as u8,
-				change_options.offset(),
-			));
-
-			Some(Change::swap(output))
+			Some(Change::swap(
+				iter::once(BrainIr::boundary())
+					.chain(rest.iter().map(|x| (*x).clone()))
+					.chain(iter::once(BrainIr::set_cell_at(
+						change_options.value() as u8,
+						change_options.offset(),
+					))),
+			))
 		}
 		_ => None,
 	}
