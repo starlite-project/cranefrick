@@ -64,7 +64,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(50);
+		span.pb_set_length(57);
 
 		self.run_all_passes(&mut progress);
 
@@ -88,7 +88,7 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("fix boundary instructions", 2);
+			let _guard = self.pass_info("optimize boundary instructions", 9);
 			run_peephole_pass_with_span(
 				"optimize_initial_sets",
 				progress,
@@ -100,6 +100,48 @@ impl Optimizer {
 				progress,
 				self,
 				passes::fix_boundary_instructions,
+			);
+			run_peephole_pass_with_span(
+				"optimize_initial_change_to_sets<3>",
+				progress,
+				self,
+				passes::optimize_initial_change_to_sets::<3>,
+			);
+			run_peephole_pass_with_span(
+				"optimize_initial_change_to_sets<4>",
+				progress,
+				self,
+				passes::optimize_initial_change_to_sets::<4>,
+			);
+			run_peephole_pass_with_span(
+				"optimize_initial_change_to_sets<5>",
+				progress,
+				self,
+				passes::optimize_initial_change_to_sets::<5>,
+			);
+			run_peephole_pass_with_span(
+				"optimize_initial_change_to_sets<6>",
+				progress,
+				self,
+				passes::optimize_initial_change_to_sets::<6>,
+			);
+			run_peephole_pass_with_span(
+				"optimize_initial_change_to_sets<7>",
+				progress,
+				self,
+				passes::optimize_initial_change_to_sets::<7>,
+			);
+			run_peephole_pass_with_span(
+				"optimize_initial_change_to_sets<8>",
+				progress,
+				self,
+				passes::optimize_initial_change_to_sets::<8>,
+			);
+			run_peephole_pass_with_span(
+				"optimize_initial_change_to_sets<9>",
+				progress,
+				self,
+				passes::optimize_initial_change_to_sets::<9>,
 			);
 		}
 
