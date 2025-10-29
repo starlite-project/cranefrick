@@ -176,48 +176,55 @@ impl Optimizer {
 
 		{
 			let _guard = self.pass_info("sort cell changes", 14);
-			run_with_span("sort_changes<8>", || {
-				*progress |= run_peephole_pass(self, passes::sort_changes::<8>);
-			});
-			run_with_span("sort_changes<7>", || {
-				*progress |= run_peephole_pass(self, passes::sort_changes::<7>);
-			});
-			run_with_span("sort_changes<6>", || {
-				*progress |= run_peephole_pass(self, passes::sort_changes::<6>);
-			});
-			run_with_span("sort_changes<5>", || {
-				*progress |= run_peephole_pass(self, passes::sort_changes::<5>);
-			});
-			run_with_span("sort_changes<4>", || {
-				*progress |= run_peephole_pass(self, passes::sort_changes::<4>);
-			});
-			run_with_span("sort_changes<3>", || {
-				*progress |= run_peephole_pass(self, passes::sort_changes::<3>);
-			});
-			run_with_span("sort_changes<2>", || {
-				*progress |= run_peephole_pass(self, passes::sort_changes::<2>);
-			});
-			run_with_span("sort_sets<8>", || {
-				*progress |= run_peephole_pass(self, passes::sort_sets::<8>);
-			});
-			run_with_span("sort_sets<7>", || {
-				*progress |= run_peephole_pass(self, passes::sort_sets::<7>);
-			});
-			run_with_span("sort_sets<6>", || {
-				*progress |= run_peephole_pass(self, passes::sort_sets::<6>);
-			});
-			run_with_span("sort_sets<5>", || {
-				*progress |= run_peephole_pass(self, passes::sort_sets::<5>);
-			});
-			run_with_span("sort_sets<4>", || {
-				*progress |= run_peephole_pass(self, passes::sort_sets::<4>);
-			});
-			run_with_span("sort_sets<3>", || {
-				*progress |= run_peephole_pass(self, passes::sort_sets::<3>);
-			});
-			run_with_span("sort_sets<2>", || {
-				*progress |= run_peephole_pass(self, passes::sort_sets::<2>);
-			});
+			run_peephole_pass_with_span(
+				"sort_changes<8>",
+				progress,
+				self,
+				passes::sort_changes::<8>,
+			);
+			run_peephole_pass_with_span(
+				"sort_changes<7>",
+				progress,
+				self,
+				passes::sort_changes::<7>,
+			);
+			run_peephole_pass_with_span(
+				"sort_changes<6>",
+				progress,
+				self,
+				passes::sort_changes::<6>,
+			);
+			run_peephole_pass_with_span(
+				"sort_changes<5>",
+				progress,
+				self,
+				passes::sort_changes::<5>,
+			);
+			run_peephole_pass_with_span(
+				"sort_changes<4>",
+				progress,
+				self,
+				passes::sort_changes::<4>,
+			);
+			run_peephole_pass_with_span(
+				"sort_changes<3>",
+				progress,
+				self,
+				passes::sort_changes::<3>,
+			);
+			run_peephole_pass_with_span(
+				"sort_changes<2>",
+				progress,
+				self,
+				passes::sort_changes::<2>,
+			);
+			run_peephole_pass_with_span("sort_sets<8>", progress, self, passes::sort_sets::<8>);
+			run_peephole_pass_with_span("sort_sets<7>", progress, self, passes::sort_sets::<7>);
+			run_peephole_pass_with_span("sort_sets<6>", progress, self, passes::sort_sets::<6>);
+			run_peephole_pass_with_span("sort_sets<5>", progress, self, passes::sort_sets::<5>);
+			run_peephole_pass_with_span("sort_sets<4>", progress, self, passes::sort_sets::<4>);
+			run_peephole_pass_with_span("sort_sets<3>", progress, self, passes::sort_sets::<3>);
+			run_peephole_pass_with_span("sort_sets<2>", progress, self, passes::sort_sets::<2>);
 		}
 
 		{
@@ -280,50 +287,83 @@ impl Optimizer {
 
 		{
 			let _guard = self.pass_info("optimize scale and shift value instructions", 9);
-			run_with_span("optimize_move_value_from_loop", || {
-				*progress |= run_loop_pass(self, passes::optimize_move_value_from_loop);
-			});
-			run_with_span("optimize_move_value", || {
-				*progress |= run_peephole_pass(self, passes::optimize_move_value);
-			});
-			run_with_span("optimize_move_value_from_duplicate_cells", || {
-				*progress |=
-					run_peephole_pass(self, passes::optimize_move_value_from_duplicate_cells);
-			});
-			run_with_span("optimize_duplicate_cell_replace_from", || {
-				*progress |= run_peephole_pass(self, passes::optimize_duplicate_cell_replace_from);
-			});
-			run_with_span("optimize_take_value", || {
-				*progress |= run_peephole_pass(self, passes::optimize_take_value);
-			});
-			run_with_span("optimize_fetch_value", || {
-				*progress |= run_peephole_pass(self, passes::optimize_fetch_value);
-			});
-			run_with_span("optimize_replace_value", || {
-				*progress |= run_peephole_pass(self, passes::optimize_replace_value);
-			});
-			run_with_span("optimize_copy_value", || {
-				*progress |= run_peephole_pass(self, passes::optimize_copy_value);
-			});
-			run_with_span("optimize_scale_value", || {
-				*progress |= run_peephole_pass(self, passes::optimize_scale_value);
-			});
+			run_loop_pass_with_span(
+				"optimize_move_value_from_loop",
+				progress,
+				self,
+				passes::optimize_move_value_from_loop,
+			);
+			run_peephole_pass_with_span(
+				"optimize_move_value",
+				progress,
+				self,
+				passes::optimize_move_value,
+			);
+			run_peephole_pass_with_span(
+				"optimize_move_value_from_duplicate_cells",
+				progress,
+				self,
+				passes::optimize_move_value_from_duplicate_cells,
+			);
+			run_peephole_pass_with_span(
+				"optimize_duplicate_cell_replace_from",
+				progress,
+				self,
+				passes::optimize_duplicate_cell_replace_from,
+			);
+			run_peephole_pass_with_span(
+				"optimize_take_value",
+				progress,
+				self,
+				passes::optimize_take_value,
+			);
+			run_peephole_pass_with_span(
+				"optimize_fetch_value",
+				progress,
+				self,
+				passes::optimize_fetch_value,
+			);
+			run_peephole_pass_with_span(
+				"optimize_replace_value",
+				progress,
+				self,
+				passes::optimize_replace_value,
+			);
+			run_peephole_pass_with_span(
+				"optimize_copy_value",
+				progress,
+				self,
+				passes::optimize_copy_value,
+			);
+			run_peephole_pass_with_span(
+				"optimize_scale_value",
+				progress,
+				self,
+				passes::optimize_scale_value,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("optimize write calls", 6);
-			run_with_span("optimize_writes", || {
-				*progress |= run_peephole_pass(self, passes::optimize_writes);
-			});
-			run_with_span("optimize_changes_and_writes", || {
-				*progress |= run_peephole_pass(self, passes::optimize_changes_and_writes);
-			});
-			run_with_span("optimize_offset_writes", || {
-				*progress |= run_peephole_pass(self, passes::optimize_offset_writes);
-			});
-			run_with_span("optimize_change_write_sets", || {
-				*progress |= run_peephole_pass(self, passes::optimize_change_write_sets);
-			});
+			run_peephole_pass_with_span("optimize_writes", progress, self, passes::optimize_writes);
+			run_peephole_pass_with_span(
+				"optimize_changes_and_writes",
+				progress,
+				self,
+				passes::optimize_changes_and_writes,
+			);
+			run_peephole_pass_with_span(
+				"optimize_offset_writes",
+				progress,
+				self,
+				passes::optimize_offset_writes,
+			);
+			run_peephole_pass_with_span(
+				"optimize_change_write_sets",
+				progress,
+				self,
+				passes::optimize_change_write_sets,
+			);
 			run_peephole_pass_with_span(
 				"optimize_boundary_writes",
 				progress,
@@ -340,69 +380,93 @@ impl Optimizer {
 
 		{
 			let _guard = self.pass_info("remove redundant take instructions", 1);
-			run_with_span("remove_redundant_shifts", || {
-				*progress |= run_peephole_pass(self, passes::remove_redundant_shifts);
-			});
+			run_peephole_pass_with_span(
+				"remove_redundant_shifts",
+				progress,
+				self,
+				passes::remove_redundant_shifts,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("optimize constant shifts", 1);
-			run_with_span("optimize_constant_shifts", || {
-				*progress |= run_peephole_pass(self, passes::optimize_constant_shifts);
-			});
+			run_peephole_pass_with_span(
+				"optimize_constant_shifts",
+				progress,
+				self,
+				passes::optimize_constant_shifts,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("remove unnecessary offsets", 1);
-			run_with_span("remove_offsets", || {
-				*progress |= run_peephole_pass(self, passes::remove_offsets);
-			});
+			run_peephole_pass_with_span("remove_offsets", progress, self, passes::remove_offsets);
 		}
 
 		{
 			let _guard = self.pass_info("optimize sub cell", 3);
-			run_with_span("optimize_sub_cell_at", || {
-				*progress |= run_loop_pass(self, passes::optimize_sub_cell_at);
-			});
-			run_with_span("optimize_sub_cell_from", || {
-				*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from);
-			});
-			run_with_span("optimize_sub_cell_from_with_set", || {
-				*progress |= run_peephole_pass(self, passes::optimize_sub_cell_from_with_set);
-			});
+			run_loop_pass_with_span(
+				"optimize_sub_cell_at",
+				progress,
+				self,
+				passes::optimize_sub_cell_at,
+			);
+			run_peephole_pass_with_span(
+				"optimize_sub_cell_from",
+				progress,
+				self,
+				passes::optimize_sub_cell_from,
+			);
+			run_peephole_pass_with_span(
+				"optimize_sub_cell_from_with_set",
+				progress,
+				self,
+				passes::optimize_sub_cell_from_with_set,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("optimize if not zero", 3);
-			run_with_span("optimize_if_nz", || {
-				*progress |= run_loop_pass(self, passes::optimize_if_nz);
-			});
-			run_with_span("optimize_if_nz_when_zeroing", || {
-				*progress |= run_peephole_pass(self, passes::optimize_if_nz_when_zeroing);
-			});
-			run_with_span("unroll_if_nz", || {
-				*progress |= run_peephole_pass(self, passes::unroll_if_nz);
-			});
+			run_loop_pass_with_span("optimize_if_nz", progress, self, passes::optimize_if_nz);
+			run_peephole_pass_with_span(
+				"optimize_if_nz_when_zeroing",
+				progress,
+				self,
+				passes::optimize_if_nz_when_zeroing,
+			);
+			run_peephole_pass_with_span("unroll_if_nz", progress, self, passes::unroll_if_nz);
 		}
 
 		{
 			let _guard = self.pass_info("optimize duplicate cell", 2);
-			run_with_span("optimize_duplicate_cell", || {
-				*progress |= run_loop_pass(self, passes::optimize_duplicate_cell);
-			});
-			run_with_span("unroll_constant_duplicate_cell", || {
-				*progress |= run_peephole_pass(self, passes::unroll_constant_duplicate_cell);
-			});
+			run_loop_pass_with_span(
+				"optimize_duplicate_cell",
+				progress,
+				self,
+				passes::optimize_duplicate_cell,
+			);
+			run_peephole_pass_with_span(
+				"unroll_constant_duplicate_cell",
+				progress,
+				self,
+				passes::unroll_constant_duplicate_cell,
+			);
 		}
 
 		{
 			let _guard = self.pass_info("optimize memory operations", 3);
-			run_with_span("optimize_mem_sets", || {
-				*progress |= run_peephole_pass(self, passes::optimize_mem_sets);
-			});
-			run_with_span("optimize_mem_set_move_change", || {
-				*progress |= run_peephole_pass(self, passes::optimize_mem_set_move_change);
-			});
+			run_peephole_pass_with_span(
+				"optimize_mem_sets",
+				progress,
+				self,
+				passes::optimize_mem_sets,
+			);
+			run_peephole_pass_with_span(
+				"optimize_mem_set_move_change",
+				progress,
+				self,
+				passes::optimize_mem_set_move_change,
+			);
 			run_peephole_pass_with_span(
 				"optimize_set_many_to_set_range",
 				progress,
@@ -413,9 +477,12 @@ impl Optimizer {
 
 		{
 			let _guard = self.pass_info("unroll certain if nz", 1);
-			run_with_span("unroll_constant_if_nz", || {
-				*progress |= run_peephole_pass(self, passes::unroll_constant_if_nz);
-			});
+			run_peephole_pass_with_span(
+				"unroll_constant_if_nz",
+				progress,
+				self,
+				passes::unroll_constant_if_nz,
+			);
 		}
 	}
 
@@ -519,9 +586,9 @@ fn run_peephole_pass_with_span<const N: usize>(
 	optimizer: &mut Vec<BrainIr>,
 	pass: impl PeepholePass<N>,
 ) {
-	let span = trace_span!("run_pass", pass = pass_name).entered();
-	*progress |= run_peephole_pass(optimizer, pass);
-	drop(span);
+	run_with_span(pass_name, || {
+		*progress |= run_peephole_pass(optimizer, pass);
+	});
 }
 
 fn run_loop_pass_with_span(
@@ -530,7 +597,7 @@ fn run_loop_pass_with_span(
 	optimizer: &mut Vec<BrainIr>,
 	pass: impl LoopPass,
 ) {
-	let span = trace_span!("run_pass", pass = pass_name).entered();
-	*progress |= run_loop_pass(optimizer, pass);
-	drop(span);
+	run_with_span(pass_name, || {
+		*progress |= run_loop_pass(optimizer, pass);
+	});
 }
