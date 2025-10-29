@@ -770,3 +770,26 @@ pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_initial_change_to_sets<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
+	match ops.as_slice() {
+		[
+			BrainIr::Boundary,
+			rest @ ..,
+			BrainIr::ChangeCell(change_options),
+		] if rest
+			.iter()
+			.all(|x| matches!(x, BrainIr::ChangeCell(..) | BrainIr::SetCell(..))) =>
+		{
+			Some(Change::swap(
+				iter::once(BrainIr::boundary())
+					.chain(rest.iter().map(|x| (*x).clone()))
+					.chain_once(BrainIr::set_cell_at(
+						change_options.value() as u8,
+						change_options.offset(),
+					)),
+			))
+		}
+		_ => None,
+	}
+}
