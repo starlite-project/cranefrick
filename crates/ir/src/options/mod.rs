@@ -1,6 +1,6 @@
 mod change;
-mod set_many_cells;
+mod many;
 mod set_range;
 mod sub;
 
-pub use self::{change::*, set_many_cells::*, set_range::*, sub::*};
+pub use self::{change::*, many::*, set_range::*, sub::*};

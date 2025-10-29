@@ -5,10 +5,10 @@ use core::{
 	slice,
 };
 
-use frick_utils::{Convert as _, GetOrZero, IntoIteratorExt as _};
+use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
-use super::SetRangeOptions;
+use crate::SetRangeOptions;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetManyCellsOptions {
@@ -35,11 +35,25 @@ impl SetManyCellsOptions {
 	}
 
 	#[must_use]
-	pub fn range(&self) -> Range<i32> {
-		let start = self.start.get_or_zero();
+	pub const fn range(&self) -> Range<i32> {
+		let start = self.start;
 		let end = start.wrapping_add_unsigned(self.values.len() as u32);
 
 		start..end
+	}
+
+	#[must_use]
+	pub fn is_zeroing_cell(&self) -> bool {
+		matches!(self.value_at(0), Some(0))
+	}
+
+	#[must_use]
+	pub fn value_at(&self, offset: i32) -> Option<u8> {
+		let mut range = self.range();
+
+		let index = range.position(|x| x == offset)?;
+
+		self.values.get(index).copied()
 	}
 
 	pub fn set_value_at(&mut self, offset: i32, value: u8) -> bool {
@@ -57,24 +71,10 @@ impl SetManyCellsOptions {
 	}
 
 	#[must_use]
-	pub fn value_at(&self, offset: i32) -> Option<u8> {
-		let mut range = self.range();
-
-		let index = range.position(|x| x == offset)?;
-
-		self.values.get(index).copied()
-	}
-
-	#[must_use]
-	pub fn is_zeroing_cell(&self) -> bool {
-		matches!(self.value_at(0), Some(0))
-	}
-
-	#[must_use]
 	pub fn iter(&self) -> SetManyCellsIter<'_> {
 		SetManyCellsIter {
 			iter: self.values.iter().copied().enumerate(),
-			start: self.start.get_or_zero(),
+			start: self.start,
 		}
 	}
 }
@@ -86,12 +86,6 @@ impl From<SetRangeOptions> for SetManyCellsOptions {
 		let values = range.map(|_| value.value());
 
 		Self::new(values, value.start())
-	}
-}
-
-impl<'a> From<&'a SetRangeOptions> for SetManyCellsOptions {
-	fn from(value: &'a SetRangeOptions) -> Self {
-		(*value).convert::<Self>()
 	}
 }
 
@@ -136,5 +130,9 @@ impl Iterator for SetManyCellsIter<'_> {
 
 	fn size_hint(&self) -> (usize, Option<usize>) {
 		self.iter.size_hint()
+	}
+
+	fn last(mut self) -> Option<Self::Item> {
+		self.next_back()
 	}
 }
