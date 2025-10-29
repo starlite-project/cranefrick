@@ -3,43 +3,64 @@ use core::{cmp::Ordering, iter::FusedIterator, marker::PhantomData, mem};
 
 use crate::IntoIteratorExt as _;
 
-#[repr(transparent)]
 pub struct Sorted<T> {
 	pub(crate) iter: VecIntoIter<T>,
+	sorted: bool,
 }
 
-impl<T: Ord> Sorted<T> {
+impl<T> Sorted<T> {
 	pub(crate) fn new(iter: impl IntoIterator<Item = T>) -> Self {
 		Self {
-			iter: {
-				let mut sorter = Vec::from_iter(iter);
-
-				sorter.sort();
-
-				sorter.into_iter()
-			},
+			iter: iter.collect_to::<Vec<_>>().into_iter(),
+			sorted: false,
 		}
+	}
+
+	const fn is_sorted(&self) -> bool {
+		self.sorted
 	}
 }
 
-impl<T> DoubleEndedIterator for Sorted<T> {
+impl<T: Ord> Sorted<T> {
+	fn sort(&mut self) {
+		self.iter = {
+			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
+
+			iter.sort();
+
+			iter.into_iter()
+		};
+
+		self.sorted = true;
+	}
+}
+
+impl<T: Ord> DoubleEndedIterator for Sorted<T> {
 	fn next_back(&mut self) -> Option<Self::Item> {
+		if !Self::is_sorted(self) {
+			self.sort();
+		}
+
 		self.iter.next_back()
 	}
 }
 
-impl<T> ExactSizeIterator for Sorted<T> {
+impl<T: Ord> ExactSizeIterator for Sorted<T> {
 	fn len(&self) -> usize {
 		self.iter.len()
 	}
 }
 
-impl<T> FusedIterator for Sorted<T> {}
+impl<T: Ord> FusedIterator for Sorted<T> {}
 
-impl<T> Iterator for Sorted<T> {
+impl<T: Ord> Iterator for Sorted<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
+		if !Self::is_sorted(self) {
+			self.sort();
+		}
+
 		self.iter.next()
 	}
 
@@ -55,15 +76,8 @@ impl<T> Iterator for Sorted<T> {
 		self.iter.count()
 	}
 
-	fn fold<B, F>(self, init: B, f: F) -> B
-	where
-		F: FnMut(B, Self::Item) -> B,
-	{
-		self.iter.fold(init, f)
-	}
-
 	fn is_sorted(self) -> bool {
-		true
+		Self::is_sorted(&self)
 	}
 }
 
