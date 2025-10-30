@@ -428,6 +428,29 @@ pub fn optimize_boundary_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
 			BrainIr::Boundary,
 		] if !i.has_io() && !matches!(i, BrainIr::Boundary) => Some(Change::remove_offset(0)),
+		[
+			BrainIr::ChangeManyCells(change_many_options),
+			BrainIr::Output(OutputOptions::Cells(output_options)),
+			BrainIr::Boundary,
+		] => {
+			let mut new_output_values = Vec::new();
+
+			for option in output_options {
+				if let Some(change_many_value) = change_many_options.value_at(option.offset()) {
+					new_output_values.push(OffsetCellOptions::new(
+						option.value().wrapping_add(change_many_value),
+						option.offset(),
+					));
+				} else {
+					new_output_values.push(*option);
+				}
+			}
+
+			Some(Change::swap([
+				BrainIr::output_cells(new_output_values),
+				BrainIr::boundary(),
+			]))
+		}
 		_ => None,
 	}
 }
