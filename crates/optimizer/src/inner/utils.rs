@@ -32,7 +32,8 @@ pub fn calculate_ptr_movement(ops: &[BrainIr]) -> Option<i32> {
 			| BrainIr::ScaleValue(..)
 			| BrainIr::SetRange { .. }
 			| BrainIr::SetManyCells { .. }
-			| BrainIr::DuplicateCell { .. } => {}
+			| BrainIr::DuplicateCell { .. }
+			| BrainIr::ChangeManyCells(..) => {}
 			_ => return None,
 		}
 	}
