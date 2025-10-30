@@ -468,16 +468,21 @@ pub fn optimize_offset_writes_set(ops: [&BrainIr; 4]) -> Option<Change> {
 			BrainIr::ChangeCell(change_options),
 			BrainIr::Output(OutputOptions::Cell(output_options)),
 			BrainIr::MovePointer(y),
-		] if *x == -y && change_options.offset() == output_options.offset() => Some(Change::swap([
-			BrainIr::change_cell_at(
-				change_options.value(),
-				x.wrapping_add(change_options.offset()),
-			),
-			BrainIr::output_offset_cell_at(
-				output_options.value(),
-				x.wrapping_add(output_options.offset()),
-			),
-		])),
+		] if change_options.offset() == output_options.offset() => {
+			tracing::warn!(?ops, "made it");
+
+			Some(Change::swap([
+				BrainIr::move_pointer(x.wrapping_add(*y)),
+				BrainIr::change_cell_at(
+					change_options.value(),
+					change_options.offset().wrapping_add(y.wrapping_neg()),
+				),
+				BrainIr::output_offset_cell_at(
+					output_options.value(),
+					output_options.offset().wrapping_add(y.wrapping_neg()),
+				),
+			]))
+		}
 		_ => None,
 	}
 }
