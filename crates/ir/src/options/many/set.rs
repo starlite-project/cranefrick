@@ -1,13 +1,10 @@
 use alloc::vec::Vec;
-use core::{
-	iter::{Copied, Enumerate, FusedIterator},
-	ops::Range,
-	slice,
-};
+use core::ops::Range;
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
+use super::AffectManyCellsIter;
 use crate::SetRangeOptions;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -75,7 +72,6 @@ impl SetManyCellsOptions {
 		}
 	}
 
-	#[must_use]
 	pub fn iter(&self) -> SetManyCellsIter<'_> {
 		SetManyCellsIter {
 			iter: self.values.iter().copied().enumerate(),
@@ -103,41 +99,4 @@ impl<'a> IntoIterator for &'a SetManyCellsOptions {
 	}
 }
 
-pub struct SetManyCellsIter<'a> {
-	iter: Enumerate<Copied<slice::Iter<'a, u8>>>,
-	start: i32,
-}
-
-impl DoubleEndedIterator for SetManyCellsIter<'_> {
-	fn next_back(&mut self) -> Option<Self::Item> {
-		self.iter
-			.next_back()
-			.map(|(index, value)| (value, self.start.wrapping_add_unsigned(index as u32)))
-	}
-}
-
-impl ExactSizeIterator for SetManyCellsIter<'_> {
-	fn len(&self) -> usize {
-		self.iter.len()
-	}
-}
-
-impl FusedIterator for SetManyCellsIter<'_> {}
-
-impl Iterator for SetManyCellsIter<'_> {
-	type Item = (u8, i32);
-
-	fn next(&mut self) -> Option<Self::Item> {
-		self.iter
-			.next()
-			.map(|(index, value)| (value, self.start.wrapping_add_unsigned(index as u32)))
-	}
-
-	fn size_hint(&self) -> (usize, Option<usize>) {
-		self.iter.size_hint()
-	}
-
-	fn last(mut self) -> Option<Self::Item> {
-		self.next_back()
-	}
-}
+pub type SetManyCellsIter<'a> = AffectManyCellsIter<'a, u8>;

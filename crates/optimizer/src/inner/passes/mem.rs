@@ -340,6 +340,23 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				range.start,
 			)))
 		}
+		[
+			BrainIr::SetCell(set_options),
+			BrainIr::ChangeManyCells(change_many_options),
+		] => {
+			let set_offset = set_options.offset();
+			let change_many_range = change_many_options.range();
+
+			if change_many_range.start != set_offset
+				&& change_many_range.end.wrapping_sub(1) != set_offset
+			{
+				return None;
+			}
+
+			tracing::warn!(?ops, "made it");
+
+			None
+		}
 		_ => None,
 	}
 }

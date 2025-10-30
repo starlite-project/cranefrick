@@ -4,6 +4,8 @@ use core::ops::Range;
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
+use super::AffectManyCellsIter;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChangeManyCellsOptions {
 	values: Vec<i8>,
@@ -58,4 +60,22 @@ impl ChangeManyCellsOptions {
 			false
 		}
 	}
+
+	pub fn iter(&self) -> ChangeManyCellsIter<'_> {
+		ChangeManyCellsIter {
+			iter: self.values.iter().copied().enumerate(),
+			start: self.start,
+		}
+	}
 }
+
+impl<'a> IntoIterator for &'a ChangeManyCellsOptions {
+	type IntoIter = ChangeManyCellsIter<'a>;
+	type Item = (i8, i32);
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.iter()
+	}
+}
+
+pub type ChangeManyCellsIter<'a> = AffectManyCellsIter<'a, i8>;
