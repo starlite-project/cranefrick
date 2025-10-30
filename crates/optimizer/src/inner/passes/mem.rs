@@ -400,6 +400,32 @@ pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
 				),
 			]))
 		}
+		[
+			BrainIr::SetManyCells(set_many_options),
+			BrainIr::MovePointer(move_offset),
+			BrainIr::ChangeCell(change_options),
+		] if set_many_options
+			.range()
+			.contains(&move_offset.wrapping_add(change_options.offset())) =>
+		{
+			let targeted_cell_offset = move_offset.wrapping_add(change_options.offset());
+
+			let mut set_many_options = set_many_options.clone();
+
+			let targeted_cell_value = set_many_options.value_at(targeted_cell_offset)?;
+
+			let new_targeted_cell_value =
+				targeted_cell_value.wrapping_add_signed(change_options.value());
+
+			if !set_many_options.set_value_at(targeted_cell_offset, new_targeted_cell_value) {
+				return None;
+			}
+
+			Some(Change::swap([
+				set_many_options.convert::<BrainIr>(),
+				BrainIr::move_pointer(*move_offset),
+			]))
+		}
 		_ => None,
 	}
 }
