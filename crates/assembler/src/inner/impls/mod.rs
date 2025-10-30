@@ -7,11 +7,7 @@ mod pointer;
 mod value;
 
 use frick_utils::Convert as _;
-use inkwell::{
-	IntPredicate,
-	types::BasicTypeEnum,
-	values::{BasicMetadataValueEnum, BasicValueEnum},
-};
+use inkwell::{IntPredicate, types::BasicTypeEnum, values::BasicValueEnum};
 
 use crate::{AssemblyError, ContextExt as _, ContextGetter as _, inner::InnerAssembler};
 
