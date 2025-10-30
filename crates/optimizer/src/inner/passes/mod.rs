@@ -767,6 +767,13 @@ pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::SetManyCells(set_many_options)))
 		}
+		[BrainIr::SetCell(set_options), BrainIr::ScaleValue(factor)]
+			if !set_options.is_offset() =>
+		{
+			Some(Change::replace(BrainIr::set_cell(
+				set_options.value().wrapping_mul(*factor),
+			)))
+		}
 		_ => None,
 	}
 }
