@@ -345,7 +345,10 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::ChangeCell(change_options),
 			BrainIr::Output(OutputOptions::Cell(output_options)),
 			i,
-		] if i.is_zeroing_cell() && !change_options.is_offset() && !output_options.is_offset() => {
+		] if i.is_clobbering_cell()
+			&& !change_options.is_offset()
+			&& !output_options.is_offset() =>
+		{
 			Some(Change::swap([
 				BrainIr::output_offset_cell(
 					output_options.value().wrapping_add(change_options.value()),
@@ -353,16 +356,6 @@ pub fn optimize_offset_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 				i.clone(),
 			]))
 		}
-		[
-			BrainIr::ChangeCell(change_options),
-			BrainIr::Output(OutputOptions::Cell(output_options)),
-			r @ BrainIr::ReplaceValueFrom(..),
-		] if !change_options.is_offset() && !output_options.is_offset() => Some(Change::swap([
-			BrainIr::output_offset_cell(
-				output_options.value().wrapping_add(change_options.value()),
-			),
-			r.clone(),
-		])),
 		_ => None,
 	}
 }

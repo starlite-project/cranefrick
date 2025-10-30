@@ -43,6 +43,11 @@ impl SetManyCellsOptions {
 	}
 
 	#[must_use]
+	pub fn is_clobbering_cell(&self) -> bool {
+		self.value_at(0).is_some()
+	}
+
+	#[must_use]
 	pub fn is_zeroing_cell(&self) -> bool {
 		matches!(self.value_at(0), Some(0))
 	}

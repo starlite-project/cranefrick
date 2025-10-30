@@ -36,8 +36,13 @@ impl SetRangeOptions {
 	}
 
 	#[must_use]
+	pub fn is_clobbering_cell(self) -> bool {
+		self.range().contains(&0)
+	}
+
+	#[must_use]
 	pub fn is_zeroing_cell(self) -> bool {
-		matches!(self.value, 0) && self.range().contains(&0)
+		self.is_clobbering_cell() && matches!(self.value(), 0)
 	}
 
 	#[must_use]

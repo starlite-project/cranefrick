@@ -286,6 +286,18 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub fn is_clobbering_cell(&self) -> bool {
+		self.is_zeroing_cell()
+			|| match self {
+				Self::ReplaceValueFrom(..) => true,
+				Self::SetRange(set_range_options) => set_range_options.is_clobbering_cell(),
+				Self::SetManyCells(set_many_options) => set_many_options.is_clobbering_cell(),
+				Self::SetCell(set_options) => !set_options.is_offset(),
+				_ => false,
+			}
+	}
+
+	#[must_use]
 	pub fn is_zeroing_cell(&self) -> bool {
 		match self {
 			Self::DynamicLoop(..)
@@ -294,9 +306,9 @@ impl BrainIr {
 			| Self::IfNotZero(..)
 			| Self::SubCell(SubOptions::CellAt(..))
 			| Self::DuplicateCell { .. } => true,
-			Self::SetRange(options) => options.is_zeroing_cell(),
-			Self::SetManyCells(options) => options.is_zeroing_cell(),
-			Self::SetCell(options) => options.is_default(),
+			Self::SetRange(set_range_options) => set_range_options.is_zeroing_cell(),
+			Self::SetManyCells(set_many_options) => set_many_options.is_zeroing_cell(),
+			Self::SetCell(set_options) => set_options.is_default(),
 			_ => false,
 		}
 	}
