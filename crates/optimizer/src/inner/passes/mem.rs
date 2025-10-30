@@ -1,7 +1,7 @@
 use alloc::{borrow::ToOwned as _, vec::Vec};
 use core::cmp;
 
-use frick_ir::{BrainIr, SetManyCellsOptions, SubOptions};
+use frick_ir::{BrainIr, ChangeManyCellsOptions, SetManyCellsOptions, SubOptions};
 use frick_utils::{
 	ContainsRange as _, Convert as _, GetOrZero as _, InsertOrPush as _, IteratorExt as _,
 };
@@ -353,9 +353,31 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				return None;
 			}
 
-			tracing::warn!(?ops, "made it");
+			let is_at_start = change_many_range.start == set_offset;
 
-			None
+			let value_to_add = change_many_options.value_at(set_offset)?;
+
+			let new_value_to_set = set_options.value().wrapping_add_signed(value_to_add);
+
+			let new_change_many_options = ChangeManyCellsOptions::new(
+				change_many_options.iter().filter_map(|(value, offset)| {
+					if offset == set_offset {
+						None
+					} else {
+						Some(value)
+					}
+				}),
+				if is_at_start {
+					change_many_range.start.wrapping_add(1)
+				} else {
+					change_many_range.start
+				},
+			);
+
+			Some(Change::swap([
+				BrainIr::set_cell_at(new_value_to_set, set_offset),
+				new_change_many_options.convert::<BrainIr>(),
+			]))
 		}
 		_ => None,
 	}
@@ -461,6 +483,19 @@ pub fn optimize_set_many_to_set_range(ops: [&BrainIr; 1]) -> Option<Change> {
 				*new_range.start(),
 				*new_range.end(),
 			)))
+		}
+		_ => None,
+	}
+}
+
+pub fn unroll_single_mem_operations(ops: [&BrainIr; 1]) -> Option<Change> {
+	match ops {
+		[BrainIr::ChangeManyCells(change_many_options)]
+			if matches!(change_many_options.values().len(), 1) =>
+		{
+			let (value, offset) = change_many_options.iter().next()?;
+
+			Some(Change::replace(BrainIr::change_cell_at(value, offset)))
 		}
 		_ => None,
 	}
