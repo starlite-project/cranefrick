@@ -21,7 +21,6 @@ pub struct AssemblerFunctions<'ctx> {
 	pub puts: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 	pub invariant: IntrinsicFunctionSet<'ctx>,
-	pub assume: FunctionValue<'ctx>,
 	pub eh_personality: FunctionValue<'ctx>,
 	masked_vector_functions: RefCell<HashMap<(u32, VectorFunctionType), FunctionValue<'ctx>>>,
 }
@@ -83,8 +82,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			IntrinsicFunctionSet::new(invariant_start, invariant_end)
 		};
 
-		let assume = get_intrinsic_function_from_name("llvm.assume", module, &[])?;
-
 		let eh_personality_ty = i32_type.fn_type(
 			&[
 				i32_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
@@ -108,7 +105,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			puts,
 			lifetime,
 			invariant,
-			assume,
 			eh_personality,
 			masked_vector_functions: RefCell::default(),
 		};

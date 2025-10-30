@@ -41,14 +41,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			(params[0].into_pointer_value(), params[1].into_int_value())
 		};
 
-		let assert_ptr_not_null = self.builder.build_is_not_null(ptr_param, "\0")?;
-
-		self.builder.build_direct_call(
-			self.functions.assume,
-			&[assert_ptr_not_null.convert::<BasicMetadataValueEnum<'ctx>>()],
-			"\0",
-		)?;
-
 		let i64_zero = i64_type.const_zero();
 
 		let is_str_empty =
