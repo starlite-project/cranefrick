@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use frick_ir::ValuedOffsetCellOptions;
 use frick_utils::Convert as _;
 use inkwell::{
@@ -248,14 +250,25 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let vec_of_indices = {
 			let mut vec = ptr_int_vec_type.get_poison();
 
-			let offsets = options
-				.iter()
-				.copied()
-				.map(|v| self.offset_pointer(v.offset()))
-				.collect::<Result<Vec<_>, _>>()?;
+			let mut offset_map = HashMap::new();
 
-			for (i, offset) in offsets.into_iter().enumerate() {
+			for offset in options.iter().map(|v| v.offset()) {
+				if offset_map.contains_key(&offset) {
+					continue;
+				}
+
+				let offset_pointer = self.offset_pointer(offset)?;
+
+				offset_map.insert(offset, offset_pointer);
+			}
+
+			for (i, offset) in options.iter().map(|x| x.offset()).enumerate() {
 				let index = i64_type.const_int(i as u64, false);
+
+				let offset = match offset_map.get(&offset) {
+					Some(offset_value) => *offset_value,
+					None => self.offset_pointer(offset)?,
+				};
 
 				vec = self.builder.build_insert_element(
 					vec,
