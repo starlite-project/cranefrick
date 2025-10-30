@@ -173,14 +173,6 @@ impl InnerAssembler<'_> {
 			header_phi_value.as_basic_value().into_int_value(),
 		)?;
 
-		self.debug_builder.insert_dbg_value_before(
-			header_phi_value.as_basic_value(),
-			self.debug_builder.variables.pointer,
-			None,
-			self.builder.get_current_debug_location().unwrap(),
-			store_instr,
-		);
-
 		Ok(())
 	}
 }

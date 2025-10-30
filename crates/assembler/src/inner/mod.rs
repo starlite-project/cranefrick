@@ -139,7 +139,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		assert!(TAPE_SIZE.is_power_of_two());
 
 		tracing::debug!("writing instructions");
-		let mut op_count = 1;
+		let mut op_count = 0;
 
 		let ops_span = tracing::info_span!("ops").entered();
 		self.ops(ops, &mut op_count)?;
