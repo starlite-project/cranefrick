@@ -384,6 +384,22 @@ pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
 				BrainIr::move_pointer(*x),
 			]))
 		}
+		[
+			BrainIr::SetRange(set_range_options),
+			BrainIr::MovePointer(move_offset),
+			BrainIr::SetCell(set_options),
+		] if move_offset.wrapping_add(1) == set_range_options.start()
+			&& !set_options.is_offset() =>
+		{
+			Some(Change::swap([
+				BrainIr::move_pointer(*move_offset),
+				BrainIr::set_range(
+					set_range_options.value(),
+					set_range_options.start(),
+					set_range_options.end().wrapping_add(1),
+				),
+			]))
+		}
 		_ => None,
 	}
 }

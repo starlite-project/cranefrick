@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 mod change;
 mod set;
 
