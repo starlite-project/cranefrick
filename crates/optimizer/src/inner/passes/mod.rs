@@ -132,6 +132,16 @@ pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 		[BrainIr::Boundary, BrainIr::SetCell(set_options)] if matches!(set_options.value(), 0) => {
 			Some(Change::remove_offset(1))
 		}
+		[
+			BrainIr::Boundary,
+			BrainIr::ChangeManyCells(change_many_options),
+		] => Some(Change::swap([
+			BrainIr::boundary(),
+			BrainIr::set_many_cells(
+				change_many_options.values().iter().map(|x| (*x) as u8),
+				change_many_options.start(),
+			),
+		])),
 		_ => None,
 	}
 }
