@@ -168,7 +168,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(exit_block);
 
-		let store_instr = self.builder.build_store(
+		self.builder.build_store(
 			self.pointers.pointer,
 			header_phi_value.as_basic_value().into_int_value(),
 		)?;

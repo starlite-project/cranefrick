@@ -1,9 +1,5 @@
 use frick_spec::TAPE_SIZE;
-use frick_utils::Convert as _;
-use inkwell::{
-	IntPredicate,
-	values::{BasicValueEnum, IntValue},
-};
+use inkwell::{IntPredicate, values::IntValue};
 
 use crate::{
 	AssemblyError,
