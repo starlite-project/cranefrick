@@ -257,26 +257,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			match op {
 				BrainIr::Boundary => {}
-				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
-				BrainIr::SetCell(options) => self.set_cell(*options)?,
 				BrainIr::ChangeCell(options) => self.change_cell(*options)?,
+				BrainIr::SetCell(options) => self.set_cell(*options)?,
 				BrainIr::SubCell(SubOptions::CellAt(options)) => self.sub_cell_at(*options)?,
 				BrainIr::SubCell(SubOptions::FromCell(options)) => self.sub_from_cell(*options)?,
-				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
-				BrainIr::Output(options) => self.output(options)?,
-				BrainIr::InputIntoCell => self.input_into_cell()?,
-				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops, op_count)?,
-				BrainIr::IfNotZero(ops) => self.if_not_zero(ops, op_count)?,
+				BrainIr::MovePointer(offset) => self.move_pointer(*offset)?,
 				BrainIr::FindZero(offset) => self.find_zero(*offset)?,
+				BrainIr::InputIntoCell => self.input_into_cell()?,
+				BrainIr::Output(options) => self.output(options)?,
 				BrainIr::MoveValueTo(options) => self.move_value_to(*options)?,
 				BrainIr::CopyValueTo(options) => self.copy_value_to(*options)?,
 				BrainIr::TakeValueTo(options) => self.take_value_to(*options)?,
 				BrainIr::FetchValueFrom(options) => self.fetch_value_from(*options)?,
 				BrainIr::ReplaceValueFrom(options) => self.replace_value_from(*options)?,
 				BrainIr::ScaleValue(factor) => self.scale_value(*factor)?,
+				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops, op_count)?,
+				BrainIr::IfNotZero(ops) => self.if_not_zero(ops, op_count)?,
 				BrainIr::ChangeManyCells(options) => self.change_many_cells(options)?,
 				BrainIr::SetRange(options) => self.set_range(*options)?,
 				BrainIr::SetManyCells(options) => self.set_many_cells(options)?,
+				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
 				_ => return Err(AssemblyError::NotImplemented(op.clone())),
 			}
 
