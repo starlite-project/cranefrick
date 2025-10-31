@@ -65,7 +65,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(59);
+		span.pb_set_length(60);
 
 		self.run_all_passes(&mut progress);
 
@@ -221,7 +221,7 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize boundary instructions", 9);
+			let _guard = self.pass_info("optimize boundary instructions", 10);
 			run_peephole_pass_with_span(
 				"optimize_initial_sets",
 				progress,
@@ -233,6 +233,12 @@ impl Optimizer {
 				progress,
 				self,
 				passes::fix_boundary_instructions,
+			);
+			run_peephole_pass_with_span(
+				"optimize_initial_set_move_change",
+				progress,
+				self,
+				passes::optimize_initial_set_move_change,
 			);
 			run_peephole_pass_with_span(
 				"optimize_initial_change_to_sets<3>",
