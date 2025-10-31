@@ -185,6 +185,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				nosync_attr,
 				arg_read_inaccessable_write_memory_attr,
 				uwtable_attr,
+				nonlazybind_attr,
 			],
 			[(0, zeroext_attr), (0, noundef_attr)],
 			[],
