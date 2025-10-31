@@ -1,8 +1,8 @@
 mod sealed;
 mod serde;
 
-use std::{
-	fmt::{Debug, Formatter, Result as FmtResult},
+use core::{
+	fmt::{Debug, Display, Formatter, Result as FmtResult, Write as _},
 	marker::PhantomData,
 };
 
@@ -48,22 +48,22 @@ impl<T: OffsetCellPrimitive, Marker: OffsetCellMarker> OffsetCellOptions<T, Mark
 	}
 }
 
-impl<T: OffsetCellPrimitive> OffsetCellOptions<T, Factor> {
+impl<T: OffsetCellPrimitive> FactoredOffsetCellOptions<T> {
 	pub const fn factor(self) -> T {
 		self.value
 	}
 
-	pub const fn into_value(self) -> OffsetCellOptions<T, Value> {
+	pub const fn into_value(self) -> ValuedOffsetCellOptions<T> {
 		OffsetCellOptions::new(self.value, self.offset)
 	}
 }
 
-impl<T: OffsetCellPrimitive> OffsetCellOptions<T, Value> {
+impl<T: OffsetCellPrimitive> ValuedOffsetCellOptions<T> {
 	pub const fn value(self) -> T {
 		self.value
 	}
 
-	pub const fn into_factor(self) -> OffsetCellOptions<T, Factor> {
+	pub const fn into_factor(self) -> FactoredOffsetCellOptions<T> {
 		OffsetCellOptions::new(self.value, self.offset)
 	}
 }
@@ -78,13 +78,29 @@ impl<T: OffsetCellPrimitive, Marker: OffsetCellMarker> Copy for OffsetCellOption
 
 impl<T, Marker: OffsetCellMarker> Debug for OffsetCellOptions<T, Marker>
 where
-	T: OffsetCellPrimitive + Debug,
+	T: Debug + OffsetCellPrimitive,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("ChangeCellOptions")
 			.field("value", &self.value)
 			.field("offset", &self.offset)
 			.finish()
+	}
+}
+
+impl<T, Marker: OffsetCellMarker> Display for OffsetCellOptions<T, Marker>
+where
+	T: Display + OffsetCellPrimitive,
+{
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		let (value, offset) = self.into_parts();
+
+		f.write_char('(')?;
+		f.write_char(Marker::sign())?;
+		Display::fmt(&value, f)?;
+		f.write_str(", ")?;
+		Display::fmt(&offset, f)?;
+		f.write_char(')')
 	}
 }
 
@@ -98,11 +114,23 @@ impl<T: OffsetCellPrimitive, Marker: OffsetCellMarker> PartialEq for OffsetCellO
 
 pub enum Factor {}
 
+impl OffsetCellMarker for Factor {
+	fn sign() -> char {
+		'*'
+	}
+}
+
 pub enum Value {}
 
-pub trait OffsetCellMarker: self::sealed::MarkerSealed {}
+impl OffsetCellMarker for Value {
+	fn sign() -> char {
+		'+'
+	}
+}
 
-impl<T: self::sealed::MarkerSealed> OffsetCellMarker for T {}
+pub trait OffsetCellMarker: self::sealed::MarkerSealed {
+	fn sign() -> char;
+}
 
 pub trait OffsetCellPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSealed {
 	#[must_use]

@@ -32,6 +32,7 @@ pub enum BrainIr {
 	SubCell(SubOptions),
 	MovePointer(i32),
 	FindZero(i32),
+	FindZeroAfterMove(i32),
 	InputIntoCell,
 	Output(OutputOptions),
 	MoveValueTo(FactoredOffsetCellOptions<u8>),
@@ -181,6 +182,11 @@ impl BrainIr {
 	}
 
 	#[must_use]
+	pub const fn find_zero_after_move(offset: i32) -> Self {
+		Self::FindZeroAfterMove(offset)
+	}
+
+	#[must_use]
 	pub const fn set_range(value: u8, start: i32, end: i32) -> Self {
 		Self::SetRange(SetRangeOptions::new(value, start, end))
 	}
@@ -303,6 +309,7 @@ impl BrainIr {
 			Self::DynamicLoop(..)
 			| Self::MoveValueTo(..)
 			| Self::FindZero(..)
+			| Self::FindZeroAfterMove(..)
 			| Self::IfNotZero(..)
 			| Self::SubCell(SubOptions::CellAt(..))
 			| Self::DuplicateCell { .. } => true,
@@ -333,63 +340,20 @@ impl Display for BrainIr {
 		match self {
 			Self::Boundary => f.write_str("boundary")?,
 			Self::ChangeCell(change_options) => {
-				match change_options.into_parts() {
-					(a, 0) => {
-						f.write_str("change_cell(")?;
-						Display::fmt(&a, f)?;
-					}
-					(a, x) => {
-						f.write_str("change_cell_at(")?;
-						Display::fmt(&a, f)?;
-						f.write_str(", ")?;
-						Display::fmt(&x, f)?;
-					}
-				}
-				f.write_char(')')?;
+				f.write_str("change_cell")?;
+				Display::fmt(&change_options, f)?;
 			}
-			Self::SetCell(set_options) => match set_options.into_parts() {
-				(0, 0) => f.write_str("clear_cell")?,
-				(0, x) => {
-					f.write_str("clear_cell_at(")?;
-					Display::fmt(&x, f)?;
-					f.write_char(')')?;
-				}
-				(a, 0) => {
-					f.write_str("set_cell(")?;
-					Display::fmt(&a, f)?;
-					f.write_char(')')?;
-				}
-				(a, x) => {
-					f.write_str("set_cell_at(")?;
-					Display::fmt(&a, f)?;
-					f.write_str(", ")?;
-					Display::fmt(&x, f)?;
-					f.write_char(')')?;
-				}
-			},
+			Self::SetCell(set_options) => {
+				f.write_str("set_cell")?;
+				Display::fmt(&set_options, f)?;
+			}
 			Self::SubCell(SubOptions::CellAt(sub_at_options)) => {
-				f.write_str("sub_cell_at(")?;
-				match sub_at_options.into_parts() {
-					(1, x) => Display::fmt(&x, f)?,
-					(a, x) => {
-						Display::fmt(&a, f)?;
-						f.write_str(", ")?;
-						Display::fmt(&x, f)?;
-					}
-				}
-				f.write_char(')')?;
+				f.write_str("sub_cell_at")?;
+				Display::fmt(&sub_at_options, f)?;
 			}
 			Self::SubCell(SubOptions::FromCell(sub_from_options)) => {
-				f.write_str("sub_from_cell(")?;
-				match sub_from_options.into_parts() {
-					(1, x) => Display::fmt(&x, f)?,
-					(a, x) => {
-						Display::fmt(&a, f)?;
-						f.write_str(", ")?;
-						Display::fmt(&x, f)?;
-					}
-				}
-				f.write_char(')')?;
+				f.write_str("sub_from_cell")?;
+				Display::fmt(&sub_from_options, f)?;
 			}
 			Self::MovePointer(offset) => {
 				f.write_str("move_pointer(")?;
@@ -401,27 +365,32 @@ impl Display for BrainIr {
 				Display::fmt(&offset, f)?;
 				f.write_char(')')?;
 			}
+			Self::FindZeroAfterMove(offset) => {
+				f.write_str("find_zero_after_move(")?;
+				Display::fmt(&offset, f)?;
+				f.write_char(')')?;
+			}
 			Self::InputIntoCell => f.write_str("input")?,
 			Self::Output(output_options) => Display::fmt(&output_options, f)?,
 			Self::MoveValueTo(move_options) => {
-				f.write_str("move_value_to(")?;
-				write_shift_options(*move_options, f)?;
+				f.write_str("move_value_to")?;
+				Display::fmt(&move_options, f)?;
 			}
 			Self::CopyValueTo(copy_options) => {
-				f.write_str("copy_value_to(")?;
-				write_shift_options(*copy_options, f)?;
+				f.write_str("copy_value_to")?;
+				Display::fmt(&copy_options, f)?;
 			}
 			Self::TakeValueTo(take_options) => {
-				f.write_str("take_value_to(")?;
-				write_shift_options(*take_options, f)?;
+				f.write_str("take_value_to")?;
+				Display::fmt(&take_options, f)?;
 			}
 			Self::FetchValueFrom(fetch_options) => {
-				f.write_str("fetch_value_from(")?;
-				write_shift_options(*fetch_options, f)?;
+				f.write_str("fetch_value_from")?;
+				Display::fmt(&fetch_options, f)?;
 			}
 			Self::ReplaceValueFrom(replace_options) => {
-				f.write_str("replace_value_from(")?;
-				write_shift_options(*replace_options, f)?;
+				f.write_str("replace_value_from")?;
+				Display::fmt(&replace_options, f)?;
 			}
 			Self::ScaleValue(factor) => {
 				f.write_str("scale_value(")?;
