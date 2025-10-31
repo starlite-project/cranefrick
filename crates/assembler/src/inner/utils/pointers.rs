@@ -75,12 +75,8 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		let i8_zero = i8_type.const_zero();
 
-		builder.build_memset(self.tape, 16, i8_zero, tape_array_size)?;
+		builder.build_memset(self.tape, 1, i8_zero, tape_array_size)?;
 		builder.build_store(self.pointer, ptr_int_type.const_zero())?;
-
-		if let Some(tape_instr) = self.tape.as_instruction() {
-			tape_instr.set_alignment(16)?;
-		}
 
 		Ok(())
 	}
