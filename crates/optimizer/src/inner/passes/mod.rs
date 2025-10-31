@@ -235,6 +235,18 @@ pub fn add_offsets(ops: [&BrainIr; 3]) -> Option<Change> {
 				Change::swap([set_range_instr, BrainIr::move_pointer(x.wrapping_add(*y))])
 			})
 		}
+		[
+			BrainIr::MovePointer(x),
+			BrainIr::ChangeManyCells(change_many_options),
+			BrainIr::MovePointer(y),
+		] => {
+			let start = change_many_options.start().wrapping_add(*x);
+
+			Some(Change::swap([
+				BrainIr::change_many_cells(change_many_options.values().iter().copied(), start),
+				BrainIr::move_pointer(x.wrapping_add(*y)),
+			]))
+		}
 		_ => None,
 	}
 }
