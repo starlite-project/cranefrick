@@ -117,19 +117,21 @@ impl InnerAssembler<'_> {
 	pub fn find_zero(&self, offset: i32) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let current_block = self.builder.get_insert_block().unwrap();
-
 		let ptr_int_type = self.ptr_int_type;
 		let i8_type = context.i8_type();
 
-		let current_pointer_value = self.load_from(ptr_int_type, self.pointers.pointer)?;
-
+		let preheader_block =
+			context.append_basic_block(self.functions.main, "find_zero.preheader\0");
 		let header_block = context.append_basic_block(self.functions.main, "find_zero.header\0");
 		let body_block = context.append_basic_block(self.functions.main, "find_zero.body\0");
 		let exit_block = context.append_basic_block(self.functions.main, "find_zero.exit\0");
 
-		self.builder.build_unconditional_branch(header_block)?;
+		self.builder.build_unconditional_branch(preheader_block)?;
+		self.builder.position_at_end(preheader_block);
 
+		let current_pointer_value = self.load_from(ptr_int_type, self.pointers.pointer)?;
+
+		self.builder.build_unconditional_branch(header_block)?;
 		self.builder.position_at_end(header_block);
 
 		let header_phi_value = self.builder.build_phi(ptr_int_type, "find_zero_phi\0")?;
@@ -162,7 +164,7 @@ impl InnerAssembler<'_> {
 		self.builder.build_unconditional_branch(header_block)?;
 
 		header_phi_value.add_incoming(&[
-			(&current_pointer_value, current_block),
+			(&current_pointer_value, preheader_block),
 			(&wrapped_pointer_value, body_block),
 		]);
 
