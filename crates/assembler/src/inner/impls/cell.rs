@@ -29,9 +29,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i8_type.const_int(options.value() as u64, false)
 		};
 
-		let added =
-			self.builder
-				.build_int_add(current_cell_value, value_to_add, "change_cell_add\0")?;
+		let added = self.builder.build_int_nsw_add(
+			current_cell_value,
+			value_to_add,
+			"change_cell_add\0",
+		)?;
 
 		self.store_into(added, gep)
 	}
@@ -210,7 +212,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.map(FactoredOffsetCellOptions::factor)
 			.all(|x| matches!(x, 1))
 		{
-			self.builder.build_int_add(
+			self.builder.build_int_nsw_add(
 				vec_of_current_cell,
 				vec_of_loaded_values,
 				"duplicate_cell_scattered_vector_add\0",
@@ -232,7 +234,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"duplicate_cell_scattered_vector_mul\0",
 			)?;
 
-			self.builder.build_int_add(
+			self.builder.build_int_nsw_add(
 				vec_of_loaded_values,
 				vec_of_scaled_current_cell,
 				"duplicate_cell_scattered_vector_add\0",
@@ -280,7 +282,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.map(FactoredOffsetCellOptions::factor)
 			.all(|x| matches!(x, 1))
 		{
-			self.builder.build_int_add(
+			self.builder.build_int_nsw_add(
 				vec_of_current_cell,
 				vec_of_loaded_values,
 				"duplicate_cell_contiguous_vector_add\0",
@@ -302,7 +304,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"duplicate_cell_contiguous_vector_mul\0",
 			)?;
 
-			self.builder.build_int_add(
+			self.builder.build_int_nsw_add(
 				vec_of_loaded_values,
 				vec_of_scaled_current_cell,
 				"duplicate_cell_contiguous_vector_add\0",
@@ -371,7 +373,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			VectorType::const_vector(&vec_of_values)
 		};
 
-		let vec_of_values_to_store = self.builder.build_int_add(
+		let vec_of_values_to_store = self.builder.build_int_nsw_add(
 			vec_of_tape_values,
 			vec_of_change_values,
 			"change_many_cells_vector_add",
