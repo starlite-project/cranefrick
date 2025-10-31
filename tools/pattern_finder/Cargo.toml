@@ -10,4 +10,4 @@ version.workspace = true
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 color-eyre.workspace = true
-walkdir = "2"
+walkdir.workspace = true

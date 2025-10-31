@@ -8,7 +8,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-ariadne = { version = "0.6", optional = true }
+ariadne = { workspace = true, optional = true }
 chumsky = { workspace = true, default-features = false, features = [
     "stacker",
     "std"

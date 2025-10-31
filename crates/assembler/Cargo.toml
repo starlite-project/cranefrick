@@ -13,6 +13,6 @@ frick_ir.workspace = true
 frick_spec = { path = "../spec" }
 frick_utils = { workspace = true, features = ["convert", "get_or_zero"] }
 inkwell.workspace = true
-libc = "0.2"
-send_wrapper = "0.6"
+libc.workspace = true
+send_wrapper.workspace = true
 tracing.workspace = true
