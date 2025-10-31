@@ -349,18 +349,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn into_parts(self) -> (Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine) {
 		(self.module, self.functions, self.target_machine)
 	}
-
-	#[allow(clippy::unused_self)]
-	fn setup_global_value<T>(&self, global: GlobalValue<'ctx>, initializer: &T)
-	where
-		T: BasicValue<'ctx>,
-	{
-		global.set_thread_local(false);
-		global.set_unnamed_addr(true);
-		global.set_linkage(Linkage::Internal);
-		global.set_initializer(initializer);
-		global.set_constant(true);
-	}
 }
 
 unsafe impl<'ctx> AsContextRef<'ctx> for InnerAssembler<'ctx> {
