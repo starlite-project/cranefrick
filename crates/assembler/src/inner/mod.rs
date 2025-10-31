@@ -136,8 +136,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self,
 		ops: &[BrainIr],
 	) -> Result<(Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine), AssemblyError> {
-		assert!(TAPE_SIZE.is_power_of_two());
-
 		tracing::debug!("writing instructions");
 		let mut op_count = 0;
 
