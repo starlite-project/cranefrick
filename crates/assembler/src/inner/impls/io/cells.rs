@@ -20,6 +20,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = context.i8_type();
 		let i32_type = context.i32_type();
 
+		let _invariant = self.start_tape_invariant()?;
+
 		let current_cell_value = self.load_cell(options.offset())?;
 
 		let offset_cell_value = if matches!(options.value(), 0) {
@@ -55,6 +57,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
+
+		let _invariant = self.start_tape_invariant()?;
 
 		let output_vector = self.get_output_cells_vector(options)?;
 
