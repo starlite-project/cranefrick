@@ -194,6 +194,18 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 				change_options.offset(),
 			)),
 		])),
+		[
+			BrainIr::Boundary,
+			set @ BrainIr::SetManyCells(..),
+			BrainIr::ChangeManyCells(change_many_options),
+		] => Some(Change::swap([
+			BrainIr::boundary(),
+			set.clone(),
+			BrainIr::set_many_cells(
+				change_many_options.values().iter().map(|x| *x as u8),
+				change_many_options.start(),
+			),
+		])),
 		_ => None,
 	}
 }
