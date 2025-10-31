@@ -407,12 +407,12 @@ impl Display for BrainIr {
 			Self::SetManyCells(set_many_options) => {
 				f.write_str("set_many_cells((")?;
 				let mut is_first = true;
-				for value in set_many_options.values() {
+				for option in set_many_options {
 					if !is_first {
 						f.write_str(", ")?;
 					}
 
-					Display::fmt(value, f)?;
+					Display::fmt(&option, f)?;
 					is_first = false;
 				}
 
