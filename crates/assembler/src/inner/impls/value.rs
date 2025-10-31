@@ -48,9 +48,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_mul(current_value, factor, "duplicate_value_to_mul\0")?
 		};
 
-		let added =
-			self.builder
-				.build_int_add(other_value, value_to_add, "duplicate_value_to_add\0")?;
+		let added = self.builder.build_int_nsw_add(
+			other_value,
+			value_to_add,
+			"duplicate_value_to_add\0",
+		)?;
 
 		self.store_into(added, gep)
 	}
@@ -78,9 +80,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_mul(current_value, factor, "take_value_to_mul\0")?
 		};
 
-		let added = self
-			.builder
-			.build_int_add(other_cell, value_to_add, "take_value_to_add\0")?;
+		let added =
+			self.builder
+				.build_int_nsw_add(other_cell, value_to_add, "take_value_to_add\0")?;
 
 		self.store_into(added, gep)
 	}
@@ -108,7 +110,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let added =
 			self.builder
-				.build_int_add(current_cell, value_to_add, "fetch_value_from_add\0")?;
+				.build_int_nsw_add(current_cell, value_to_add, "fetch_value_from_add\0")?;
 
 		self.store_into(added, gep)
 	}

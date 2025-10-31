@@ -155,7 +155,7 @@ impl InnerAssembler<'_> {
 
 		let offset_value = ptr_int_type.const_int(offset as u64, false);
 
-		let new_pointer_value = self.builder.build_int_add(
+		let new_pointer_value = self.builder.build_int_nsw_add(
 			header_phi_value.as_basic_value().into_int_value(),
 			offset_value,
 			"find_zero_add\0",
