@@ -27,6 +27,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<T::Value, AssemblyError> {
 		let loaded_value = self.builder.build_load(value_ty, gep, "load_from_load\0")?;
 
+		if let Some(load_instr) = loaded_value.as_instruction_value() {
+			load_instr.set_alignment(16)?;
+		}
+
 		Ok(T::from_basic_value_enum(loaded_value))
 	}
 
@@ -65,7 +69,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		value: impl BasicValue<'ctx>,
 		gep: PointerValue<'ctx>,
 	) -> Result<(), AssemblyError> {
-		self.builder.build_store(gep, value)?;
+		let store_instr = self.builder.build_store(gep, value)?;
+
+		store_instr.set_alignment(16)?;
 
 		Ok(())
 	}

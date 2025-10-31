@@ -33,7 +33,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let ptr_int_type = self.ptr_int_type;
 		let offset_value = ptr_int_type.const_int(offset as u64, false);
 
-		let current_ptr = self.load_from(ptr_int_type, self.pointers.pointer)?;
+		let current_ptr = self
+			.builder
+			.build_load(
+				ptr_int_type,
+				self.pointers.pointer,
+				"offset_pointer_load_pointer",
+			)?
+			.into_int_value();
 
 		if matches!(offset, 0) {
 			Ok(current_ptr)
