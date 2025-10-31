@@ -1,4 +1,4 @@
-use std::{
+use core::{
 	fmt::{Formatter, Result as FmtResult},
 	marker::PhantomData,
 };
