@@ -20,18 +20,11 @@ impl InnerAssembler<'_> {
 	pub(super) fn output_str(&self, c: &[u8]) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let constant_string = context.const_string(c, false);
+		let i32_type = context.i32_type();
 
-		let constant_string_ty = constant_string.get_type();
-
-		let global_constant =
-			self.module
-				.add_global(constant_string_ty, None, "output_str_global_value\0");
-
-		self.setup_global_value(global_constant, &constant_string);
-
-		let global_value_pointer = global_constant.as_pointer_value();
-
-		self.call_puts(context, global_value_pointer, c.len() as u64)
+		c.iter()
+			.copied()
+			.map(|x| i32_type.const_int(x.convert::<u64>(), false))
+			.try_for_each(|x| self.call_putchar(context, x))
 	}
 }
