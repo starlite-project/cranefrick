@@ -479,16 +479,3 @@ impl From<SetRangeOptions> for BrainIr {
 		Self::SetRange(value)
 	}
 }
-
-fn write_shift_options(options: FactoredOffsetCellOptions<u8>, f: &mut Formatter<'_>) -> FmtResult {
-	match options.into_parts() {
-		(1, x) => Display::fmt(&x, f)?,
-		(a, x) => {
-			Display::fmt(&a, f)?;
-			f.write_str(", ")?;
-			Display::fmt(&x, f)?;
-		}
-	}
-
-	f.write_char(')')
-}
