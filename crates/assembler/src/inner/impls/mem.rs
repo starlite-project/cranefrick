@@ -108,9 +108,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = self.context().i8_type();
 
 		let gep = self.tape_gep(i8_type, offset)?;
-		self.store_into(value, gep)?;
-
-		Ok(())
+		self.store_into(value, gep)
 	}
 
 	#[tracing::instrument(skip(self), fields(offset = ?CalculatedOffset::from(offset)))]

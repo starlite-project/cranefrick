@@ -46,9 +46,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			extend_instr.set_non_negative_flag(true);
 		}
 
-		self.call_putchar(context, extended_value)?;
-
-		Ok(())
+		self.call_putchar(context, extended_value)
 	}
 
 	#[tracing::instrument(skip_all)]

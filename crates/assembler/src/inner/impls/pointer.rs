@@ -11,10 +11,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn move_pointer(&self, offset: i32) -> Result<(), AssemblyError> {
 		let wrapped_ptr = self.offset_pointer(offset)?;
 
-		self.builder
-			.build_store(self.pointers.pointer, wrapped_ptr)?;
-
-		Ok(())
+		self.store_into(wrapped_ptr, self.pointers.pointer)
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -33,14 +30,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let ptr_int_type = self.ptr_int_type;
 		let offset_value = ptr_int_type.const_int(offset as u64, false);
 
-		let current_ptr = self
-			.builder
-			.build_load(
-				ptr_int_type,
-				self.pointers.pointer,
-				"offset_pointer_load_pointer",
-			)?
-			.into_int_value();
+		let current_ptr = self.load_from(ptr_int_type, self.pointers.pointer)?;
 
 		if matches!(offset, 0) {
 			Ok(current_ptr)

@@ -33,9 +33,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_add(current_cell_value, value_to_add, "change_cell_add\0")?;
 
-		self.store_into(added, gep)?;
-
-		Ok(())
+		self.store_into(added, gep)
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -57,9 +55,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_sub(other_value, subtractor, "sub_cell_at_sub\0")?;
 
-		self.store_into(value_to_store, gep)?;
-
-		Ok(())
+		self.store_into(value_to_store, gep)
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -84,9 +80,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_sub(other_value, subtractor, "sub_from_cell_sub\0")?;
 
-		self.store_into(value_to_store, gep)?;
-
-		Ok(())
+		self.store_into(value_to_store, gep)
 	}
 
 	#[tracing::instrument(skip(self))]
