@@ -27,20 +27,3 @@ pub fn optimize_change_write_sets(ops: [&BrainIr; 4]) -> Option<Change> {
 		_ => None,
 	}
 }
-
-pub fn optimize_initial_sets_long(ops: [&BrainIr; 4]) -> Option<Change> {
-	match ops {
-		[
-			BrainIr::Boundary,
-			set @ (BrainIr::SetCell(..) | BrainIr::SetManyCells(..) | BrainIr::SetRange(..)),
-			BrainIr::MovePointer(move_offset),
-			BrainIr::ChangeCell(change_options),
-		] => Some(Change::swap([
-			BrainIr::boundary(),
-			set.clone(),
-			BrainIr::move_pointer(*move_offset),
-			BrainIr::set_cell_at(change_options.value() as u8, change_options.offset()),
-		])),
-		_ => None,
-	}
-}
