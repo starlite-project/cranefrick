@@ -12,10 +12,10 @@ use inkwell::{
 	context::{AsContextRef, Context},
 	debug_info::AsDIScope,
 	llvm_sys::prelude::LLVMContextRef,
-	module::{FlagBehavior, Linkage, Module},
+	module::{FlagBehavior, Module},
 	targets::TargetMachine,
 	types::{BasicTypeEnum, IntType, VectorType},
-	values::{BasicMetadataValueEnum, BasicValue, FunctionValue, GlobalValue},
+	values::{BasicMetadataValueEnum, FunctionValue},
 };
 
 pub use self::utils::AssemblerFunctions;
