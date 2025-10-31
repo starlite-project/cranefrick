@@ -360,7 +360,9 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			let new_value_to_set = set_options.value().wrapping_add_signed(value_to_add);
 
 			let new_change_many_options = ChangeManyCellsOptions::new(
-				change_many_options.iter().filter_map(|(value, offset)| {
+				change_many_options.iter().filter_map(|options| {
+					let (value, offset) = options.into_parts();
+
 					if offset == set_offset {
 						None
 					} else {
@@ -493,7 +495,7 @@ pub fn unroll_single_mem_operations(ops: [&BrainIr; 1]) -> Option<Change> {
 		[BrainIr::ChangeManyCells(change_many_options)]
 			if matches!(change_many_options.values().len(), 1) =>
 		{
-			let (value, offset) = change_many_options.iter().next()?;
+			let (value, offset) = change_many_options.iter().next()?.into_parts();
 
 			Some(Change::replace(BrainIr::change_cell_at(value, offset)))
 		}

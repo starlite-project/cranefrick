@@ -5,7 +5,7 @@ use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
 use super::AffectManyCellsIter;
-use crate::SetRangeOptions;
+use crate::{SetRangeOptions, ValuedOffsetCellOptions};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetManyCellsOptions {
@@ -92,7 +92,7 @@ impl From<SetRangeOptions> for SetManyCellsOptions {
 
 impl<'a> IntoIterator for &'a SetManyCellsOptions {
 	type IntoIter = SetManyCellsIter<'a>;
-	type Item = (u8, i32);
+	type Item = ValuedOffsetCellOptions<u8>;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.iter()
