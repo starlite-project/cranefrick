@@ -9,7 +9,10 @@ use inkwell::{
 
 use crate::{
 	AssemblyError, BuilderExt as _, ContextGetter as _,
-	inner::{InnerAssembler, utils::OUTPUT_ARRAY_LEN},
+	inner::{
+		InnerAssembler,
+		utils::{OUTPUT_ARRAY_LEN, is_contiguous},
+	},
 };
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -100,6 +103,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let vec_of_values_to_output =
 				if options.windows(2).all(|w| w[0].offset() == w[1].offset()) {
 					self.setup_output_cells_puts_vector_splat(options)
+				} else if is_contiguous(options) {
+					self.setup_output_cells_puts_vector_contiguous(options)
 				} else {
 					self.setup_output_cells_puts_vector_scatter(options)
 				}?;
@@ -170,6 +175,51 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip_all)]
+	fn setup_output_cells_puts_vector_contiguous(
+		&self,
+		options: &[ValuedOffsetCellOptions<i8>],
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		let context = self.context();
+
+		let i8_type = context.i8_type();
+		let i8_vec_type = i8_type.vec_type(options.len() as u32);
+
+		let start_of_range = options.iter().copied().next().unwrap().offset();
+
+		let gep = self.tape_gep(i8_vec_type, start_of_range)?;
+
+		let vec_of_loaded_values = self.load_from(i8_vec_type, gep)?;
+
+		let vec_of_modified_values = if options
+			.iter()
+			.copied()
+			.map(ValuedOffsetCellOptions::value)
+			.all(|x| matches!(x, 0))
+		{
+			vec_of_loaded_values
+		} else {
+			let vec_of_value_offsets = {
+				let vec_of_values = options
+					.iter()
+					.copied()
+					.map(|v| i8_type.const_int(v.value() as u64, false))
+					.collect::<Vec<_>>();
+
+				VectorType::const_vector(&vec_of_values)
+			};
+
+			self.builder.build_int_add(
+				vec_of_loaded_values,
+				vec_of_value_offsets,
+				"setup_output_cells_puts_vector_contiguous_add\0",
+			)?
+		};
+
+		Ok(vec_of_modified_values)
+	}
+
+	#[tracing::instrument(skip_all)]
 	fn setup_output_cells_puts_vector_splat(
 		&self,
 		options: &[ValuedOffsetCellOptions<i8>],
@@ -352,13 +402,11 @@ fn is_memcpyable(options: &[ValuedOffsetCellOptions<i8>]) -> bool {
 		return false;
 	}
 
-	if options.iter().any(|x| matches!(x.value(), 0)) {
+	if !options.iter().any(|x| matches!(x.value(), 0)) {
 		return false;
 	}
 
-	options
-		.windows(2)
-		.all(|w| w[0].offset() + 1 == w[1].offset())
+	is_contiguous(options)
 }
 
 fn is_memsettable(options: &[ValuedOffsetCellOptions<i8>]) -> bool {

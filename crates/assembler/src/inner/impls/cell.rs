@@ -8,7 +8,10 @@ use inkwell::{
 	values::{BasicMetadataValueEnum, VectorValue},
 };
 
-use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAssembler};
+use crate::{
+	AssemblyError, BuilderExt as _, ContextGetter as _,
+	inner::{InnerAssembler, utils::is_contiguous},
+};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
@@ -382,10 +385,4 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.store_into(vec_of_values_to_store, gep)
 	}
-}
-
-fn is_contiguous(values: &[FactoredOffsetCellOptions<i8>]) -> bool {
-	values
-		.windows(2)
-		.all(|w| w[0].offset() + 1 == w[1].offset())
 }

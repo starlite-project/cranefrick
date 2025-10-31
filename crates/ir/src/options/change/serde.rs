@@ -9,11 +9,11 @@ use serde::{
 	ser::SerializeStruct as _,
 };
 
-use super::{ChangeCellPrimitive, FactoredOffsetCellOptions, ValuedOffsetCellOptions};
+use super::{FactoredOffsetCellOptions, OffsetCellPrimitive, ValuedOffsetCellOptions};
 
 impl<'de, T> Deserialize<'de> for FactoredOffsetCellOptions<T>
 where
-	T: ChangeCellPrimitive + Deserialize<'de>,
+	T: OffsetCellPrimitive + Deserialize<'de>,
 {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 	where
@@ -33,7 +33,7 @@ where
 
 impl<'de, T> Deserialize<'de> for ValuedOffsetCellOptions<T>
 where
-	T: ChangeCellPrimitive + Deserialize<'de>,
+	T: OffsetCellPrimitive + Deserialize<'de>,
 {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 	where
@@ -53,7 +53,7 @@ where
 
 impl<T> Serialize for FactoredOffsetCellOptions<T>
 where
-	T: ChangeCellPrimitive + Serialize,
+	T: OffsetCellPrimitive + Serialize,
 {
 	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
 		let mut state = serializer.serialize_struct("ChangeCellOptions", 2)?;
@@ -67,7 +67,7 @@ where
 
 impl<T> Serialize for ValuedOffsetCellOptions<T>
 where
-	T: ChangeCellPrimitive + Serialize,
+	T: OffsetCellPrimitive + Serialize,
 {
 	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
 		let mut state = serializer.serialize_struct("ChangeCellOptions", 2)?;
@@ -79,13 +79,13 @@ where
 	}
 }
 
-struct FactoredChangeCellOptionsVisitor<T: ChangeCellPrimitive> {
+struct FactoredChangeCellOptionsVisitor<T: OffsetCellPrimitive> {
 	marker: PhantomData<FactoredOffsetCellOptions<T>>,
 }
 
 impl<'de, T> Visitor<'de> for FactoredChangeCellOptionsVisitor<T>
 where
-	T: ChangeCellPrimitive + Deserialize<'de>,
+	T: OffsetCellPrimitive + Deserialize<'de>,
 {
 	type Value = FactoredOffsetCellOptions<T>;
 
@@ -155,13 +155,13 @@ where
 	}
 }
 
-struct ValuedChangeCellOptionsVisitor<T: ChangeCellPrimitive> {
+struct ValuedChangeCellOptionsVisitor<T: OffsetCellPrimitive> {
 	marker: PhantomData<ValuedOffsetCellOptions<T>>,
 }
 
 impl<'de, T> Visitor<'de> for ValuedChangeCellOptionsVisitor<T>
 where
-	T: ChangeCellPrimitive + Deserialize<'de>,
+	T: OffsetCellPrimitive + Deserialize<'de>,
 {
 	type Value = ValuedOffsetCellOptions<T>;
 

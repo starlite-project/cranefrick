@@ -6,13 +6,13 @@ use std::{
 	marker::PhantomData,
 };
 
-pub struct OffsetCellOptions<T: ChangeCellPrimitive, Marker: ChangeCellMarker> {
+pub struct OffsetCellOptions<T: OffsetCellPrimitive, Marker: OffsetCellMarker> {
 	value: T,
 	offset: i32,
 	marker: PhantomData<Marker>,
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> OffsetCellOptions<T, Marker> {
+impl<T: OffsetCellPrimitive, Marker: OffsetCellMarker> OffsetCellOptions<T, Marker> {
 	pub const fn new(value: T, offset: i32) -> Self {
 		Self {
 			value,
@@ -48,7 +48,7 @@ impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> OffsetCellOptions<T, Mark
 	}
 }
 
-impl<T: ChangeCellPrimitive> OffsetCellOptions<T, Factor> {
+impl<T: OffsetCellPrimitive> OffsetCellOptions<T, Factor> {
 	pub const fn factor(self) -> T {
 		self.value
 	}
@@ -58,7 +58,7 @@ impl<T: ChangeCellPrimitive> OffsetCellOptions<T, Factor> {
 	}
 }
 
-impl<T: ChangeCellPrimitive> OffsetCellOptions<T, Value> {
+impl<T: OffsetCellPrimitive> OffsetCellOptions<T, Value> {
 	pub const fn value(self) -> T {
 		self.value
 	}
@@ -68,17 +68,17 @@ impl<T: ChangeCellPrimitive> OffsetCellOptions<T, Value> {
 	}
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Clone for OffsetCellOptions<T, Marker> {
+impl<T: OffsetCellPrimitive, Marker: OffsetCellMarker> Clone for OffsetCellOptions<T, Marker> {
 	fn clone(&self) -> Self {
 		*self
 	}
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Copy for OffsetCellOptions<T, Marker> {}
+impl<T: OffsetCellPrimitive, Marker: OffsetCellMarker> Copy for OffsetCellOptions<T, Marker> {}
 
-impl<T, Marker: ChangeCellMarker> Debug for OffsetCellOptions<T, Marker>
+impl<T, Marker: OffsetCellMarker> Debug for OffsetCellOptions<T, Marker>
 where
-	T: ChangeCellPrimitive + Debug,
+	T: OffsetCellPrimitive + Debug,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("ChangeCellOptions")
@@ -88,9 +88,9 @@ where
 	}
 }
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> Eq for OffsetCellOptions<T, Marker> {}
+impl<T: OffsetCellPrimitive, Marker: OffsetCellMarker> Eq for OffsetCellOptions<T, Marker> {}
 
-impl<T: ChangeCellPrimitive, Marker: ChangeCellMarker> PartialEq for OffsetCellOptions<T, Marker> {
+impl<T: OffsetCellPrimitive, Marker: OffsetCellMarker> PartialEq for OffsetCellOptions<T, Marker> {
 	fn eq(&self, other: &Self) -> bool {
 		PartialEq::eq(&self.value, &other.value) && PartialEq::eq(&self.offset, &other.offset)
 	}
@@ -100,11 +100,11 @@ pub enum Factor {}
 
 pub enum Value {}
 
-pub trait ChangeCellMarker: self::sealed::MarkerSealed {}
+pub trait OffsetCellMarker: self::sealed::MarkerSealed {}
 
-impl<T: self::sealed::MarkerSealed> ChangeCellMarker for T {}
+impl<T: self::sealed::MarkerSealed> OffsetCellMarker for T {}
 
-pub trait ChangeCellPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSealed {
+pub trait OffsetCellPrimitive: Copy + Default + Eq + self::sealed::PrimitiveSealed {
 	#[must_use]
 	fn wrapping_add(self, rhs: Self) -> Self;
 }
@@ -116,7 +116,7 @@ pub type ValuedOffsetCellOptions<T> = OffsetCellOptions<T, Value>;
 macro_rules! impl_change_cell_primitive {
 	($($ty:ty)*) => {
 		$(
-			impl $crate::options::change::ChangeCellPrimitive for $ty {
+			impl $crate::options::change::OffsetCellPrimitive for $ty {
 				fn wrapping_add(self, rhs: Self) -> Self {
 					<$ty>::wrapping_add(self, rhs)
 				}
