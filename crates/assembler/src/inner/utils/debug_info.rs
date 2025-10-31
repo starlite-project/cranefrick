@@ -223,7 +223,7 @@ impl<'ctx> AssemblerDebugVariables<'ctx> {
 			tape_array_type,
 			false,
 			i32::ZERO,
-			tape_align_in_bits * 16,
+			tape_align_in_bits,
 		);
 
 		let pointer_type = debug_builder
