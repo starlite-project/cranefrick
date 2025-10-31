@@ -196,7 +196,7 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 		])),
 		[
 			BrainIr::Boundary,
-			set @ BrainIr::SetManyCells(..),
+			set @ (BrainIr::SetManyCells(..) | BrainIr::SetCell(..)),
 			BrainIr::ChangeManyCells(change_many_options),
 		] => Some(Change::swap([
 			BrainIr::boundary(),
