@@ -428,12 +428,7 @@ impl Display for BrainIr {
 						f.write_str(", ")?;
 					}
 
-					f.write_char('(')?;
-					Display::fmt(&option.factor(), f)?;
-					f.write_str(", ")?;
-					Display::fmt(&option.offset(), f)?;
-					f.write_char(')')?;
-
+					Display::fmt(option, f)?;
 					is_first = false;
 				}
 			}
