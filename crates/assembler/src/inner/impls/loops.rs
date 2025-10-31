@@ -120,6 +120,8 @@ impl InnerAssembler<'_> {
 		let ptr_int_type = self.ptr_int_type;
 		let i8_type = context.i8_type();
 
+		let _invariant_start = self.start_tape_invariant()?;
+
 		let preheader_block =
 			context.append_basic_block(self.functions.main, "find_zero.preheader\0");
 		let header_block = context.append_basic_block(self.functions.main, "find_zero.header\0");
