@@ -17,7 +17,6 @@ use crate::{AssemblyError, ContextGetter as _};
 pub struct AssemblerPointers<'ctx> {
 	pub tape: PointerValue<'ctx>,
 	pub pointer: PointerValue<'ctx>,
-	pub output: PointerValue<'ctx>,
 }
 
 impl<'ctx> AssemblerPointers<'ctx> {
@@ -38,20 +37,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		let pointer = builder.build_alloca(ptr_int_type, "pointer\0")?;
 
-		let output = {
-			let output_array_type = i8_type.array_type(OUTPUT_ARRAY_LEN);
-
-			builder.build_alloca(output_array_type, "output\0")?
-		};
-
-		Ok((
-			Self {
-				tape,
-				pointer,
-				output,
-			},
-			ptr_int_type,
-		))
+		Ok((Self { tape, pointer }, ptr_int_type))
 	}
 
 	pub fn setup(
@@ -87,29 +73,13 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			"\0",
 		)?;
 
-		let output_array_size = i64_type.const_int(OUTPUT_ARRAY_LEN.convert::<u64>(), false);
-
-		builder.build_call(
-			functions.lifetime.start,
-			&[
-				output_array_size.convert::<BasicMetadataValueEnum<'ctx>>(),
-				self.output.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
-			"\0",
-		)?;
-
 		let i8_zero = i8_type.const_zero();
 
 		builder.build_memset(self.tape, 16, i8_zero, tape_array_size)?;
 		builder.build_store(self.pointer, ptr_int_type.const_zero())?;
-		builder.build_memset(self.output, 16, i8_zero, output_array_size)?;
 
 		if let Some(tape_instr) = self.tape.as_instruction() {
 			tape_instr.set_alignment(16)?;
-		}
-
-		if let Some(output_instr) = self.output.as_instruction() {
-			output_instr.set_alignment(16)?;
 		}
 
 		Ok(())
@@ -121,5 +91,3 @@ unsafe impl<'ctx> AsContextRef<'ctx> for AssemblerPointers<'ctx> {
 		self.tape.get_type().get_context().as_ctx_ref()
 	}
 }
-
-pub const OUTPUT_ARRAY_LEN: u32 = 16;

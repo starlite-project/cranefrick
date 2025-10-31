@@ -4,12 +4,8 @@ mod chars;
 use frick_ir::{BrainIr, OutputOptions};
 use frick_utils::Convert as _;
 use inkwell::{
-	attributes::{Attribute, AttributeLoc},
 	context::ContextRef,
-	types::AnyTypeEnum,
-	values::{
-		BasicMetadataValueEnum, BasicValueEnum, InstructionValueError, IntValue, PointerValue,
-	},
+	values::{BasicMetadataValueEnum, BasicValueEnum, InstructionValueError, IntValue},
 };
 
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
@@ -89,51 +85,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		)?;
 
 		self.store_into_cell(truncated_value, 0)
-	}
-
-	fn call_puts(
-		&self,
-		context: ContextRef<'ctx>,
-		array_ptr: PointerValue<'ctx>,
-		array_len: u64,
-	) -> Result<(), AssemblyError> {
-		let continue_block = context.append_basic_block(self.functions.main, "puts.invoke.cont\0");
-
-		let array_len_value = {
-			let i64_type = context.i64_type();
-
-			i64_type.const_int(array_len, false)
-		};
-
-		let call = self.builder.build_direct_invoke(
-			self.functions.puts,
-			&[
-				array_ptr.convert::<BasicValueEnum<'ctx>>(),
-				array_len_value.convert::<BasicValueEnum<'ctx>>(),
-			],
-			continue_block,
-			self.catch_block,
-			"puts_invoke\0",
-		)?;
-
-		call.set_tail_call(true);
-
-		let array_type = {
-			let i8_type = context.i8_type();
-
-			i8_type.array_type(array_len as u32)
-		};
-
-		let byref_attr = context.create_type_attribute(
-			Attribute::get_named_enum_kind_id("byref"),
-			array_type.convert::<AnyTypeEnum<'ctx>>(),
-		);
-
-		call.add_attribute(AttributeLoc::Param(0), byref_attr);
-
-		self.builder.position_at_end(continue_block);
-
-		Ok(())
 	}
 
 	fn call_putchar(

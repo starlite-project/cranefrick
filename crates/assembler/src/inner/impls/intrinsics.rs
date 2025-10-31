@@ -8,40 +8,6 @@ use inkwell::{
 use crate::{AssemblyError, ContextGetter, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
-	#[tracing::instrument(skip(self))]
-	pub(super) fn start_lifetime(
-		&self,
-		alloc_len: IntValue<'ctx>,
-		pointer: PointerValue<'ctx>,
-	) -> Result<impl Drop, AssemblyError> {
-		self.builder.build_call(
-			self.functions.lifetime.start,
-			&[
-				alloc_len.convert::<BasicMetadataValueEnum<'ctx>>(),
-				pointer.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
-			"\0",
-		)?;
-
-		Ok(LifetimeEnd {
-			builder: &self.builder,
-			end: self.functions.lifetime.end,
-			pointer,
-			alloc_len,
-			invariant_pointer: None,
-		})
-	}
-
-	pub(super) fn start_output_lifetime(&self, len: u64) -> Result<impl Drop, AssemblyError> {
-		let len_value = {
-			let i64_type = self.context().i64_type();
-
-			i64_type.const_int(len, false)
-		};
-
-		self.start_lifetime(len_value, self.pointers.output)
-	}
-
 	pub(super) fn start_tape_invariant(&self) -> Result<impl Drop, AssemblyError> {
 		let tape_len = {
 			let i64_type = self.context().i64_type();

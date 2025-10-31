@@ -18,7 +18,6 @@ pub struct AssemblerFunctions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
-	pub puts: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 	pub invariant: IntrinsicFunctionSet<'ctx>,
 	pub eh_personality: FunctionValue<'ctx>,
@@ -41,15 +40,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
-
-		let puts_ty = void_type.fn_type(
-			&[
-				ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-				i64_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-			],
-			false,
-		);
-		let puts = module.add_function("frick_puts", puts_ty, Some(Linkage::Internal));
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(
@@ -102,7 +92,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			getchar,
 			putchar,
 			main,
-			puts,
 			lifetime,
 			invariant,
 			eh_personality,
@@ -170,7 +159,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let context = self.context();
 
 		self.main.set_personality_function(self.eh_personality);
-		self.puts.set_personality_function(self.eh_personality);
 
 		let nocallback_attr = context.create_named_enum_attribute("nocallback", 0);
 		let nofree_attr = context.create_named_enum_attribute("nofree", 0);
@@ -183,10 +171,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let arg_read_inaccessable_write_memory_attr =
 			context.create_named_enum_attribute("memory", 9);
 		let uwtable_attr = context.create_named_enum_attribute("uwtable", 2);
-		let noalias_attr = context.create_named_enum_attribute("noalias", 0);
-		let nonnull_attr = context.create_named_enum_attribute("nonnull", 0);
-		let readonly_attr = context.create_named_enum_attribute("readonly", 0);
-		let align_1_attr = context.create_named_enum_attribute("align", 1);
 		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
 		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
 		let nonlazybind_attr = context.create_named_enum_attribute("nonlazybind", 0);
@@ -217,25 +201,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			],
 			[],
 			[zeroext_attr],
-		);
-		add_attributes_to(
-			self.puts,
-			[
-				nofree_attr,
-				norecurse_attr,
-				willreturn_attr,
-				nosync_attr,
-				arg_read_inaccessable_write_memory_attr,
-				uwtable_attr,
-			],
-			[
-				(0, noalias_attr),
-				(0, nofree_attr),
-				(0, nonnull_attr),
-				(0, readonly_attr),
-				(0, align_1_attr),
-			],
-			[],
 		);
 		add_attributes_to(self.main, [nosync_attr, nofree_attr, uwtable_attr], [], []);
 		add_attributes_to(

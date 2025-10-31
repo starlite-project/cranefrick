@@ -228,9 +228,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.build_resume(exception)?;
 
-		tracing::debug!("writing the frick_puts function");
-		self.write_puts()?;
-
 		self.debug_builder.di_builder.finalize();
 
 		Ok(self.into_parts())
