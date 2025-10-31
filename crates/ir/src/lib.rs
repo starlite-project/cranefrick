@@ -32,7 +32,6 @@ pub enum BrainIr {
 	SubCell(SubOptions),
 	MovePointer(i32),
 	FindZero(i32),
-	FindZeroAfterMove(i32),
 	InputIntoCell,
 	Output(OutputOptions),
 	MoveValueTo(FactoredOffsetCellOptions<u8>),
@@ -182,11 +181,6 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn find_zero_after_move(offset: i32) -> Self {
-		Self::FindZeroAfterMove(offset)
-	}
-
-	#[must_use]
 	pub const fn set_range(value: u8, start: i32, end: i32) -> Self {
 		Self::SetRange(SetRangeOptions::new(value, start, end))
 	}
@@ -309,7 +303,6 @@ impl BrainIr {
 			Self::DynamicLoop(..)
 			| Self::MoveValueTo(..)
 			| Self::FindZero(..)
-			| Self::FindZeroAfterMove(..)
 			| Self::IfNotZero(..)
 			| Self::SubCell(SubOptions::CellAt(..))
 			| Self::DuplicateCell { .. } => true,
@@ -362,11 +355,6 @@ impl Display for BrainIr {
 			}
 			Self::FindZero(offset) => {
 				f.write_str("find_zero(")?;
-				Display::fmt(&offset, f)?;
-				f.write_char(')')?;
-			}
-			Self::FindZeroAfterMove(offset) => {
-				f.write_str("find_zero_after_move(")?;
 				Display::fmt(&offset, f)?;
 				f.write_char(')')?;
 			}

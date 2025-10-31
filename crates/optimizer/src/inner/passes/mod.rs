@@ -822,9 +822,3 @@ pub fn optimize_initial_change_to_sets<const N: usize>(ops: [&BrainIr; N]) -> Op
 		_ => None,
 	}
 }
-
-pub fn optimize_find_zero_after_move(ops: [&BrainIr; 2]) -> Option<Change> {
-	match ops {
-		_ => None,
-	}
-}
