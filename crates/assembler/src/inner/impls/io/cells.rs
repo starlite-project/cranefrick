@@ -1,11 +1,5 @@
-use std::collections::HashMap;
-
 use frick_ir::ValuedOffsetCellOptions;
-use frick_utils::Convert as _;
-use inkwell::{
-	types::VectorType,
-	values::{BasicMetadataValueEnum, VectorValue},
-};
+use inkwell::{types::VectorType, values::VectorValue};
 
 use crate::{
 	AssemblyError, BuilderExt as _, ContextGetter as _,
@@ -199,46 +193,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<VectorValue<'ctx>, AssemblyError> {
 		let context = self.context();
 
-		let ptr_int_type = self.ptr_int_type;
-		let bool_type = context.bool_type();
 		let i8_type = context.i8_type();
-		let i32_type = context.i32_type();
-		let i64_type = context.i64_type();
 		let i8_vec_type = i8_type.vec_type(options.len() as u32);
-		let ptr_int_vec_type = ptr_int_type.vec_type(options.len() as u32);
 
 		let vec_of_indices = {
-			let mut vec = ptr_int_vec_type.get_poison();
+			let offsets = options.iter().map(|x| x.offset()).collect::<Vec<_>>();
 
-			let mut offset_map = HashMap::new();
-
-			for offset in options.iter().map(|v| v.offset()) {
-				if offset_map.contains_key(&offset) {
-					continue;
-				}
-
-				let offset_pointer = self.offset_pointer(offset)?;
-
-				offset_map.insert(offset, offset_pointer);
-			}
-
-			for (i, offset) in options.iter().map(|x| x.offset()).enumerate() {
-				let index = i64_type.const_int(i as u64, false);
-
-				let offset = match offset_map.get(&offset) {
-					Some(offset_value) => *offset_value,
-					None => self.offset_pointer(offset)?,
-				};
-
-				vec = self.builder.build_insert_element(
-					vec,
-					offset,
-					index,
-					"get_output_cells_vector_scatter_indicies_vector_insert_element\0",
-				)?;
-			}
-
-			vec
+			self.offset_many_pointers(&offsets)?
 		};
 
 		let vec_of_pointers = unsafe {
@@ -250,33 +211,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			)?
 		};
 
-		let vector_gather = self.get_vector_gather(i8_vec_type)?;
-
-		let vec_load_alignment = i32_type.const_int(1, false);
-
-		let bool_vec_all_on = {
-			let vec_of_trues = vec![bool_type.const_all_ones(); options.len()];
-
-			VectorType::const_vector(&vec_of_trues)
-		};
-
-		let vec_of_loaded_values = self
-			.builder
-			.build_call(
-				vector_gather,
-				&[
-					vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
-					vec_load_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
-					bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
-					i8_vec_type
-						.get_poison()
-						.convert::<BasicMetadataValueEnum<'ctx>>(),
-				],
-				"get_output_cells_vector_scatter_gather_call\0",
-			)?
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_vector_value();
+		let vec_of_loaded_values = self.call_vector_gather(i8_vec_type, vec_of_pointers)?;
 
 		Ok(if options.iter().all(|x| matches!(x.value(), 0)) {
 			vec_of_loaded_values

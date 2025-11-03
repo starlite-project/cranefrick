@@ -119,13 +119,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		if is_contiguous(values) {
 			self.duplicate_cell_contiguous(values, vec_of_current_cell, i8_type, i8_vec_type)
 		} else {
-			self.duplicate_cell_scattered(
-				values,
-				vec_of_current_cell,
-				i8_type,
-				i64_type,
-				i8_vec_type,
-			)
+			self.duplicate_cell_scattered(values, vec_of_current_cell, i8_type, i8_vec_type)
 		}
 	}
 
@@ -134,33 +128,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 		values: &[FactoredOffsetCellOptions<i8>],
 		vec_of_current_cell: VectorValue<'ctx>,
 		i8_type: IntType<'ctx>,
-		i64_type: IntType<'ctx>,
 		i8_vec_type: VectorType<'ctx>,
 	) -> Result<(), AssemblyError> {
-		let ptr_int_type = self.ptr_int_type;
-		let ptr_int_vec_type = ptr_int_type.vec_type(values.len() as u32);
-
 		let vec_of_indices = {
-			let mut vec = ptr_int_vec_type.get_poison();
+			let offsets = values.iter().map(|x| x.offset()).collect::<Vec<_>>();
 
-			let offsets = values
-				.iter()
-				.copied()
-				.map(|v| self.offset_pointer(v.offset()))
-				.collect::<Result<Vec<_>, _>>()?;
-
-			for (i, offset) in offsets.into_iter().enumerate() {
-				let index = i64_type.const_int(i as u64, false);
-
-				vec = self.builder.build_insert_element(
-					vec,
-					offset,
-					index,
-					"duplicate_cell_scattered_insert_element\0",
-				)?;
-			}
-
-			vec
+			self.offset_many_pointers(&offsets)?
 		};
 
 		let vec_of_pointers = unsafe {
@@ -309,6 +282,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	#[tracing::instrument(skip(self))]
 	pub fn change_many_cells(&self, options: &ChangeManyCellsOptions) -> Result<(), AssemblyError> {
 		let context = self.context();
 

@@ -1,8 +1,14 @@
+use std::collections::HashMap;
+
 use frick_spec::TAPE_SIZE;
-use inkwell::{IntPredicate, values::IntValue};
+use inkwell::{
+	IntPredicate,
+	types::VectorType,
+	values::{IntValue, VectorValue},
+};
 
 use crate::{
-	AssemblyError,
+	AssemblyError, ContextGetter as _,
 	inner::{InnerAssembler, utils::CalculatedOffset},
 };
 
@@ -23,6 +29,110 @@ impl<'ctx> InnerAssembler<'ctx> {
 			CalculatedOffset::Calculated(offset) => Ok(offset),
 			CalculatedOffset::Raw(offset) => self.offset_pointer(offset),
 		}
+	}
+
+	#[tracing::instrument(skip(self))]
+	pub fn offset_many_pointers(
+		&self,
+		offsets: &[i32],
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		let is_all_positive = offsets.iter().all(|x| x.is_positive());
+		let is_all_negative = offsets.iter().all(|x| x.is_negative());
+
+		if !is_all_positive && !is_all_negative {
+			return self.offset_many_pointers_slow(offsets);
+		}
+
+		let context = self.context();
+
+		let i32_type = context.i32_type();
+		let i64_type = context.i64_type();
+		let ptr_int_type = self.ptr_int_type;
+		let i32_vec_type = i32_type.vec_type(offsets.len() as u32);
+		let ptr_int_vec_type = ptr_int_type.vec_type(offsets.len() as u32);
+
+		let vec_of_offset_values = {
+			let vec_of_offsets = offsets
+				.iter()
+				.map(|i| ptr_int_type.const_int(*i as u64, false))
+				.collect::<Vec<_>>();
+
+			VectorType::const_vector(&vec_of_offsets)
+		};
+
+		let vec_of_pointers = {
+			let i64_zero = i64_type.const_zero();
+
+			let pointer_value = self.load_from(ptr_int_type, self.pointers.pointer)?;
+
+			let tmp = self.builder.build_insert_element(
+				ptr_int_vec_type.get_poison(),
+				pointer_value,
+				i64_zero,
+				"offset_many_pointers_insert_element",
+			)?;
+
+			self.builder.build_shuffle_vector(
+				tmp,
+				ptr_int_vec_type.get_poison(),
+				i32_vec_type.const_zero(),
+				"offset_many_pointers_shuffle_vector",
+			)?
+		};
+
+		if offsets.iter().all(|x| matches!(x, 0)) {
+			Ok(vec_of_pointers)
+		} else {
+			let vec_of_offset_pointers = self.builder.build_int_add(
+				vec_of_pointers,
+				vec_of_offset_values,
+				"offset_many_pointers_add\0",
+			)?;
+
+			self.wrap_many_pointers(vec_of_offset_pointers, is_all_positive)
+		}
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn offset_many_pointers_slow(
+		&self,
+		offsets: &[i32],
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		let i64_type = self.context().i64_type();
+		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_vec_type = ptr_int_type.vec_type(offsets.len() as u32);
+
+		let mut vec = ptr_int_vec_type.get_poison();
+
+		let mut offset_map = HashMap::new();
+
+		for &offset in offsets {
+			if offset_map.contains_key(&offset) {
+				continue;
+			}
+
+			let offset_pointer = self.offset_pointer(offset)?;
+
+			offset_map.insert(offset, offset_pointer);
+		}
+
+		for (i, offset) in offsets.iter().copied().enumerate() {
+			let index = i64_type.const_int(i as u64, false);
+
+			let offset = match offset_map.get(&offset) {
+				Some(offset_value) => *offset_value,
+				None => self.offset_pointer(offset)?,
+			};
+
+			vec = self.builder.build_insert_element(
+				vec,
+				offset,
+				index,
+				"offset_many_pointers_slow_insert_element\0",
+			)?;
+		}
+
+		Ok(vec)
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -104,5 +214,88 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_select(cmp, added_offset, tmp, "wrap_pointer_negative_select\0")
 			.map(|i| i.into_int_value())?)
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn wrap_many_pointers(
+		&self,
+		vec_of_offset_pointers: VectorValue<'ctx>,
+		is_positive: bool,
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		if is_positive {
+			self.wrap_many_pointers_positive(vec_of_offset_pointers)
+		} else {
+			self.wrap_many_pointers_negative(vec_of_offset_pointers)
+		}
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn wrap_many_pointers_positive(
+		&self,
+		vec_of_offset_pointers: VectorValue<'ctx>,
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		let ptr_int_type = self.ptr_int_type;
+
+		let vec_of_tape_sizes = {
+			let vec_of_values = vec![
+				ptr_int_type.const_int(TAPE_SIZE as u64, false);
+				vec_of_offset_pointers.get_type().get_size() as usize
+			];
+
+			VectorType::const_vector(&vec_of_values)
+		};
+
+		Ok(self.builder.build_int_unsigned_rem(
+			vec_of_offset_pointers,
+			vec_of_tape_sizes,
+			"wrap_many_pointers_positive_urem\0",
+		)?)
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn wrap_many_pointers_negative(
+		&self,
+		vec_of_offset_pointers: VectorValue<'ctx>,
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_vec_type = ptr_int_type.vec_type(vec_of_offset_pointers.get_type().get_size());
+
+		let vec_of_tape_sizes = {
+			let vec_of_values = vec![
+				ptr_int_type.const_int(TAPE_SIZE as u64, false);
+				vec_of_offset_pointers.get_type().get_size() as usize
+			];
+
+			VectorType::const_vector(&vec_of_values)
+		};
+
+		let tmp = self.builder.build_int_signed_rem(
+			vec_of_offset_pointers,
+			vec_of_tape_sizes,
+			"wrap_many_pointers_negative_srem\0",
+		)?;
+
+		let added_offset = self.builder.build_int_nsw_add(
+			tmp,
+			vec_of_tape_sizes,
+			"wrap_many_pointers_negative_add\0",
+		)?;
+
+		let cmp = self.builder.build_int_compare(
+			IntPredicate::SLT,
+			tmp,
+			ptr_int_vec_type.const_zero(),
+			"wrap_many_pointers_negative_cmp\0",
+		)?;
+
+		Ok(self
+			.builder
+			.build_select(
+				cmp,
+				added_offset,
+				tmp,
+				"wrap_many_pointers_negative_select\0",
+			)?
+			.into_vector_value())
 	}
 }
