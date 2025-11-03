@@ -640,9 +640,8 @@ dependencies = [
 [[package]]
 name = "inkwell"
 version = "0.6.0"
-source = "git+https://github.com/TheDan64/inkwell.git?rev=f88ccb2b42158486c6823faad1411c3becaa0031#f88ccb2b42158486c6823faad1411c3becaa0031"
+source = "git+https://github.com/TheDan64/inkwell.git?rev=0079487e1d424ac42961d29313472b92f7e870af#0079487e1d424ac42961d29313472b92f7e870af"
 dependencies = [
- "either",
  "inkwell_internals",
  "libc",
  "llvm-sys",
@@ -653,7 +652,7 @@ dependencies = [
 [[package]]
 name = "inkwell_internals"
 version = "0.11.0"
-source = "git+https://github.com/TheDan64/inkwell.git?rev=f88ccb2b42158486c6823faad1411c3becaa0031#f88ccb2b42158486c6823faad1411c3becaa0031"
+source = "git+https://github.com/TheDan64/inkwell.git?rev=0079487e1d424ac42961d29313472b92f7e870af#0079487e1d424ac42961d29313472b92f7e870af"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -715,8 +714,8 @@ dependencies = [
 
 [[package]]
 name = "llvm-sys"
-version = "201.0.1"
-source = "git+https://gitlab.com/taricorp/llvm-sys.rs.git?branch=llvm-20#63aa04912d2f7175259bff9fe1a6cb61366a7368"
+version = "211.0.0"
+source = "git+https://gitlab.com/taricorp/llvm-sys.rs.git?branch=llvm-21#e2e64ff03193cd1b548942ac71ec46baa2ad17d8"
 dependencies = [
  "anyhow",
  "cc",

@@ -68,7 +68,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let getchar_value = getchar_call
 			.try_as_basic_value()
-			.unwrap_left()
+			.unwrap_basic()
 			.into_int_value();
 
 		self.add_range_io_metadata(

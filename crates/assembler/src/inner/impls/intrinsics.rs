@@ -34,7 +34,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"\0",
 			)?
 			.try_as_basic_value()
-			.unwrap_left()
+			.unwrap_basic()
 			.into_pointer_value();
 
 		Ok(LifetimeEnd {

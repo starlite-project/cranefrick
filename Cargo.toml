@@ -61,8 +61,8 @@ dhat = "0.3"
 frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
 frick_utils = { path = "crates/utils" }
-inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "f88ccb2b42158486c6823faad1411c3becaa0031", features = [
-    "llvm20-1-force-static"
+inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "0079487e1d424ac42961d29313472b92f7e870af", features = [
+    "llvm21-1-force-static"
 ] }
 libc = "0.2"
 send_wrapper = "0.6"
@@ -147,4 +147,4 @@ opt-level = 3
 opt-level = 3
 
 [patch.crates-io]
-llvm-sys = { git = "https://gitlab.com/taricorp/llvm-sys.rs.git", branch = "llvm-20" }
+llvm-sys = { git = "https://gitlab.com/taricorp/llvm-sys.rs.git", branch = "llvm-21" }

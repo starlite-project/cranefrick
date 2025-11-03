@@ -372,7 +372,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"call_vector_gather\0",
 			)?
 			.try_as_basic_value()
-			.unwrap_left()
+			.unwrap_basic()
 			.into_vector_value())
 	}
 
