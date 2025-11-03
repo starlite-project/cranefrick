@@ -5,7 +5,7 @@ use frick_ir::{
 use frick_utils::Convert as _;
 use inkwell::{
 	types::{IntType, VectorType},
-	values::{BasicMetadataValueEnum, VectorValue},
+	values::VectorValue,
 };
 
 use crate::{
@@ -119,14 +119,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		if is_contiguous(values) {
 			self.duplicate_cell_contiguous(values, vec_of_current_cell, i8_type, i8_vec_type)
 		} else {
-			let bool_type = context.bool_type();
-
 			self.duplicate_cell_scattered(
 				values,
 				vec_of_current_cell,
-				bool_type,
 				i8_type,
-				i32_type,
 				i64_type,
 				i8_vec_type,
 			)
@@ -137,9 +133,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		values: &[FactoredOffsetCellOptions<i8>],
 		vec_of_current_cell: VectorValue<'ctx>,
-		bool_type: IntType<'ctx>,
 		i8_type: IntType<'ctx>,
-		i32_type: IntType<'ctx>,
 		i64_type: IntType<'ctx>,
 		i8_vec_type: VectorType<'ctx>,
 	) -> Result<(), AssemblyError> {
@@ -178,33 +172,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			)?
 		};
 
-		let vector_gather = self.get_vector_gather(i8_vec_type)?;
-
-		let vec_load_store_alignment = i32_type.const_int(1, false);
-
-		let bool_vec_all_on = {
-			let vec_of_trues = vec![bool_type.const_all_ones(); values.len()];
-
-			VectorType::const_vector(&vec_of_trues)
-		};
-
-		let vec_of_loaded_values = self
-			.builder
-			.build_call(
-				vector_gather,
-				&[
-					vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
-					vec_load_store_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
-					bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
-					i8_vec_type
-						.get_poison()
-						.convert::<BasicMetadataValueEnum<'ctx>>(),
-				],
-				"duplicate_cell_scattered_vector_load_call\0",
-			)?
-			.try_as_basic_value()
-			.unwrap_left()
-			.into_vector_value();
+		let vec_of_loaded_values = self.call_vector_gather(i8_vec_type, vec_of_pointers)?;
 
 		let vec_of_modified_values = if values
 			.iter()
@@ -241,18 +209,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			)?
 		};
 
-		let vector_scatter = self.get_vector_scatter(i8_vec_type)?;
-
-		self.builder.build_call(
-			vector_scatter,
-			&[
-				vec_of_modified_values.convert::<BasicMetadataValueEnum<'ctx>>(),
-				vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
-				vec_load_store_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
-				bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
-			"duplicate_cell_scattered_vector_store\0",
-		)?;
+		self.call_vector_scatter(vec_of_modified_values, vec_of_pointers)?;
 
 		Ok(())
 	}

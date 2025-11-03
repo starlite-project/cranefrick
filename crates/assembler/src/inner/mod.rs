@@ -15,7 +15,7 @@ use inkwell::{
 	module::{FlagBehavior, Module},
 	targets::TargetMachine,
 	types::{BasicTypeEnum, IntType, VectorType},
-	values::{BasicMetadataValueEnum, FunctionValue},
+	values::{BasicMetadataValueEnum, FunctionValue, VectorValue},
 };
 
 pub use self::utils::AssemblerFunctions;
@@ -279,6 +279,101 @@ impl<'ctx> InnerAssembler<'ctx> {
 		}
 
 		Ok(())
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn call_vector_scatter(
+		&self,
+		vec_of_values: VectorValue<'ctx>,
+		vec_of_pointers: VectorValue<'ctx>,
+	) -> Result<(), AssemblyError> {
+		assert!(
+			vec_of_pointers
+				.get_type()
+				.get_element_type()
+				.is_pointer_type()
+		);
+		assert_eq!(
+			vec_of_values.get_type().get_size(),
+			vec_of_pointers.get_type().get_size()
+		);
+
+		let context = self.context();
+
+		let bool_type = context.bool_type();
+		let i32_type = context.i32_type();
+
+		let bool_vec_all_on = {
+			let vec_of_trues =
+				vec![bool_type.const_all_ones(); vec_of_values.get_type().get_size() as usize];
+
+			VectorType::const_vector(&vec_of_trues)
+		};
+
+		let vec_store_alignment = i32_type.const_int(1, false);
+
+		let vector_scatter = self.get_vector_scatter(vec_of_values.get_type())?;
+
+		self.builder.build_direct_call(
+			vector_scatter,
+			&[
+				vec_of_values.convert::<BasicMetadataValueEnum<'ctx>>(),
+				vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
+				vec_store_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
+				bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
+			],
+			"call_vector_scatter\0",
+		)?;
+
+		Ok(())
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn call_vector_gather(
+		&self,
+		res_type: VectorType<'ctx>,
+		vec_of_pointers: VectorValue<'ctx>,
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		assert!(
+			vec_of_pointers
+				.get_type()
+				.get_element_type()
+				.is_pointer_type()
+		);
+		assert_eq!(res_type.get_size(), vec_of_pointers.get_type().get_size());
+
+		let context = self.context();
+
+		let bool_type = context.bool_type();
+		let i32_type = context.i32_type();
+
+		let bool_vec_all_on = {
+			let vec_of_trues = vec![bool_type.const_all_ones(); res_type.get_size() as usize];
+
+			VectorType::const_vector(&vec_of_trues)
+		};
+
+		let vec_load_alignment = i32_type.const_int(1, false);
+
+		let vector_gather = self.get_vector_gather(res_type)?;
+
+		Ok(self
+			.builder
+			.build_direct_call(
+				vector_gather,
+				&[
+					vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
+					vec_load_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
+					bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
+					res_type
+						.get_poison()
+						.convert::<BasicMetadataValueEnum<'ctx>>(),
+				],
+				"call_vector_gather\0",
+			)?
+			.try_as_basic_value()
+			.unwrap_left()
+			.into_vector_value())
 	}
 
 	fn get_vector_scatter(
