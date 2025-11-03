@@ -74,13 +74,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 		if offsets.iter().all(|x| matches!(x, 0)) {
 			Ok(vec_of_pointers)
 		} else {
-			let vec_of_offset_pointers = self.builder.build_int_add(
+			let vec_of_offset_pointers = self.builder.build_int_nsw_add(
 				vec_of_pointers,
 				vec_of_offset_values,
 				"offset_many_pointers_add\0",
 			)?;
 
-			self.wrap_many_pointers(vec_of_offset_pointers)
+			if offsets.iter().all(|x| x.is_positive()) {
+				self.wrap_many_pointers_positive(vec_of_offset_pointers)
+			} else if offsets.iter().all(|x| x.is_negative()) {
+				self.wrap_many_pointers_negative(vec_of_offset_pointers)
+			} else {
+				self.wrap_many_pointers(vec_of_offset_pointers)
+			}
 		}
 	}
 
@@ -161,8 +167,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		Ok(self
 			.builder
-			.build_select(cmp, added_offset, tmp, "wrap_pointer_negative_select\0")
-			.map(|i| i.into_int_value())?)
+			.build_select(cmp, added_offset, tmp, "wrap_pointer_negative_select\0")?
+			.into_int_value())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -216,5 +222,72 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"wrap_many_pointers_select\0",
 			)?
 			.into_vector_value())
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn wrap_many_pointers_positive(
+		&self,
+		vec_of_offset_pointers: VectorValue<'ctx>,
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		let vec_of_tape_sizes =
+			self.get_vec_of_tape_sizes(vec_of_offset_pointers.get_type().get_size());
+
+		Ok(self.builder.build_int_unsigned_rem(
+			vec_of_offset_pointers,
+			vec_of_tape_sizes,
+			"wrap_many_pointers_positive_urem\0",
+		)?)
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn wrap_many_pointers_negative(
+		&self,
+		vec_of_offset_pointers: VectorValue<'ctx>,
+	) -> Result<VectorValue<'ctx>, AssemblyError> {
+		let vec_size = vec_of_offset_pointers.get_type().get_size();
+
+		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_vec_type = ptr_int_type.vec_type(vec_size);
+
+		let vec_of_tape_sizes = self.get_vec_of_tape_sizes(vec_size);
+
+		let tmp = self.builder.build_int_signed_rem(
+			vec_of_offset_pointers,
+			vec_of_tape_sizes,
+			"wrap_many_pointers_negative_srem\0",
+		)?;
+
+		let added_offset = self.builder.build_int_nsw_add(
+			tmp,
+			vec_of_tape_sizes,
+			"wrap_many_pointers_negative_add\0",
+		)?;
+
+		let cmp = self.builder.build_int_compare(
+			IntPredicate::SLT,
+			tmp,
+			ptr_int_vec_type.const_zero(),
+			"wrap_many_pointers_negative_cmp\0",
+		)?;
+
+		Ok(self
+			.builder
+			.build_select(
+				cmp,
+				added_offset,
+				tmp,
+				"wrap_many_pointers_negative_select\0",
+			)?
+			.into_vector_value())
+	}
+
+	fn get_vec_of_tape_sizes(&self, vec_size: u32) -> VectorValue<'ctx> {
+		let ptr_int_type = self.ptr_int_type;
+
+		let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
+
+		let vec_of_values = vec![tape_size; vec_size as usize];
+
+		VectorType::const_vector(&vec_of_values)
 	}
 }
