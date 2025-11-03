@@ -9,7 +9,7 @@ use super::OffsetSorterKey;
 use crate::inner::Change;
 
 pub fn sort_sets<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
-	if !ops.iter().all(|i| {
+	if !ops.into_iter().all(|i| {
 		matches!(
 			i,
 			BrainIr::SetCell(..) | BrainIr::SetManyCells(..) | BrainIr::SetRange(..)
@@ -18,13 +18,13 @@ pub fn sort_sets<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 		return None;
 	}
 
-	if ops.iter().is_sorted_by_key(|i| sorter_key(i)) {
+	if ops.into_iter().is_sorted_by_key(sorter_key) {
 		return None;
 	}
 
 	let sorted = ops
-		.iter()
-		.map(|&i| i.clone())
+		.into_iter()
+		.cloned()
 		.sorted_by_key(sorter_key)
 		.collect::<Vec<_>>();
 

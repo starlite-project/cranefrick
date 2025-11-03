@@ -6,20 +6,18 @@ use crate::inner::Change;
 
 pub fn sort_changes<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 	if !ops
-		.iter()
+		.into_iter()
 		.all(|i| matches!(i, BrainIr::ChangeCell(..) | BrainIr::ChangeManyCells(..)))
 	{
 		return None;
 	}
 
-	if ops.iter().is_sorted_by_key(|i| sorter_key(i)) {
+	if ops.into_iter().is_sorted_by_key(sorter_key) {
 		return None;
 	}
 
 	Some(Change::swap(
-		ops.iter()
-			.map(|&i| i.clone())
-			.sorted_unstable_by_key(sorter_key),
+		ops.into_iter().cloned().sorted_unstable_by_key(sorter_key),
 	))
 }
 

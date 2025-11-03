@@ -107,7 +107,7 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 			let mut values = Vec::new();
 
 			for op in rest {
-				let BrainIr::ChangeCell(options) = op else {
+				let &BrainIr::ChangeCell(options) = op else {
 					unreachable!()
 				};
 
