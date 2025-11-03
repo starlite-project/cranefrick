@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use frick_spec::TAPE_SIZE;
 use inkwell::{
 	IntPredicate,
@@ -36,13 +34,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		offsets: &[i32],
 	) -> Result<VectorValue<'ctx>, AssemblyError> {
-		let is_all_positive = offsets.iter().all(|x| x.is_positive());
-		let is_all_negative = offsets.iter().all(|x| x.is_negative());
-
-		if !is_all_positive && !is_all_negative {
-			return self.offset_many_pointers_slow(offsets);
-		}
-
 		let context = self.context();
 
 		let i32_type = context.i32_type();
@@ -89,50 +80,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"offset_many_pointers_add\0",
 			)?;
 
-			self.wrap_many_pointers(vec_of_offset_pointers, is_all_positive)
+			self.wrap_many_pointers(vec_of_offset_pointers)
 		}
-	}
-
-	#[tracing::instrument(skip(self))]
-	fn offset_many_pointers_slow(
-		&self,
-		offsets: &[i32],
-	) -> Result<VectorValue<'ctx>, AssemblyError> {
-		let i64_type = self.context().i64_type();
-		let ptr_int_type = self.ptr_int_type;
-		let ptr_int_vec_type = ptr_int_type.vec_type(offsets.len() as u32);
-
-		let mut vec = ptr_int_vec_type.get_poison();
-
-		let mut offset_map = HashMap::new();
-
-		for &offset in offsets {
-			if offset_map.contains_key(&offset) {
-				continue;
-			}
-
-			let offset_pointer = self.offset_pointer(offset)?;
-
-			offset_map.insert(offset, offset_pointer);
-		}
-
-		for (i, offset) in offsets.iter().copied().enumerate() {
-			let index = i64_type.const_int(i as u64, false);
-
-			let offset = match offset_map.get(&offset) {
-				Some(offset_value) => *offset_value,
-				None => self.offset_pointer(offset)?,
-			};
-
-			vec = self.builder.build_insert_element(
-				vec,
-				offset,
-				index,
-				"offset_many_pointers_slow_insert_element\0",
-			)?;
-		}
-
-		Ok(vec)
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -220,42 +169,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn wrap_many_pointers(
 		&self,
 		vec_of_offset_pointers: VectorValue<'ctx>,
-		is_positive: bool,
-	) -> Result<VectorValue<'ctx>, AssemblyError> {
-		if is_positive {
-			self.wrap_many_pointers_positive(vec_of_offset_pointers)
-		} else {
-			self.wrap_many_pointers_negative(vec_of_offset_pointers)
-		}
-	}
-
-	#[tracing::instrument(skip(self))]
-	fn wrap_many_pointers_positive(
-		&self,
-		vec_of_offset_pointers: VectorValue<'ctx>,
-	) -> Result<VectorValue<'ctx>, AssemblyError> {
-		let ptr_int_type = self.ptr_int_type;
-
-		let vec_of_tape_sizes = {
-			let vec_of_values = vec![
-				ptr_int_type.const_int(TAPE_SIZE as u64, false);
-				vec_of_offset_pointers.get_type().get_size() as usize
-			];
-
-			VectorType::const_vector(&vec_of_values)
-		};
-
-		Ok(self.builder.build_int_unsigned_rem(
-			vec_of_offset_pointers,
-			vec_of_tape_sizes,
-			"wrap_many_pointers_positive_urem\0",
-		)?)
-	}
-
-	#[tracing::instrument(skip(self))]
-	fn wrap_many_pointers_negative(
-		&self,
-		vec_of_offset_pointers: VectorValue<'ctx>,
 	) -> Result<VectorValue<'ctx>, AssemblyError> {
 		let ptr_int_type = self.ptr_int_type;
 		let ptr_int_vec_type = ptr_int_type.vec_type(vec_of_offset_pointers.get_type().get_size());
@@ -269,32 +182,38 @@ impl<'ctx> InnerAssembler<'ctx> {
 			VectorType::const_vector(&vec_of_values)
 		};
 
-		let tmp = self.builder.build_int_signed_rem(
+		let signed_rem = self.builder.build_int_signed_rem(
 			vec_of_offset_pointers,
 			vec_of_tape_sizes,
-			"wrap_many_pointers_negative_srem\0",
+			"wrap_many_pointers_srem\0",
+		)?;
+
+		let unsigned_rem = self.builder.build_int_unsigned_rem(
+			vec_of_offset_pointers,
+			vec_of_tape_sizes,
+			"wrap_many_pointers_urem\0",
 		)?;
 
 		let added_offset = self.builder.build_int_nsw_add(
-			tmp,
+			signed_rem,
 			vec_of_tape_sizes,
-			"wrap_many_pointers_negative_add\0",
+			"wrap_many_pointers_add\0",
 		)?;
 
-		let cmp = self.builder.build_int_compare(
+		let is_negative_vec = self.builder.build_int_compare(
 			IntPredicate::SLT,
-			tmp,
+			vec_of_offset_pointers,
 			ptr_int_vec_type.const_zero(),
-			"wrap_many_pointers_negative_cmp\0",
+			"wrap_many_pointers_cmp\0",
 		)?;
 
 		Ok(self
 			.builder
 			.build_select(
-				cmp,
+				is_negative_vec,
 				added_offset,
-				tmp,
-				"wrap_many_pointers_negative_select\0",
+				unsigned_rem,
+				"wrap_many_pointers_select\0",
 			)?
 			.into_vector_value())
 	}
