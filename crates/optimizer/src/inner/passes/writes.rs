@@ -402,7 +402,7 @@ pub fn optimize_boundary_writes(ops: [&BrainIr; 3]) -> Option<Change> {
 			BrainIr::Output(OutputOptions::Cells(output_options)),
 			BrainIr::Boundary,
 		] => Some(Change::swap([
-			BrainIr::output_cells(output_options.iter().copied().map(|option| {
+			BrainIr::output_cells(output_options.iter().map(|option| {
 				OffsetCellOptions::new(option.value(), offset.wrapping_add(option.offset()))
 			})),
 			BrainIr::boundary(),

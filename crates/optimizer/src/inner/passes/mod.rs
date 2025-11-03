@@ -294,7 +294,6 @@ pub fn remove_offsets(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::output_cells(
 				output_options
 					.iter()
-					.copied()
 					.map(|x| OffsetCellOptions::new(x.value(), 0)),
 			),
 		])),
@@ -637,7 +636,7 @@ pub fn unroll_constant_duplicate_cell(ops: [&BrainIr; 2]) -> Option<Change> {
 				return None;
 			}
 
-			for dupe_option in values.iter().copied() {
+			for dupe_option in values {
 				let new_value_to_set = current_cell_value.wrapping_mul(dupe_option.factor() as u8);
 
 				set_many_options.set_value_at(dupe_option.offset(), new_value_to_set);

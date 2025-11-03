@@ -147,12 +147,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let vec_of_loaded_values = self.call_vector_gather(i8_vec_type, vec_of_pointers)?;
 
-		let vec_of_modified_values = if values
-			.iter()
-			.copied()
-			.map(FactoredOffsetCellOptions::factor)
-			.all(|x| matches!(x, 1))
-		{
+		let vec_of_modified_values = if values.iter().all(|x| matches!(x.offset(), 1)) {
 			self.builder.build_int_nsw_add(
 				vec_of_current_cell,
 				vec_of_loaded_values,
@@ -162,7 +157,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let vec_of_factors = {
 				let vec_of_values = values
 					.iter()
-					.copied()
 					.map(|v| i8_type.const_int(v.factor() as u64, false))
 					.collect::<Vec<_>>();
 
@@ -195,23 +189,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 		i8_type: IntType<'ctx>,
 		i8_vec_type: VectorType<'ctx>,
 	) -> Result<(), AssemblyError> {
-		let start_of_range = values
-			.iter()
-			.copied()
-			.map(FactoredOffsetCellOptions::offset)
-			.min()
-			.unwrap();
+		let start_of_range = values.iter().map(|x| x.offset()).min().unwrap();
 
 		let gep = self.tape_gep(i8_vec_type, start_of_range)?;
 
 		let vec_of_loaded_values = self.load_from(i8_vec_type, gep)?;
 
-		let vec_of_modified_values = if values
-			.iter()
-			.copied()
-			.map(FactoredOffsetCellOptions::factor)
-			.all(|x| matches!(x, 1))
-		{
+		let vec_of_modified_values = if values.iter().all(|x| matches!(x.offset(), 1)) {
 			self.builder.build_int_nsw_add(
 				vec_of_current_cell,
 				vec_of_loaded_values,
@@ -221,7 +205,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let vec_of_factors = {
 				let vec_of_values = values
 					.iter()
-					.copied()
 					.map(|v| i8_type.const_int(v.factor() as u64, false))
 					.collect::<Vec<_>>();
 
@@ -251,8 +234,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let values_to_store = options
 			.values()
 			.iter()
-			.copied()
-			.map(|x| i8_type.const_int(x.convert::<u64>(), false))
+			.map(|x| i8_type.const_int((*x).convert::<u64>(), false))
 			.collect::<Vec<_>>();
 
 		let vec_to_store = VectorType::const_vector(&values_to_store);
@@ -297,8 +279,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let vec_of_values = options
 				.values()
 				.iter()
-				.copied()
-				.map(|x| i8_type.const_int(x as u64, false))
+				.map(|x| i8_type.const_int(*x as u64, false))
 				.collect::<Vec<_>>();
 
 			VectorType::const_vector(&vec_of_values)

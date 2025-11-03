@@ -23,8 +23,7 @@ impl InnerAssembler<'_> {
 		let i32_type = context.i32_type();
 
 		c.iter()
-			.copied()
-			.map(|x| i32_type.const_int(x.convert::<u64>(), false))
+			.map(|x| i32_type.const_int((*x).convert::<u64>(), false))
 			.try_for_each(|x| self.call_putchar(context, x))
 	}
 }
