@@ -7,7 +7,7 @@ use inkwell::{
 	intrinsics::Intrinsic,
 	llvm_sys::prelude::LLVMContextRef,
 	module::{Linkage, Module},
-	types::{BasicMetadataTypeEnum, BasicType as _, BasicTypeEnum, VectorType},
+	types::{BasicMetadataTypeEnum, BasicTypeEnum, VectorType},
 	values::FunctionValue,
 };
 
@@ -21,7 +21,7 @@ pub struct AssemblerFunctions<'ctx> {
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 	pub invariant: IntrinsicFunctionSet<'ctx>,
 	pub eh_personality: FunctionValue<'ctx>,
-	masked_vector_functions: RefCell<HashMap<(u32, VectorFunctionType), FunctionValue<'ctx>>>,
+	masked_vector_functions: RefCell<HashMap<VectorKey, FunctionValue<'ctx>>>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -124,17 +124,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		vec_type: VectorType<'ctx>,
 		fn_type: VectorFunctionType,
 	) -> Option<FunctionValue<'ctx>> {
-		assert_eq!(
-			self.context().i8_type().as_basic_type_enum(),
-			vec_type.get_element_type()
-		);
+		let key = VectorKey::new(vec_type, fn_type)?;
 
-		let size = vec_type.get_size();
-
-		self.masked_vector_functions
-			.borrow()
-			.get(&(size, fn_type))
-			.copied()
+		self.masked_vector_functions.borrow().get(&key).copied()
 	}
 
 	fn insert_vector_function(
@@ -143,16 +135,13 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		fn_type: VectorFunctionType,
 		fn_value: FunctionValue<'ctx>,
 	) {
-		assert_eq!(
-			self.context().i8_type().as_basic_type_enum(),
-			vec_type.get_element_type()
-		);
-
-		let size = vec_type.get_size();
+		let Some(key) = VectorKey::new(vec_type, fn_type) else {
+			return;
+		};
 
 		self.masked_vector_functions
 			.borrow_mut()
-			.insert((size, fn_type), fn_value);
+			.insert(key, fn_value);
 	}
 
 	fn setup(&self) {
@@ -265,6 +254,30 @@ fn add_attributes_to(
 
 	for attribute in return_attrs {
 		func.add_attribute(AttributeLoc::Return, attribute);
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct VectorKey {
+	bit_width: u32,
+	size_of_vec: u32,
+	fn_type: VectorFunctionType,
+}
+
+impl VectorKey {
+	fn new(vec: VectorType<'_>, fn_type: VectorFunctionType) -> Option<Self> {
+		let bit_width = match vec.get_element_type() {
+			BasicTypeEnum::IntType(ty) => ty.get_bit_width(),
+			_ => return None,
+		};
+
+		let size_of_vec = vec.get_size();
+
+		Some(Self {
+			bit_width,
+			size_of_vec,
+			fn_type,
+		})
 	}
 }
 
