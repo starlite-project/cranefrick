@@ -273,7 +273,7 @@ impl BrainIr {
 
 		for op in child_ops {
 			match op {
-				Self::MovePointer(offset) => movement = movement.wrapping_add(*offset),
+				&Self::MovePointer(offset) => movement = movement.wrapping_add(offset),
 				Self::TakeValueTo(options) => {
 					movement = movement.wrapping_add(options.offset());
 				}

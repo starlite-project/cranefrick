@@ -68,7 +68,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let vec_of_offset_values = {
 				let vec_of_offsets = offsets
 					.iter()
-					.map(|i| ptr_int_type.const_int(*i as u64, false))
+					.map(|&i| ptr_int_type.const_int(i as u64, false))
 					.collect::<Vec<_>>();
 
 				VectorType::const_vector(&vec_of_offsets)

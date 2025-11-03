@@ -234,7 +234,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let values_to_store = options
 			.values()
 			.iter()
-			.map(|x| i8_type.const_int((*x).convert::<u64>(), false))
+			.map(|&x| i8_type.const_int(x.convert::<u64>(), false))
 			.collect::<Vec<_>>();
 
 		let vec_to_store = VectorType::const_vector(&values_to_store);
@@ -279,7 +279,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let vec_of_values = options
 				.values()
 				.iter()
-				.map(|x| i8_type.const_int(*x as u64, false))
+				.map(|&x| i8_type.const_int(x as u64, false))
 				.collect::<Vec<_>>();
 
 			VectorType::const_vector(&vec_of_values)

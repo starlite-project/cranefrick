@@ -83,9 +83,9 @@ impl Display for OutputOptions {
 					is_first = false;
 				}
 			}
-			Self::Char(c) => {
+			&Self::Char(c) => {
 				f.write_str("char(")?;
-				Display::fmt(&(*c as char).escape_debug(), f)?;
+				Display::fmt(&(c as char).escape_debug(), f)?;
 				f.write_char(')')?;
 			}
 			Self::Str(chars) => {
