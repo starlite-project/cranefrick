@@ -147,7 +147,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let debug_loc = self.create_debug_location(
 			context,
-			1,
+			0,
 			0,
 			self.main_subprogram.as_debug_info_scope(),
 			None,

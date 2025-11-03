@@ -53,10 +53,23 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
+		let i32_vec_type = i32_type.vec_type(options.len() as u32);
 
 		let _invariant = self.start_tape_invariant()?;
 
-		let output_vector = self.get_output_cells_vector(options)?;
+		let output_vector = {
+			let raw_output_vector = self.get_output_cells_vector(options)?;
+
+			self.builder.build_int_z_extend_or_bit_cast(
+				raw_output_vector,
+				i32_vec_type,
+				"output_cells_zext",
+			)?
+		};
+
+		if let Some(extend_instr) = output_vector.as_instruction() {
+			extend_instr.set_non_negative_flag(true);
+		}
 
 		for i in options.iter().enumerate().map(|(i, ..)| i) {
 			let index = i64_type.const_int(i as u64, false);
@@ -66,17 +79,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_extract_element(output_vector, index, "output_cells_vector_index\0")?
 				.into_int_value();
 
-			let extended_char = self.builder.build_int_z_extend_or_bit_cast(
-				current_char,
-				i32_type,
-				"output_cells_extend_char\0",
-			)?;
-
-			if let Some(extend_instr) = extended_char.as_instruction() {
-				extend_instr.set_non_negative_flag(true);
-			}
-
-			self.call_putchar(context, extended_char)?;
+			self.call_putchar(context, current_char)?;
 		}
 
 		Ok(())
