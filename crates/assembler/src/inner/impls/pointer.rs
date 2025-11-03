@@ -42,15 +42,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i32_vec_type = i32_type.vec_type(offsets.len() as u32);
 		let ptr_int_vec_type = ptr_int_type.vec_type(offsets.len() as u32);
 
-		let vec_of_offset_values = {
-			let vec_of_offsets = offsets
-				.iter()
-				.map(|i| ptr_int_type.const_int(*i as u64, false))
-				.collect::<Vec<_>>();
-
-			VectorType::const_vector(&vec_of_offsets)
-		};
-
 		let vec_of_pointers = {
 			let i64_zero = i64_type.const_zero();
 
@@ -74,6 +65,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 		if offsets.iter().all(|x| matches!(x, 0)) {
 			Ok(vec_of_pointers)
 		} else {
+			let vec_of_offset_values = {
+				let vec_of_offsets = offsets
+					.iter()
+					.map(|i| ptr_int_type.const_int(*i as u64, false))
+					.collect::<Vec<_>>();
+
+				VectorType::const_vector(&vec_of_offsets)
+			};
+
 			let vec_of_offset_pointers = self.builder.build_int_nsw_add(
 				vec_of_pointers,
 				vec_of_offset_values,
