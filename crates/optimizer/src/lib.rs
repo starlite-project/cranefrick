@@ -100,7 +100,7 @@ impl Optimizer {
 				"optimize_set_move_op",
 				progress,
 				self,
-				passes::optimize_set_move_op,
+				passes::optimize_set_move_write,
 			);
 		}
 

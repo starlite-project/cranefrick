@@ -24,7 +24,7 @@ pub fn sort_sets<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 
 	let sorted = ops
 		.iter()
-		.map(|i| (*i).clone())
+		.map(|&i| i.clone())
 		.sorted_by_key(sorter_key)
 		.collect::<Vec<_>>();
 

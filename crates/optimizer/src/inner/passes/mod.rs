@@ -17,7 +17,7 @@ use crate::inner::{Change, utils::calculate_ptr_movement};
 
 pub const fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::ChangeCell(a), BrainIr::ChangeCell(b)] if a.offset() == b.offset() => {
+		[&BrainIr::ChangeCell(a), &BrainIr::ChangeCell(b)] if a.offset() == b.offset() => {
 			Some(if a.value() == -b.value() {
 				Change::remove()
 			} else {
@@ -27,10 +27,10 @@ pub const fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Cha
 				))
 			})
 		}
-		[BrainIr::MovePointer(a), BrainIr::MovePointer(b)] => Some(if *a == -(*b) {
+		[&BrainIr::MovePointer(a), &BrainIr::MovePointer(b)] => Some(if a == -b {
 			Change::remove()
 		} else {
-			Change::replace(BrainIr::move_pointer(a.wrapping_add(*b)))
+			Change::replace(BrainIr::move_pointer(a.wrapping_add(b)))
 		}),
 		_ => None,
 	}
@@ -38,36 +38,36 @@ pub const fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Cha
 
 pub fn optimize_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::SetCell(a), BrainIr::SetCell(b)] if a.offset() == b.offset() => {
+		[&BrainIr::SetCell(a), &BrainIr::SetCell(b)] if a.offset() == b.offset() => {
 			Some(Change::remove_offset(0))
 		}
-		[BrainIr::ChangeCell(a), BrainIr::SetCell(b)] if a.offset() == b.offset() => {
+		[&BrainIr::ChangeCell(a), &BrainIr::SetCell(b)] if a.offset() == b.offset() => {
 			Some(Change::remove_offset(0))
 		}
-		[BrainIr::SetCell(a), BrainIr::ChangeCell(b)] if a.offset() == b.offset() => {
+		[&BrainIr::SetCell(a), &BrainIr::ChangeCell(b)] if a.offset() == b.offset() => {
 			Some(Change::replace(BrainIr::set_cell_at(
 				a.value().wrapping_add_signed(b.value()),
 				a.offset(),
 			)))
 		}
-		[l, BrainIr::ChangeCell(options)] if l.is_zeroing_cell() && !options.is_offset() => {
+		[l, &BrainIr::ChangeCell(options)] if l.is_zeroing_cell() && !options.is_offset() => {
 			Some(Change::swap([
 				l.clone(),
 				BrainIr::set_cell(options.value() as u8),
 			]))
 		}
-		[BrainIr::SetCell(options), BrainIr::InputIntoCell] if !options.is_offset() => {
+		[&BrainIr::SetCell(options), &BrainIr::InputIntoCell] if !options.is_offset() => {
 			Some(Change::remove_offset(0))
 		}
-		[BrainIr::ChangeCell(options), BrainIr::InputIntoCell] if !options.is_offset() => {
+		[&BrainIr::ChangeCell(options), &BrainIr::InputIntoCell] if !options.is_offset() => {
 			Some(Change::remove_offset(0))
 		}
-		[l, BrainIr::SetCell(options)] if options.is_default() && l.is_zeroing_cell() => {
+		[l, &BrainIr::SetCell(options)] if options.is_default() && l.is_zeroing_cell() => {
 			Some(Change::remove_offset(1))
 		}
 		[
-			BrainIr::SetCell(set_cell_options),
-			BrainIr::SetRange(set_range_options),
+			&BrainIr::SetCell(set_cell_options),
+			&BrainIr::SetRange(set_range_options),
 		] => {
 			let range = set_range_options.range();
 			let x = set_cell_options.offset();
@@ -75,14 +75,14 @@ pub fn optimize_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			range.contains(&x).then(|| Change::remove_offset(0))
 		}
 		[
-			BrainIr::ChangeCell(change_options),
+			&BrainIr::ChangeCell(change_options),
 			BrainIr::SetManyCells(set_many_options),
 		] if set_many_options.range().contains(&change_options.offset()) => {
 			Some(Change::remove_offset(0))
 		}
 		[
-			BrainIr::ChangeCell(change_options),
-			BrainIr::SetRange(set_range_options),
+			&BrainIr::ChangeCell(change_options),
+			&BrainIr::SetRange(set_range_options),
 		] if set_range_options.range().contains(&change_options.offset()) => {
 			Some(Change::remove_offset(0))
 		}
@@ -99,41 +99,46 @@ pub fn remove_unreachable_loops(ops: [&BrainIr; 2]) -> Option<Change> {
 
 pub const fn remove_noop_instructions(ops: [&BrainIr; 1]) -> Option<Change> {
 	match ops {
-		[BrainIr::ChangeCell(options)] if matches!(options.value(), 0) => Some(Change::remove()),
-		[BrainIr::MovePointer(0)] => Some(Change::remove()),
+		[&BrainIr::ChangeCell(options)] if matches!(options.value(), 0) => Some(Change::remove()),
+		[&BrainIr::MovePointer(0)] => Some(Change::remove()),
 		_ => None,
 	}
 }
 
 pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::Boundary, BrainIr::ChangeCell(options)] => Some(Change::swap([
+		[&BrainIr::Boundary, &BrainIr::ChangeCell(options)] => Some(Change::swap([
 			BrainIr::boundary(),
 			BrainIr::set_cell_at(options.value() as u8, options.offset()),
 		])),
-		[l, BrainIr::Boundary] if !l.has_output() => Some(Change::remove_offset(0)),
-		[BrainIr::Boundary, BrainIr::Output(OutputOptions::Cell(..))] => Some(Change::swap([
+		[l, &BrainIr::Boundary] if !l.has_output() => Some(Change::remove_offset(0)),
+		[
+			&BrainIr::Boundary,
+			&BrainIr::Output(OutputOptions::Cell(..)),
+		] => Some(Change::swap([
 			BrainIr::boundary(),
 			BrainIr::output_char(0),
 			BrainIr::set_cell(0),
 		])),
 		[
-			BrainIr::Boundary,
+			&BrainIr::Boundary,
 			BrainIr::DynamicLoop(..)
 			| BrainIr::CopyValueTo(..)
 			| BrainIr::MoveValueTo(..)
 			| BrainIr::FetchValueFrom(..)
 			| BrainIr::ReplaceValueFrom(..),
 		] => Some(Change::remove_offset(1)),
-		[BrainIr::Boundary, BrainIr::TakeValueTo(take_options)] => Some(Change::swap([
+		[&BrainIr::Boundary, &BrainIr::TakeValueTo(take_options)] => Some(Change::swap([
 			BrainIr::boundary(),
 			BrainIr::move_pointer(take_options.offset()),
 		])),
-		[BrainIr::Boundary, BrainIr::SetCell(set_options)] if matches!(set_options.value(), 0) => {
+		[&BrainIr::Boundary, &BrainIr::SetCell(set_options)]
+			if matches!(set_options.value(), 0) =>
+		{
 			Some(Change::remove_offset(1))
 		}
 		[
-			BrainIr::Boundary,
+			&BrainIr::Boundary,
 			BrainIr::ChangeManyCells(change_many_options),
 		] => Some(Change::swap([
 			BrainIr::boundary(),
@@ -149,9 +154,9 @@ pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::Boundary,
-			BrainIr::SetCell(set_options),
-			BrainIr::ChangeCell(change_options),
+			&BrainIr::Boundary,
+			&BrainIr::SetCell(set_options),
+			&BrainIr::ChangeCell(change_options),
 		] => {
 			let set_offset = set_options.offset();
 			let change_offset = change_options.offset();
@@ -169,9 +174,9 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 			]))
 		}
 		[
-			BrainIr::Boundary,
+			&BrainIr::Boundary,
 			BrainIr::SetManyCells(set_many_options),
-			BrainIr::ChangeCell(change_options),
+			&BrainIr::ChangeCell(change_options),
 		] if set_many_options.range().end == change_options.offset() => {
 			let mut set_many_options_values = set_many_options.values().to_vec();
 
@@ -183,19 +188,19 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 			]))
 		}
 		[
-			BrainIr::Boundary,
-			BrainIr::MovePointer(y),
-			BrainIr::ChangeCell(change_options),
+			&BrainIr::Boundary,
+			&BrainIr::MovePointer(y),
+			&BrainIr::ChangeCell(change_options),
 		] => Some(Change::swap([
 			BrainIr::boundary(),
-			BrainIr::move_pointer(*y),
+			BrainIr::move_pointer(y),
 			BrainIr::SetCell(OffsetCellOptions::new(
 				change_options.value() as u8,
 				change_options.offset(),
 			)),
 		])),
 		[
-			BrainIr::Boundary,
+			&BrainIr::Boundary,
 			set @ (BrainIr::SetManyCells(..) | BrainIr::SetCell(..)),
 			BrainIr::ChangeManyCells(change_many_options),
 		] => Some(Change::swap([
@@ -213,50 +218,50 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 pub fn add_offsets(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::MovePointer(x),
-			BrainIr::ChangeCell(change_options),
-			BrainIr::MovePointer(y),
+			&BrainIr::MovePointer(x),
+			&BrainIr::ChangeCell(change_options),
+			&BrainIr::MovePointer(y),
 		] => Some(Change::swap([
 			BrainIr::change_cell_at(
 				change_options.value(),
 				x.wrapping_add(change_options.offset()),
 			),
-			BrainIr::move_pointer(x.wrapping_add(*y)),
+			BrainIr::move_pointer(x.wrapping_add(y)),
 		])),
 		[
-			BrainIr::MovePointer(x),
-			BrainIr::SetCell(set_options),
-			BrainIr::MovePointer(y),
+			&BrainIr::MovePointer(x),
+			&BrainIr::SetCell(set_options),
+			&BrainIr::MovePointer(y),
 		] => Some(Change::swap([
 			BrainIr::set_cell_at(set_options.value(), x.wrapping_add(set_options.offset())),
-			BrainIr::move_pointer(x.wrapping_add(*y)),
+			BrainIr::move_pointer(x.wrapping_add(y)),
 		])),
 		[
-			BrainIr::MovePointer(x),
-			BrainIr::SetRange(options),
-			BrainIr::MovePointer(y),
+			&BrainIr::MovePointer(x),
+			&BrainIr::SetRange(options),
+			&BrainIr::MovePointer(y),
 		] => {
-			let start = options.start().wrapping_add(*x);
-			let end = options.end().wrapping_add(*x);
+			let start = options.start().wrapping_add(x);
+			let end = options.end().wrapping_add(x);
 
 			let set_range_instr = BrainIr::set_range(options.value(), start, end);
 
-			Some(if *x == -y {
+			Some(if x == -y {
 				Change::replace(set_range_instr)
 			} else {
-				Change::swap([set_range_instr, BrainIr::move_pointer(x.wrapping_add(*y))])
+				Change::swap([set_range_instr, BrainIr::move_pointer(x.wrapping_add(y))])
 			})
 		}
 		[
-			BrainIr::MovePointer(x),
+			&BrainIr::MovePointer(x),
 			BrainIr::ChangeManyCells(change_many_options),
-			BrainIr::MovePointer(y),
+			&BrainIr::MovePointer(y),
 		] => {
-			let start = change_many_options.start().wrapping_add(*x);
+			let start = change_many_options.start().wrapping_add(x);
 
 			Some(Change::swap([
 				BrainIr::change_many_cells(change_many_options.values().iter().copied(), start),
-				BrainIr::move_pointer(x.wrapping_add(*y)),
+				BrainIr::move_pointer(x.wrapping_add(y)),
 			]))
 		}
 		_ => None,
@@ -265,32 +270,31 @@ pub fn add_offsets(ops: [&BrainIr; 3]) -> Option<Change> {
 
 pub fn remove_offsets(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::SetCell(set_options), BrainIr::MovePointer(x)] if set_options.offset() == *x => {
+		[&BrainIr::SetCell(set_options), &BrainIr::MovePointer(x)] if set_options.offset() == x => {
 			Some(Change::swap([
-				BrainIr::move_pointer(*x),
+				BrainIr::move_pointer(x),
 				BrainIr::set_cell(set_options.value()),
 			]))
 		}
-		[BrainIr::ChangeCell(change_options), BrainIr::MovePointer(x)]
-			if change_options.offset() == *x =>
-		{
-			Some(Change::swap([
-				BrainIr::move_pointer(*x),
-				BrainIr::change_cell(change_options.value()),
-			]))
-		}
 		[
-			BrainIr::Output(OutputOptions::Cell(output_options)),
-			BrainIr::MovePointer(y),
-		] if output_options.offset() == *y => Some(Change::swap([
-			BrainIr::move_pointer(*y),
+			&BrainIr::ChangeCell(change_options),
+			&BrainIr::MovePointer(x),
+		] if change_options.offset() == x => Some(Change::swap([
+			BrainIr::move_pointer(x),
+			BrainIr::change_cell(change_options.value()),
+		])),
+		[
+			&BrainIr::Output(OutputOptions::Cell(output_options)),
+			&BrainIr::MovePointer(y),
+		] if output_options.offset() == y => Some(Change::swap([
+			BrainIr::move_pointer(y),
 			BrainIr::output_offset_cell(output_options.value()),
 		])),
 		[
 			BrainIr::Output(OutputOptions::Cells(output_options)),
-			BrainIr::MovePointer(y),
-		] if output_options.iter().all(|x| x.offset() == *y) => Some(Change::swap([
-			BrainIr::move_pointer(*y),
+			&BrainIr::MovePointer(y),
+		] if output_options.iter().all(|x| x.offset() == y) => Some(Change::swap([
+			BrainIr::move_pointer(y),
 			BrainIr::output_cells(
 				output_options
 					.iter()
@@ -303,9 +307,12 @@ pub fn remove_offsets(ops: [&BrainIr; 2]) -> Option<Change> {
 
 pub fn optimize_move_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::TakeValueTo(take_options), BrainIr::MovePointer(y)] => Some(Change::swap([
+		[
+			&BrainIr::TakeValueTo(take_options),
+			&BrainIr::MovePointer(y),
+		] => Some(Change::swap([
 			BrainIr::move_value_to(take_options.factor(), take_options.offset()),
-			BrainIr::move_pointer(take_options.offset().wrapping_add(*y)),
+			BrainIr::move_pointer(take_options.offset().wrapping_add(y)),
 		])),
 		_ => None,
 	}
@@ -315,7 +322,7 @@ pub fn optimize_duplicate_cell_replace_from(ops: [&BrainIr; 2]) -> Option<Change
 	match ops {
 		[
 			BrainIr::DuplicateCell { values },
-			BrainIr::ReplaceValueFrom(replace_options),
+			&BrainIr::ReplaceValueFrom(replace_options),
 		] if values
 			.iter()
 			.any(|x| x.offset() == replace_options.offset() && matches!(x.factor(), 1))
@@ -360,42 +367,46 @@ pub fn optimize_move_value_from_duplicate_cells(ops: [&BrainIr; 1]) -> Option<Ch
 
 pub const fn optimize_take_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::MoveValueTo(options), BrainIr::MovePointer(y)] if options.offset() == *y => Some(
-			Change::replace(BrainIr::take_value_to(options.factor(), options.offset())),
-		),
+		[&BrainIr::MoveValueTo(options), &BrainIr::MovePointer(y)] if options.offset() == y => {
+			Some(Change::replace(BrainIr::take_value_to(
+				options.factor(),
+				options.offset(),
+			)))
+		}
 		_ => None,
 	}
 }
 
 pub fn optimize_fetch_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::MovePointer(x), BrainIr::TakeValueTo(take_options)] => Some(Change::swap([
+		[
+			&BrainIr::MovePointer(x),
+			&BrainIr::TakeValueTo(take_options),
+		] => Some(Change::swap([
 			BrainIr::move_pointer(x.wrapping_add(take_options.offset())),
 			BrainIr::fetch_value_from(take_options.factor(), -take_options.offset()),
 		])),
-		[BrainIr::MovePointer(x), BrainIr::MoveValueTo(move_options)]
-			if *x == -move_options.offset() =>
-		{
-			Some(Change::swap([
-				BrainIr::fetch_value_from(move_options.factor(), *x),
-				BrainIr::move_pointer(*x),
-			]))
-		}
+		[
+			&BrainIr::MovePointer(x),
+			&BrainIr::MoveValueTo(move_options),
+		] if x == -move_options.offset() => Some(Change::swap([
+			BrainIr::fetch_value_from(move_options.factor(), x),
+			BrainIr::move_pointer(x),
+		])),
 		_ => None,
 	}
 }
 
 pub fn optimize_replace_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[l, BrainIr::FetchValueFrom(options)] if l.is_zeroing_cell() => Some(Change::swap([
+		[l, &BrainIr::FetchValueFrom(options)] if l.is_zeroing_cell() => Some(Change::swap([
 			l.clone(),
-			BrainIr::ReplaceValueFrom(*options),
+			BrainIr::ReplaceValueFrom(options),
 		])),
-		[BrainIr::SetCell(set_options), BrainIr::ReplaceValueFrom(..)]
-			if !set_options.is_offset() =>
-		{
-			Some(Change::remove_offset(0))
-		}
+		[
+			&BrainIr::SetCell(set_options),
+			&BrainIr::ReplaceValueFrom(..),
+		] if !set_options.is_offset() => Some(Change::remove_offset(0)),
 		_ => None,
 	}
 }
@@ -404,7 +415,7 @@ pub fn optimize_copy_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::DuplicateCell { values },
-			BrainIr::ReplaceValueFrom(options),
+			&BrainIr::ReplaceValueFrom(options),
 		] => {
 			if !values
 				.iter()
@@ -430,7 +441,7 @@ pub fn optimize_copy_value(ops: [&BrainIr; 2]) -> Option<Change> {
 					other_move_options.factor() as u8,
 					other_move_options.offset(),
 				),
-				BrainIr::FetchValueFrom(*options),
+				BrainIr::FetchValueFrom(options),
 			]))
 		}
 		_ => None,
@@ -440,23 +451,23 @@ pub fn optimize_copy_value(ops: [&BrainIr; 2]) -> Option<Change> {
 pub fn optimize_constant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::SetCell(set_options),
-			BrainIr::FetchValueFrom(fetch_options),
+			&BrainIr::SetCell(set_options),
+			&BrainIr::FetchValueFrom(fetch_options),
 		] if set_options.offset() == fetch_options.offset() => Some(Change::swap([
 			BrainIr::clear_cell_at(set_options.offset()),
 			BrainIr::set_cell(set_options.value().wrapping_mul(fetch_options.factor())),
 		])),
 		[
-			BrainIr::SetCell(set_options),
-			BrainIr::TakeValueTo(take_options),
+			&BrainIr::SetCell(set_options),
+			&BrainIr::TakeValueTo(take_options),
 		] if !set_options.is_offset() => Some(Change::swap([
 			BrainIr::clear_cell(),
 			BrainIr::move_pointer(take_options.offset()),
 			BrainIr::change_cell(set_options.value().wrapping_mul(take_options.factor()) as i8),
 		])),
 		[
-			BrainIr::SetCell(set_options),
-			BrainIr::MoveValueTo(move_options),
+			&BrainIr::SetCell(set_options),
+			&BrainIr::MoveValueTo(move_options),
 		] if !set_options.is_offset() => Some(Change::swap([
 			BrainIr::clear_cell(),
 			BrainIr::change_cell_at(
@@ -465,8 +476,8 @@ pub fn optimize_constant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 			),
 		])),
 		[
-			BrainIr::MoveValueTo(move_options),
-			BrainIr::SetCell(set_options),
+			&BrainIr::MoveValueTo(move_options),
+			&BrainIr::SetCell(set_options),
 		] if set_options.is_offset() && move_options.offset() == set_options.offset() => {
 			Some(Change::swap([
 				BrainIr::clear_cell(),
@@ -475,7 +486,7 @@ pub fn optimize_constant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 		}
 		[
 			BrainIr::SetManyCells(set_many_options),
-			BrainIr::TakeValueTo(take_options),
+			&BrainIr::TakeValueTo(take_options),
 		] if set_many_options.range().contains(&0) => {
 			let mut set_many_options = set_many_options.clone();
 
@@ -495,10 +506,10 @@ pub fn optimize_constant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 pub fn optimize_sub_cell_from(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::SubCell(SubOptions::CellAt(options)),
-			BrainIr::MovePointer(y),
-		] if options.offset() == *y => Some(Change::swap([
-			BrainIr::move_pointer(*y),
+			&BrainIr::SubCell(SubOptions::CellAt(options)),
+			&BrainIr::MovePointer(y),
+		] if options.offset() == y => Some(Change::swap([
+			BrainIr::move_pointer(y),
 			BrainIr::sub_from_cell(options.factor(), -y),
 		])),
 		_ => None,
@@ -508,11 +519,11 @@ pub fn optimize_sub_cell_from(ops: [&BrainIr; 2]) -> Option<Change> {
 pub fn optimize_sub_cell_from_with_set(ops: [&BrainIr; 3]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::SubCell(SubOptions::CellAt(sub_options)),
-			BrainIr::SetCell(set_options),
-			BrainIr::MovePointer(y),
-		] if sub_options.offset() == *y && !set_options.is_offset() => Some(Change::swap([
-			BrainIr::move_pointer(*y),
+			&BrainIr::SubCell(SubOptions::CellAt(sub_options)),
+			&BrainIr::SetCell(set_options),
+			&BrainIr::MovePointer(y),
+		] if sub_options.offset() == y && !set_options.is_offset() => Some(Change::swap([
+			BrainIr::move_pointer(y),
 			BrainIr::sub_from_cell(sub_options.factor(), -y),
 			BrainIr::set_cell_at(set_options.value(), -y),
 		])),
@@ -523,16 +534,16 @@ pub fn optimize_sub_cell_from_with_set(ops: [&BrainIr; 3]) -> Option<Change> {
 pub fn remove_redundant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::TakeValueTo(take_options),
-			BrainIr::SetCell(set_options),
+			&BrainIr::TakeValueTo(take_options),
+			&BrainIr::SetCell(set_options),
 		] if !set_options.is_offset() => Some(Change::swap([
 			BrainIr::clear_cell(),
 			BrainIr::move_pointer(take_options.offset()),
 			BrainIr::set_cell(set_options.value()),
 		])),
 		[
-			BrainIr::MoveValueTo(move_options),
-			BrainIr::SetCell(set_options),
+			&BrainIr::MoveValueTo(move_options),
+			&BrainIr::SetCell(set_options),
 		] if move_options.offset() == set_options.offset() && set_options.is_offset() => {
 			Some(Change::swap([
 				BrainIr::clear_cell(),
@@ -540,8 +551,8 @@ pub fn remove_redundant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 			]))
 		}
 		[
-			BrainIr::MoveValueTo(move_options),
-			BrainIr::ReplaceValueFrom(replace_options),
+			&BrainIr::MoveValueTo(move_options),
+			&BrainIr::ReplaceValueFrom(replace_options),
 		] if move_options.offset() == replace_options.offset()
 			&& matches!(move_options.factor(), 1)
 			&& matches!(replace_options.factor(), 1) =>
@@ -550,42 +561,6 @@ pub fn remove_redundant_shifts(ops: [&BrainIr; 2]) -> Option<Change> {
 				1,
 				move_options.offset(),
 			)))
-		}
-		_ => None,
-	}
-}
-
-pub fn optimize_set_move_op(ops: [&BrainIr; 3]) -> Option<Change> {
-	match ops {
-		[
-			BrainIr::SetCell(set_options),
-			BrainIr::MovePointer(move_offset),
-			BrainIr::ChangeCell(change_options),
-		] if move_offset.wrapping_add(change_options.offset()) == set_options.offset() => {
-			Some(Change::swap([
-				BrainIr::set_cell_at(
-					set_options
-						.value()
-						.wrapping_add_signed(change_options.value()),
-					set_options.offset(),
-				),
-				BrainIr::move_pointer(*move_offset),
-			]))
-		}
-		[
-			BrainIr::SetCell(set_options),
-			BrainIr::MovePointer(move_offset),
-			BrainIr::Output(OutputOptions::Cell(output_options)),
-		] if move_offset.wrapping_add(output_options.offset()) == set_options.offset() => {
-			Some(Change::swap([
-				BrainIr::output_char(
-					set_options
-						.value()
-						.wrapping_add_signed(output_options.value()),
-				),
-				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
-				BrainIr::move_pointer(*move_offset),
-			]))
 		}
 		_ => None,
 	}
@@ -606,7 +581,7 @@ pub fn optimize_if_nz_when_zeroing(ops: [&BrainIr; 1]) -> Option<Change> {
 pub fn unroll_constant_duplicate_cell(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::SetCell(set_options),
+			&BrainIr::SetCell(set_options),
 			BrainIr::DuplicateCell { values },
 		] if !set_options.is_offset() => {
 			let mut output = Vec::with_capacity(values.len() + 1);
@@ -650,7 +625,7 @@ pub fn unroll_constant_duplicate_cell(ops: [&BrainIr; 2]) -> Option<Change> {
 
 pub fn unroll_constant_if_nz(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::SetCell(set_options), BrainIr::IfNotZero(ops)]
+		[&BrainIr::SetCell(set_options), BrainIr::IfNotZero(ops)]
 			if matches!(set_options.into_parts(), (1..=u8::MAX, 0)) =>
 		{
 			Some(Change::swap(
@@ -663,11 +638,13 @@ pub fn unroll_constant_if_nz(ops: [&BrainIr; 2]) -> Option<Change> {
 
 pub fn unroll_basic_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[BrainIr::SetCell(set_options), l @ BrainIr::DynamicLoop(ops)]
-			if matches!(set_options.into_parts(), (1..=u8::MAX, 0))
-				&& matches!(calculate_ptr_movement(ops)?, 0)
-				&& matches!(ops.as_slice(), [.., BrainIr::ChangeCell(change_options)] if matches!(change_options.into_parts(), (i8::MIN..0, 0)))
-				&& !l.loop_has_movement()? =>
+		[
+			&BrainIr::SetCell(set_options),
+			l @ BrainIr::DynamicLoop(ops),
+		] if matches!(set_options.into_parts(), (1..=u8::MAX, 0))
+			&& matches!(calculate_ptr_movement(ops)?, 0)
+			&& matches!(ops.as_slice(), [.., BrainIr::ChangeCell(change_options)] if matches!(change_options.into_parts(), (i8::MIN..0, 0)))
+			&& !l.loop_has_movement()? =>
 		{
 			if ops
 				.iter()
@@ -696,11 +673,13 @@ pub fn unroll_basic_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::swap(out))
 		}
-		[BrainIr::SetCell(set_options), l @ BrainIr::DynamicLoop(ops)]
-			if matches!(set_options.into_parts(), (1..=u8::MAX, 0))
-				&& matches!(calculate_ptr_movement(ops)?, 0)
-				&& matches!(ops.as_slice(), [BrainIr::ChangeCell(change_options), ..] if matches!(change_options.into_parts(), (i8::MIN..0, 0)))
-				&& !l.loop_has_movement()? =>
+		[
+			&BrainIr::SetCell(set_options),
+			l @ BrainIr::DynamicLoop(ops),
+		] if matches!(set_options.into_parts(), (1..=u8::MAX, 0))
+			&& matches!(calculate_ptr_movement(ops)?, 0)
+			&& matches!(ops.as_slice(), [BrainIr::ChangeCell(change_options), ..] if matches!(change_options.into_parts(), (i8::MIN..0, 0)))
+			&& !l.loop_has_movement()? =>
 		{
 			if ops
 				.iter()
@@ -748,8 +727,8 @@ pub fn unroll_if_nz(ops: [&BrainIr; 2]) -> Option<Change> {
 pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
-			BrainIr::TakeValueTo(first_take_options),
-			BrainIr::TakeValueTo(second_take_options),
+			&BrainIr::TakeValueTo(first_take_options),
+			&BrainIr::TakeValueTo(second_take_options),
 		] if matches!(
 			first_take_options
 				.offset()
@@ -764,8 +743,8 @@ pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 			]))
 		}
 		[
-			BrainIr::TakeValueTo(take_options),
-			BrainIr::MoveValueTo(move_options),
+			&BrainIr::TakeValueTo(take_options),
+			&BrainIr::MoveValueTo(move_options),
 		] if matches!(take_options.offset().wrapping_add(move_options.offset()), 0) => {
 			Some(Change::swap([
 				BrainIr::scale_value(take_options.factor()),
@@ -774,25 +753,25 @@ pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 				BrainIr::move_pointer(take_options.offset()),
 			]))
 		}
-		[BrainIr::ScaleValue(a), BrainIr::ScaleValue(b)] => {
-			Some(Change::replace(BrainIr::scale_value(a.wrapping_mul(*b))))
+		[&BrainIr::ScaleValue(a), &BrainIr::ScaleValue(b)] => {
+			Some(Change::replace(BrainIr::scale_value(a.wrapping_mul(b))))
 		}
 		[
-			BrainIr::ScaleValue(factor),
-			BrainIr::TakeValueTo(take_options),
+			&BrainIr::ScaleValue(factor),
+			&BrainIr::TakeValueTo(take_options),
 		] if matches!(take_options.factor(), 2..=u8::MAX) => Some(Change::swap([
 			BrainIr::scale_value(factor.wrapping_mul(take_options.factor())),
 			BrainIr::take_value_to(1, take_options.offset()),
 		])),
 		[
 			BrainIr::SetManyCells(set_many_options),
-			BrainIr::ScaleValue(factor),
+			&BrainIr::ScaleValue(factor),
 		] => {
 			let value = set_many_options.value_at(0)?;
 
 			let mut set_many_options = set_many_options.clone();
 
-			let new_value = value.wrapping_mul(*factor);
+			let new_value = value.wrapping_mul(factor);
 
 			if !set_many_options.set_value_at(0, new_value) {
 				return None;
@@ -800,11 +779,11 @@ pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::SetManyCells(set_many_options)))
 		}
-		[BrainIr::SetCell(set_options), BrainIr::ScaleValue(factor)]
+		[&BrainIr::SetCell(set_options), &BrainIr::ScaleValue(factor)]
 			if !set_options.is_offset() =>
 		{
 			Some(Change::replace(BrainIr::set_cell(
-				set_options.value().wrapping_mul(*factor),
+				set_options.value().wrapping_mul(factor),
 			)))
 		}
 		_ => None,

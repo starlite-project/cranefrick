@@ -520,3 +520,39 @@ pub fn optimize_offset_writes_set(ops: [&BrainIr; 4]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_set_move_write(ops: [&BrainIr; 3]) -> Option<Change> {
+	match ops {
+		[
+			&BrainIr::SetCell(set_options),
+			&BrainIr::MovePointer(move_offset),
+			&BrainIr::ChangeCell(change_options),
+		] if move_offset.wrapping_add(change_options.offset()) == set_options.offset() => {
+			Some(Change::swap([
+				BrainIr::set_cell_at(
+					set_options
+						.value()
+						.wrapping_add_signed(change_options.value()),
+					set_options.offset(),
+				),
+				BrainIr::move_pointer(move_offset),
+			]))
+		}
+		[
+			&BrainIr::SetCell(set_options),
+			&BrainIr::MovePointer(move_offset),
+			&BrainIr::Output(OutputOptions::Cell(output_options)),
+		] if move_offset.wrapping_add(output_options.offset()) == set_options.offset() => {
+			Some(Change::swap([
+				BrainIr::output_char(
+					set_options
+						.value()
+						.wrapping_add_signed(output_options.value()),
+				),
+				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
+				BrainIr::move_pointer(move_offset),
+			]))
+		}
+		_ => None,
+	}
+}

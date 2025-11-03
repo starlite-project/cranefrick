@@ -10,11 +10,11 @@ use crate::inner::{Change, utils::calculate_ptr_movement};
 
 pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[
+		&[
 			BrainIr::ChangeCell(current_cell_options),
 			BrainIr::ChangeCell(offset_cell_options),
 		]
-		| [
+		| &[
 			BrainIr::ChangeCell(offset_cell_options),
 			BrainIr::ChangeCell(current_cell_options),
 		] if matches!(
@@ -35,7 +35,7 @@ pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 }
 
 pub const fn remove_infinite_loops(ops: &[BrainIr]) -> Option<Change> {
-	match ops {
+	match *ops {
 		[.., BrainIr::InputIntoCell] => Some(Change::remove()),
 		[.., BrainIr::SetCell(options)] if matches!(options.into_parts(), (1..=u8::MAX, 0)) => {
 			Some(Change::remove())
@@ -50,8 +50,8 @@ pub fn remove_empty_loops(ops: &[BrainIr]) -> Option<Change> {
 
 pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {
-			Some(Change::replace(BrainIr::find_zero(*offset)))
+		&[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {
+			Some(Change::replace(BrainIr::find_zero(offset)))
 		}
 		_ => None,
 	}
@@ -78,7 +78,7 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 
 pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[
+		&[
 			BrainIr::ChangeCell(current_cell_options),
 			BrainIr::ChangeCell(offset_cell_options),
 		] if matches!(
@@ -124,7 +124,7 @@ pub fn optimize_duplicate_cell(ops: &[BrainIr]) -> Option<Change> {
 
 pub const fn clear_cell(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
-		[BrainIr::ChangeCell(options)] => {
+		&[BrainIr::ChangeCell(options)] => {
 			Some(Change::replace(BrainIr::clear_cell_at(options.offset())))
 		}
 		_ => None,
