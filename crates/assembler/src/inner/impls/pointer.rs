@@ -85,7 +85,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			} else if offsets.iter().all(|x| x.is_negative()) {
 				self.wrap_many_pointers_negative(vec_of_offset_pointers)
 			} else {
-				self.wrap_many_pointers(vec_of_offset_pointers)
+				self.wrap_many_pointers_mixed(vec_of_offset_pointers)
 			}
 		}
 	}
@@ -172,7 +172,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	#[tracing::instrument(skip(self))]
-	fn wrap_many_pointers(
+	fn wrap_many_pointers_mixed(
 		&self,
 		vec_of_offset_pointers: VectorValue<'ctx>,
 	) -> Result<VectorValue<'ctx>, AssemblyError> {
@@ -191,26 +191,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let signed_rem = self.builder.build_int_signed_rem(
 			vec_of_offset_pointers,
 			vec_of_tape_sizes,
-			"wrap_many_pointers_srem\0",
+			"wrap_many_pointers_mixed_srem\0",
 		)?;
 
 		let unsigned_rem = self.builder.build_int_unsigned_rem(
 			vec_of_offset_pointers,
 			vec_of_tape_sizes,
-			"wrap_many_pointers_urem\0",
+			"wrap_many_pointers_mixed_urem\0",
 		)?;
 
 		let added_offset = self.builder.build_int_nsw_add(
 			signed_rem,
 			vec_of_tape_sizes,
-			"wrap_many_pointers_add\0",
+			"wrap_many_pointers_mixed_add\0",
 		)?;
 
 		let is_negative_vec = self.builder.build_int_compare(
 			IntPredicate::SLT,
 			vec_of_offset_pointers,
 			ptr_int_vec_type.const_zero(),
-			"wrap_many_pointers_cmp\0",
+			"wrap_many_pointers_mixed_cmp\0",
 		)?;
 
 		Ok(self
@@ -219,7 +219,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				is_negative_vec,
 				added_offset,
 				unsigned_rem,
-				"wrap_many_pointers_select\0",
+				"wrap_many_pointers_mixed_select\0",
 			)?
 			.into_vector_value())
 	}
