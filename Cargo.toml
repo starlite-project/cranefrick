@@ -38,6 +38,10 @@ heap_profiling = ["dep:dhat"]
 harness = false
 name = "is_all_same"
 
+[[bench]]
+harness = false
+name = "is_all_zero"
+
 [workspace]
 members = [
     "crates/assembler",
