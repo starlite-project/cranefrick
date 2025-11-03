@@ -13,7 +13,8 @@ frick_utils = { workspace = true, features = [
     "contains_range",
     "convert",
     "insert_or_push",
-    "iter"
+    "iter_ext",
+    "slice_ext"
 ] }
 serde.workspace = true
 tracing = { workspace = true, features = ["attributes"] }

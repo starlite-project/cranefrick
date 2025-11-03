@@ -3,7 +3,7 @@
 use alloc::vec::Vec;
 
 use frick_ir::BrainIr;
-use frick_utils::IteratorExt as _;
+use frick_utils::{IteratorExt as _, SliceExt as _};
 
 use super::OffsetSorterKey;
 use crate::inner::Change;
@@ -28,7 +28,10 @@ pub fn sort_sets<const N: usize>(ops: [&BrainIr; N]) -> Option<Change> {
 		.sorted_by_key(sorter_key)
 		.collect::<Vec<_>>();
 
-	if sorted.windows(2).any(|w| w[0].offset() == w[1].offset()) {
+	if sorted
+		.windows_n::<2>()
+		.any(|[x, y]| x.offset() == y.offset())
+	{
 		return None;
 	}
 

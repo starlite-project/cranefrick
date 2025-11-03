@@ -9,9 +9,10 @@ version.workspace = true
 
 [features]
 alloc = []
+contains_range = []
 convert = []
 get_or_zero = []
 insert_or_push = ["alloc"]
-iter = []
+iter_ext = []
+slice_ext = []
 unwrap_from = []
-contains_range = []

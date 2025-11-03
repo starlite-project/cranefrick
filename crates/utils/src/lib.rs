@@ -16,8 +16,10 @@ mod contains_range;
 mod convert;
 #[cfg(feature = "insert_or_push")]
 mod insert_or_push;
-#[cfg(feature = "iter")]
+#[cfg(feature = "iter_ext")]
 mod iter;
+#[cfg(feature = "slice_ext")]
+mod slice;
 
 #[cfg(feature = "contains_range")]
 pub use self::contains_range::*;
@@ -25,5 +27,7 @@ pub use self::contains_range::*;
 pub use self::convert::*;
 #[cfg(feature = "insert_or_push")]
 pub use self::insert_or_push::*;
-#[cfg(feature = "iter")]
+#[cfg(feature = "iter_ext")]
 pub use self::iter::*;
+#[cfg(feature = "slice_ext")]
+pub use self::slice::*;

@@ -4,6 +4,7 @@ use core::cmp;
 use frick_ir::{BrainIr, ChangeManyCellsOptions, SetManyCellsOptions, SubOptions};
 use frick_utils::{
 	ContainsRange as _, Convert as _, GetOrZero as _, InsertOrPush as _, IteratorExt as _,
+	SliceExt as _,
 };
 
 use crate::inner::Change;
@@ -474,7 +475,10 @@ pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
 pub fn optimize_set_many_to_set_range(ops: [&BrainIr; 1]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetManyCells(set_many_options)]
-			if set_many_options.values().windows(2).all(|w| w[0] == w[1]) =>
+			if set_many_options
+				.values()
+				.windows_n::<2>()
+				.all(|&[x, y]| x == y) =>
 		{
 			let range = set_many_options.range();
 

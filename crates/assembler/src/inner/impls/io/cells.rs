@@ -1,4 +1,5 @@
 use frick_ir::ValuedOffsetCellOptions;
+use frick_utils::SliceExt as _;
 use inkwell::{types::VectorType, values::VectorValue};
 
 use crate::{
@@ -239,5 +240,7 @@ fn is_splattable(options: &[ValuedOffsetCellOptions<i8>]) -> bool {
 		return false;
 	}
 
-	options.windows(2).all(|w| w[0].offset() == w[1].offset())
+	options
+		.windows_n::<2>()
+		.all(|&[x, y]| x.offset() == y.offset())
 }
