@@ -286,6 +286,7 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			Some(Change::replace(set_many_options.convert::<BrainIr>()))
 		}
 		[&BrainIr::ChangeCell(a), &BrainIr::ChangeCell(b)]
+		| [&BrainIr::ChangeCell(b), &BrainIr::ChangeCell(a)]
 			if a.offset().wrapping_add(1) == b.offset() =>
 		{
 			Some(Change::replace(BrainIr::change_many_cells(
