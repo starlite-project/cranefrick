@@ -365,7 +365,7 @@ pub fn optimize_move_value_from_duplicate_cells(ops: [&BrainIr; 1]) -> Option<Ch
 	}
 }
 
-pub const fn optimize_take_value(ops: [&BrainIr; 2]) -> Option<Change> {
+pub fn optimize_take_value(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[&BrainIr::MoveValueTo(options), &BrainIr::MovePointer(y)] if options.offset() == y => {
 			Some(Change::replace(BrainIr::take_value_to(
@@ -373,6 +373,10 @@ pub const fn optimize_take_value(ops: [&BrainIr; 2]) -> Option<Change> {
 				options.offset(),
 			)))
 		}
+		[i, BrainIr::TakeValueTo(take_options)] if i.is_zeroing_cell() => Some(Change::swap([
+			i.clone(),
+			BrainIr::move_pointer(take_options.offset()),
+		])),
 		_ => None,
 	}
 }
@@ -786,6 +790,7 @@ pub fn optimize_scale_value(ops: [&BrainIr; 2]) -> Option<Change> {
 				set_options.value().wrapping_mul(factor),
 			)))
 		}
+		[i, BrainIr::ScaleValue(..)] if i.is_zeroing_cell() => Some(Change::remove_offset(1)),
 		_ => None,
 	}
 }
