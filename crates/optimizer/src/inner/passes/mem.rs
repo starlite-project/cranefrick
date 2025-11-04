@@ -365,6 +365,21 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				change_many_options.convert::<BrainIr>(),
 			]))
 		}
+		[
+			BrainIr::ChangeManyCells(change_many_options),
+			&BrainIr::SetCell(set_options),
+		] if change_many_options.range().contains(&set_options.offset()) => {
+			let mut change_many_options = change_many_options.clone();
+
+			if !change_many_options.set_value_at(set_options.offset(), 0) {
+				return None;
+			}
+
+			Some(Change::swap([
+				change_many_options.convert::<BrainIr>(),
+				BrainIr::set_cell_at(set_options.value(), set_options.offset()),
+			]))
+		}
 		[i, BrainIr::ChangeManyCells(change_many_options)]
 			if i.is_zeroing_cell() && matches!(change_many_options.range().end, 1) =>
 		{
@@ -386,13 +401,13 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::ChangeManyCells(b_options),
 		] => {
 			let a_range = a_options.range();
-			let b_range = b_options.range();
+			let mut b_range = b_options.range();
 
-			if !a_range.contains(&b_range.start) && !a_range.contains(&b_range.end) {
+			if a_range.clone().all(|x| !b_range.contains(&x)) {
 				return None;
 			}
 
-			if !b_range.contains(&a_range.start) && !b_range.contains(&a_range.end) {
+			if b_range.all(|x| !a_range.contains(&x)) {
 				return None;
 			}
 
