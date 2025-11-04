@@ -71,6 +71,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			extend_instr.set_non_negative_flag(true);
 		}
 
+		let mut char_values = Vec::with_capacity(options.len());
+
 		for i in options.iter().enumerate().map(|(i, ..)| i) {
 			let index = i64_type.const_int(i as u64, false);
 
@@ -79,10 +81,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_extract_element(output_vector, index, "output_cells_vector_index\0")?
 				.into_int_value();
 
-			self.call_putchar(context, current_char)?;
+			char_values.push(current_char);
 		}
 
-		Ok(())
+		char_values
+			.into_iter()
+			.try_for_each(|ch| self.call_putchar(context, ch))
 	}
 
 	#[tracing::instrument(skip_all)]
