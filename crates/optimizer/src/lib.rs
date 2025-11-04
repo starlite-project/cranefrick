@@ -65,7 +65,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(58);
+		span.pb_set_length(59);
 
 		self.run_all_passes(&mut progress);
 
@@ -155,12 +155,18 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("unroll no-move dynamic loops", 1);
+			let _guard = self.pass_info("unroll no-move dynamic loops", 2);
 			run_peephole_pass_with_span(
 				"unroll_basic_dynamic_loop",
 				progress,
 				self,
 				passes::unroll_basic_dynamic_loop,
+			);
+			run_peephole_pass_with_span(
+				"unroll_change_cell_dynamic_loop",
+				progress,
+				self,
+				passes::unroll_change_cell_dynamic_loop,
 			);
 		}
 

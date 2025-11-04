@@ -6,7 +6,7 @@ mod mem;
 mod sort;
 mod writes;
 
-use alloc::vec::Vec;
+use alloc::{collections::btree_map::BTreeMap, vec::Vec};
 use core::iter;
 
 use frick_ir::{BrainIr, OffsetCellOptions, OutputOptions, SubOptions};
@@ -776,6 +776,38 @@ pub fn optimize_initial_change_to_sets<const N: usize>(ops: [&BrainIr; N]) -> Op
 					)),
 			))
 		}
+		_ => None,
+	}
+}
+
+pub fn unroll_change_cell_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[
+			BrainIr::SetCell(set_options),
+			BrainIr::DynamicLoop(inner_ops),
+		] if !set_options.is_offset() => match inner_ops.as_slice() {
+			[BrainIr::ChangeManyCells(change_many_options)] => {
+				let step = change_many_options.value_at(0)?;
+				tracing::warn!(?set_options, ?change_many_options, ?step, "made it");
+
+				let mut combined_options = BTreeMap::<i32, i8>::new();
+
+				for _ in (0..set_options.value()).step_by((step.unsigned_abs()) as usize) {
+					for i in change_many_options.iter().filter(|x| x.is_offset()) {
+						let value = combined_options.entry(i.offset()).or_default();
+
+						*value = value.wrapping_add(i.value());
+					}
+				}
+
+				tracing::warn!(?combined_options);
+
+				Some(Change::swap(combined_options.into_iter().map(
+					|(offset, value)| BrainIr::change_cell_at(value, offset),
+				)))
+			}
+			_ => None,
+		},
 		_ => None,
 	}
 }
