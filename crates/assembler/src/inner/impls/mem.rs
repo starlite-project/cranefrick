@@ -1,7 +1,7 @@
 use frick_utils::Convert as _;
 use inkwell::{
 	types::{BasicType, BasicTypeEnum},
-	values::{BasicValue, IntValue, PointerValue},
+	values::{BasicValue, InstructionValue, IntValue, PointerValue},
 };
 
 use crate::{
@@ -49,7 +49,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		value: u8,
 		gep: PointerValue<'ctx>,
-	) -> Result<(), AssemblyError> {
+	) -> Result<InstructionValue<'ctx>, AssemblyError> {
 		let value = {
 			let i8_type = self.context().i8_type();
 
@@ -64,10 +64,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		value: impl BasicValue<'ctx>,
 		gep: PointerValue<'ctx>,
-	) -> Result<(), AssemblyError> {
-		self.builder.build_store(gep, value)?;
+	) -> Result<InstructionValue<'ctx>, AssemblyError> {
+		let instr = self.builder.build_store(gep, value)?;
 
-		Ok(())
+		Ok(instr)
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -80,7 +80,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	#[tracing::instrument(skip(self))]
-	pub fn store_value_into_cell(&self, value: u8, offset: i32) -> Result<(), AssemblyError> {
+	pub fn store_value_into_cell(
+		&self,
+		value: u8,
+		offset: i32,
+	) -> Result<InstructionValue<'ctx>, AssemblyError> {
 		let value = {
 			let i8_type = self.context().i8_type();
 
@@ -95,7 +99,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		value: impl BasicValue<'ctx>,
 		offset: i32,
-	) -> Result<(), AssemblyError> {
+	) -> Result<InstructionValue<'ctx>, AssemblyError> {
 		self.store_into_cell_inner(value, offset)
 	}
 
@@ -104,7 +108,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		value: impl BasicValue<'ctx>,
 		offset: i32,
-	) -> Result<(), AssemblyError> {
+	) -> Result<InstructionValue<'ctx>, AssemblyError> {
 		let i8_type = self.context().i8_type();
 
 		let gep = self.tape_gep(i8_type, offset)?;

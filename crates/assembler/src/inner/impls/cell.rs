@@ -16,7 +16,9 @@ use crate::{
 impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
 	pub fn set_cell(&self, options: ValuedOffsetCellOptions<u8>) -> Result<(), AssemblyError> {
-		self.store_value_into_cell(options.value(), options.offset())
+		self.store_value_into_cell(options.value(), options.offset())?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -35,7 +37,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"change_cell_add\0",
 		)?;
 
-		self.store_into(added, gep)
+		self.store_into(added, gep)?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -57,7 +61,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_sub(other_value, subtractor, "sub_cell_at_sub\0")?;
 
-		self.store_into(value_to_store, gep)
+		self.store_into(value_to_store, gep)?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -82,7 +88,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_sub(other_value, subtractor, "sub_from_cell_sub\0")?;
 
-		self.store_into(value_to_store, gep)
+		self.store_into(value_to_store, gep)?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -224,7 +232,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			)?
 		};
 
-		self.store_into(vec_of_modified_values, gep)
+		self.store_into(vec_of_modified_values, gep)?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -239,7 +249,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let vec_to_store = VectorType::const_vector(&values_to_store);
 
-		self.store_into_cell(vec_to_store, options.start())
+		self.store_into_cell(vec_to_store, options.start())?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -291,6 +303,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"change_many_cells_vector_add",
 		)?;
 
-		self.store_into(vec_of_values_to_store, gep)
+		self.store_into(vec_of_values_to_store, gep)?;
+
+		Ok(())
 	}
 }

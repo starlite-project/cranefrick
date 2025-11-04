@@ -8,11 +8,11 @@ use frick_utils::Convert as _;
 use inkwell::{
 	context::ContextRef,
 	debug_info::{
-		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DILocalVariable, DISubprogram,
-		DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
+		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DILocalVariable, DILocation,
+		DISubprogram, DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
-	values::{BasicValueEnum, InstructionOpcode, InstructionValue},
+	values::{BasicValueEnum, InstructionOpcode, InstructionValue, IntValue},
 };
 
 use super::{AssemblerFunctions, AssemblerPointers};
@@ -204,6 +204,21 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		);
 
 		Ok(())
+	}
+
+	pub fn insert_pointer_dbg_value(
+		&self,
+		pointer_value: IntValue<'ctx>,
+		debug_loc: DILocation<'ctx>,
+		instruction: InstructionValue<'ctx>,
+	) {
+		self.insert_dbg_value_before(
+			pointer_value.convert::<BasicValueEnum<'ctx>>(),
+			self.variables.pointer,
+			None,
+			debug_loc,
+			instruction,
+		);
 	}
 }
 

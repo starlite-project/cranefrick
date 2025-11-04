@@ -54,7 +54,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"duplicate_value_to_add\0",
 		)?;
 
-		self.store_into(added, gep)
+		self.store_into(added, gep)?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -84,7 +86,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_nsw_add(other_cell, value_to_add, "take_value_to_add\0")?;
 
-		self.store_into(added, gep)
+		self.store_into(added, gep)?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -112,7 +116,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.builder
 				.build_int_nsw_add(current_cell, value_to_add, "fetch_value_from_add\0")?;
 
-		self.store_into(added, gep)
+		self.store_into(added, gep)?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -145,7 +151,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder
 			.build_memmove(current_cell_gep, 1, other_value_gep, 1, i8_size)?;
 
-		self.store_value_into(0, other_value_gep)
+		self.store_value_into(0, other_value_gep)?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -164,7 +172,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul\0")?
 		};
 
-		self.store_into_cell(value_to_store, 0)
+		self.store_into_cell(value_to_store, 0)?;
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -180,6 +190,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_mul(cell, factor, "scale_value_mul\0")
 		}?;
 
-		self.store_into(value_to_store, gep)
+		self.store_into(value_to_store, gep)?;
+
+		Ok(())
 	}
 }
