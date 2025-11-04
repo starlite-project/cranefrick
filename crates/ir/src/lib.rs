@@ -304,11 +304,11 @@ impl BrainIr {
 			| Self::MoveValueTo(..)
 			| Self::FindZero(..)
 			| Self::IfNotZero(..)
-			| Self::SubCell(SubOptions::CellAt(..))
-			| Self::DuplicateCell { .. } => true,
+			| Self::SubCell(SubOptions::CellAt(..)) => true,
 			Self::SetRange(set_range_options) => set_range_options.is_zeroing_cell(),
 			Self::SetManyCells(set_many_options) => set_many_options.is_zeroing_cell(),
 			Self::SetCell(set_options) => set_options.is_default(),
+			Self::DuplicateCell { values } => !values.iter().any(|x| matches!(x.offset(), 0)),
 			_ => false,
 		}
 	}
