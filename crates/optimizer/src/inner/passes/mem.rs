@@ -1,4 +1,4 @@
-use alloc::{borrow::ToOwned as _, vec::Vec};
+use alloc::{borrow::ToOwned as _, collections::btree_map::BTreeMap, vec::Vec};
 use core::cmp;
 
 use frick_ir::{BrainIr, ChangeManyCellsOptions, SetManyCellsOptions, SubOptions};
@@ -381,6 +381,59 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				BrainIr::set_cell_at(new_value_to_set, set_offset),
 				new_change_many_options.convert::<BrainIr>(),
 			]))
+		}
+		[i, BrainIr::ChangeManyCells(change_many_options)]
+			if i.is_zeroing_cell() && matches!(change_many_options.range().end, 1) =>
+		{
+			let mut values = change_many_options.values().to_vec();
+
+			let last_value = values.pop()?;
+
+			let change_many_options =
+				ChangeManyCellsOptions::new(values, change_many_options.start());
+
+			Some(Change::swap([
+				i.clone(),
+				change_many_options.convert::<BrainIr>(),
+				BrainIr::set_cell(last_value as u8),
+			]))
+		}
+		[
+			BrainIr::ChangeManyCells(a_options),
+			BrainIr::ChangeManyCells(b_options),
+		] => {
+			let a_range = a_options.range();
+			let b_range = b_options.range();
+
+			if !a_range.contains(&b_range.start) && !a_range.contains(&b_range.end) {
+				return None;
+			}
+
+			if !b_range.contains(&a_range.start) && !b_range.contains(&a_range.end) {
+				return None;
+			}
+
+			let mut combined = BTreeMap::new();
+
+			for options in a_options {
+				let value = combined.entry(options.offset()).or_insert(0i8);
+
+				*value = value.wrapping_add(options.value());
+			}
+
+			for options in b_options {
+				let value = combined.entry(options.offset()).or_insert(0);
+
+				*value = value.wrapping_add(options.value());
+			}
+
+			let new_values = combined.values().copied();
+
+			let start = cmp::min(a_options.start(), b_options.start());
+
+			Some(Change::replace(BrainIr::change_many_cells(
+				new_values, start,
+			)))
 		}
 		_ => None,
 	}

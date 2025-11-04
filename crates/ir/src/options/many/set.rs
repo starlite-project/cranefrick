@@ -1,5 +1,8 @@
 use alloc::vec::Vec;
-use core::ops::Range;
+use core::{
+	fmt::{Debug, Formatter, Result as FmtResult},
+	ops::Range,
+};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
@@ -7,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use super::AffectManyCellsIter;
 use crate::{SetRangeOptions, ValuedOffsetCellOptions};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetManyCellsOptions {
 	values: Vec<u8>,
 	start: i32,
@@ -77,6 +80,18 @@ impl SetManyCellsOptions {
 			iter: self.values.iter().copied().enumerate(),
 			start: self.start,
 		}
+	}
+}
+
+impl Debug for SetManyCellsOptions {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		let mut s = f.debug_tuple("SetManyCellsOptions");
+
+		for offset_option in self {
+			s.field(&offset_option);
+		}
+
+		s.finish()
 	}
 }
 

@@ -1,8 +1,14 @@
-use core::{iter::FusedIterator, ops::RangeInclusive};
+use core::{
+	fmt::{Debug, Formatter, Result as FmtResult},
+	iter::FusedIterator,
+	ops::RangeInclusive,
+};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+use super::ValuedOffsetCellOptions;
+
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetRangeOptions {
 	value: u8,
 	start: i32,
@@ -54,9 +60,21 @@ impl SetRangeOptions {
 	}
 }
 
+impl Debug for SetRangeOptions {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		let mut s = f.debug_tuple("SetRangeOptions");
+
+		for offset_option in self {
+			s.field(&offset_option);
+		}
+
+		s.finish()
+	}
+}
+
 impl IntoIterator for &SetRangeOptions {
 	type IntoIter = SetRangeIter;
-	type Item = (u8, i32);
+	type Item = ValuedOffsetCellOptions<u8>;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.iter()
@@ -65,7 +83,7 @@ impl IntoIterator for &SetRangeOptions {
 
 impl IntoIterator for SetRangeOptions {
 	type IntoIter = SetRangeIter;
-	type Item = (u8, i32);
+	type Item = ValuedOffsetCellOptions<u8>;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.iter()
@@ -79,16 +97,20 @@ pub struct SetRangeIter {
 
 impl DoubleEndedIterator for SetRangeIter {
 	fn next_back(&mut self) -> Option<Self::Item> {
-		self.range.next_back().map(|index| (self.value, index))
+		self.range
+			.next_back()
+			.map(|index| ValuedOffsetCellOptions::new(self.value, index))
 	}
 }
 
 impl FusedIterator for SetRangeIter {}
 
 impl Iterator for SetRangeIter {
-	type Item = (u8, i32);
+	type Item = ValuedOffsetCellOptions<u8>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.range.next().map(|index| (self.value, index))
+		self.range
+			.next()
+			.map(|index| ValuedOffsetCellOptions::new(self.value, index))
 	}
 }

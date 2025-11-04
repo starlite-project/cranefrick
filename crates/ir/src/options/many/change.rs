@@ -1,5 +1,8 @@
 use alloc::vec::Vec;
-use core::ops::Range;
+use core::{
+	fmt::{Debug, Formatter, Result as FmtResult},
+	ops::Range,
+};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
@@ -7,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use super::AffectManyCellsIter;
 use crate::ValuedOffsetCellOptions;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChangeManyCellsOptions {
 	values: Vec<i8>,
 	start: i32,
@@ -67,6 +70,18 @@ impl ChangeManyCellsOptions {
 			iter: self.values.iter().copied().enumerate(),
 			start: self.start,
 		}
+	}
+}
+
+impl Debug for ChangeManyCellsOptions {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		let mut s = f.debug_tuple("ChangeManyCellsOptions");
+
+		for offset_options in self {
+			s.field(&offset_options);
+		}
+
+		s.finish()
 	}
 }
 

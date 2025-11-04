@@ -78,13 +78,10 @@ impl<T: OffsetCellPrimitive, Marker: OffsetCellMarker> Copy for OffsetCellOption
 
 impl<T, Marker: OffsetCellMarker> Debug for OffsetCellOptions<T, Marker>
 where
-	T: Debug + OffsetCellPrimitive,
+	T: Display + OffsetCellPrimitive,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		f.debug_struct("ChangeCellOptions")
-			.field("value", &self.value)
-			.field("offset", &self.offset)
-			.finish()
+		Display::fmt(self, f)
 	}
 }
 
