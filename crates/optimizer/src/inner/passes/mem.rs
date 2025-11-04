@@ -508,7 +508,7 @@ pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_set_many_to_set_range(ops: [&BrainIr; 1]) -> Option<Change> {
+pub fn optimize_single_mem_operations(ops: [&BrainIr; 1]) -> Option<Change> {
 	match ops {
 		[BrainIr::SetManyCells(set_many_options)]
 			if set_many_options
@@ -518,20 +518,12 @@ pub fn optimize_set_many_to_set_range(ops: [&BrainIr; 1]) -> Option<Change> {
 		{
 			let range = set_many_options.range();
 
-			let new_range = range.start..=(range.end.wrapping_sub(1));
-
 			Some(Change::replace(BrainIr::set_range(
 				set_many_options.values().first().copied()?,
-				*new_range.start(),
-				*new_range.end(),
+				range.start,
+				range.end.wrapping_sub(1),
 			)))
 		}
-		_ => None,
-	}
-}
-
-pub fn unroll_single_mem_operations(ops: [&BrainIr; 1]) -> Option<Change> {
-	match ops {
 		[BrainIr::ChangeManyCells(change_many_options)]
 			if matches!(change_many_options.values().len(), 1) =>
 		{
