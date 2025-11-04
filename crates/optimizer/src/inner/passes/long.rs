@@ -3,7 +3,6 @@
 use alloc::vec::Vec;
 
 use frick_ir::{BrainIr, OutputOptions};
-use frick_utils::Convert as _;
 
 use crate::inner::Change;
 
