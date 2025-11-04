@@ -4,7 +4,10 @@
 	feature(nonzero_internals),
 	allow(internal_features)
 )]
-#![cfg_attr(feature = "contains_range", feature(step_trait))]
+#![cfg_attr(
+	any(feature = "contains_range", feature = "into_range"),
+	feature(step_trait)
+)]
 #![no_std]
 
 #[cfg(feature = "alloc")]
@@ -12,7 +15,12 @@ extern crate alloc;
 
 #[cfg(feature = "contains_range")]
 mod contains_range;
-#[cfg(any(feature = "unwrap_from", feature = "get_or_zero", feature = "convert"))]
+#[cfg(any(
+	feature = "unwrap_from",
+	feature = "get_or_zero",
+	feature = "convert",
+	feature = "into_range"
+))]
 mod convert;
 #[cfg(feature = "insert_or_push")]
 mod insert_or_push;
@@ -23,7 +31,12 @@ mod slice;
 
 #[cfg(feature = "contains_range")]
 pub use self::contains_range::*;
-#[cfg(any(feature = "unwrap_from", feature = "get_or_zero", feature = "convert"))]
+#[cfg(any(
+	feature = "unwrap_from",
+	feature = "get_or_zero",
+	feature = "convert",
+	feature = "into_range"
+))]
 pub use self::convert::*;
 #[cfg(feature = "insert_or_push")]
 pub use self::insert_or_push::*;
