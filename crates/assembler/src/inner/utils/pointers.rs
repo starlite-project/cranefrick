@@ -17,6 +17,7 @@ use crate::{AssemblyError, ContextGetter as _};
 pub struct AssemblerPointers<'ctx> {
 	pub tape: PointerValue<'ctx>,
 	pub pointer: PointerValue<'ctx>,
+	pub pointer_ty: IntType<'ctx>,
 }
 
 impl<'ctx> AssemblerPointers<'ctx> {
@@ -24,7 +25,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		module: &Module<'ctx>,
 		builder: &Builder<'ctx>,
 		target_data: &TargetData,
-	) -> Result<(Self, IntType<'ctx>), AssemblyError> {
+	) -> Result<Self, AssemblyError> {
 		let context = module.get_context();
 		let i8_type = context.i8_type();
 		let ptr_int_type = context.ptr_sized_int_type(target_data, None);
@@ -37,14 +38,17 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		let pointer = builder.build_alloca(ptr_int_type, "pointer\0")?;
 
-		Ok((Self { tape, pointer }, ptr_int_type))
+		Ok(Self {
+			tape,
+			pointer,
+			pointer_ty: ptr_int_type,
+		})
 	}
 
 	pub fn setup(
 		self,
 		builder: &Builder<'ctx>,
 		functions: &AssemblerFunctions<'ctx>,
-		ptr_int_type: IntType<'ctx>,
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
@@ -76,7 +80,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let i8_zero = i8_type.const_zero();
 
 		builder.build_memset(self.tape, 1, i8_zero, tape_array_size)?;
-		builder.build_store(self.pointer, ptr_int_type.const_zero())?;
+		builder.build_store(self.pointer, self.pointer_ty.const_zero())?;
 
 		Ok(())
 	}

@@ -4,6 +4,7 @@ use std::{
 };
 
 use frick_spec::TAPE_SIZE;
+use frick_utils::Convert as _;
 use inkwell::{
 	context::ContextRef,
 	debug_info::{
@@ -11,7 +12,7 @@ use inkwell::{
 		DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
-	values::{InstructionValue, PointerValue},
+	values::{BasicValueEnum, InstructionValue, PointerValue},
 };
 
 use super::{AssemblerFunctions, AssemblerPointers};
@@ -153,12 +154,41 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			None,
 		);
 
+		let tape_value = {
+			let i8_type = context.i8_type();
+			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
+
+			i8_array_type.const_zero()
+		};
+
+		let right_after_tape_alloca = get_instruction_after_alloca(pointers.tape)?;
+
+		self.insert_dbg_value_before(
+			tape_value.convert::<BasicValueEnum<'ctx>>(),
+			self.variables.tape,
+			None,
+			debug_loc,
+			right_after_tape_alloca,
+		);
+
 		self.insert_declare_at_end(
 			pointers.tape,
 			Some(self.variables.tape),
 			None,
 			debug_loc,
 			entry_block,
+		);
+
+		let pointer_value = pointers.pointer_ty.const_zero();
+
+		let right_after_pointer_alloca = get_instruction_after_alloca(pointers.pointer)?;
+
+		self.insert_dbg_value_before(
+			pointer_value.convert::<BasicValueEnum<'ctx>>(),
+			self.variables.pointer,
+			None,
+			debug_loc,
+			right_after_pointer_alloca,
 		);
 
 		self.insert_declare_at_end(

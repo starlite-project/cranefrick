@@ -14,7 +14,7 @@ use inkwell::{
 	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Module},
 	targets::TargetMachine,
-	types::{BasicTypeEnum, IntType, VectorType},
+	types::{BasicTypeEnum, VectorType},
 	values::{BasicMetadataValueEnum, FunctionValue, VectorValue},
 };
 
@@ -28,7 +28,6 @@ pub struct InnerAssembler<'ctx> {
 	builder: Builder<'ctx>,
 	functions: AssemblerFunctions<'ctx>,
 	pointers: AssemblerPointers<'ctx>,
-	ptr_int_type: IntType<'ctx>,
 	target_machine: TargetMachine,
 	debug_builder: AssemblerDebugBuilder<'ctx>,
 	catch_block: BasicBlock<'ctx>,
@@ -63,9 +62,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let catch_block = context.append_basic_block(functions.main, "lpad\0");
 
-		let (pointers, ptr_int_type) = AssemblerPointers::new(&module, &builder, &target_data)?;
+		let pointers = AssemblerPointers::new(&module, &builder, &target_data)?;
 
-		pointers.setup(&builder, &functions, ptr_int_type)?;
+		pointers.setup(&builder, &functions)?;
 
 		let debug_metadata_version = {
 			let i32_type = context.i32_type();
@@ -125,7 +124,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			builder,
 			functions,
 			pointers,
-			ptr_int_type,
 			target_machine,
 			debug_builder,
 			catch_block,

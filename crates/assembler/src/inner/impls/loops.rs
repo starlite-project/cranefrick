@@ -118,7 +118,7 @@ impl InnerAssembler<'_> {
 	pub fn find_zero(&self, offset: i32) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_type = self.pointers.pointer_ty;
 		let i8_type = context.i8_type();
 
 		let _invariant_start = self.start_tape_invariant()?;

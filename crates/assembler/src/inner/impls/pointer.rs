@@ -38,7 +38,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
-		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_type = self.pointers.pointer_ty;
 		let i32_vec_type = i32_type.vec_type(offsets.len() as u32);
 		let ptr_int_vec_type = ptr_int_type.vec_type(offsets.len() as u32);
 
@@ -92,7 +92,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	#[tracing::instrument(skip(self))]
 	pub fn offset_pointer(&self, offset: i32) -> Result<IntValue<'ctx>, AssemblyError> {
-		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_type = self.pointers.pointer_ty;
 		let offset_value = ptr_int_type.const_int(offset as u64, false);
 
 		let current_ptr = self.load_from(ptr_int_type, self.pointers.pointer)?;
@@ -128,7 +128,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		offset_ptr: IntValue<'ctx>,
 	) -> Result<IntValue<'ctx>, AssemblyError> {
-		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_type = self.pointers.pointer_ty;
 
 		let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
@@ -144,7 +144,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		offset_ptr: IntValue<'ctx>,
 	) -> Result<IntValue<'ctx>, AssemblyError> {
-		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_type = self.pointers.pointer_ty;
 
 		let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
@@ -176,7 +176,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		vec_of_offset_pointers: VectorValue<'ctx>,
 	) -> Result<VectorValue<'ctx>, AssemblyError> {
-		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_type = self.pointers.pointer_ty;
 		let ptr_int_vec_type = ptr_int_type.vec_type(vec_of_offset_pointers.get_type().get_size());
 
 		let vec_of_tape_sizes = {
@@ -246,7 +246,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<VectorValue<'ctx>, AssemblyError> {
 		let vec_size = vec_of_offset_pointers.get_type().get_size();
 
-		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_type = self.pointers.pointer_ty;
 		let ptr_int_vec_type = ptr_int_type.vec_type(vec_size);
 
 		let vec_of_tape_sizes = self.get_vec_of_tape_sizes(vec_size);
@@ -282,7 +282,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	fn get_vec_of_tape_sizes(&self, vec_size: u32) -> VectorValue<'ctx> {
-		let ptr_int_type = self.ptr_int_type;
+		let ptr_int_type = self.pointers.pointer_ty;
 
 		let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 

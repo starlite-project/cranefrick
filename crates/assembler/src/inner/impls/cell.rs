@@ -249,7 +249,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let i8_type = self.context().i8_type();
 
 		let range_len_value = {
-			let ptr_int_type = self.ptr_int_type;
+			let ptr_int_type = self.pointers.pointer_ty;
 
 			ptr_int_type.const_int(range_len as u64, false)
 		};
