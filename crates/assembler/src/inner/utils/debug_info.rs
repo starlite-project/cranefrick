@@ -140,16 +140,18 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		context: ContextRef<'ctx>,
 		pointers: AssemblerPointers<'ctx>,
 	) -> Result<(), AssemblyError> {
-		let entry_block = pointers
+		let after_store_instr = pointers
 			.tape
 			.as_instruction()
-			.and_then(InstructionValue::get_parent)
-			.unwrap();
+			.and_then(|instr| {
+				let parent_block = instr.get_parent()?;
 
-		let after_store_instr = entry_block
-			.get_instructions()
-			.find(|x| is_initial_pointer_store(*x, pointers))
-			.and_then(InstructionValue::get_next_instruction)
+				let store_instr = parent_block
+					.get_instructions()
+					.find(|x| is_initial_pointer_store(*x, pointers))?;
+
+				store_instr.get_next_instruction()
+			})
 			.unwrap();
 
 		let debug_loc = self.create_debug_location(
@@ -160,12 +162,30 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			None,
 		);
 
+		self.insert_declare_before_instruction(
+			pointers.tape,
+			Some(self.variables.tape),
+			None,
+			debug_loc,
+			after_store_instr,
+		);
+
+		self.insert_declare_before_instruction(
+			pointers.pointer,
+			Some(self.variables.pointer),
+			None,
+			debug_loc,
+			after_store_instr,
+		);
+
 		let tape_value = {
 			let i8_type = context.i8_type();
 			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
 
 			i8_array_type.const_zero()
 		};
+
+		let pointer_value = pointers.pointer_ty.const_zero();
 
 		self.insert_dbg_value_before(
 			tape_value.convert::<BasicValueEnum<'ctx>>(),
@@ -175,30 +195,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			after_store_instr,
 		);
 
-		self.insert_declare_at_end(
-			pointers.tape,
-			Some(self.variables.tape),
-			None,
-			debug_loc,
-			entry_block,
-		);
-
-		let pointer_value = pointers.pointer_ty.const_zero();
-
 		self.insert_dbg_value_before(
 			pointer_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.pointer,
 			None,
 			debug_loc,
 			after_store_instr,
-		);
-
-		self.insert_declare_at_end(
-			pointers.pointer,
-			Some(self.variables.pointer),
-			None,
-			debug_loc,
-			entry_block,
 		);
 
 		Ok(())
