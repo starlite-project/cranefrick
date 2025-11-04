@@ -18,8 +18,11 @@ pub fn optimize_change_write_sets(ops: [&BrainIr; 4]) -> Option<Change> {
 			&& change_options.offset() == set_options.offset() =>
 		{
 			Some(Change::swap([
-				BrainIr::output_offset_cell_at(change_options.value(), change_options.offset()),
-				out.clone().convert::<BrainIr>(),
+				BrainIr::output_offset_cell_at(
+					change_options.value().wrapping_add(output_options.value()),
+					change_options.offset(),
+				),
+				out.clone(),
 				set.clone(),
 			]))
 		}
@@ -41,7 +44,7 @@ pub fn optimize_change_write_sets(ops: [&BrainIr; 4]) -> Option<Change> {
 
 			Some(Change::swap([
 				BrainIr::output_cells(new_output_options),
-				out.clone().convert::<BrainIr>(),
+				out.clone(),
 				set.clone(),
 			]))
 		}
