@@ -27,6 +27,7 @@ pub struct AssemblerFunctions<'ctx> {
 impl<'ctx> AssemblerFunctions<'ctx> {
 	pub fn new(context: &'ctx Context, module: &Module<'ctx>) -> Result<Self, AssemblyError> {
 		let void_type = context.void_type();
+		let i8_type = context.i8_type();
 		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
 		let ptr_type = context.default_ptr_type();
@@ -35,7 +36,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let getchar = module.add_function("rust_getchar", getchar_ty, Some(Linkage::External));
 
 		let putchar_ty =
-			void_type.fn_type(&[i32_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
+			void_type.fn_type(&[i8_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
 		let putchar = module.add_function("rust_putchar", putchar_ty, Some(Linkage::External));
 
 		let main_ty = void_type.fn_type(&[], false);

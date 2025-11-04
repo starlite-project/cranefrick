@@ -16,7 +16,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let context = self.context();
 
 		let i8_type = context.i8_type();
-		let i32_type = context.i32_type();
 
 		let _invariant = self.start_tape_invariant()?;
 
@@ -31,17 +30,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_int_nsw_add(current_cell_value, offset_value, "output_cell_add\0")?
 		};
 
-		let extended_value = self.builder.build_int_z_extend_or_bit_cast(
-			offset_cell_value,
-			i32_type,
-			"output_cell_extend\0",
-		)?;
-
-		if let Some(extend_instr) = extended_value.as_instruction() {
-			extend_instr.set_non_negative_flag(true);
-		}
-
-		self.call_putchar(context, extended_value)
+		self.call_putchar(context, offset_cell_value)
 	}
 
 	#[tracing::instrument(skip_all)]
@@ -51,25 +40,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let i32_type = context.i32_type();
 		let i64_type = context.i64_type();
-		let i32_vec_type = i32_type.vec_type(options.len() as u32);
 
 		let _invariant = self.start_tape_invariant()?;
 
-		let output_vector = {
-			let raw_output_vector = self.get_output_cells_vector(options)?;
-
-			self.builder.build_int_z_extend_or_bit_cast(
-				raw_output_vector,
-				i32_vec_type,
-				"output_cells_zext",
-			)?
-		};
-
-		if let Some(extend_instr) = output_vector.as_instruction() {
-			extend_instr.set_non_negative_flag(true);
-		}
+		let output_vector = self.get_output_cells_vector(options)?;
 
 		let mut char_values = Vec::with_capacity(options.len());
 

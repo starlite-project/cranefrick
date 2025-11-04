@@ -82,16 +82,16 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 	) -> Result<(), AssemblyError> {
 		functions.main.set_subprogram(self.main_subprogram);
 
+		let u8_type = self
+			.create_basic_type("u8", mem::size_of::<u8>() as u64 * 8, 7, i32::ZERO)?
+			.as_type();
+
 		let char_type = self
 			.create_basic_type("char", mem::size_of::<u32>() as u64 * 8, 8, i32::ZERO)?
 			.as_type();
 
-		let putchar_subroutine_type = self.create_subroutine_type(
-			self.compile_unit.get_file(),
-			Some(char_type),
-			&[char_type],
-			i32::ZERO,
-		);
+		let putchar_subroutine_type =
+			self.create_subroutine_type(self.compile_unit.get_file(), None, &[u8_type], i32::ZERO);
 
 		let putchar_subprogram = self.create_function(
 			self.compile_unit.as_debug_info_scope(),
