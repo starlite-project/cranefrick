@@ -1,10 +1,9 @@
 use frick_ir::{Factor, OffsetCellOptions};
 use frick_utils::Convert as _;
-use inkwell::values::{IntValue, PointerValue};
 
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
-impl<'ctx> InnerAssembler<'ctx> {
+impl InnerAssembler<'_> {
 	#[tracing::instrument(skip(self))]
 	pub fn move_value_to(
 		&self,
@@ -14,47 +13,24 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let (other_cell, gep) = self.load_cell_and_pointer(options.offset())?;
 
-		self.duplicate_value_to(current_value, other_cell, options.factor(), gep)
-	}
-
-	#[tracing::instrument(skip(self))]
-	pub fn copy_value_to(
-		&self,
-		options: OffsetCellOptions<u8, Factor>,
-	) -> Result<(), AssemblyError> {
-		let current_value = self.load_cell(0)?;
-
-		let (other_cell, gep) = self.load_cell_and_pointer(options.offset())?;
-
-		self.duplicate_value_to(current_value, other_cell, options.factor(), gep)
-	}
-
-	#[tracing::instrument(skip(self))]
-	fn duplicate_value_to(
-		&self,
-		current_value: IntValue<'ctx>,
-		other_value: IntValue<'ctx>,
-		factor: u8,
-		gep: PointerValue<'ctx>,
-	) -> Result<(), AssemblyError> {
-		let value_to_add = if matches!(factor, 1) {
+		let value_to_add = if matches!(options.factor(), 1) {
 			current_value
 		} else {
-			let i8_type = self.context().i8_type();
+			let factor = {
+				let i8_type = self.context().i8_type();
 
-			let factor = i8_type.const_int(factor.convert::<u64>(), false);
+				i8_type.const_int(options.factor().convert::<u64>(), false)
+			};
 
 			self.builder
-				.build_int_mul(current_value, factor, "duplicate_value_to_mul\0")?
+				.build_int_mul(current_value, factor, "move_value_to_mul\0")?
 		};
 
-		let added = self.builder.build_int_nsw_add(
-			other_value,
-			value_to_add,
-			"duplicate_value_to_add\0",
-		)?;
+		let added_together =
+			self.builder
+				.build_int_nsw_add(other_cell, value_to_add, "move_value_to_add\0")?;
 
-		self.store_into(added, gep)?;
+		self.store_into(added_together, gep)?;
 
 		Ok(())
 	}

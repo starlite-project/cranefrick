@@ -123,7 +123,6 @@ pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 		[
 			&BrainIr::Boundary,
 			BrainIr::DynamicLoop(..)
-			| BrainIr::CopyValueTo(..)
 			| BrainIr::MoveValueTo(..)
 			| BrainIr::FetchValueFrom(..)
 			| BrainIr::ReplaceValueFrom(..),
@@ -411,43 +410,6 @@ pub fn optimize_replace_value(ops: [&BrainIr; 2]) -> Option<Change> {
 			&BrainIr::SetCell(set_options),
 			&BrainIr::ReplaceValueFrom(..),
 		] if !set_options.is_offset() => Some(Change::remove_offset(0)),
-		_ => None,
-	}
-}
-
-pub fn optimize_copy_value(ops: [&BrainIr; 2]) -> Option<Change> {
-	match ops {
-		[
-			BrainIr::DuplicateCell { values },
-			&BrainIr::ReplaceValueFrom(options),
-		] => {
-			if !values
-				.iter()
-				.any(|v| v.offset() == options.offset() && matches!(v.factor(), 1))
-			{
-				return None;
-			}
-
-			if !matches!(values.len(), 2) {
-				return None;
-			}
-
-			let other_move_options = {
-				let offset = values
-					.iter()
-					.position(|x| x.offset() != options.offset() && x.factor().is_positive())?;
-
-				values.get(offset).copied()?
-			};
-
-			Some(Change::swap([
-				BrainIr::copy_value_to(
-					other_move_options.factor() as u8,
-					other_move_options.offset(),
-				),
-				BrainIr::FetchValueFrom(options),
-			]))
-		}
 		_ => None,
 	}
 }

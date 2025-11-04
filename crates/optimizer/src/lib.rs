@@ -65,7 +65,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(59);
+		span.pb_set_length(58);
 
 		self.run_all_passes(&mut progress);
 
@@ -327,12 +327,6 @@ impl Optimizer {
 				progress,
 				self,
 				passes::optimize_replace_value,
-			);
-			run_peephole_pass_with_span(
-				"optimize_copy_value",
-				progress,
-				self,
-				passes::optimize_copy_value,
 			);
 			run_peephole_pass_with_span(
 				"optimize_scale_value",

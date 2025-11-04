@@ -259,7 +259,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 				&BrainIr::InputIntoCell => self.input_into_cell()?,
 				BrainIr::Output(options) => self.output(options)?,
 				&BrainIr::MoveValueTo(options) => self.move_value_to(options)?,
-				&BrainIr::CopyValueTo(options) => self.copy_value_to(options)?,
 				&BrainIr::TakeValueTo(options) => self.take_value_to(options)?,
 				&BrainIr::FetchValueFrom(options) => self.fetch_value_from(options)?,
 				&BrainIr::ReplaceValueFrom(options) => self.replace_value_from(options)?,
