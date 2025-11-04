@@ -11,18 +11,14 @@ use crate::inner::Change;
 
 pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
-		[&BrainIr::SetCell(a), &BrainIr::SetCell(b)] if a.value() == b.value() => {
-			let x = a.offset();
-			let y = b.offset();
-
-			let min = cmp::min(x, y);
-			let max = cmp::max(x, y);
-
-			if !matches!((max - min).unsigned_abs(), 1) {
-				return None;
-			}
-
-			Some(Change::replace(BrainIr::set_range(a.value(), min, max)))
+		[&BrainIr::SetCell(a), &BrainIr::SetCell(b)]
+		| [&BrainIr::SetCell(b), &BrainIr::SetCell(a)]
+			if a.offset().wrapping_add(1) == b.offset() =>
+		{
+			Some(Change::replace(BrainIr::set_many_cells(
+				[a.value(), b.value()],
+				a.offset(),
+			)))
 		}
 		[
 			&BrainIr::SetCell(set_options),
@@ -102,24 +98,6 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			&BrainIr::SetRange(set_range_options),
 		] if set_range_options.range().contains(&change_options.offset()) => {
 			Some(Change::remove_offset(0))
-		}
-		[&BrainIr::SetCell(a), &BrainIr::SetCell(b)] => {
-			let x = a.offset();
-			let y = b.offset();
-			let min = cmp::min(x, y);
-			let max = cmp::max(x, y);
-
-			if !matches!((max - min).unsigned_abs(), 1) {
-				return None;
-			}
-
-			let (a, b) = if x == min {
-				(a.value(), b.value())
-			} else {
-				(b.value(), a.value())
-			};
-
-			Some(Change::replace(BrainIr::set_many_cells([a, b], min)))
 		}
 		[
 			&BrainIr::SetCell(set_options),
