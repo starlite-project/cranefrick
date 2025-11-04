@@ -62,15 +62,24 @@ impl InnerAssembler<'_> {
 	pub fn dynamic_loop(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
+		let i8_type = context.i8_type();
+
+		let preheader_block =
+			context.append_basic_block(self.functions.main, "dynamic_loop.preheader\0");
 		let header_block = context.append_basic_block(self.functions.main, "dynamic_loop.header\0");
 		let body_block = context.append_basic_block(self.functions.main, "dynamic_loop.body\0");
+		let latch_block = context.append_basic_block(self.functions.main, "dynamic_loop.latch\0");
 		let exit_block = context.append_basic_block(self.functions.main, "dynamic_loop.exit\0");
 
-		self.builder.build_unconditional_branch(header_block)?;
+		self.builder.build_unconditional_branch(preheader_block)?;
+		self.builder.position_at_end(preheader_block);
 
+		let current_value = self.load_cell(0)?;
+
+		self.builder.build_unconditional_branch(header_block)?;
 		self.builder.position_at_end(header_block);
 
-		let value = self.load_cell(0)?;
+		let loaded_value_phi = self.builder.build_phi(i8_type, "loaded_value\0")?;
 
 		let zero = {
 			let i8_type = context.i8_type();
@@ -78,13 +87,15 @@ impl InnerAssembler<'_> {
 			i8_type.const_zero()
 		};
 
-		let cmp =
-			self.builder
-				.build_int_compare(IntPredicate::NE, value, zero, "dynamic_loop_cmp\0")?;
+		let cmp = self.builder.build_int_compare(
+			IntPredicate::NE,
+			loaded_value_phi.as_basic_value().into_int_value(),
+			zero,
+			"dynamic_loop_cmp\0",
+		)?;
 
 		self.builder
 			.build_conditional_branch(cmp, body_block, exit_block)?;
-
 		self.builder.position_at_end(body_block);
 
 		*op_count += 1;
@@ -107,8 +118,17 @@ impl InnerAssembler<'_> {
 
 		self.builder.set_current_debug_location(debug_loc);
 
-		self.builder.build_unconditional_branch(header_block)?;
+		self.builder.build_unconditional_branch(latch_block)?;
+		self.builder.position_at_end(latch_block);
 
+		let new_cell_value = self.load_cell(0)?;
+
+		loaded_value_phi.add_incoming(&[
+			(&current_value, preheader_block),
+			(&new_cell_value, latch_block),
+		]);
+
+		self.builder.build_unconditional_branch(header_block)?;
 		self.builder.position_at_end(exit_block);
 
 		Ok(())
