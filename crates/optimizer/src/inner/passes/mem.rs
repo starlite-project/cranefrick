@@ -504,6 +504,15 @@ pub fn optimize_mem_set_move_change(ops: [&BrainIr; 3]) -> Option<Change> {
 				BrainIr::move_pointer(move_offset),
 			]))
 		}
+		[
+			&BrainIr::SetCell(a_options),
+			BrainIr::ChangeManyCells(change_many_options),
+			&BrainIr::SetCell(b_options),
+		] if a_options.offset() == b_options.offset()
+			&& !change_many_options.range().contains(&a_options.offset()) =>
+		{
+			Some(Change::remove_offset(0))
+		}
 		_ => None,
 	}
 }
