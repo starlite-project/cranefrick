@@ -194,7 +194,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		add_attributes_to(self.main, [nosync_attr, nofree_attr, uwtable_attr], [], []);
 		add_attributes_to(
 			self.eh_personality,
-			[nounwind_attr, nonlazybind_attr, uwtable_attr],
+			[nounwind_attr, uwtable_attr],
 			(0..5).map(|i| (i, noundef_attr)),
 			[noundef_attr],
 		);
