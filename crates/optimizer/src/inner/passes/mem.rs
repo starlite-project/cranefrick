@@ -344,42 +344,25 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 		[
 			&BrainIr::SetCell(set_options),
 			BrainIr::ChangeManyCells(change_many_options),
-		] => {
-			let set_offset = set_options.offset();
-			let change_many_range = change_many_options.range();
+		] if change_many_options
+			.value_at(set_options.offset())
+			.is_some_and(|x| !matches!(x, 0)) =>
+		{
+			let mut change_many_options = change_many_options.clone();
 
-			if change_many_range.start != set_offset
-				&& change_many_range.end.wrapping_sub(1) != set_offset
-			{
+			let value_to_set = set_options.value();
+
+			let value_to_change_by = change_many_options.value_at(set_options.offset())?;
+
+			if !change_many_options.set_value_at(set_options.offset(), 0) {
 				return None;
 			}
 
-			let is_at_start = change_many_range.start == set_offset;
-
-			let value_to_add = change_many_options.value_at(set_offset)?;
-
-			let new_value_to_set = set_options.value().wrapping_add_signed(value_to_add);
-
-			let new_change_many_options = ChangeManyCellsOptions::new(
-				change_many_options.iter().filter_map(|options| {
-					let (value, offset) = options.into_parts();
-
-					if offset == set_offset {
-						None
-					} else {
-						Some(value)
-					}
-				}),
-				if is_at_start {
-					change_many_range.start.wrapping_add(1)
-				} else {
-					change_many_range.start
-				},
-			);
+			let new_value_to_set = value_to_set.wrapping_add_signed(value_to_change_by);
 
 			Some(Change::swap([
-				BrainIr::set_cell_at(new_value_to_set, set_offset),
-				new_change_many_options.convert::<BrainIr>(),
+				BrainIr::set_cell_at(new_value_to_set, set_options.offset()),
+				change_many_options.convert::<BrainIr>(),
 			]))
 		}
 		[i, BrainIr::ChangeManyCells(change_many_options)]
@@ -555,6 +538,36 @@ pub fn unroll_single_mem_operations(ops: [&BrainIr; 1]) -> Option<Change> {
 			let (value, offset) = change_many_options.iter().next()?.into_parts();
 
 			Some(Change::replace(BrainIr::change_cell_at(value, offset)))
+		}
+		[BrainIr::ChangeManyCells(change_many_options)]
+			if change_many_options
+				.values()
+				.first()
+				.is_some_and(|x| matches!(x, 0)) =>
+		{
+			let mut values = change_many_options.values().to_vec();
+
+			values.remove(0);
+
+			Some(Change::replace(BrainIr::change_many_cells(
+				values,
+				change_many_options.start().wrapping_add(1),
+			)))
+		}
+		[BrainIr::ChangeManyCells(change_many_options)]
+			if change_many_options
+				.values()
+				.last()
+				.is_some_and(|x| matches!(x, 0)) =>
+		{
+			let mut values = change_many_options.values().to_vec();
+
+			values.pop();
+
+			Some(Change::replace(BrainIr::change_many_cells(
+				values,
+				change_many_options.start(),
+			)))
 		}
 		_ => None,
 	}
