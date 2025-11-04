@@ -12,7 +12,7 @@ use inkwell::{
 		DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
-	values::{BasicValueEnum, InstructionOpcode, InstructionValue, PointerValue},
+	values::{BasicValueEnum, InstructionOpcode, InstructionValue},
 };
 
 use super::{AssemblerFunctions, AssemblerPointers};
@@ -148,7 +148,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let after_store_instr = entry_block
 			.get_instructions()
-			.find(|x| matches!(x.get_opcode(), InstructionOpcode::Store))
+			.find(|x| is_initial_pointer_store(*x, pointers))
 			.and_then(InstructionValue::get_next_instruction)
 			.unwrap();
 
@@ -277,24 +277,52 @@ impl<'ctx> AssemblerDebugVariables<'ctx> {
 	}
 }
 
-// Leaving this here in case I want to use it again
-#[allow(unused)]
-fn get_instruction_after_alloca(
-	alloca: PointerValue<'_>,
-) -> Result<InstructionValue<'_>, AssemblyError> {
-	let alloca_name = || alloca.get_name().to_string_lossy().into_owned();
-	let alloca_instr =
-		alloca
-			.as_instruction()
-			.ok_or_else(|| AssemblyError::MissingPointerInstruction {
-				alloca_name: alloca_name(),
-				looking_after: false,
-			})?;
+fn is_initial_pointer_store<'ctx>(
+	x: InstructionValue<'ctx>,
+	pointers: AssemblerPointers<'ctx>,
+) -> bool {
+	if !matches!(x.get_opcode(), InstructionOpcode::Store) {
+		return false;
+	}
 
-	alloca_instr
-		.get_next_instruction()
-		.ok_or_else(|| AssemblyError::MissingPointerInstruction {
-			alloca_name: alloca_name(),
-			looking_after: true,
-		})
+	let mut operands = x.get_operands().flatten();
+
+	let Some(value_op) = operands.next() else {
+		return false;
+	};
+
+	let Some(value_value) = value_op.value() else {
+		return false;
+	};
+
+	if !value_value.is_int_value() {
+		return false;
+	}
+
+	let int_value = value_value.into_int_value();
+
+	if !int_value
+		.get_zero_extended_constant()
+		.is_some_and(|x| matches!(x, 0))
+	{
+		return false;
+	}
+
+	let Some(pointer_op) = operands.next() else {
+		return false;
+	};
+
+	let Some(pointer_value) = pointer_op.value() else {
+		return false;
+	};
+
+	if !pointer_value.is_pointer_value() {
+		return false;
+	}
+
+	if pointer_value.into_pointer_value() != pointers.pointer {
+		return false;
+	}
+
+	true
 }
