@@ -12,7 +12,7 @@ use inkwell::{
 		DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
-	values::{BasicValueEnum, InstructionValue, PointerValue},
+	values::{BasicValueEnum, InstructionOpcode, InstructionValue, PointerValue},
 };
 
 use super::{AssemblerFunctions, AssemblerPointers};
@@ -146,6 +146,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			.and_then(InstructionValue::get_parent)
 			.unwrap();
 
+		let after_store_instr = entry_block
+			.get_instructions()
+			.find(|x| matches!(x.get_opcode(), InstructionOpcode::Store))
+			.and_then(InstructionValue::get_next_instruction)
+			.unwrap();
+
 		let debug_loc = self.create_debug_location(
 			context,
 			0,
@@ -161,14 +167,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			i8_array_type.const_zero()
 		};
 
-		let right_after_tape_alloca = get_instruction_after_alloca(pointers.tape)?;
-
 		self.insert_dbg_value_before(
 			tape_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.tape,
 			None,
 			debug_loc,
-			right_after_tape_alloca,
+			after_store_instr,
 		);
 
 		self.insert_declare_at_end(
@@ -181,14 +185,12 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let pointer_value = pointers.pointer_ty.const_zero();
 
-		let right_after_pointer_alloca = get_instruction_after_alloca(pointers.pointer)?;
-
 		self.insert_dbg_value_before(
 			pointer_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.pointer,
 			None,
 			debug_loc,
-			right_after_pointer_alloca,
+			after_store_instr,
 		);
 
 		self.insert_declare_at_end(
