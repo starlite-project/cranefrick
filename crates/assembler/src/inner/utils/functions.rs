@@ -163,7 +163,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let uwtable_attr = context.create_named_enum_attribute("uwtable", 2);
 		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
 		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
-		let nonlazybind_attr = context.create_named_enum_attribute("nonlazybind", 0);
 
 		add_attributes_to(
 			self.putchar,
@@ -175,7 +174,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				nosync_attr,
 				arg_read_inaccessable_write_memory_attr,
 				uwtable_attr,
-				nonlazybind_attr,
 			],
 			[(0, zeroext_attr), (0, noundef_attr)],
 			[],
