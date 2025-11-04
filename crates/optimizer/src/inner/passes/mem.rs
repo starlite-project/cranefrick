@@ -400,17 +400,6 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			BrainIr::ChangeManyCells(a_options),
 			BrainIr::ChangeManyCells(b_options),
 		] => {
-			let a_range = a_options.range();
-			let mut b_range = b_options.range();
-
-			if a_range.clone().all(|x| !b_range.contains(&x)) {
-				return None;
-			}
-
-			if b_range.all(|x| !a_range.contains(&x)) {
-				return None;
-			}
-
 			let mut combined = BTreeMap::new();
 
 			for options in a_options {
@@ -425,12 +414,13 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				*value = value.wrapping_add(options.value());
 			}
 
-			let new_values = combined.values().copied();
+			let min_key = combined.keys().copied().min()?;
+			let max_key = combined.keys().copied().max()?;
 
-			let start = cmp::min(a_options.start(), b_options.start());
+			let new_values = (min_key..=max_key).map(|x| combined.get(&x).copied().unwrap_or(0));
 
 			Some(Change::replace(BrainIr::change_many_cells(
-				new_values, start,
+				new_values, min_key,
 			)))
 		}
 		_ => None,
