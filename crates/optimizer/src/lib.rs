@@ -343,8 +343,8 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize write calls", 6);
-			run_peephole_pass_with_span("optimize_writes", progress, self, passes::optimize_writes);
+			let _guard = self.pass_info("optimize io", 6);
+			run_peephole_pass_with_span("optimize_io", progress, self, passes::optimize_io);
 			run_peephole_pass_with_span(
 				"optimize_changes_and_writes",
 				progress,

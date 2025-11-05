@@ -1,7 +1,7 @@
 mod cells;
 mod chars;
 
-use frick_ir::{BrainIr, OutputOptions};
+use frick_ir::{BrainIr, OutputOptions, ValuedOffsetCellOptions};
 use frick_utils::Convert as _;
 use inkwell::{
 	context::ContextRef,
@@ -55,7 +55,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		char_instr.set_metadata(range_metadata_node, range_metadata_id)
 	}
 
-	pub fn input_into_cell(&self) -> Result<(), AssemblyError> {
+	pub fn input_into_cell(
+		&self,
+		input_options: ValuedOffsetCellOptions<i8>,
+	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
 		let i8_type = context.i8_type();
@@ -75,7 +78,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			context,
 			getchar_value,
 			u8::MIN.convert::<u64>(),
-			u8::MAX.convert::<u64>(),
+			u8::MAX.convert::<u64>() + 1,
 		)?;
 
 		let truncated_value = self.builder.build_int_truncate(
@@ -84,7 +87,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"input_into_cell_truncate\0",
 		)?;
 
-		self.store_into_cell(truncated_value, 0)?;
+		let offset_truncated_value = if matches!(input_options.value(), 0) {
+			truncated_value
+		} else {
+			let offset_value = i8_type.const_int(input_options.value() as u64, false);
+
+			self.builder.build_int_nsw_add(
+				truncated_value,
+				offset_value,
+				"input_into_cell_add\0",
+			)?
+		};
+
+		self.store_into_cell(offset_truncated_value, input_options.offset())?;
+
 		Ok(())
 	}
 

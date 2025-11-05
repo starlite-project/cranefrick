@@ -1,10 +1,10 @@
 #![allow(clippy::trivially_copy_pass_by_ref)]
 
+mod io;
 mod long;
 mod loops;
 mod mem;
 mod sort;
-mod writes;
 
 use alloc::{collections::btree_map::BTreeMap, vec::Vec};
 use core::iter;
@@ -12,7 +12,7 @@ use core::iter;
 use frick_ir::{BrainIr, OffsetCellOptions, OutputOptions, SubOptions};
 use frick_utils::{Convert as _, IteratorExt as _};
 
-pub use self::{long::*, loops::*, mem::*, sort::*, writes::*};
+pub use self::{io::*, long::*, loops::*, mem::*, sort::*};
 use crate::inner::{Change, utils::calculate_ptr_movement};
 
 pub const fn optimize_consecutive_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
@@ -56,12 +56,14 @@ pub fn optimize_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 				BrainIr::set_cell(options.value() as u8),
 			]))
 		}
-		[&BrainIr::SetCell(options), &BrainIr::InputIntoCell] if !options.is_offset() => {
-			Some(Change::remove_offset(0))
-		}
-		[&BrainIr::ChangeCell(options), &BrainIr::InputIntoCell] if !options.is_offset() => {
-			Some(Change::remove_offset(0))
-		}
+		[
+			&BrainIr::SetCell(set_options),
+			&BrainIr::InputIntoCell(input_options),
+		] if set_options.offset() == input_options.offset() => Some(Change::remove_offset(0)),
+		[
+			&BrainIr::ChangeCell(change_options),
+			&BrainIr::InputIntoCell(input_options),
+		] if change_options.offset() == input_options.offset() => Some(Change::remove_offset(0)),
 		[l, &BrainIr::SetCell(options)] if options.is_default() && l.is_zeroing_cell() => {
 			Some(Change::remove_offset(1))
 		}

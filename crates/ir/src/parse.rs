@@ -68,7 +68,10 @@ where
 
 				BrainIr::move_pointer((span.into_iter().len() as i32).wrapping_neg())
 			}),
-			just(',').repeated().at_least(1).to(BrainIr::input_cell()),
+			just(',')
+				.repeated()
+				.at_least(1)
+				.to(BrainIr::input_into_cell()),
 			just('.').to(BrainIr::output_cell()),
 		))
 		.or(bf

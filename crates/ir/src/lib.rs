@@ -32,7 +32,7 @@ pub enum BrainIr {
 	SubCell(SubOptions),
 	MovePointer(i32),
 	FindZero(i32),
-	InputIntoCell,
+	InputIntoCell(ValuedOffsetCellOptions<i8>),
 	Output(OutputOptions),
 	MoveValueTo(FactoredOffsetCellOptions<u8>),
 	TakeValueTo(FactoredOffsetCellOptions<u8>),
@@ -105,8 +105,23 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn input_cell() -> Self {
-		Self::InputIntoCell
+	pub const fn input_into_cell() -> Self {
+		Self::input_offset_into_cell(0)
+	}
+
+	#[must_use]
+	pub const fn input_into_cell_at(offset: i32) -> Self {
+		Self::input_offset_into_cell_at(0, offset)
+	}
+
+	#[must_use]
+	pub const fn input_offset_into_cell(value: i8) -> Self {
+		Self::input_offset_into_cell_at(value, 0)
+	}
+
+	#[must_use]
+	pub const fn input_offset_into_cell_at(value: i8, offset: i32) -> Self {
+		Self::InputIntoCell(ValuedOffsetCellOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -211,7 +226,7 @@ impl BrainIr {
 		if let Some(children) = self.child_ops() {
 			children.iter().any(Self::has_input)
 		} else {
-			matches!(self, Self::InputIntoCell)
+			matches!(self, Self::InputIntoCell(..))
 		}
 	}
 
@@ -287,6 +302,7 @@ impl BrainIr {
 				Self::SetRange(set_range_options) => set_range_options.is_clobbering_cell(),
 				Self::SetManyCells(set_many_options) => set_many_options.is_clobbering_cell(),
 				Self::SetCell(set_options) => !set_options.is_offset(),
+				Self::InputIntoCell(input_options) => !input_options.is_offset(),
 				_ => false,
 			}
 	}
@@ -351,7 +367,10 @@ impl Display for BrainIr {
 				Display::fmt(&offset, f)?;
 				f.write_char(')')?;
 			}
-			Self::InputIntoCell => f.write_str("input")?,
+			Self::InputIntoCell(input_options) => {
+				f.write_str("input")?;
+				Display::fmt(&input_options, f)?;
+			}
 			Self::Output(output_options) => Display::fmt(&output_options, f)?,
 			Self::MoveValueTo(move_options) => {
 				f.write_str("move_value_to")?;

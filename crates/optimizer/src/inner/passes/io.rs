@@ -6,7 +6,7 @@ use frick_utils::{Convert as _, IteratorExt as _};
 
 use crate::inner::Change;
 
-pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
+pub fn optimize_io(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
 			BrainIr::SetCell(set_options),
@@ -135,6 +135,15 @@ pub fn optimize_writes(ops: [&BrainIr; 2]) -> Option<Change> {
 			| BrainIr::SetRange(..)),
 			out @ BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
 		] => Some(Change::swap([out.clone(), change.clone()])),
+		[
+			BrainIr::InputIntoCell(input_options),
+			BrainIr::ChangeCell(change_options),
+		] if input_options.offset() == change_options.offset() => {
+			Some(Change::replace(BrainIr::input_offset_into_cell_at(
+				input_options.value().wrapping_add(change_options.value()),
+				input_options.offset(),
+			)))
+		}
 		_ => None,
 	}
 }
