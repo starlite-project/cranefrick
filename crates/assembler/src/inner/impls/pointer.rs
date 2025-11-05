@@ -84,7 +84,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				VectorType::const_vector(&vec_of_offsets)
 			};
 
-			let vec_of_offset_pointers = self.builder.build_int_nsw_add(
+			let vec_of_offset_pointers = self.builder.build_int_add(
 				vec_of_pointers,
 				vec_of_offset_values,
 				"offset_many_pointers_add\0",
@@ -110,11 +110,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		if matches!(offset, 0) {
 			Ok(current_ptr)
 		} else {
-			let offset_ptr = self.builder.build_int_nsw_add(
-				current_ptr,
-				offset_value,
-				"offset_pointer_add\0",
-			)?;
+			let offset_ptr =
+				self.builder
+					.build_int_add(current_ptr, offset_value, "offset_pointer_add\0")?;
 
 			self.wrap_pointer(offset_ptr, offset > 0)
 		}
@@ -166,7 +164,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let added_offset =
 			self.builder
-				.build_int_nsw_add(tmp, tape_size, "wrap_pointer_negative_add\0")?;
+				.build_int_add(tmp, tape_size, "wrap_pointer_negative_add\0")?;
 
 		let cmp = self.builder.build_int_compare(
 			IntPredicate::SLT,
@@ -210,7 +208,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"wrap_many_pointers_mixed_urem\0",
 		)?;
 
-		let added_offset = self.builder.build_int_nsw_add(
+		let added_offset = self.builder.build_int_add(
 			signed_rem,
 			vec_of_tape_sizes,
 			"wrap_many_pointers_mixed_add\0",
@@ -267,7 +265,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"wrap_many_pointers_negative_srem\0",
 		)?;
 
-		let added_offset = self.builder.build_int_nsw_add(
+		let added_offset = self.builder.build_int_add(
 			tmp,
 			vec_of_tape_sizes,
 			"wrap_many_pointers_negative_add\0",
