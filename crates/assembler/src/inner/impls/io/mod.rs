@@ -78,7 +78,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			context,
 			getchar_value,
 			u8::MIN.convert::<u64>(),
-			u8::MAX.convert::<u64>() + 1,
+			u8::MAX.convert::<u64>(),
 		)?;
 
 		let truncated_value = self.builder.build_int_truncate(
