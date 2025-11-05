@@ -154,7 +154,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let nofree_attr = context.create_named_enum_attribute("nofree", 0);
 		let norecurse_attr = context.create_named_enum_attribute("norecurse", 0);
 		let willreturn_attr = context.create_named_enum_attribute("willreturn", 0);
-		let nosync_attr = context.create_named_enum_attribute("nosync", 0);
 		let arg_none_inaccessable_read_memory_attr =
 			context.create_named_enum_attribute("memory", 4);
 		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0);
@@ -180,7 +179,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				nofree_attr,
 				norecurse_attr,
 				willreturn_attr,
-				nosync_attr,
 				arg_read_inaccessable_write_memory_attr,
 				uwtable_attr,
 			],
@@ -194,13 +192,12 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				nofree_attr,
 				norecurse_attr,
 				willreturn_attr,
-				nosync_attr,
 				arg_none_inaccessable_read_memory_attr,
 			],
 			[],
 			[zeroext_attr, getchar_range_attr],
 		);
-		add_attributes_to(self.main, [nosync_attr, nofree_attr, uwtable_attr], [], []);
+		add_attributes_to(self.main, [nofree_attr, uwtable_attr], [], []);
 		add_attributes_to(
 			self.eh_personality,
 			[nounwind_attr, uwtable_attr, nonlazybind_attr],
