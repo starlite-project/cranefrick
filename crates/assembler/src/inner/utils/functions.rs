@@ -169,6 +169,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			u8::MIN.convert::<u64>(),
 			u8::MAX.convert::<u64>() + 1,
 		);
+		let eh_personality_range_attr =
+			context.create_range_attribute(Attribute::get_named_enum_kind_id("range"), 32, 0, 10);
 
 		add_attributes_to(
 			self.putchar,
@@ -202,7 +204,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			self.eh_personality,
 			[nounwind_attr, uwtable_attr],
 			(0..5).map(|i| (i, noundef_attr)),
-			[noundef_attr],
+			[noundef_attr, eh_personality_range_attr],
 		);
 	}
 }
