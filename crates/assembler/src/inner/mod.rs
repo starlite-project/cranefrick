@@ -180,7 +180,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.build_return(None)?;
 
-		self.builder.unset_current_debug_location();
+		let debug_loc = self.debug_builder.create_debug_location(
+			self.context(),
+			1,
+			op_count as u32,
+			self.debug_builder.main_subprogram.as_debug_info_scope(),
+			None,
+		);
+
+		self.builder.set_current_debug_location(debug_loc);
 
 		tracing::debug!("setting up the landing pad");
 		let last_basic_block = self.functions.main.get_last_basic_block().unwrap();
