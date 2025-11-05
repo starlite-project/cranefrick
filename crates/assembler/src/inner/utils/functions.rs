@@ -163,6 +163,12 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let uwtable_attr = context.create_named_enum_attribute("uwtable", 2);
 		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
 		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
+		let getchar_range_attr = context.create_range_attribute(
+			Attribute::get_named_enum_kind_id("range"),
+			32,
+			u8::MIN.convert::<u64>(),
+			u8::MAX.convert::<u64>() + 1,
+		);
 
 		add_attributes_to(
 			self.putchar,
@@ -189,7 +195,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				arg_none_inaccessable_read_memory_attr,
 			],
 			[],
-			[zeroext_attr],
+			[zeroext_attr, getchar_range_attr],
 		);
 		add_attributes_to(self.main, [nosync_attr, nofree_attr, uwtable_attr], [], []);
 		add_attributes_to(

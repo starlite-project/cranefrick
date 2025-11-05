@@ -15,7 +15,10 @@ use inkwell::{
 		DIBasicType, DICompileUnit, DICompositeType, DIDerivedType, DIExpression, DIFile,
 		DILexicalBlock, DILocalVariable, DILocation, DINamespace, DIScope, DIType,
 	},
-	llvm_sys::core::{LLVMBuildGEP2, LLVMIsNewDbgInfoFormat, LLVMSetIsNewDbgInfoFormat},
+	llvm_sys::core::{
+		LLVMBuildGEP2, LLVMCreateConstantRangeAttribute, LLVMIsNewDbgInfoFormat,
+		LLVMSetIsNewDbgInfoFormat,
+	},
 	module::Module,
 	types::{BasicType, PointerType},
 	values::{AsValueRef, MetadataValue, PointerValue, VectorValue},
@@ -40,6 +43,14 @@ pub trait ContextExt<'ctx> {
 	fn default_ptr_type(&self) -> PointerType<'ctx>;
 
 	fn create_named_enum_attribute(&self, name: &'static str, val: u64) -> Attribute;
+
+	fn create_range_attribute(
+		&self,
+		kind_id: u32,
+		num_bits: u32,
+		lower_bound: u64,
+		upper_bound: u64,
+	) -> Attribute;
 }
 
 impl<'ctx> ContextExt<'ctx> for &'ctx Context {
@@ -50,6 +61,24 @@ impl<'ctx> ContextExt<'ctx> for &'ctx Context {
 	fn create_named_enum_attribute(&self, name: &'static str, val: u64) -> Attribute {
 		self.create_enum_attribute(Attribute::get_named_enum_kind_id(name), val)
 	}
+
+	fn create_range_attribute(
+		&self,
+		kind_id: u32,
+		num_bits: u32,
+		lower_bound: u64,
+		upper_bound: u64,
+	) -> Attribute {
+		unsafe {
+			Attribute::new(LLVMCreateConstantRangeAttribute(
+				self.raw(),
+				kind_id,
+				num_bits,
+				&raw const lower_bound,
+				&raw const upper_bound,
+			))
+		}
+	}
 }
 
 impl<'ctx> ContextExt<'ctx> for ContextRef<'ctx> {
@@ -59,6 +88,24 @@ impl<'ctx> ContextExt<'ctx> for ContextRef<'ctx> {
 
 	fn create_named_enum_attribute(&self, name: &'static str, val: u64) -> Attribute {
 		self.create_enum_attribute(Attribute::get_named_enum_kind_id(name), val)
+	}
+
+	fn create_range_attribute(
+		&self,
+		kind_id: u32,
+		num_bits: u32,
+		lower_bound: u64,
+		upper_bound: u64,
+	) -> Attribute {
+		unsafe {
+			Attribute::new(LLVMCreateConstantRangeAttribute(
+				self.raw(),
+				kind_id,
+				num_bits,
+				&raw const lower_bound,
+				&raw const upper_bound,
+			))
+		}
 	}
 }
 
