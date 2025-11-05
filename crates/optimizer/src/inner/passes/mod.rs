@@ -790,7 +790,6 @@ pub fn unroll_change_cell_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 		] if !set_options.is_offset() => match inner_ops.as_slice() {
 			[BrainIr::ChangeManyCells(change_many_options)] => {
 				let step = change_many_options.value_at(0)?;
-				tracing::warn!(?set_options, ?change_many_options, ?step, "made it");
 
 				let mut combined_options = BTreeMap::<i32, i8>::new();
 
@@ -801,8 +800,6 @@ pub fn unroll_change_cell_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 						*value = value.wrapping_add(i.value());
 					}
 				}
-
-				tracing::warn!(?combined_options);
 
 				Some(Change::swap(combined_options.into_iter().map(
 					|(offset, value)| BrainIr::change_cell_at(value, offset),
