@@ -171,6 +171,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		);
 		let eh_personality_range_attr =
 			context.create_range_attribute(Attribute::get_named_enum_kind_id("range"), 32, 0, 10);
+		let nonlazybind_attr = context.create_named_enum_attribute("nonlazybind", 0);
 
 		add_attributes_to(
 			self.putchar,
@@ -202,7 +203,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		add_attributes_to(self.main, [nosync_attr, nofree_attr, uwtable_attr], [], []);
 		add_attributes_to(
 			self.eh_personality,
-			[nounwind_attr, uwtable_attr],
+			[nounwind_attr, uwtable_attr, nonlazybind_attr],
 			(0..5).map(|i| (i, noundef_attr)),
 			[noundef_attr, eh_personality_range_attr],
 		);
