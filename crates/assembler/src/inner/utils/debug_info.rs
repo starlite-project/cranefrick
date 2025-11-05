@@ -162,22 +162,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			None,
 		);
 
-		self.insert_declare_before_instruction(
-			pointers.tape,
-			Some(self.variables.tape),
-			None,
-			debug_loc,
-			after_store_instr,
-		);
-
-		self.insert_declare_before_instruction(
-			pointers.pointer,
-			Some(self.variables.pointer),
-			None,
-			debug_loc,
-			after_store_instr,
-		);
-
 		let tape_value = {
 			let i8_type = context.i8_type();
 			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
