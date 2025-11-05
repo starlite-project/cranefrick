@@ -1,7 +1,7 @@
 mod impls;
 mod utils;
 
-use std::path::Path;
+use std::{cell::RefCell, mem, path::Path};
 
 use frick_ir::{BrainIr, SubOptions};
 use frick_spec::TAPE_SIZE;
@@ -10,12 +10,12 @@ use inkwell::{
 	basic_block::BasicBlock,
 	builder::Builder,
 	context::{AsContextRef, Context},
-	debug_info::AsDIScope,
+	debug_info::{AsDIScope, DILocation},
 	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Module},
 	targets::TargetMachine,
 	types::{BasicTypeEnum, VectorType},
-	values::{BasicMetadataValueEnum, FunctionValue, VectorValue},
+	values::{BasicMetadataValueEnum, FunctionValue, InstructionValue, IntValue, VectorValue},
 };
 
 pub use self::utils::AssemblerFunctions;
@@ -31,6 +31,8 @@ pub struct InnerAssembler<'ctx> {
 	target_machine: TargetMachine,
 	debug_builder: AssemblerDebugBuilder<'ctx>,
 	catch_block: BasicBlock<'ctx>,
+	pointer_setting_instructions:
+		RefCell<Vec<(InstructionValue<'ctx>, IntValue<'ctx>, DILocation<'ctx>)>>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -127,6 +129,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			target_machine,
 			debug_builder,
 			catch_block,
+			pointer_setting_instructions: RefCell::default(),
 		})
 	}
 
@@ -226,9 +229,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.build_resume(exception)?;
 
+		self.add_pointer_debug_info()?;
+
 		self.debug_builder.di_builder.finalize();
 
 		Ok(self.into_parts())
+	}
+
+	fn add_pointer_debug_info(&self) -> Result<(), AssemblyError> {
+		let values = mem::take(&mut *self.pointer_setting_instructions.borrow_mut());
+
+		for (instr, value, debug_loc) in values {
+			let Some(next_instr) = instr.get_next_instruction() else {
+				continue;
+			};
+
+			self.debug_builder
+				.insert_pointer_dbg_value(value, debug_loc, next_instr);
+		}
+
+		Ok(())
 	}
 
 	fn ops(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
@@ -238,11 +258,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				self.context(),
 				1,
 				*op_count as u32,
-				self.functions
-					.main
-					.get_subprogram()
-					.unwrap()
-					.as_debug_info_scope(),
+				self.debug_builder.main_subprogram.as_debug_info_scope(),
 				None,
 			);
 

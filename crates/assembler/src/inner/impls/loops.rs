@@ -193,14 +193,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(exit_block);
 
-		let store_instr =
-			self.store_into(header_phi_value.as_basic_value(), self.pointers.pointer)?;
-
-		self.debug_builder.insert_pointer_dbg_value(
-			header_phi_value.as_basic_value().into_int_value(),
-			self.builder.get_current_debug_location().unwrap(),
-			store_instr,
-		);
+		self.store_into(header_phi_value.as_basic_value(), self.pointers.pointer)?;
 
 		Ok(())
 	}
