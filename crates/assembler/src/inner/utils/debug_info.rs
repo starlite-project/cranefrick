@@ -103,7 +103,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			false,
 			false,
 			0,
-			i32::ZERO,
+			i32::PRIVATE,
 			true,
 		);
 
@@ -126,7 +126,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			false,
 			false,
 			0,
-			i32::ZERO,
+			i32::PRIVATE,
 			true,
 		);
 
