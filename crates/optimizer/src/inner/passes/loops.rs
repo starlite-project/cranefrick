@@ -50,11 +50,12 @@ pub fn remove_empty_loops(ops: &[BrainIr]) -> Option<Change> {
 	ops.is_empty().then_some(Change::remove())
 }
 
-pub const fn optimize_find_zero(ops: &[BrainIr]) -> Option<Change> {
-	match ops {
-		&[BrainIr::MovePointer(offset) | BrainIr::FindZero(offset)] => {
-			Some(Change::replace(BrainIr::find_zero(offset)))
-		}
+pub const fn optimize_only_scan_tape(ops: &[BrainIr]) -> Option<Change> {
+	match *ops {
+		[BrainIr::MovePointer(offset)] => Some(Change::replace(BrainIr::scan_tape(0, offset, 0))),
+		[BrainIr::ScanTape(scan_tape_options)] if scan_tape_options.only_scans_tape() => Some(
+			Change::replace(BrainIr::scan_tape(0, scan_tape_options.scan_step(), 0)),
+		),
 		_ => None,
 	}
 }

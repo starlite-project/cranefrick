@@ -65,7 +65,7 @@ impl Optimizer {
 			.unwrap()
 			.progress_chars("#>-"),
 		);
-		span.pb_set_length(59);
+		span.pb_set_length(60);
 
 		self.run_all_passes(&mut progress);
 
@@ -105,12 +105,18 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize find zero instructions", 1);
+			let _guard = self.pass_info("optimize scan tape instructions", 2);
 			run_loop_pass_with_span(
-				"optimize_find_zero",
+				"optimize_only_scan_tape",
 				progress,
 				self,
-				passes::optimize_find_zero,
+				passes::optimize_only_scan_tape,
+			);
+			run_peephole_pass_with_span(
+				"optimize_scan_tape",
+				progress,
+				self,
+				passes::optimize_scan_tape,
 			);
 		}
 

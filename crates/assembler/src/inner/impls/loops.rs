@@ -1,4 +1,4 @@
-use frick_ir::BrainIr;
+use frick_ir::{BrainIr, ScanTapeOptions};
 use inkwell::{IntPredicate, debug_info::AsDIScope as _};
 
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
@@ -135,7 +135,7 @@ impl InnerAssembler<'_> {
 	}
 
 	#[tracing::instrument(skip(self))]
-	pub fn find_zero(&self, offset: i32) -> Result<(), AssemblyError> {
+	pub fn scan_tape(&self, scan_tape_options: ScanTapeOptions) -> Result<(), AssemblyError> {
 		let context = self.context();
 
 		let ptr_int_type = self.pointers.pointer_ty;
@@ -144,20 +144,20 @@ impl InnerAssembler<'_> {
 		let _invariant_start = self.start_tape_invariant()?;
 
 		let preheader_block =
-			context.append_basic_block(self.functions.main, "find_zero.preheader\0");
-		let header_block = context.append_basic_block(self.functions.main, "find_zero.header\0");
-		let body_block = context.append_basic_block(self.functions.main, "find_zero.body\0");
-		let exit_block = context.append_basic_block(self.functions.main, "find_zero.exit\0");
+			context.append_basic_block(self.functions.main, "scan_tape.preheader\0");
+		let header_block = context.append_basic_block(self.functions.main, "scan_tape.header\0");
+		let body_block = context.append_basic_block(self.functions.main, "scan_tape.body\0");
+		let exit_block = context.append_basic_block(self.functions.main, "scan_tape.exit\0");
 
 		self.builder.build_unconditional_branch(preheader_block)?;
 		self.builder.position_at_end(preheader_block);
 
-		let current_pointer_value = self.load_from(ptr_int_type, self.pointers.pointer)?;
+		let current_pointer_value = self.offset_pointer(scan_tape_options.initial_move())?;
 
 		self.builder.build_unconditional_branch(header_block)?;
 		self.builder.position_at_end(header_block);
 
-		let header_phi_value = self.builder.build_phi(ptr_int_type, "find_zero_phi\0")?;
+		let header_phi_value = self.builder.build_phi(ptr_int_type, "pointer_value\0")?;
 
 		let gep = self.tape_gep(i8_type, header_phi_value.as_basic_value().into_int_value())?;
 
@@ -167,22 +167,22 @@ impl InnerAssembler<'_> {
 
 		let cmp =
 			self.builder
-				.build_int_compare(IntPredicate::NE, value, zero, "find_zero_cmp\0")?;
+				.build_int_compare(IntPredicate::NE, value, zero, "scan_tape_cmp\0")?;
 
 		self.builder
 			.build_conditional_branch(cmp, body_block, exit_block)?;
-
 		self.builder.position_at_end(body_block);
 
-		let offset_value = ptr_int_type.const_int(offset as u64, false);
+		let offset_value = ptr_int_type.const_int(scan_tape_options.scan_step() as u64, false);
 
 		let new_pointer_value = self.builder.build_int_add(
 			header_phi_value.as_basic_value().into_int_value(),
 			offset_value,
-			"find_zero_add\0",
+			"scan_tape_add\0",
 		)?;
 
-		let wrapped_pointer_value = self.wrap_pointer(new_pointer_value, offset > 0)?;
+		let wrapped_pointer_value =
+			self.wrap_pointer(new_pointer_value, scan_tape_options.scan_step() > 0)?;
 
 		self.builder.build_unconditional_branch(header_block)?;
 
@@ -193,14 +193,28 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(exit_block);
 
-		let store_instr =
-			self.store_into(header_phi_value.as_basic_value(), self.pointers.pointer)?;
+		let value_to_store = if scan_tape_options.moves_after_scan() {
+			let offset_value =
+				ptr_int_type.const_int(scan_tape_options.post_scan_move() as u64, false);
+
+			let offset_pointer = self.builder.build_int_add(
+				header_phi_value.as_basic_value().into_int_value(),
+				offset_value,
+				"scan_tape_post_move\0",
+			)?;
+
+			self.wrap_pointer(offset_pointer, scan_tape_options.post_scan_move() > 0)?
+		} else {
+			header_phi_value.as_basic_value().into_int_value()
+		};
+
+		let store_instr = self.store_into(value_to_store, self.pointers.pointer)?;
 
 		let current_debug_loc = self.builder.get_current_debug_location().unwrap();
 
 		self.pointer_setting_instructions.borrow_mut().push((
 			store_instr,
-			header_phi_value.as_basic_value().into_int_value(),
+			value_to_store,
 			current_debug_loc,
 		));
 

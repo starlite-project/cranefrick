@@ -279,7 +279,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				&BrainIr::SubCell(SubOptions::CellAt(options)) => self.sub_cell_at(options)?,
 				&BrainIr::SubCell(SubOptions::FromCell(options)) => self.sub_from_cell(options)?,
 				&BrainIr::MovePointer(offset) => self.move_pointer(offset)?,
-				&BrainIr::FindZero(offset) => self.find_zero(offset)?,
+				&BrainIr::ScanTape(scan_tape_options) => self.scan_tape(scan_tape_options)?,
 				&BrainIr::InputIntoCell(input_options) => self.input_into_cell(input_options)?,
 				BrainIr::Output(options) => self.output(options)?,
 				&BrainIr::MoveValueTo(options) => self.move_value_to(options)?,

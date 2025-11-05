@@ -782,6 +782,28 @@ pub fn optimize_initial_change_to_sets<const N: usize>(ops: [&BrainIr; N]) -> Op
 	}
 }
 
+pub const fn optimize_scan_tape(ops: [&BrainIr; 2]) -> Option<Change> {
+	match ops {
+		[
+			&BrainIr::MovePointer(move_offset),
+			&BrainIr::ScanTape(scan_tape_options),
+		] => Some(Change::replace(BrainIr::scan_tape(
+			scan_tape_options.initial_move().wrapping_add(move_offset),
+			scan_tape_options.scan_step(),
+			scan_tape_options.post_scan_move(),
+		))),
+		[
+			&BrainIr::ScanTape(scan_tape_options),
+			&BrainIr::MovePointer(move_offset),
+		] => Some(Change::replace(BrainIr::scan_tape(
+			scan_tape_options.initial_move(),
+			scan_tape_options.scan_step(),
+			scan_tape_options.post_scan_move().wrapping_add(move_offset),
+		))),
+		_ => None,
+	}
+}
+
 pub fn unroll_change_cell_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[

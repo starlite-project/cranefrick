@@ -31,7 +31,7 @@ pub enum BrainIr {
 	SetCell(ValuedOffsetCellOptions<u8>),
 	SubCell(SubOptions),
 	MovePointer(i32),
-	FindZero(i32),
+	ScanTape(ScanTapeOptions),
 	InputIntoCell(ValuedOffsetCellOptions<i8>),
 	Output(OutputOptions),
 	MoveValueTo(FactoredOffsetCellOptions<u8>),
@@ -185,8 +185,12 @@ impl BrainIr {
 	}
 
 	#[must_use]
-	pub const fn find_zero(offset: i32) -> Self {
-		Self::FindZero(offset)
+	pub const fn scan_tape(initial_move: i32, scan_step: i32, post_scan_move: i32) -> Self {
+		Self::ScanTape(ScanTapeOptions::new(
+			initial_move,
+			scan_step,
+			post_scan_move,
+		))
 	}
 
 	#[must_use]
@@ -312,28 +316,28 @@ impl BrainIr {
 		match self {
 			Self::DynamicLoop(..)
 			| Self::MoveValueTo(..)
-			| Self::FindZero(..)
 			| Self::IfNotZero(..)
 			| Self::SubCell(SubOptions::CellAt(..)) => true,
-			Self::SetRange(set_range_options) => set_range_options.is_zeroing_cell(),
+			&Self::SetRange(set_range_options) => set_range_options.is_zeroing_cell(),
 			Self::SetManyCells(set_many_options) => set_many_options.is_zeroing_cell(),
-			Self::SetCell(set_options) => set_options.is_default(),
+			&Self::SetCell(set_options) => set_options.is_default(),
 			Self::DuplicateCell { values } => !values.iter().any(|x| matches!(x.offset(), 0)),
+			&Self::ScanTape(scan_tape_options) => scan_tape_options.is_zeroing_cell(),
 			_ => false,
 		}
 	}
 
 	#[must_use]
 	pub const fn needs_nonzero_cell(&self) -> bool {
-		matches!(
-			self,
+		match self {
 			Self::DynamicLoop(..)
-				| Self::FindZero(..)
-				| Self::MoveValueTo(..)
-				| Self::IfNotZero(..)
-				| Self::SubCell(SubOptions::CellAt(..))
-				| Self::DuplicateCell { .. }
-		)
+			| Self::MoveValueTo(..)
+			| Self::IfNotZero(..)
+			| Self::SubCell(SubOptions::CellAt(..))
+			| Self::DuplicateCell { .. } => true,
+			Self::ScanTape(scan_tape_options) => !scan_tape_options.moves_before_scan(),
+			_ => false,
+		}
 	}
 }
 
@@ -362,10 +366,9 @@ impl Display for BrainIr {
 				Display::fmt(&offset, f)?;
 				f.write_char(')')?;
 			}
-			Self::FindZero(offset) => {
-				f.write_str("find_zero(")?;
-				Display::fmt(&offset, f)?;
-				f.write_char(')')?;
+			Self::ScanTape(scan_tape_options) => {
+				f.write_str("scan_tape")?;
+				Display::fmt(&scan_tape_options, f)?;
 			}
 			Self::InputIntoCell(input_options) => {
 				f.write_str("input")?;
