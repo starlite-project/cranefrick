@@ -168,19 +168,21 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			let range = (min..=max).collect::<Vec<_>>();
 
-			let mut values_to_set = alloc::vec![0; range.len()];
+			let mut values_to_set = BTreeMap::new();
 
-			for (idx, offset) in range.into_iter().enumerate() {
+			for offset in range {
+				let value_in_map = values_to_set.entry(offset).or_default();
+
 				if offset == a_options.offset() {
-					values_to_set[idx] = a_options.value();
+					*value_in_map = a_options.value();
 				} else if offset == b_options.offset() {
-					values_to_set[idx] = b_options.value();
+					*value_in_map = b_options.value();
 				}
 			}
 
 			Some(Change::swap([
 				BrainIr::boundary(),
-				BrainIr::set_many_cells(values_to_set, min),
+				BrainIr::set_many_cells(values_to_set.values().copied(), min),
 			]))
 		}
 		[
@@ -229,21 +231,20 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			let range = min..max;
 
-			let mut values_to_set = alloc::vec![0; range.len()];
+			let mut values_to_set = BTreeMap::new();
 
-			for (idx, offset) in range.enumerate() {
-				if let Some(a_value) = a_options.value_at(offset) {
-					values_to_set[idx] = a_value;
-				}
+			for offset in range {
+				let value_in_map = values_to_set.entry(offset).or_default();
 
-				if let Some(b_value) = b_options.value_at(offset) {
-					values_to_set[idx] = b_value;
-				}
+				*value_in_map = match (a_options.value_at(offset), b_options.value_at(offset)) {
+					(_, Some(value)) | (Some(value), None) => value,
+					(None, None) => 0,
+				};
 			}
 
 			Some(Change::swap([
 				BrainIr::boundary(),
-				BrainIr::set_many_cells(values_to_set, min),
+				BrainIr::set_many_cells(values_to_set.values().copied(), min),
 			]))
 		}
 		[
@@ -261,21 +262,21 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			let range = (min..=max).collect::<Vec<_>>();
 
-			let mut values_to_set = alloc::vec![0; range.len()];
+			let mut values_to_set = BTreeMap::new();
 
-			for (idx, offset) in range.into_iter().enumerate() {
-				if let Some(set_many_value) = set_many_options.value_at(offset) {
-					values_to_set[idx] = set_many_value;
-				}
+			for offset in range {
+				let value_in_map = values_to_set.entry(offset).or_default();
 
 				if offset == set_options.offset() {
-					values_to_set[idx] = set_options.value();
+					*value_in_map = set_options.value();
+				} else if let Some(set_many_value) = set_many_options.value_at(offset) {
+					*value_in_map = set_many_value;
 				}
 			}
 
 			Some(Change::swap([
 				BrainIr::boundary(),
-				BrainIr::set_many_cells(values_to_set, min),
+				BrainIr::set_many_cells(values_to_set.values().copied(), min),
 			]))
 		}
 		[
@@ -306,8 +307,6 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 					*value_in_map = set_many_value;
 				}
 			}
-
-			let min = values_to_set.keys().copied().min()?;
 
 			Some(Change::swap([
 				BrainIr::boundary(),
