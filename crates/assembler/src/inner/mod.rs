@@ -13,7 +13,7 @@ use inkwell::{
 	debug_info::{AsDIScope, DILocation},
 	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Module},
-	targets::TargetMachine,
+	targets::{TargetMachine, TargetTriple},
 	types::{BasicTypeEnum, VectorType},
 	values::{BasicMetadataValueEnum, FunctionValue, InstructionValue, IntValue, VectorValue},
 };
@@ -39,6 +39,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn new(
 		context: &'ctx Context,
 		target_machine: TargetMachine,
+		target_triple: TargetTriple,
+		cpu: &str,
+		cpu_features: &str,
 		path: Option<&Path>,
 	) -> Result<Self, AssemblyError> {
 		let module = context.create_module("frick\0");
@@ -46,14 +49,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let builder = context.create_builder();
 
 		let target_data = target_machine.get_target_data();
-
 		let data_layout = target_data.get_data_layout();
-
-		let target_triple = {
-			let default_target = TargetMachine::get_default_triple();
-
-			TargetMachine::normalize_triple(&default_target)
-		};
 
 		module.set_new_debug_format(true);
 		module.set_data_layout(&data_layout);
@@ -76,6 +72,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 				false,
 			)
 		};
+
+		let cpu_value = context.const_string(cpu.as_bytes(), false);
+
+		let cpu_features_value = context.const_string(cpu_features.as_bytes(), false);
+
+		module.add_basic_value_flag("CPU", FlagBehavior::Warning, cpu_value);
+
+		module.add_basic_value_flag("CPU Features", FlagBehavior::Warning, cpu_features_value);
 
 		module.add_basic_value_flag(
 			"Debug Info Version",
