@@ -1,8 +1,15 @@
-++++[>+++++<-]>[<+++++>-]+<+[
-    >[>+>+<<-]++>>[<<+>>-]>>>[-]++>[-]+
-    >>>+[[-]++++++>>>]<<<[[<++++++++<++>>-]+<.<[>----<-]<]
-    <<[>>>>>[>>>[-]+++++++++<[>-<-]+++++++++>[-[<->-]+[<<<]]<[>+<-]>]<<-]<<-
+[squares2.b -- compute square numbers
+(c) 2016 Daniel B. Cristofani
+http://brainfuck.org/]
+
+>>>>>>>>>>+>++<[
+    [[<<+>+>-]++++++[<++++++++>-]<-.[-]<<<]
+    ++++++++++.[-]>>>>>[>>>>]<<<<[[<<<+>+>>-]<<<-<]>>++[
+        [
+            <<<++++++++++[>>>[->>+<]>[<]<<<<-]
+            >>>[>>[-]>>+<<<<[>>+<<-]]>>>>
+        ]<<-[+>>>>]+[<<<<]>
+    ]>>>[>>>>]<<<<-<<+<<
 ]
-[Outputs square numbers from 0 to 10000.
-Daniel B Cristofani (cristofdathevanetdotcom)
-http://www.hevanet.com/cristofd/brainfuck/]
+
+This program outputs square numbers. It doesn't terminate.
