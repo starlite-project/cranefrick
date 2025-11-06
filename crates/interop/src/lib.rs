@@ -5,7 +5,7 @@ use std::{
 	slice,
 };
 
-pub use libc::getchar as rust_getchar;
+// pub use libc::getchar as rust_getchar;
 
 unsafe extern "Rust" {
 	pub fn rust_eh_personality(
@@ -25,4 +25,10 @@ pub unsafe extern "C-unwind" fn rust_putchar(c: u8) {
 		.write_all(slice::from_ref(&c))
 		.and_then(|()| stdout.flush())
 		.unwrap();
+}
+
+#[unsafe(no_mangle)]
+#[must_use]
+pub unsafe extern "C-unwind" fn rust_getchar() -> libc::c_int {
+	unsafe { libc::getchar() }
 }

@@ -25,7 +25,12 @@ pub struct AssemblerFunctions<'ctx> {
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
-	pub fn new(context: &'ctx Context, module: &Module<'ctx>) -> Result<Self, AssemblyError> {
+	pub fn new(
+		context: &'ctx Context,
+		module: &Module<'ctx>,
+		cpu_name: &str,
+		cpu_features: &str,
+	) -> Result<Self, AssemblyError> {
 		let void_type = context.void_type();
 		let i8_type = context.i8_type();
 		let i32_type = context.i32_type();
@@ -99,7 +104,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			masked_vector_functions: RefCell::default(),
 		};
 
-		this.setup();
+		this.setup(cpu_name, cpu_features);
 
 		Ok(this)
 	}
@@ -145,7 +150,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			.insert(key, fn_value);
 	}
 
-	fn setup(&self) {
+	fn setup(&self, cpu_name: &str, cpu_features: &str) {
 		let context = self.context();
 
 		self.main.set_personality_function(self.eh_personality);
@@ -171,6 +176,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let eh_personality_range_attr =
 			context.create_range_attribute(Attribute::get_named_enum_kind_id("range"), 32, 0, 10);
 		let nonlazybind_attr = context.create_named_enum_attribute("nonlazybind", 0);
+		let target_cpu_attr = context.create_string_attribute("target-cpu", cpu_name);
+		let target_cpu_features_attr =
+			context.create_string_attribute("target-features", cpu_features);
+		let probe_stack_attr = context.create_string_attribute("probe-stack", "inline-asm");
 
 		add_attributes_to(
 			self.putchar,
@@ -181,6 +190,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				willreturn_attr,
 				arg_read_inaccessable_write_memory_attr,
 				uwtable_attr,
+				probe_stack_attr,
+				target_cpu_attr,
+				target_cpu_features_attr,
 			],
 			[(0, zeroext_attr), (0, noundef_attr)],
 			[],
@@ -193,14 +205,35 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				norecurse_attr,
 				willreturn_attr,
 				arg_none_inaccessable_read_memory_attr,
+				probe_stack_attr,
+				target_cpu_attr,
+				target_cpu_features_attr,
 			],
 			[],
 			[zeroext_attr, getchar_range_attr],
 		);
-		add_attributes_to(self.main, [nofree_attr, uwtable_attr], [], []);
+		add_attributes_to(
+			self.main,
+			[
+				nofree_attr,
+				uwtable_attr,
+				probe_stack_attr,
+				target_cpu_attr,
+				target_cpu_features_attr,
+			],
+			[],
+			[],
+		);
 		add_attributes_to(
 			self.eh_personality,
-			[nounwind_attr, uwtable_attr, nonlazybind_attr],
+			[
+				nounwind_attr,
+				uwtable_attr,
+				nonlazybind_attr,
+				probe_stack_attr,
+				target_cpu_attr,
+				target_cpu_features_attr,
+			],
 			(0..5).map(|i| (i, noundef_attr)),
 			[noundef_attr, eh_personality_range_attr],
 		);

@@ -40,12 +40,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 		context: &'ctx Context,
 		target_machine: TargetMachine,
 		target_triple: TargetTriple,
-		cpu: &str,
+		cpu_name: &str,
 		cpu_features: &str,
 		path: Option<&Path>,
 	) -> Result<Self, AssemblyError> {
 		let module = context.create_module("frick\0");
-		let functions = AssemblerFunctions::new(context, &module)?;
+		let functions = AssemblerFunctions::new(context, &module, cpu_name, cpu_features)?;
 		let builder = context.create_builder();
 
 		let target_data = target_machine.get_target_data();
@@ -72,14 +72,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 				false,
 			)
 		};
-
-		let cpu_value = context.const_string(cpu.as_bytes(), false);
-
-		let cpu_features_value = context.const_string(cpu_features.as_bytes(), false);
-
-		module.add_basic_value_flag("CPU", FlagBehavior::Warning, cpu_value);
-
-		module.add_basic_value_flag("CPU Features", FlagBehavior::Warning, cpu_features_value);
 
 		module.add_basic_value_flag(
 			"Debug Info Version",
