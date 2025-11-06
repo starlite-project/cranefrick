@@ -14,7 +14,7 @@ use core::{
 use frick_ir::BrainIr;
 use frick_utils::IteratorExt as _;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, trace_span};
+use tracing::{info, trace, trace_span};
 use tracing_indicatif::{span_ext::IndicatifSpanExt as _, style::ProgressStyle};
 
 use self::inner::{LoopPass, PeepholePass, passes, run_loop_pass, run_peephole_pass};
@@ -503,7 +503,7 @@ impl Optimizer {
 		}
 
 		let (op_count, dloop_count, if_count) = self.stats();
-		debug!(
+		trace!(
 			"running pass{plural} to {pass} with {op_count} instructions, {dloop_count} loops and {if_count} ifs",
 			plural = if matches!(count, 1) { "" } else { "es" }
 		);

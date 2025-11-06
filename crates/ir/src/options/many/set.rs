@@ -35,11 +35,15 @@ impl SetManyCellsOptions {
 	}
 
 	#[must_use]
-	pub const fn range(&self) -> Range<i32> {
-		let start = self.start;
-		let end = start.wrapping_add_unsigned(self.values.len() as u32);
+	pub const fn end(&self) -> i32 {
+		let start = self.start();
 
-		start..end
+		start.wrapping_add_unsigned(self.values.len() as u32)
+	}
+
+	#[must_use]
+	pub const fn range(&self) -> Range<i32> {
+		self.start()..self.end()
 	}
 
 	#[must_use]

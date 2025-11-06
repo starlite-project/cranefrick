@@ -86,6 +86,25 @@ pub fn optimize_initial_set_move_change(ops: [&BrainIr; 4]) -> Option<Change> {
 				BrainIr::set_cell_at(change_options.value() as u8, change_options.offset()),
 			]))
 		}
+		[
+			&BrainIr::Boundary,
+			BrainIr::SetManyCells(set_many_options),
+			&BrainIr::MovePointer(move_offset),
+			&BrainIr::ChangeCell(change_options),
+		] if !set_many_options
+			.range()
+			.contains(&move_offset.wrapping_add(change_options.offset())) =>
+		{
+			Some(Change::swap([
+				BrainIr::boundary(),
+				BrainIr::set_many_cells(
+					set_many_options.values().iter().copied(),
+					set_many_options.start(),
+				),
+				BrainIr::move_pointer(move_offset),
+				BrainIr::set_cell_at(change_options.value() as u8, change_options.offset()),
+			]))
+		}
 		_ => None,
 	}
 }

@@ -7,7 +7,7 @@ mod mem;
 mod sort;
 
 use alloc::{collections::btree_map::BTreeMap, vec::Vec};
-use core::iter;
+use core::{cmp, iter};
 
 use frick_ir::{BrainIr, OffsetCellOptions, OutputOptions, SubOptions};
 use frick_utils::{Convert as _, IteratorExt as _};
@@ -212,6 +212,33 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 				change_many_options.start(),
 			),
 		])),
+		[
+			&BrainIr::Boundary,
+			BrainIr::SetManyCells(a_options),
+			BrainIr::SetManyCells(b_options),
+		] => {
+			let min = cmp::min(a_options.start(), b_options.start());
+			let max = cmp::max(a_options.end(), b_options.end());
+
+			let range = min..max;
+
+			let mut values_to_set = alloc::vec![0; range.len()];
+
+			for (idx, offset) in range.enumerate() {
+				if let Some(a_value) = a_options.value_at(offset) {
+					values_to_set[idx] = a_value;
+				}
+
+				if let Some(b_value) = b_options.value_at(offset) {
+					values_to_set[idx] = b_value;
+				}
+			}
+
+			Some(Change::swap([
+				BrainIr::boundary(),
+				BrainIr::set_many_cells(values_to_set, min),
+			]))
+		}
 		_ => None,
 	}
 }
