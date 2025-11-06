@@ -36,9 +36,6 @@ pub const fn optimize_sub_cell_at(ops: &[BrainIr]) -> Option<Change> {
 
 pub fn remove_infinite_loops(ops: &[BrainIr]) -> Option<Change> {
 	match *ops {
-		[.., BrainIr::InputIntoCell(input_options)] if input_options.is_default() => {
-			Some(Change::remove())
-		}
 		[.., BrainIr::SetCell(options)] if matches!(options.into_parts(), (1..=u8::MAX, 0)) => {
 			Some(Change::remove())
 		}
