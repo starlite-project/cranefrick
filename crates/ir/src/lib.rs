@@ -335,7 +335,7 @@ impl BrainIr {
 			| Self::IfNotZero(..)
 			| Self::SubCell(SubOptions::CellAt(..))
 			| Self::DuplicateCell { .. } => true,
-			Self::ScanTape(scan_tape_options) => !scan_tape_options.moves_before_scan(),
+			Self::ScanTape(scan_tape_options) => scan_tape_options.needs_nonzero_cell(),
 			_ => false,
 		}
 	}

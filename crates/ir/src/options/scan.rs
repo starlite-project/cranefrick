@@ -28,12 +28,12 @@ impl ScanTapeOptions {
 
 	#[must_use]
 	pub const fn only_scans_tape(self) -> bool {
-		!self.moves_before_scan() && !self.moves_after_scan()
+		self.needs_nonzero_cell() && self.is_zeroing_cell()
 	}
 
 	#[must_use]
-	pub const fn moves_before_scan(self) -> bool {
-		!matches!(self.initial_move(), 0)
+	pub const fn needs_nonzero_cell(self) -> bool {
+		matches!(self.initial_move, 0)
 	}
 
 	#[must_use]
@@ -47,18 +47,13 @@ impl ScanTapeOptions {
 	}
 
 	#[must_use]
-	pub const fn moves_after_scan(self) -> bool {
-		!matches!(self.post_scan_move(), 0)
-	}
-
-	#[must_use]
 	pub const fn into_parts(self) -> (i32, i32, i32) {
 		(self.initial_move, self.scan_step, self.post_scan_move)
 	}
 
 	#[must_use]
 	pub const fn is_zeroing_cell(self) -> bool {
-		!self.moves_after_scan()
+		matches!(self.post_scan_move, 0)
 	}
 }
 

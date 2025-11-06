@@ -193,7 +193,9 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(exit_block);
 
-		let value_to_store = if scan_tape_options.moves_after_scan() {
+		let value_to_store = if scan_tape_options.needs_nonzero_cell() {
+			header_phi_value.as_basic_value().into_int_value()
+		} else {
 			let offset_value =
 				ptr_int_type.const_int(scan_tape_options.post_scan_move() as u64, false);
 
@@ -204,8 +206,6 @@ impl InnerAssembler<'_> {
 			)?;
 
 			self.wrap_pointer(offset_pointer, scan_tape_options.post_scan_move() > 0)?
-		} else {
-			header_phi_value.as_basic_value().into_int_value()
 		};
 
 		let store_instr = self.store_into(value_to_store, self.pointers.pointer)?;
