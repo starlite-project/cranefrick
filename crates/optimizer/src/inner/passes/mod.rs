@@ -1010,6 +1010,13 @@ pub fn optimize_scan_tape(ops: [&BrainIr; 2]) -> Option<Change> {
 				),
 			]))
 		}
+		[
+			&BrainIr::ScanTape(scan_options),
+			&BrainIr::TakeValueTo(take_options),
+		] if scan_options.post_scan_move() == -take_options.offset() => Some(Change::swap([
+			BrainIr::scan_tape(scan_options.initial_move(), scan_options.scan_step(), 0),
+			BrainIr::fetch_value_from(take_options.factor(), scan_options.post_scan_move()),
+		])),
 		_ => None,
 	}
 }
