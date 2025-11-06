@@ -193,7 +193,7 @@ impl InnerAssembler<'_> {
 
 		self.builder.position_at_end(exit_block);
 
-		let value_to_store = if scan_tape_options.needs_nonzero_cell() {
+		let value_to_store = if scan_tape_options.is_zeroing_cell() {
 			header_phi_value.as_basic_value().into_int_value()
 		} else {
 			let offset_value =
