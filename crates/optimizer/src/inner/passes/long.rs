@@ -1,55 +1,8 @@
 //! Passes that take 4 or more ops
 
-use alloc::vec::Vec;
-
-use frick_ir::{BrainIr, OutputOptions};
+use frick_ir::BrainIr;
 
 use crate::inner::Change;
-
-pub fn optimize_change_write_sets(ops: [&BrainIr; 4]) -> Option<Change> {
-	match ops {
-		[
-			&BrainIr::ChangeCell(change_options),
-			&BrainIr::Output(OutputOptions::Cell(output_options)),
-			out @ BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
-			set @ &BrainIr::SetCell(set_options),
-		] if change_options.offset() == output_options.offset()
-			&& change_options.offset() == set_options.offset() =>
-		{
-			Some(Change::swap([
-				BrainIr::output_offset_cell_at(
-					change_options.value().wrapping_add(output_options.value()),
-					change_options.offset(),
-				),
-				out.clone(),
-				set.clone(),
-			]))
-		}
-		[
-			&BrainIr::ChangeCell(change_options),
-			BrainIr::Output(OutputOptions::Cells(output_options)),
-			out @ BrainIr::Output(OutputOptions::Char(..) | OutputOptions::Str(..)),
-			set @ BrainIr::SetCell(set_options),
-		] if change_options.offset() == set_options.offset() => {
-			let mut new_output_options = Vec::with_capacity(output_options.len());
-
-			for &option in output_options {
-				if option.offset() == change_options.offset() {
-					new_output_options.push(option.wrapping_add(change_options));
-				} else {
-					new_output_options.push(option);
-				}
-			}
-
-			Some(Change::swap([
-				BrainIr::output_cells(new_output_options),
-				out.clone(),
-				set.clone(),
-			]))
-		}
-		_ => None,
-	}
-}
 
 pub fn optimize_initial_set_move_change(ops: [&BrainIr; 4]) -> Option<Change> {
 	match ops {
