@@ -239,6 +239,24 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn set_many_cells(&self, options: &SetManyCellsOptions) -> Result<(), AssemblyError> {
 		let i8_type = self.context().i8_type();
 
+		let vec_of_indices = {
+			let offsets = options
+				.iter()
+				.map(ValuedOffsetCellOptions::offset)
+				.collect::<Vec<_>>();
+
+			self.offset_many_pointers(&offsets)?
+		};
+
+		let vec_of_pointers = unsafe {
+			self.builder.build_vec_gep(
+				i8_type,
+				self.pointers.tape,
+				vec_of_indices,
+				"set_many_cells_gep\0",
+			)?
+		};
+
 		let values_to_store = options
 			.values()
 			.iter()
@@ -247,9 +265,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let vec_to_store = VectorType::const_vector(&values_to_store);
 
-		self.store_into_cell(vec_to_store, options.start())?;
-
-		Ok(())
+		self.call_vector_scatter(vec_to_store, vec_of_pointers)
 	}
 
 	#[tracing::instrument(skip(self))]
