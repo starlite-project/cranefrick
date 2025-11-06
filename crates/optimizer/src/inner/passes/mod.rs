@@ -162,7 +162,7 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 			&BrainIr::Boundary,
 			&BrainIr::SetCell(a_options),
 			&BrainIr::SetCell(b_options),
-		] => {
+		] if a_options.offset() != b_options.offset() => {
 			tracing::debug!(?ops, "made it");
 
 			let min = cmp::min(a_options.offset(), b_options.offset());
@@ -170,22 +170,33 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			let range = (min..=max).collect::<Vec<_>>();
 
-			None
+			let mut values_to_set = alloc::vec![0; range.len()];
+
+			for (idx, offset) in range.into_iter().enumerate() {
+				if offset == a_options.offset() {
+					values_to_set[idx] = a_options.value();
+				} else if offset == b_options.offset() {
+					values_to_set[idx] = b_options.value();
+				}
+			}
+
+			Some(Change::swap([
+				BrainIr::boundary(),
+				BrainIr::set_many_cells(values_to_set, min),
+			]))
 		}
 		[
 			&BrainIr::Boundary,
 			BrainIr::SetManyCells(set_many_options),
 			&BrainIr::ChangeCell(change_options),
-		] if set_many_options.range().end == change_options.offset() => {
-			let mut set_many_options_values = set_many_options.values().to_vec();
-
-			set_many_options_values.push(change_options.value() as u8);
-
-			Some(Change::swap([
-				BrainIr::boundary(),
-				BrainIr::set_many_cells(set_many_options_values, set_many_options.start()),
-			]))
-		}
+		] if !set_many_options.range().contains(&change_options.offset()) => Some(Change::swap([
+			BrainIr::boundary(),
+			BrainIr::set_many_cells(
+				set_many_options.values().iter().copied(),
+				set_many_options.start(),
+			),
+			BrainIr::set_cell_at(change_options.value() as u8, change_options.offset()),
+		])),
 		[
 			&BrainIr::Boundary,
 			&BrainIr::MovePointer(y),
