@@ -293,23 +293,25 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 
 			let range = (min..=max).collect::<Vec<_>>();
 
-			let mut values_to_set = alloc::vec![0; range.len()];
+			let mut values_to_set = BTreeMap::new();
 
 			let set_range_range = set_range_options.range();
 
-			for (idx, offset) in range.into_iter().enumerate() {
-				if let Some(set_many_value) = set_many_options.value_at(offset) {
-					values_to_set[idx] = set_many_value;
-				}
+			for offset in range {
+				let value_in_map = values_to_set.entry(offset).or_insert(0u8);
 
 				if set_range_range.contains(&offset) {
-					values_to_set[idx] = set_range_options.value();
+					*value_in_map = set_range_options.value();
+				} else if let Some(set_many_value) = set_many_options.value_at(offset) {
+					*value_in_map = set_many_value;
 				}
 			}
 
+			let min = values_to_set.keys().copied().min()?;
+
 			Some(Change::swap([
 				BrainIr::boundary(),
-				BrainIr::set_many_cells(values_to_set, min),
+				BrainIr::set_many_cells(values_to_set.values().copied(), min),
 			]))
 		}
 		_ => None,
