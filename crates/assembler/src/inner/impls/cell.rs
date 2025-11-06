@@ -3,17 +3,11 @@ use frick_ir::{
 	ValuedOffsetCellOptions,
 };
 use frick_utils::Convert as _;
-use inkwell::{
-	types::{IntType, VectorType},
-	values::VectorValue,
-};
+use inkwell::types::VectorType;
 
-use crate::{
-	AssemblyError, BuilderExt as _, ContextGetter as _,
-	inner::{InnerAssembler, utils::is_contiguous},
-};
+use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAssembler};
 
-impl<'ctx> InnerAssembler<'ctx> {
+impl InnerAssembler<'_> {
 	#[tracing::instrument(skip(self))]
 	pub fn set_cell(&self, options: ValuedOffsetCellOptions<u8>) -> Result<(), AssemblyError> {
 		self.store_value_into_cell(options.value(), options.offset())?;
@@ -122,20 +116,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"duplicate_cell_shuffle_vector\0",
 		)?;
 
-		if is_contiguous(values) {
-			self.duplicate_cell_contiguous(values, vec_of_current_cell, i8_type, i8_vec_type)
-		} else {
-			self.duplicate_cell_scattered(values, vec_of_current_cell, i8_type, i8_vec_type)
-		}
-	}
-
-	fn duplicate_cell_scattered(
-		&self,
-		values: &[FactoredOffsetCellOptions<i8>],
-		vec_of_current_cell: VectorValue<'ctx>,
-		i8_type: IntType<'ctx>,
-		i8_vec_type: VectorType<'ctx>,
-	) -> Result<(), AssemblyError> {
 		let vec_of_indices = {
 			let offsets = values.iter().map(|x| x.offset()).collect::<Vec<_>>();
 
@@ -147,92 +127,42 @@ impl<'ctx> InnerAssembler<'ctx> {
 				i8_type,
 				self.pointers.tape,
 				vec_of_indices,
-				"duplicate_cell_scattered_gep\0",
+				"duplicate_cell_gep\0",
 			)?
 		};
 
 		let vec_of_loaded_values = self.call_vector_gather(i8_vec_type, vec_of_pointers)?;
 
-		let vec_of_modified_values = if values.iter().all(|x| matches!(x.offset(), 1)) {
+		let vec_of_modified_values = if values.iter().all(|x| matches!(x.factor(), 1)) {
 			self.builder.build_int_add(
 				vec_of_current_cell,
 				vec_of_loaded_values,
-				"duplicate_cell_scattered_vector_add\0",
+				"duplicate_cell_vector_add\0",
 			)?
 		} else {
 			let vec_of_factors = {
-				let vec_of_values = values
+				let factors = values
 					.iter()
-					.map(|v| i8_type.const_int(v.factor() as u64, false))
+					.map(|x| i8_type.const_int(x.factor() as u64, false))
 					.collect::<Vec<_>>();
 
-				VectorType::const_vector(&vec_of_values)
+				VectorType::const_vector(&factors)
 			};
 
 			let vec_of_scaled_current_cell = self.builder.build_int_mul(
 				vec_of_current_cell,
 				vec_of_factors,
-				"duplicate_cell_scattered_vector_mul\0",
+				"duplicate_cell_vector_mul\0",
 			)?;
 
 			self.builder.build_int_add(
 				vec_of_loaded_values,
 				vec_of_scaled_current_cell,
-				"duplicate_cell_scattered_vector_add\0",
+				"duplicate_cell_vector_add\0",
 			)?
 		};
 
-		self.call_vector_scatter(vec_of_modified_values, vec_of_pointers)?;
-
-		Ok(())
-	}
-
-	#[tracing::instrument(skip(self))]
-	fn duplicate_cell_contiguous(
-		&self,
-		values: &[FactoredOffsetCellOptions<i8>],
-		vec_of_current_cell: VectorValue<'ctx>,
-		i8_type: IntType<'ctx>,
-		i8_vec_type: VectorType<'ctx>,
-	) -> Result<(), AssemblyError> {
-		let start_of_range = values.iter().map(|x| x.offset()).min().unwrap();
-
-		let gep = self.tape_gep(i8_vec_type, start_of_range)?;
-
-		let vec_of_loaded_values = self.load_from(i8_vec_type, gep)?;
-
-		let vec_of_modified_values = if values.iter().all(|x| matches!(x.offset(), 1)) {
-			self.builder.build_int_add(
-				vec_of_current_cell,
-				vec_of_loaded_values,
-				"duplicate_cell_contiguous_vector_add\0",
-			)?
-		} else {
-			let vec_of_factors = {
-				let vec_of_values = values
-					.iter()
-					.map(|v| i8_type.const_int(v.factor() as u64, false))
-					.collect::<Vec<_>>();
-
-				VectorType::const_vector(&vec_of_values)
-			};
-
-			let vec_of_scaled_current_cell = self.builder.build_int_mul(
-				vec_of_current_cell,
-				vec_of_factors,
-				"duplicate_cell_contiguous_vector_mul\0",
-			)?;
-
-			self.builder.build_int_add(
-				vec_of_loaded_values,
-				vec_of_scaled_current_cell,
-				"duplicate_cell_contiguous_vector_add\0",
-			)?
-		};
-
-		self.store_into(vec_of_modified_values, gep)?;
-
-		Ok(())
+		self.call_vector_scatter(vec_of_modified_values, vec_of_pointers)
 	}
 
 	#[tracing::instrument(skip(self))]
@@ -257,68 +187,94 @@ impl<'ctx> InnerAssembler<'ctx> {
 			)?
 		};
 
-		let values_to_store = options
-			.values()
-			.iter()
-			.map(|&x| i8_type.const_int(x.convert::<u64>(), false))
-			.collect::<Vec<_>>();
+		let vec_to_store = {
+			let values = options
+				.values()
+				.iter()
+				.map(|&x| i8_type.const_int(x.convert::<u64>(), false))
+				.collect::<Vec<_>>();
 
-		let vec_to_store = VectorType::const_vector(&values_to_store);
+			VectorType::const_vector(&values)
+		};
 
 		self.call_vector_scatter(vec_to_store, vec_of_pointers)
 	}
 
 	#[tracing::instrument(skip(self))]
 	pub fn set_range(&self, options: SetRangeOptions) -> Result<(), AssemblyError> {
-		let start = *options.range().start();
-		let range_len = options.range().count();
 		let i8_type = self.context().i8_type();
 
-		let range_len_value = {
-			let ptr_int_type = self.pointers.pointer_ty;
+		let vec_of_indices = {
+			let offsets = options
+				.iter()
+				.map(ValuedOffsetCellOptions::offset)
+				.collect::<Vec<_>>();
 
-			ptr_int_type.const_int(range_len as u64, false)
+			self.offset_many_pointers(&offsets)?
 		};
 
-		let value_value = i8_type.const_int(options.value().convert::<u64>(), false);
+		let vec_of_pointers = unsafe {
+			self.builder.build_vec_gep(
+				i8_type,
+				self.pointers.tape,
+				vec_of_indices,
+				"set_range_gep\0",
+			)?
+		};
 
-		let gep = self.tape_gep(i8_type, start)?;
+		let vec_to_store = {
+			let values = options
+				.range()
+				.map(|_| i8_type.const_int(options.value().convert::<u64>(), false))
+				.collect::<Vec<_>>();
 
-		self.builder
-			.build_memset(gep, 1, value_value, range_len_value)?;
+			VectorType::const_vector(&values)
+		};
 
-		Ok(())
+		self.call_vector_scatter(vec_to_store, vec_of_pointers)
 	}
 
 	#[tracing::instrument(skip(self))]
 	pub fn change_many_cells(&self, options: &ChangeManyCellsOptions) -> Result<(), AssemblyError> {
-		let context = self.context();
+		let i8_type = self.context().i8_type();
+		let i8_vec_type = i8_type.vec_type(options.values().len() as u32);
 
-		let i8_type = context.i8_type();
-		let i8_vector_type = i8_type.vec_type(options.values().len() as u32);
+		let vec_of_indices = {
+			let offsets = options
+				.iter()
+				.map(ValuedOffsetCellOptions::offset)
+				.collect::<Vec<_>>();
 
-		let gep = self.tape_gep(i8_vector_type, options.start())?;
+			self.offset_many_pointers(&offsets)?
+		};
 
-		let vec_of_tape_values = self.load_from(i8_vector_type, gep)?;
+		let vec_of_pointers = unsafe {
+			self.builder.build_vec_gep(
+				i8_type,
+				self.pointers.tape,
+				vec_of_indices,
+				"change_many_cells_gep\0",
+			)?
+		};
 
-		let vec_of_change_values = {
-			let vec_of_values = options
+		let vec_of_loaded_values = self.call_vector_gather(i8_vec_type, vec_of_pointers)?;
+
+		let vec_of_offsets = {
+			let values = options
 				.values()
 				.iter()
 				.map(|&x| i8_type.const_int(x as u64, false))
 				.collect::<Vec<_>>();
 
-			VectorType::const_vector(&vec_of_values)
+			VectorType::const_vector(&values)
 		};
 
-		let vec_of_values_to_store = self.builder.build_int_add(
-			vec_of_tape_values,
-			vec_of_change_values,
-			"change_many_cells_vector_add",
+		let vec_to_store = self.builder.build_int_add(
+			vec_of_loaded_values,
+			vec_of_offsets,
+			"change_many_cells_add\0",
 		)?;
 
-		self.store_into(vec_of_values_to_store, gep)?;
-
-		Ok(())
+		self.call_vector_scatter(vec_to_store, vec_of_pointers)
 	}
 }

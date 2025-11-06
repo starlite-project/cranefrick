@@ -2,10 +2,7 @@ use frick_ir::ValuedOffsetCellOptions;
 use frick_utils::SliceExt as _;
 use inkwell::{types::VectorType, values::VectorValue};
 
-use crate::{
-	AssemblyError, BuilderExt as _, ContextGetter as _,
-	inner::{InnerAssembler, utils::is_contiguous},
-};
+use crate::{AssemblyError, BuilderExt as _, ContextGetter as _, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip_all)]
@@ -71,47 +68,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<VectorValue<'ctx>, AssemblyError> {
 		if is_splattable(options) {
 			self.get_output_cells_vector_splat(options)
-		} else if is_contiguous(options) {
-			self.get_output_cells_vector_contiguous(options)
 		} else {
 			self.get_output_cells_vector_scatter(options)
 		}
-	}
-
-	#[tracing::instrument(skip_all)]
-	fn get_output_cells_vector_contiguous(
-		&self,
-		options: &[ValuedOffsetCellOptions<i8>],
-	) -> Result<VectorValue<'ctx>, AssemblyError> {
-		let context = self.context();
-
-		let i8_type = context.i8_type();
-		let i8_vec_type = i8_type.vec_type(options.len() as u32);
-
-		let initial_cell_offset = options[0].offset();
-
-		let initial_cell_gep = self.tape_gep(i8_vec_type, initial_cell_offset)?;
-
-		let vec_of_loaded_cells = self.load_from(i8_vec_type, initial_cell_gep)?;
-
-		Ok(if options.iter().all(|x| matches!(x.value(), 0)) {
-			vec_of_loaded_cells
-		} else {
-			let vec_of_value_offsets = {
-				let vec_of_value_offsets = options
-					.iter()
-					.map(|v| i8_type.const_int(v.value() as u64, false))
-					.collect::<Vec<_>>();
-
-				VectorType::const_vector(&vec_of_value_offsets)
-			};
-
-			self.builder.build_int_add(
-				vec_of_loaded_cells,
-				vec_of_value_offsets,
-				"get_output_cells_vector_contiguous_offset_values\0",
-			)?
-		})
 	}
 
 	#[tracing::instrument(skip_all)]
