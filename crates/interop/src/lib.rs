@@ -7,7 +7,7 @@ use std::{
 
 pub use libc::getchar as rust_getchar;
 
-unsafe extern "C" {
+unsafe extern "Rust" {
 	pub fn rust_eh_personality(
 		version: i32,
 		actions: i32,
