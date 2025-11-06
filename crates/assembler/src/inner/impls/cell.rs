@@ -31,11 +31,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			i8_type.const_int(options.value() as u64, false)
 		};
 
-		let added = self.builder.build_int_nsw_add(
-			current_cell_value,
-			value_to_add,
-			"change_cell_add\0",
-		)?;
+		let added =
+			self.builder
+				.build_int_add(current_cell_value, value_to_add, "change_cell_add\0")?;
 
 		self.store_into(added, gep)?;
 
@@ -156,7 +154,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let vec_of_loaded_values = self.call_vector_gather(i8_vec_type, vec_of_pointers)?;
 
 		let vec_of_modified_values = if values.iter().all(|x| matches!(x.offset(), 1)) {
-			self.builder.build_int_nsw_add(
+			self.builder.build_int_add(
 				vec_of_current_cell,
 				vec_of_loaded_values,
 				"duplicate_cell_scattered_vector_add\0",
@@ -177,7 +175,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"duplicate_cell_scattered_vector_mul\0",
 			)?;
 
-			self.builder.build_int_nsw_add(
+			self.builder.build_int_add(
 				vec_of_loaded_values,
 				vec_of_scaled_current_cell,
 				"duplicate_cell_scattered_vector_add\0",
@@ -204,7 +202,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let vec_of_loaded_values = self.load_from(i8_vec_type, gep)?;
 
 		let vec_of_modified_values = if values.iter().all(|x| matches!(x.offset(), 1)) {
-			self.builder.build_int_nsw_add(
+			self.builder.build_int_add(
 				vec_of_current_cell,
 				vec_of_loaded_values,
 				"duplicate_cell_contiguous_vector_add\0",
@@ -225,7 +223,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				"duplicate_cell_contiguous_vector_mul\0",
 			)?;
 
-			self.builder.build_int_nsw_add(
+			self.builder.build_int_add(
 				vec_of_loaded_values,
 				vec_of_scaled_current_cell,
 				"duplicate_cell_contiguous_vector_add\0",
@@ -297,7 +295,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			VectorType::const_vector(&vec_of_values)
 		};
 
-		let vec_of_values_to_store = self.builder.build_int_nsw_add(
+		let vec_of_values_to_store = self.builder.build_int_add(
 			vec_of_tape_values,
 			vec_of_change_values,
 			"change_many_cells_vector_add",

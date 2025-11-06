@@ -27,7 +27,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let offset_value = i8_type.const_int(options.value() as u64, false);
 
 			self.builder
-				.build_int_nsw_add(current_cell_value, offset_value, "output_cell_add\0")?
+				.build_int_add(current_cell_value, offset_value, "output_cell_add\0")?
 		};
 
 		self.call_putchar(context, offset_cell_value)
@@ -106,7 +106,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				VectorType::const_vector(&vec_of_value_offsets)
 			};
 
-			self.builder.build_int_nsw_add(
+			self.builder.build_int_add(
 				vec_of_loaded_cells,
 				vec_of_value_offsets,
 				"get_output_cells_vector_contiguous_offset_values\0",
@@ -161,7 +161,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				VectorType::const_vector(&vec_of_value_offsets)
 			};
 
-			self.builder.build_int_nsw_add(
+			self.builder.build_int_add(
 				vec_of_loaded_cell,
 				vec_of_value_offsets,
 				"get_output_cells_vector_splat_offset_values\0",
@@ -208,7 +208,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				VectorType::const_vector(&vec_of_value_offsets)
 			};
 
-			self.builder.build_int_nsw_add(
+			self.builder.build_int_add(
 				vec_of_loaded_values,
 				vec_of_value_offsets,
 				"get_output_cells_vector_scatter_offset\0",
