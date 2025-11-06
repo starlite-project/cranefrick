@@ -163,8 +163,6 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 			&BrainIr::SetCell(a_options),
 			&BrainIr::SetCell(b_options),
 		] if a_options.offset() != b_options.offset() => {
-			tracing::debug!(?ops, "made it");
-
 			let min = cmp::min(a_options.offset(), b_options.offset());
 			let max = cmp::max(a_options.offset(), b_options.offset());
 
@@ -252,6 +250,11 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 			&BrainIr::Boundary,
 			BrainIr::SetManyCells(set_many_options),
 			&BrainIr::SetCell(set_options),
+		]
+		| [
+			&BrainIr::Boundary,
+			&BrainIr::SetCell(set_options),
+			BrainIr::SetManyCells(set_many_options),
 		] => {
 			let min = cmp::min(set_many_options.start(), set_options.offset());
 			let max = cmp::max(set_many_options.end(), set_options.offset());
