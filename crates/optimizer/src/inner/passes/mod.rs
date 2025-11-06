@@ -479,6 +479,13 @@ pub fn optimize_take_value(ops: [&BrainIr; 2]) -> Option<Change> {
 			i.clone(),
 			BrainIr::move_pointer(take_options.offset()),
 		])),
+		[
+			&BrainIr::MovePointer(move_offset),
+			&BrainIr::FetchValueFrom(fetch_options),
+		] if move_offset == -fetch_options.offset() => Some(Change::replace(BrainIr::take_value_to(
+			fetch_options.factor(),
+			move_offset,
+		))),
 		_ => None,
 	}
 }
