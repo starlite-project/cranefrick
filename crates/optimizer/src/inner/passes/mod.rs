@@ -739,6 +739,94 @@ pub fn unroll_basic_dynamic_loop(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::swap(out))
 		}
+		[
+			BrainIr::SetManyCells(set_many_options),
+			l @ BrainIr::DynamicLoop(ops),
+		] if matches!(set_many_options.value_at(0)?, 1..=u8::MAX)
+			&& matches!(calculate_ptr_movement(ops)?, 0)
+			&& matches!(ops.as_slice(), [.., BrainIr::ChangeCell(change_options)] if matches!(change_options.into_parts(), (i8::MIN..0, 0)))
+			&& !l.loop_has_movement()? =>
+		{
+			if ops
+				.iter()
+				.any(|op| matches!(op, BrainIr::DynamicLoop(..) | BrainIr::IfNotZero(..)))
+			{
+				return None;
+			}
+
+			let loop_count = set_many_options.value_at(0)?;
+
+			let mut set_many_options = set_many_options.clone();
+
+			if !set_many_options.set_value_at(0, 0) {
+				return None;
+			}
+
+			let (without_decrement, decrement) = {
+				let mut owned = ops.clone();
+				let decrement = owned.pop()?;
+
+				let BrainIr::ChangeCell(change_options) = decrement else {
+					return None;
+				};
+
+				(owned, change_options.value())
+			};
+
+			let mut out = Vec::with_capacity(without_decrement.len() * loop_count as usize);
+
+			for _ in (0..loop_count).step_by(decrement.unsigned_abs() as usize) {
+				out.extend_from_slice(&without_decrement);
+			}
+
+			Some(Change::swap(
+				iter::once(set_many_options.convert::<BrainIr>()).chain(out),
+			))
+		}
+		[
+			BrainIr::SetManyCells(set_many_options),
+			l @ BrainIr::DynamicLoop(ops),
+		] if matches!(set_many_options.value_at(0)?, 1..=u8::MAX)
+			&& matches!(calculate_ptr_movement(ops)?, 0)
+			&& matches!(ops.as_slice(), [BrainIr::ChangeCell(change_options), ..] if matches!(change_options.into_parts(), (i8::MIN..0, 0)))
+			&& !l.loop_has_movement()? =>
+		{
+			if ops
+				.iter()
+				.any(|op| matches!(op, BrainIr::DynamicLoop(..) | BrainIr::IfNotZero(..)))
+			{
+				return None;
+			}
+
+			let loop_count = set_many_options.value_at(0)?;
+
+			let mut set_many_options = set_many_options.clone();
+
+			if !set_many_options.set_value_at(0, 0) {
+				return None;
+			}
+
+			let (without_decrement, decrement) = {
+				let mut owned = ops.clone();
+				let decrement = owned.remove(0);
+
+				let BrainIr::ChangeCell(change_options) = decrement else {
+					return None;
+				};
+
+				(owned, change_options.value())
+			};
+
+			let mut out = Vec::with_capacity(without_decrement.len() * loop_count as usize);
+
+			for _ in (0..loop_count).step_by(decrement.unsigned_abs() as usize) {
+				out.extend_from_slice(&without_decrement);
+			}
+
+			Some(Change::swap(
+				iter::once(set_many_options.convert::<BrainIr>()).chain(out),
+			))
+		}
 		_ => None,
 	}
 }
