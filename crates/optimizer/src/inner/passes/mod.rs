@@ -278,6 +278,40 @@ pub fn optimize_initial_sets(ops: [&BrainIr; 3]) -> Option<Change> {
 				BrainIr::set_many_cells(values_to_set, min),
 			]))
 		}
+		[
+			&BrainIr::Boundary,
+			BrainIr::SetManyCells(set_many_options),
+			&BrainIr::SetRange(set_range_options),
+		]
+		| [
+			&BrainIr::Boundary,
+			&BrainIr::SetRange(set_range_options),
+			BrainIr::SetManyCells(set_many_options),
+		] => {
+			let min = cmp::min(set_many_options.start(), set_range_options.start());
+			let max = cmp::max(set_many_options.end(), set_range_options.end());
+
+			let range = (min..=max).collect::<Vec<_>>();
+
+			let mut values_to_set = alloc::vec![0; range.len()];
+
+			let set_range_range = set_range_options.range();
+
+			for (idx, offset) in range.into_iter().enumerate() {
+				if let Some(set_many_value) = set_many_options.value_at(offset) {
+					values_to_set[idx] = set_many_value;
+				}
+
+				if set_range_range.contains(&offset) {
+					values_to_set[idx] = set_range_options.value();
+				}
+			}
+
+			Some(Change::swap([
+				BrainIr::boundary(),
+				BrainIr::set_many_cells(values_to_set, min),
+			]))
+		}
 		_ => None,
 	}
 }
