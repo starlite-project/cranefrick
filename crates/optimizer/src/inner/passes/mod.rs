@@ -936,7 +936,7 @@ pub fn optimize_initial_change_to_sets<const N: usize>(ops: [&BrainIr; N]) -> Op
 	}
 }
 
-pub const fn optimize_scan_tape(ops: [&BrainIr; 2]) -> Option<Change> {
+pub fn optimize_scan_tape(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[
 			&BrainIr::MovePointer(move_offset),
@@ -954,6 +954,20 @@ pub const fn optimize_scan_tape(ops: [&BrainIr; 2]) -> Option<Change> {
 			scan_tape_options.scan_step(),
 			scan_tape_options.post_scan_move().wrapping_add(move_offset),
 		))),
+		[&BrainIr::ScanTape(a_options), &BrainIr::ScanTape(b_options)]
+			if !a_options.is_zeroing_cell() =>
+		{
+			Some(Change::swap([
+				BrainIr::scan_tape(a_options.initial_move(), a_options.scan_step(), 0),
+				BrainIr::scan_tape(
+					b_options
+						.initial_move()
+						.wrapping_add(a_options.post_scan_move()),
+					b_options.scan_step(),
+					b_options.post_scan_move(),
+				),
+			]))
+		}
 		_ => None,
 	}
 }
