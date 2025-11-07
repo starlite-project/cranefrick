@@ -299,10 +299,10 @@ impl Optimizer {
 		{
 			let _guard = self.pass_info("optimize scale and shift value instructions", 9);
 			run_loop_pass_with_span(
-				"optimize_move_value_from_loop",
+				"optimize_shift_value_from_loop",
 				progress,
 				self,
-				passes::optimize_move_value_from_loop,
+				passes::optimize_shift_value_from_loop,
 			);
 			run_peephole_pass_with_span(
 				"optimize_move_value",

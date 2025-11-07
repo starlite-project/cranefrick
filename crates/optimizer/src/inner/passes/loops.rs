@@ -76,7 +76,7 @@ pub fn optimize_if_nz(ops: &[BrainIr]) -> Option<Change> {
 	}
 }
 
-pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
+pub fn optimize_shift_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 	match ops {
 		&[
 			BrainIr::ChangeCell(current_cell_options),
