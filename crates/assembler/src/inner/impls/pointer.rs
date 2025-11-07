@@ -15,15 +15,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn move_pointer(&self, offset: i32) -> Result<(), AssemblyError> {
 		let wrapped_ptr = self.offset_pointer(offset)?;
 
-		let store_instr = self.store_into(wrapped_ptr, self.pointers.pointer)?;
-
-		let current_debug_loc = self.builder.get_current_debug_location().unwrap();
-
-		self.pointer_setting_instructions.borrow_mut().push((
-			store_instr,
-			wrapped_ptr,
-			current_debug_loc,
-		));
+		self.store_into(wrapped_ptr, self.pointers.pointer)?;
 
 		Ok(())
 	}

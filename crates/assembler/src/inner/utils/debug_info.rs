@@ -4,15 +4,13 @@ use std::{
 };
 
 use frick_spec::TAPE_SIZE;
-use frick_utils::Convert as _;
 use inkwell::{
 	context::ContextRef,
 	debug_info::{
-		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DILocalVariable, DILocation,
-		DISubprogram, DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
+		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DILocalVariable, DISubprogram,
+		DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
-	values::{BasicValueEnum, InstructionOpcode, InstructionValue, IntValue},
 };
 
 use super::{AssemblerFunctions, AssemblerPointers};
@@ -142,19 +140,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let after_tape_alloca = pointers.pointer.as_instruction().unwrap();
 		let after_pointer_alloca = after_tape_alloca.get_next_instruction().unwrap();
-		let (after_tape_store_instr, after_pointer_store_instr) = pointers
-			.tape
-			.as_instruction()
-			.and_then(|instr| {
-				let parent_block = instr.get_parent()?;
-
-				let store_instr = parent_block
-					.get_instructions()
-					.find(|x| is_initial_pointer_store(*x, pointers))?;
-
-				Some((store_instr, store_instr.get_next_instruction()?))
-			})
-			.unwrap();
 
 		let debug_loc = self.create_debug_location(
 			context,
@@ -180,47 +165,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			after_pointer_alloca,
 		);
 
-		let tape_value = {
-			let i8_type = context.i8_type();
-			let i8_array_type = i8_type.array_type(TAPE_SIZE as u32);
-
-			i8_array_type.const_zero()
-		};
-
-		let pointer_value = pointers.pointer_ty.const_zero();
-
-		self.insert_dbg_value_before(
-			tape_value.convert::<BasicValueEnum<'ctx>>(),
-			self.variables.tape,
-			None,
-			debug_loc,
-			after_tape_store_instr,
-		);
-
-		self.insert_dbg_value_before(
-			pointer_value.convert::<BasicValueEnum<'ctx>>(),
-			self.variables.pointer,
-			None,
-			debug_loc,
-			after_pointer_store_instr,
-		);
-
 		Ok(())
-	}
-
-	pub fn insert_pointer_dbg_value(
-		&self,
-		pointer_value: IntValue<'ctx>,
-		debug_loc: DILocation<'ctx>,
-		instruction: InstructionValue<'ctx>,
-	) {
-		self.insert_dbg_value_before(
-			pointer_value.convert::<BasicValueEnum<'ctx>>(),
-			self.variables.pointer,
-			None,
-			debug_loc,
-			instruction,
-		);
 	}
 }
 
@@ -294,54 +239,4 @@ impl<'ctx> AssemblerDebugVariables<'ctx> {
 
 		Ok(Self { tape, pointer })
 	}
-}
-
-fn is_initial_pointer_store<'ctx>(
-	x: InstructionValue<'ctx>,
-	pointers: AssemblerPointers<'ctx>,
-) -> bool {
-	if !matches!(x.get_opcode(), InstructionOpcode::Store) {
-		return false;
-	}
-
-	let mut operands = x.get_operands().flatten();
-
-	let Some(value_op) = operands.next() else {
-		return false;
-	};
-
-	let Some(value_value) = value_op.value() else {
-		return false;
-	};
-
-	if !value_value.is_int_value() {
-		return false;
-	}
-
-	let int_value = value_value.into_int_value();
-
-	if !int_value
-		.get_zero_extended_constant()
-		.is_some_and(|x| matches!(x, 0))
-	{
-		return false;
-	}
-
-	let Some(pointer_op) = operands.next() else {
-		return false;
-	};
-
-	let Some(pointer_value) = pointer_op.value() else {
-		return false;
-	};
-
-	if !pointer_value.is_pointer_value() {
-		return false;
-	}
-
-	if pointer_value.into_pointer_value() != pointers.pointer {
-		return false;
-	}
-
-	true
 }
