@@ -81,6 +81,10 @@ pub const fn optimize_move_value_from_loop(ops: &[BrainIr]) -> Option<Change> {
 		&[
 			BrainIr::ChangeCell(current_cell_options),
 			BrainIr::ChangeCell(offset_cell_options),
+		]
+		| &[
+			BrainIr::ChangeCell(offset_cell_options),
+			BrainIr::ChangeCell(current_cell_options),
 		] if matches!(
 			(
 				current_cell_options.into_parts(),
