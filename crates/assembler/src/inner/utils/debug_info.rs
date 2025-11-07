@@ -192,7 +192,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		self.insert_dbg_value_before(
 			tape_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.tape,
-			Some(self.create_expression(vec![0x94, TAPE_SIZE as i64])),
+			None,
 			debug_loc,
 			after_tape_store_instr,
 		);
@@ -200,7 +200,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		self.insert_dbg_value_before(
 			pointer_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.pointer,
-			Some(self.create_expression(vec![0x94, 8])),
+			None,
 			debug_loc,
 			after_pointer_store_instr,
 		);
@@ -217,7 +217,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		self.insert_dbg_value_before(
 			pointer_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.pointer,
-			Some(self.create_expression(vec![0x94, 8])),
+			None,
 			debug_loc,
 			instruction,
 		);
