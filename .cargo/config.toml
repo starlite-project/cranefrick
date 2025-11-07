@@ -1,3 +1,6 @@
+[unstable]
+build-std = ["core", "alloc", "std"]
+
 [build]
 rustdocflags = ["--cfg", "docsrs", "--show-type-layout", "-Z", "unstable-options"]
 rustflags = ["-C", "target-cpu=native"]
