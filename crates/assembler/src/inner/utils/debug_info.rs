@@ -140,7 +140,9 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		context: ContextRef<'ctx>,
 		pointers: AssemblerPointers<'ctx>,
 	) -> Result<(), AssemblyError> {
-		let after_store_instr = pointers
+		let after_tape_alloca = pointers.pointer.as_instruction().unwrap();
+		let after_pointer_alloca = after_tape_alloca.get_next_instruction().unwrap();
+		let (after_tape_store_instr, after_pointer_store_instr) = pointers
 			.tape
 			.as_instruction()
 			.and_then(|instr| {
@@ -150,7 +152,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 					.get_instructions()
 					.find(|x| is_initial_pointer_store(*x, pointers))?;
 
-				store_instr.get_next_instruction()
+				Some((store_instr, store_instr.get_next_instruction()?))
 			})
 			.unwrap();
 
@@ -167,7 +169,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			Some(self.variables.tape),
 			None,
 			debug_loc,
-			after_store_instr,
+			after_tape_alloca,
 		);
 
 		self.insert_declare_before_instruction(
@@ -175,7 +177,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			Some(self.variables.pointer),
 			None,
 			debug_loc,
-			after_store_instr,
+			after_pointer_alloca,
 		);
 
 		let tape_value = {
@@ -190,17 +192,17 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		self.insert_dbg_value_before(
 			tape_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.tape,
-			None,
+			Some(self.create_expression(vec![0x94, TAPE_SIZE as i64])),
 			debug_loc,
-			after_store_instr,
+			after_tape_store_instr,
 		);
 
 		self.insert_dbg_value_before(
 			pointer_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.pointer,
-			None,
+			Some(self.create_expression(vec![0x94, 8])),
 			debug_loc,
-			after_store_instr,
+			after_pointer_store_instr,
 		);
 
 		Ok(())
@@ -215,7 +217,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 		self.insert_dbg_value_before(
 			pointer_value.convert::<BasicValueEnum<'ctx>>(),
 			self.variables.pointer,
-			None,
+			Some(self.create_expression(vec![0x94, 8])),
 			debug_loc,
 			instruction,
 		);
