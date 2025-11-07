@@ -1,3 +1,4 @@
+use frick_ir::ValuedOffsetCellOptions;
 use frick_utils::Convert as _;
 use inkwell::{
 	types::{BasicType, BasicTypeEnum},
@@ -179,5 +180,24 @@ impl<'ctx> InnerAssembler<'ctx> {
 			}
 			other => Err(AssemblyError::InvalidGEPType(other.to_string())),
 		}
+	}
+
+	pub fn load_valued_offset_cell(
+		&self,
+		options: ValuedOffsetCellOptions<i8>,
+	) -> Result<IntValue<'ctx>, AssemblyError> {
+		let cell_value = self.load_cell(options.offset())?;
+
+		Ok(if matches!(options.value(), 0) {
+			cell_value
+		} else {
+			let offset_value = {
+				let i8_type = self.context().i8_type();
+
+				i8_type.const_int(options.value() as u64, false)
+			};
+
+			self.builder.build_int_add(cell_value, offset_value, "\0")?
+		})
 	}
 }

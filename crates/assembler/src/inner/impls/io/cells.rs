@@ -12,26 +12,45 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let i8_type = context.i8_type();
-
 		let _invariant = self.start_tape_invariant()?;
 
-		let current_cell_value = self.load_cell(options.offset())?;
-
-		let offset_cell_value = if matches!(options.value(), 0) {
-			current_cell_value
-		} else {
-			let offset_value = i8_type.const_int(options.value() as u64, false);
-
-			self.builder
-				.build_int_add(current_cell_value, offset_value, "output_cell_add\0")?
-		};
+		let offset_cell_value = self.load_valued_offset_cell(options)?;
 
 		self.call_putchar(context, offset_cell_value)
 	}
 
-	#[tracing::instrument(skip_all)]
+	#[tracing::instrument(skip(self))]
 	pub(super) fn output_cells(
+		&self,
+		options: &[ValuedOffsetCellOptions<i8>],
+	) -> Result<(), AssemblyError> {
+		if options.windows_n::<2>().all(|&[x, y]| x == y) {
+			self.output_cell_many_times(options[0], options.len())
+		} else {
+			self.output_many_cells(options)
+		}
+	}
+
+	pub(super) fn output_cell_many_times(
+		&self,
+		options: ValuedOffsetCellOptions<i8>,
+		count: usize,
+	) -> Result<(), AssemblyError> {
+		let context = self.context();
+
+		let range = 0..count;
+
+		let cell_value = self.load_valued_offset_cell(options)?;
+
+		for _ in range {
+			self.call_putchar(context, cell_value)?;
+		}
+
+		Ok(())
+	}
+
+	#[tracing::instrument(skip_all)]
+	pub(super) fn output_many_cells(
 		&self,
 		options: &[ValuedOffsetCellOptions<i8>],
 	) -> Result<(), AssemblyError> {
