@@ -1,3 +1,4 @@
+function(lint)
 default<O3>
 inferattrs
 simplifycfg
@@ -93,3 +94,4 @@ aggressive-instcombine
 scalarizer
 strip-dead-debug-info
 default<O3>
+lint
