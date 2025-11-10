@@ -37,14 +37,9 @@ impl InnerAssembler<'_> {
 	#[tracing::instrument(skip(self))]
 	pub fn sub_cell_at(&self, options: FactoredOffsetCellOptions<u8>) -> Result<(), AssemblyError> {
 		let subtractor = {
-			let i8_type = self.context().i8_type();
-
 			let current_cell = self.take(0)?;
 
-			let factor_value = i8_type.const_int(options.factor().convert::<u64>(), false);
-
-			self.builder
-				.build_int_mul(current_cell, factor_value, "sub_cell_at_mul\0")?
+			self.resolve_factor(current_cell, options.factor())?
 		};
 
 		let (other_value, gep) = self.load_cell_and_pointer(options.offset())?;
@@ -64,14 +59,9 @@ impl InnerAssembler<'_> {
 		options: FactoredOffsetCellOptions<u8>,
 	) -> Result<(), AssemblyError> {
 		let subtractor = {
-			let i8_type = self.context().i8_type();
-
 			let current_cell = self.take(options.offset())?;
 
-			let factor_value = i8_type.const_int(options.factor().convert::<u64>(), false);
-
-			self.builder
-				.build_int_mul(current_cell, factor_value, "sub_from_cell_mul\0")?
+			self.resolve_factor(current_cell, options.factor())?
 		};
 
 		let (other_value, gep) = self.load_cell_and_pointer(0)?;
@@ -140,20 +130,58 @@ impl InnerAssembler<'_> {
 				"duplicate_cell_vector_add\0",
 			)?
 		} else {
-			let vec_of_factors = {
-				let factors = values
-					.iter()
-					.map(|x| i8_type.const_int(x.factor() as u64, false))
-					.collect::<Vec<_>>();
+			// let vec_of_factors = {
+			// 	let factors = values
+			// 		.iter()
+			// 		.map(|x| i8_type.const_int(x.factor() as u64, false))
+			// 		.collect::<Vec<_>>();
 
-				VectorType::const_vector(&factors)
+			// 	VectorType::const_vector(&factors)
+			// };
+
+			// let vec_of_scaled_current_cell = self.builder.build_int_mul(
+			// 	vec_of_current_cell,
+			// 	vec_of_factors,
+			// 	"duplicate_cell_vector_mul\0",
+			// )?;
+
+			let vec_of_scaled_current_cell = if values.iter().all(|x| {
+				let factor = x.factor();
+
+				factor.is_positive() && (factor as u64).is_power_of_two()
+			}) {
+				let vec_of_factors = {
+					let factors = values
+						.iter()
+						.map(|x| {
+							i8_type.const_int((x.factor() as u8).ilog2().convert::<u64>(), false)
+						})
+						.collect::<Vec<_>>();
+
+					VectorType::const_vector(&factors)
+				};
+
+				self.builder.build_left_shift(
+					vec_of_current_cell,
+					vec_of_factors,
+					"duplicate_cell_vector_shl\0",
+				)?
+			} else {
+				let vec_of_factors = {
+					let factors = values
+						.iter()
+						.map(|x| i8_type.const_int(x.factor() as u64, false))
+						.collect::<Vec<_>>();
+
+					VectorType::const_vector(&factors)
+				};
+
+				self.builder.build_int_mul(
+					vec_of_current_cell,
+					vec_of_factors,
+					"duplicate_cell_vector_mul\0",
+				)?
 			};
-
-			let vec_of_scaled_current_cell = self.builder.build_int_mul(
-				vec_of_current_cell,
-				vec_of_factors,
-				"duplicate_cell_vector_mul\0",
-			)?;
 
 			self.builder.build_int_add(
 				vec_of_loaded_values,

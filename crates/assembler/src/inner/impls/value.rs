@@ -1,5 +1,4 @@
 use frick_ir::{Factor, OffsetCellOptions};
-use frick_utils::Convert as _;
 
 use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
 
@@ -16,14 +15,7 @@ impl InnerAssembler<'_> {
 		let value_to_add = if matches!(options.factor(), 1) {
 			current_value
 		} else {
-			let factor = {
-				let i8_type = self.context().i8_type();
-
-				i8_type.const_int(options.factor().convert::<u64>(), false)
-			};
-
-			self.builder
-				.build_int_mul(current_value, factor, "move_value_to_mul\0")?
+			self.resolve_factor(current_value, options.factor())?
 		};
 
 		let added_together =
@@ -50,12 +42,7 @@ impl InnerAssembler<'_> {
 		let value_to_add = if matches!(factor, 1) {
 			current_value
 		} else {
-			let i8_type = self.context().i8_type();
-
-			let factor = i8_type.const_int(factor.convert::<u64>(), false);
-
-			self.builder
-				.build_int_mul(current_value, factor, "take_value_to_mul\0")?
+			self.resolve_factor(current_value, options.factor())?
 		};
 
 		let added = self
@@ -80,12 +67,7 @@ impl InnerAssembler<'_> {
 		let value_to_add = if matches!(factor, 1) {
 			other_cell
 		} else {
-			let i8_type = self.context().i8_type();
-
-			let factor = i8_type.const_int(factor.convert::<u64>(), false);
-
-			self.builder
-				.build_int_mul(other_cell, factor, "fetch_value_from_mul\0")?
+			self.resolve_factor(other_cell, factor)?
 		};
 
 		let added =
@@ -139,14 +121,7 @@ impl InnerAssembler<'_> {
 	) -> Result<(), AssemblyError> {
 		let other_cell = self.take(options.offset())?;
 
-		let value_to_store = {
-			let i8_type = self.context().i8_type();
-
-			let factor = i8_type.const_int((options.factor()).convert::<u64>(), false);
-
-			self.builder
-				.build_int_mul(other_cell, factor, "replace_value_from_factorized_mul\0")?
-		};
+		let value_to_store = self.resolve_factor(other_cell, options.factor())?;
 
 		self.store_into_cell(value_to_store, 0)?;
 
@@ -157,14 +132,7 @@ impl InnerAssembler<'_> {
 	pub fn scale_value(&self, factor: u8) -> Result<(), AssemblyError> {
 		let (cell, gep) = self.load_cell_and_pointer(0)?;
 
-		let value_to_store = {
-			let i8_type = self.context().i8_type();
-
-			let factor = i8_type.const_int(factor.convert::<u64>(), false);
-
-			self.builder
-				.build_int_mul(cell, factor, "scale_value_mul\0")
-		}?;
+		let value_to_store = self.resolve_factor(cell, factor)?;
 
 		self.store_into(value_to_store, gep)?;
 
