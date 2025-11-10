@@ -111,7 +111,7 @@ pub const fn remove_noop_instructions(ops: [&BrainIr; 1]) -> Option<Change> {
 	}
 }
 
-pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
+pub fn fix_boundary_op(ops: [&BrainIr; 2]) -> Option<Change> {
 	match ops {
 		[&BrainIr::Boundary, &BrainIr::ChangeCell(options)] => Some(Change::swap([
 			BrainIr::boundary(),
@@ -152,6 +152,15 @@ pub fn fix_boundary_instructions(ops: [&BrainIr; 2]) -> Option<Change> {
 				change_many_options.start(),
 			),
 		])),
+		_ => None,
+	}
+}
+
+pub const fn fix_boundary_move_op(ops: [&BrainIr; 3]) -> Option<Change> {
+	match ops {
+		[BrainIr::Boundary, BrainIr::MovePointer(..), i] if i.needs_nonzero_cell() => {
+			Some(Change::remove_offset(2))
+		}
 		_ => None,
 	}
 }

@@ -233,18 +233,19 @@ impl Optimizer {
 		}
 
 		{
-			let _guard = self.pass_info("optimize boundary instructions", 10);
+			let _guard = self.pass_info("optimize boundary instructions", 11);
 			run_peephole_pass_with_span(
 				"optimize_initial_sets",
 				progress,
 				self,
 				passes::optimize_initial_sets,
 			);
+			run_peephole_pass_with_span("fix_boundary_op", progress, self, passes::fix_boundary_op);
 			run_peephole_pass_with_span(
-				"fix_boundary_instructions",
+				"fix_boundary_move_op",
 				progress,
 				self,
-				passes::fix_boundary_instructions,
+				passes::fix_boundary_move_op,
 			);
 			run_peephole_pass_with_span(
 				"optimize_initial_set_move_change",
