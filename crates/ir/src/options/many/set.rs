@@ -65,13 +65,16 @@ impl SetManyCellsOptions {
 		self.values.get(index).copied()
 	}
 
-	pub fn set_value_at(&mut self, offset: i32, value: u8) -> bool {
+	pub fn value_at_mut(&mut self, offset: i32) -> Option<&mut u8> {
 		let mut range = self.range();
 
-		if let Some(current_value) = range
-			.position(|x| x == offset)
-			.and_then(|index| self.values.get_mut(index))
-		{
+		let index = range.position(|x| x == offset)?;
+
+		self.values.get_mut(index)
+	}
+
+	pub fn set_value_at(&mut self, offset: i32, value: u8) -> bool {
+		if let Some(current_value) = self.value_at_mut(offset) {
 			*current_value = value;
 			true
 		} else {

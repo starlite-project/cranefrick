@@ -296,30 +296,30 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(change_many_options.convert::<BrainIr>()))
 		}
-		[
-			&BrainIr::ChangeCell(change_options),
-			BrainIr::ChangeManyCells(change_many_options),
-		]
-		| [
-			BrainIr::ChangeManyCells(change_many_options),
-			&BrainIr::ChangeCell(change_options),
-		] => {
-			let x = change_options.offset();
-			let range = change_many_options.range();
+		// [
+		// 	&BrainIr::ChangeCell(change_options),
+		// 	BrainIr::ChangeManyCells(change_many_options),
+		// ]
+		// | [
+		// 	BrainIr::ChangeManyCells(change_many_options),
+		// 	&BrainIr::ChangeCell(change_options),
+		// ] => {
+		// 	let x = change_options.offset();
+		// 	let range = change_many_options.range();
 
-			if x != range.end {
-				return None;
-			}
+		// 	if x != range.end {
+		// 		return None;
+		// 	}
 
-			Some(Change::replace(BrainIr::change_many_cells(
-				change_many_options
-					.values()
-					.iter()
-					.copied()
-					.chain_once(change_options.value()),
-				range.start,
-			)))
-		}
+		// 	Some(Change::replace(BrainIr::change_many_cells(
+		// 		change_many_options
+		// 			.values()
+		// 			.iter()
+		// 			.copied()
+		// 			.chain_once(change_options.value()),
+		// 		range.start,
+		// 	)))
+		// }
 		[
 			&BrainIr::SetCell(set_options),
 			BrainIr::ChangeManyCells(change_many_options),
@@ -400,6 +400,46 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 
 			Some(Change::replace(BrainIr::change_many_cells(
 				new_values, min_key,
+			)))
+		}
+		[
+			BrainIr::ChangeManyCells(change_many_options),
+			&BrainIr::ChangeCell(change_options),
+		]
+		| [
+			&BrainIr::ChangeCell(change_options),
+			BrainIr::ChangeManyCells(change_many_options),
+		] => {
+			tracing::debug!(?ops, "made it");
+
+			let min = cmp::min(change_many_options.start(), change_options.offset());
+			let max = cmp::max(change_many_options.end(), change_options.offset());
+
+			let range = (min..=max).collect::<Vec<_>>();
+
+			tracing::debug!(?range);
+
+			let mut values_to_change = BTreeMap::<i32, i8>::new();
+
+			for offset in range {
+				let value_in_map = values_to_change.entry(offset).or_default();
+
+				if let Some(change_many_value) = change_many_options.value_at(offset) {
+					*value_in_map = value_in_map.wrapping_add(change_many_value);
+				}
+
+				if offset == change_options.offset() {
+					*value_in_map = value_in_map.wrapping_add(change_options.value());
+				}
+			}
+
+			// tracing::debug!(?values_to_change);
+
+			// None
+
+			Some(Change::replace(BrainIr::change_many_cells(
+				values_to_change.values().copied(),
+				min,
 			)))
 		}
 		_ => None,

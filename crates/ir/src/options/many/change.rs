@@ -35,11 +35,15 @@ impl ChangeManyCellsOptions {
 	}
 
 	#[must_use]
-	pub const fn range(&self) -> Range<i32> {
-		let start = self.start;
-		let end = start.wrapping_add_unsigned(self.values.len() as u32);
+	pub const fn end(&self) -> i32 {
+		let start = self.start();
 
-		start..end
+		start.wrapping_add_unsigned(self.values.len() as u32)
+	}
+
+	#[must_use]
+	pub const fn range(&self) -> Range<i32> {
+		self.start()..self.end()
 	}
 
 	#[must_use]
@@ -51,13 +55,16 @@ impl ChangeManyCellsOptions {
 		self.values.get(index).copied()
 	}
 
-	pub fn set_value_at(&mut self, offset: i32, value: i8) -> bool {
+	pub fn value_at_mut(&mut self, offset: i32) -> Option<&mut i8> {
 		let mut range = self.range();
 
-		if let Some(current_value) = range
-			.position(|x| x == offset)
-			.and_then(|index| self.values.get_mut(index))
-		{
+		let index = range.position(|x| x == offset)?;
+
+		self.values.get_mut(index)
+	}
+
+	pub fn set_value_at(&mut self, offset: i32, value: i8) -> bool {
+		if let Some(current_value) = self.value_at_mut(offset) {
 			*current_value = value;
 			true
 		} else {
