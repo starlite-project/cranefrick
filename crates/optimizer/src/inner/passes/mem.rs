@@ -410,14 +410,10 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 			&BrainIr::ChangeCell(change_options),
 			BrainIr::ChangeManyCells(change_many_options),
 		] => {
-			tracing::debug!(?ops, "made it");
-
 			let min = cmp::min(change_many_options.start(), change_options.offset());
 			let max = cmp::max(change_many_options.end(), change_options.offset());
 
 			let range = (min..=max).collect::<Vec<_>>();
-
-			tracing::debug!(?range);
 
 			let mut values_to_change = BTreeMap::<i32, i8>::new();
 
@@ -432,10 +428,6 @@ pub fn optimize_mem_sets(ops: [&BrainIr; 2]) -> Option<Change> {
 					*value_in_map = value_in_map.wrapping_add(change_options.value());
 				}
 			}
-
-			// tracing::debug!(?values_to_change);
-
-			// None
 
 			Some(Change::replace(BrainIr::change_many_cells(
 				values_to_change.values().copied(),
