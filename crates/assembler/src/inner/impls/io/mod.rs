@@ -4,11 +4,12 @@ mod chars;
 use frick_ir::{BrainIr, OutputOptions, ValuedOffsetCellOptions};
 use frick_utils::Convert as _;
 use inkwell::{
+	attributes::AttributeLoc,
 	context::ContextRef,
 	values::{BasicMetadataValueEnum, BasicValueEnum, InstructionValueError, IntValue},
 };
 
-use crate::{AssemblyError, ContextGetter as _, inner::InnerAssembler};
+use crate::{AssemblyError, ContextExt as _, ContextGetter as _, inner::InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	#[tracing::instrument(skip(self))]
@@ -119,6 +120,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			self.catch_block,
 			"putchar_invoke\0",
 		)?;
+
+		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0);
+
+		call.add_attribute(AttributeLoc::Param(0), zeroext_attr);
 
 		call.set_tail_call(true);
 
