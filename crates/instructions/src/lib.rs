@@ -19,6 +19,7 @@ pub enum BrainInstruction {
 	StorePointer,
 	StartLoop,
 	EndLoop,
+	CompareRegisterToImmediate(usize, u8),
 }
 
 pub trait ToInstructions {
@@ -55,7 +56,12 @@ impl ToInstructions for BrainOperationType {
 				BrainInstruction::OutputFromRegister(0),
 			],
 			Self::DynamicLoop(ops) => {
-				let mut output = vec![BrainInstruction::StartLoop];
+				let mut output = vec![
+					BrainInstruction::StartLoop,
+					BrainInstruction::LoadPointer,
+					BrainInstruction::LoadCellIntoRegister(0),
+					BrainInstruction::CompareRegisterToImmediate(0, 0),
+				];
 
 				for op in ops {
 					output.extend(op.to_instructions());
