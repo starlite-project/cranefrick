@@ -44,9 +44,28 @@ impl BrainOperation {
 		&self.op
 	}
 
+	pub const fn op_mut(&mut self) -> &mut BrainOperationType {
+		&mut self.op
+	}
+
 	#[must_use]
 	pub const fn span(&self) -> Range<usize> {
 		self.span.start..self.span.end
+	}
+
+	#[must_use]
+	pub const fn child_ops(&self) -> Option<&Vec<Self>> {
+		match self.op() {
+			BrainOperationType::DynamicLoop(ops) => Some(ops),
+			_ => None,
+		}
+	}
+
+	pub const fn child_ops_mut(&mut self) -> Option<&mut Vec<Self>> {
+		match self.op_mut() {
+			BrainOperationType::DynamicLoop(ops) => Some(ops),
+			_ => None,
+		}
 	}
 }
 

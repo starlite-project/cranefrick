@@ -14,4 +14,4 @@ serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"
 ] }
-tracing.workspace = true
+tracing = { workspace = true, features = ["attributes"] }
