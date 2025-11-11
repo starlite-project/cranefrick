@@ -9,9 +9,9 @@ extern crate std;
 #[cfg(feature = "parse")]
 mod parse;
 
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
 use core::{
-	fmt::{Debug, Display, Formatter, Result as FmtResult, Write as _},
+	fmt::{Display, Formatter, Result as FmtResult, Write as _},
 	ops::Range,
 };
 
@@ -59,19 +59,14 @@ impl Display for BrainOperation {
 	}
 }
 
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BrainOperationType {
 	ChangeCell(i8),
 	MovePointer(i32),
 	InputIntoCell,
 	OutputCurrentCell,
 	DynamicLoop(Vec<BrainOperation>),
-}
-
-impl Debug for BrainOperationType {
-	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		Display::fmt(&self, f)
-	}
+	Comment(String),
 }
 
 impl Display for BrainOperationType {
@@ -98,6 +93,7 @@ impl Display for BrainOperationType {
 				}
 				f.write_char(']')?;
 			}
+			Self::Comment(s) => f.write_str(s)?,
 		}
 
 		Ok(())

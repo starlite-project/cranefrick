@@ -1,10 +1,7 @@
-use alloc::{
-	string::{String, ToString as _},
-	vec::Vec,
-};
+use alloc::{string::ToString as _, vec::Vec};
 use std::{io, path::Path};
 
-use ariadne::{Color, FileCache, IndexType, Label, Report, ReportKind, Source, sources};
+use ariadne::{Color, IndexType, Label, Report, ReportKind, Source};
 use chumsky::prelude::*;
 
 use crate::{BrainOperation, BrainOperationType};
@@ -47,6 +44,7 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Vec<BrainOperation>, extra::Er
 			just('>').to(BrainOperationType::MovePointer(1)),
 			just('.').to(BrainOperationType::OutputCurrentCell),
 			just(',').to(BrainOperationType::InputIntoCell),
+			none_of("+-<>.,[]").map(|x: char| BrainOperationType::Comment(x.to_string())),
 		))
 		.or(expr
 			.delimited_by(just('['), just(']'))
@@ -58,7 +56,6 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Vec<BrainOperation>, extra::Er
 				span.into_range()
 			})
 		})
-		.padded()
 		.repeated()
 		.collect()
 	})
