@@ -19,7 +19,8 @@ serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"
 ] }
+tracing-indicatif = { workspace = true, optional = true }
 
 [features]
-parse = ["dep:ariadne", "dep:chumsky", "std"]
+parse = ["dep:ariadne", "dep:chumsky", "dep:tracing-indicatif", "std"]
 std = []

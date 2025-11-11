@@ -17,7 +17,7 @@ pub fn parse(file_path: impl AsRef<Path>) -> io::Result<Vec<BrainOperation>> {
 		Ok(e) => Ok(e),
 		Err(errs) => {
 			for err in errs {
-				Report::build(ReportKind::Error, (file_name, err.span().into_range()))
+				let report = Report::build(ReportKind::Error, (file_name, err.span().into_range()))
 					.with_config(ariadne::Config::new().with_index_type(IndexType::Byte))
 					.with_message(err.to_string())
 					.with_label(
@@ -25,8 +25,14 @@ pub fn parse(file_path: impl AsRef<Path>) -> io::Result<Vec<BrainOperation>> {
 							.with_message(err.reason().to_string())
 							.with_color(Color::Red),
 					)
-					.finish()
-					.eprint((file_name, Source::from(&file_data)))?;
+					.finish();
+				if let Some(indicatif_writer) =
+					tracing_indicatif::writer::get_indicatif_stderr_writer()
+				{
+					report.write((file_name, Source::from(&file_data)), indicatif_writer)?;
+				} else {
+					report.eprint((file_name, Source::from(&file_data)))?;
+				}
 			}
 
 			Ok(Vec::new())

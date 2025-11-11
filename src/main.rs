@@ -41,6 +41,22 @@ fn main() -> Result<()> {
 	install_tracing(args.output_path());
 	color_eyre::install()?;
 
+	let operations = frick_operations::parse(args.file_path())?;
+
+	if operations.is_empty() {
+		tracing::warn!("no program parsed");
+
+		return Ok(());
+	}
+
+	let mut new_optimizer = frick_new_optimizer::Optimizer::new(operations);
+
+	serialize(&new_optimizer, args.output_path(), "new_unoptimized")?;
+
+	new_optimizer.run();
+
+	serialize(&new_optimizer, args.output_path(), "new_optimized")?;
+
 	let raw_data = fs::read_to_string(args.file_path())?
 		.chars()
 		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))

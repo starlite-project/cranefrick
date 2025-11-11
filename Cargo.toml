@@ -11,6 +11,8 @@ color-eyre = { workspace = true, features = ["capture-spantrace"] }
 dhat = { workspace = true, optional = true }
 frick_assembler = { path = "crates/assembler" }
 frick_ir = { workspace = true, features = ["parse"] }
+frick_new_optimizer = { path = "crates/new_optimizer" }
+frick_operations = { workspace = true, features = ["parse"] }
 frick_optimizer = { path = "crates/optimizer" }
 ron = "0.11"
 serde.workspace = true
@@ -47,6 +49,7 @@ members = [
     "crates/assembler",
     "crates/interop",
     "crates/ir",
+    "crates/new_optimizer",
     "crates/operations",
     "crates/optimizer",
     "crates/spec",
@@ -65,6 +68,7 @@ criterion = "0.7"
 dhat = "0.3"
 frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
+frick_operations = { path = "crates/operations" }
 frick_utils = { path = "crates/utils" }
 inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "0079487e1d424ac42961d29313472b92f7e870af", features = [
     "llvm21-1-force-static"

@@ -459,6 +459,8 @@ dependencies = [
  "dhat",
  "frick_assembler",
  "frick_ir",
+ "frick_new_optimizer",
+ "frick_operations",
  "frick_optimizer",
  "mimalloc",
  "rand",
@@ -506,6 +508,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "frick_new_optimizer"
+version = "0.1.0"
+dependencies = [
+ "frick_operations",
+ "frick_utils",
+ "serde",
+ "tracing",
+]
+
+[[package]]
 name = "frick_operations"
 version = "0.1.0"
 dependencies = [
@@ -513,6 +525,7 @@ dependencies = [
  "chumsky",
  "frick_utils",
  "serde",
+ "tracing-indicatif",
 ]
 
 [[package]]
