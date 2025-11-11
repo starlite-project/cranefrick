@@ -14,7 +14,6 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use frick_instructions::BrainInstruction;
 use frick_operations::{BrainOperation, BrainOperationType};
 use frick_utils::Convert as _;
 use inkwell::{
