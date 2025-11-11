@@ -5,6 +5,7 @@ use std::{fs, path::Path};
 use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::Assembler;
+use frick_optimizer::Optimizer;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
@@ -47,16 +48,16 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	let mut optimizer = frick_new_optimizer::Optimizer::new(operations);
+	let mut optimizer = Optimizer::new(operations);
 
-	serialize(&optimizer, args.output_path(), "new_unoptimized")?;
+	serialize(&optimizer, args.output_path(), "unoptimized")?;
 
 	optimizer.run();
 
-	serialize(&optimizer, args.output_path(), "new_optimized")?;
+	serialize(&optimizer, args.output_path(), "optimized")?;
 
-	let mut assembler = match args.passes_path() {
-		None => Assembler::default(),
+	let assembler = match args.passes_path() {
+		None => Assembler::new("default<O0>".to_owned(), args.file_path().to_owned()),
 		Some(passes_path) => {
 			let passes = fs::read_to_string(passes_path)?;
 
@@ -66,11 +67,10 @@ fn main() -> Result<()> {
 					.map(|l| l.trim())
 					.collect::<Vec<_>>()
 					.join(","),
+				args.file_path().to_owned(),
 			)
 		}
 	};
-
-	assembler.set_path(args.file_path().to_owned());
 
 	let module = assembler.assemble(optimizer.ops(), args.output_path())?;
 
@@ -121,7 +121,7 @@ fn install_tracing(folder_path: &Path) {
 }
 
 fn env_filter() -> EnvFilter {
-	EnvFilter::new("info,frick_optimizer=debug")
+	EnvFilter::new("debug")
 }
 
 fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {

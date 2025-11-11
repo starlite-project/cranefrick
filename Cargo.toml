@@ -10,8 +10,8 @@ clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
 dhat = { workspace = true, optional = true }
 frick_assembler = { path = "crates/assembler" }
-frick_new_optimizer = { path = "crates/new_optimizer" }
 frick_operations = { workspace = true, features = ["parse"] }
+frick_optimizer = { path = "crates/optimizer" }
 ron = "0.11"
 serde.workspace = true
 toml = { version = "0.9", features = ["serde"] }
@@ -48,7 +48,7 @@ members = [
     "crates/instructions",
     "crates/interop",
     "crates/ir",
-    "crates/new_optimizer",
+    "crates/old_optimizer",
     "crates/operations",
     "crates/optimizer",
     "crates/spec",
@@ -65,6 +65,7 @@ clap = "4"
 color-eyre = "0.6"
 criterion = "0.7"
 dhat = "0.3"
+frick_instructions = { path = "crates/instructions" }
 frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
 frick_operations = { path = "crates/operations" }

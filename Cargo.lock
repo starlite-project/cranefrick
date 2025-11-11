@@ -458,8 +458,8 @@ dependencies = [
  "criterion",
  "dhat",
  "frick_assembler",
- "frick_new_optimizer",
  "frick_operations",
+ "frick_optimizer",
  "mimalloc",
  "rand",
  "ron",
@@ -476,12 +476,14 @@ dependencies = [
 name = "frick_assembler"
 version = "0.1.0"
 dependencies = [
+ "frick_instructions",
  "frick_interop",
  "frick_operations",
  "frick_spec",
  "frick_utils",
  "inkwell",
  "libc",
+ "line-numbers",
  "send_wrapper",
  "tracing",
 ]
@@ -489,6 +491,9 @@ dependencies = [
 [[package]]
 name = "frick_instructions"
 version = "0.1.0"
+dependencies = [
+ "frick_operations",
+]
 
 [[package]]
 name = "frick_interop"
@@ -510,13 +515,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "frick_new_optimizer"
+name = "frick_old_optimizer"
 version = "0.1.0"
 dependencies = [
- "frick_operations",
+ "frick_ir",
  "frick_utils",
  "serde",
  "tracing",
+ "tracing-indicatif",
 ]
 
 [[package]]
@@ -534,11 +540,10 @@ dependencies = [
 name = "frick_optimizer"
 version = "0.1.0"
 dependencies = [
- "frick_ir",
+ "frick_operations",
  "frick_utils",
  "serde",
  "tracing",
- "tracing-indicatif",
 ]
 
 [[package]]
@@ -736,6 +741,12 @@ dependencies = [
  "cc",
  "libc",
 ]
+
+[[package]]
+name = "line-numbers"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24ab6409a2f9ffae158ae823a012a7d7d68386663a14bedc260ca66eacf65c2c"
 
 [[package]]
 name = "llvm-sys"

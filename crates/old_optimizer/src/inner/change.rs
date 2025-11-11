@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use frick_operations::{BrainOperation, BrainOperationType};
+use frick_ir::BrainIr;
 use frick_utils::{InsertOrPush as _, IntoIteratorExt as _};
 use tracing::trace;
 
@@ -8,8 +8,8 @@ use tracing::trace;
 pub enum Change {
 	Remove,
 	RemoveOffset(isize),
-	Swap(Vec<BrainOperation>),
-	Replace(BrainOperationType),
+	Swap(Vec<BrainIr>),
+	Replace(BrainIr),
 }
 
 impl Change {
@@ -21,15 +21,15 @@ impl Change {
 		Self::RemoveOffset(offset)
 	}
 
-	pub fn swap(ops: impl IntoIterator<Item = BrainOperation>) -> Self {
-		Self::Swap(ops.collect_to())
+	pub fn swap(instrs: impl IntoIterator<Item = BrainIr>) -> Self {
+		Self::Swap(instrs.collect_to())
 	}
 
-	pub const fn replace(instr: BrainOperationType) -> Self {
+	pub const fn replace(instr: BrainIr) -> Self {
 		Self::Replace(instr)
 	}
 
-	pub(super) fn apply<const N: usize>(self, ops: &mut Vec<BrainOperation>, i: usize) {
+	pub(super) fn apply<const N: usize>(self, ops: &mut Vec<BrainIr>, i: usize) {
 		match self {
 			Self::Remove => {
 				let removed = ops.drain(i..(i + N)).collect::<Vec<_>>();
@@ -41,35 +41,30 @@ impl Change {
 
 				trace!("removing instruction {removed:?} at offset {offset}");
 			}
-			Self::Swap(new_ops) => {
+			Self::Swap(instrs) => {
 				let mut replaced = Vec::with_capacity(N);
 
 				for _ in 0..N {
 					replaced.push(ops.remove(i));
 				}
 
-				trace!("swapping instructions {replaced:?} with {new_ops:?}");
+				trace!("swapping instructions {replaced:?} with {instrs:?}");
 
-				new_ops
+				instrs
 					.into_iter()
 					.rev()
-					.for_each(|op| ops.insert_or_push(i, op));
+					.for_each(|instr| ops.insert_or_push(i, instr));
 			}
-			Self::Replace(op_ty) => {
+			Self::Replace(instr) => {
 				let mut replaced = Vec::with_capacity(N);
 
 				for _ in 0..N {
 					replaced.push(ops.remove(i));
 				}
 
-				let span_start = replaced.iter().map(|x| x.span().start).min().unwrap();
-				let span_end = replaced.iter().map(|x| x.span().end).max().unwrap();
+				trace!("replacing instructions {replaced:?} with {instr:?}");
 
-				let new_op = BrainOperation::new(op_ty, span_start..span_end);
-
-				trace!("replacing instructions {replaced:?} with {new_op:?}");
-
-				ops.insert_or_push(i, new_op);
+				ops.insert_or_push(i, instr);
 			}
 		}
 	}

@@ -3,8 +3,9 @@
 mod impls;
 mod utils;
 
-use std::path::Path;
+use std::{fs, path::Path};
 
+use frick_instructions::{BrainInstruction, IntoInstructions as _};
 use frick_operations::BrainOperation;
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
@@ -26,6 +27,7 @@ use super::AssemblyError;
 use crate::{ContextExt as _, ContextGetter as _, ModuleExt as _};
 
 pub struct InnerAssembler<'ctx> {
+	file_data: String,
 	module: Module<'ctx>,
 	builder: Builder<'ctx>,
 	functions: AssemblerFunctions<'ctx>,
@@ -42,7 +44,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		target_triple: TargetTriple,
 		cpu_name: &str,
 		cpu_features: &str,
-		path: Option<&Path>,
+		file_path: &Path,
 	) -> Result<Self, AssemblyError> {
 		let module = context.create_module("frick\0");
 		let functions = AssemblerFunctions::new(context, &module, cpu_name, cpu_features)?;
@@ -79,23 +81,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 			debug_metadata_version,
 		);
 
-		let (file_name, directory) = if let Some(path) = path {
-			assert!(path.is_file());
+		let (file_name, directory) = {
+			assert!(file_path.is_file());
 
-			let file_name = path
+			let file_name = file_path
 				.file_name()
 				.map(|s| s.to_string_lossy().into_owned())
 				.unwrap_or_default();
 
-			let directory = path
+			let directory = file_path
 				.parent()
 				.and_then(|s| s.canonicalize().ok())
 				.map(|s| s.to_string_lossy().into_owned())
 				.unwrap_or_default();
 
 			(file_name, directory)
-		} else {
-			("frick_source_file.bf".to_owned(), "/".to_owned())
 		};
 
 		let debug_builder = AssemblerDebugBuilder::new(&module, &file_name, &directory)?;
@@ -117,7 +117,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		builder.set_current_debug_location(debug_loc);
 		module.set_source_file_name(&file_name);
 
+		let file_data = fs::read_to_string(file_path)?;
+
 		Ok(Self {
+			file_data,
 			module,
 			builder,
 			functions,
@@ -229,13 +232,39 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	#[allow(clippy::never_loop)]
 	fn ops(&self, ops: &[BrainOperation]) -> Result<(), AssemblyError> {
+		let line_positions = line_numbers::LinePositions::from(self.file_data.as_str());
+
+		tracing::debug!("{line_positions:?}");
+
 		for op in ops {
-			match op.ty() {
-				ty => return Err(AssemblyError::NotImplemented(ty.clone())),
+			let op_range = op.span();
+
+			let line_span = line_positions.from_region(op_range.start, op_range.end)[0];
+
+			let debug_loc = self.debug_builder.create_debug_location(
+				self.context(),
+				(line_span.line.as_usize() + 1) as u32,
+				line_span.start_col,
+				self.debug_builder.main_subprogram.as_debug_info_scope(),
+				None,
+			);
+
+			let instructions = op.to_instructions();
+
+			for i in instructions {
+				if !self.compile_instruction(i)? {
+					return Err(AssemblyError::NotImplemented(op.ty().clone()));
+				}
 			}
 		}
 
 		Ok(())
+	}
+
+	fn compile_instruction(&self, instr: BrainInstruction) -> Result<bool, AssemblyError> {
+		match instr {
+			_ => Ok(false),
+		}
 	}
 
 	#[tracing::instrument(skip(self))]

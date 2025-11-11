@@ -1,11 +1,11 @@
+lints.workspace = true
+
 [package]
-name = "frick_instructions"
 edition.workspace = true
 license.workspace = true
+name = "frick_instructions"
 rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-
-[lints]
-workspace = true
+frick_operations.workspace = true

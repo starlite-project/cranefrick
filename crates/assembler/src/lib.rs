@@ -14,6 +14,7 @@ use std::{
 	path::{Path, PathBuf},
 };
 
+use frick_instructions::BrainInstruction;
 use frick_operations::{BrainOperation, BrainOperationType};
 use frick_utils::Convert as _;
 use inkwell::{
@@ -42,12 +43,12 @@ use self::{
 pub struct Assembler {
 	context: Context,
 	passes: String,
-	file_path: Option<PathBuf>,
+	file_path: PathBuf,
 }
 
 impl Assembler {
 	#[must_use]
-	pub fn new(passes: String) -> Self {
+	pub fn new(passes: String, file_path: PathBuf) -> Self {
 		inkwell::support::error_handling::reset_fatal_error_handler();
 		unsafe {
 			inkwell::support::error_handling::install_fatal_error_handler(handler);
@@ -58,21 +59,8 @@ impl Assembler {
 		Self {
 			context: Context::create(),
 			passes,
-			file_path: None,
+			file_path,
 		}
-	}
-
-	pub fn set_path(&mut self, path: PathBuf) {
-		self.file_path = Some(path);
-	}
-
-	#[must_use]
-	pub fn with_path(passes: String, path: PathBuf) -> Self {
-		let mut this = Self::new(passes);
-
-		this.set_path(path);
-
-		this
 	}
 
 	#[tracing::instrument(skip_all, fields(indicatif.pb_show = tracing::field::Empty))]
@@ -116,7 +104,7 @@ impl Assembler {
 			target_triple,
 			&cpu,
 			&cpu_features,
-			self.file_path.as_deref(),
+			&self.file_path,
 		)?;
 
 		let (module, AssemblerFunctions { main, .. }, target_machine) = assembler.assemble(ops)?;
@@ -207,12 +195,6 @@ extern "C" fn handler(ptr: *const i8) {
 	std::process::abort()
 }
 
-impl Default for Assembler {
-	fn default() -> Self {
-		Self::new("default<O0>".to_owned())
-	}
-}
-
 #[derive(Debug)]
 pub enum AssemblyError {
 	Llvm(SendWrapper<LLVMString>),
@@ -222,10 +204,6 @@ pub enum AssemblyError {
 	InvalidIntrinsicDeclaration(Cow<'static, str>),
 	InvalidGEPType(String),
 	Inkwell(inkwell::Error),
-	MissingPointerInstruction {
-		alloca_name: String,
-		looking_after: bool,
-	},
 	NotImplemented(BrainOperationType),
 	Io(IoError),
 	SlotAlreadySet,
@@ -263,22 +241,6 @@ impl Display for AssemblyError {
 				f.write_str(ty)?;
 				f.write_str(" is invalid for GEP")
 			}
-			Self::MissingPointerInstruction {
-				alloca_name,
-				looking_after: false,
-			} => {
-				f.write_str("alloca for '")?;
-				f.write_str(alloca_name)?;
-				f.write_str("' could not be found")
-			}
-			Self::MissingPointerInstruction {
-				alloca_name,
-				looking_after: true,
-			} => {
-				f.write_str("instruction after alloca '")?;
-				f.write_str(alloca_name)?;
-				f.write_str("' was not found")
-			}
 			Self::NotImplemented(instr) => {
 				f.write_str("instruction ")?;
 				Debug::fmt(&instr, f)?;
@@ -302,7 +264,6 @@ impl StdError for AssemblyError {
 			| Self::InvalidGEPType(..)
 			| Self::InvalidIntrinsicDeclaration(..)
 			| Self::NotImplemented(..)
-			| Self::MissingPointerInstruction { .. }
 			| Self::SlotAlreadySet => None,
 		}
 	}

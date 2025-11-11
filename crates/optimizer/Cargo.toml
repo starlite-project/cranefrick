@@ -8,14 +8,10 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-frick_ir.workspace = true
-frick_utils = { workspace = true, features = [
-    "contains_range",
-    "convert",
-    "insert_or_push",
-    "iter_ext",
-    "slice_ext"
+frick_operations.workspace = true
+frick_utils = { workspace = true, features = ["insert_or_push", "iter_ext"] }
+serde = { workspace = true, default-features = false, features = [
+    "alloc",
+    "derive"
 ] }
-serde.workspace = true
 tracing = { workspace = true, features = ["attributes"] }
-tracing-indicatif.workspace = true

@@ -18,5 +18,7 @@ frick_utils = { workspace = true, features = [
 ] }
 inkwell.workspace = true
 libc.workspace = true
+line-numbers = "0.4"
 send_wrapper.workspace = true
 tracing.workspace = true
+frick_instructions.workspace = true

@@ -1,29 +1,36 @@
+#![expect(unused)]
+
 mod change;
 pub mod passes;
-mod utils;
 
 use alloc::vec::Vec;
 use core::array;
 
-use frick_ir::BrainIr;
+use frick_operations::BrainOperation;
 
 pub use self::change::*;
 
 #[tracing::instrument(skip_all)]
-pub fn run_loop_pass(v: &mut Vec<BrainIr>, pass: impl LoopPass) -> bool {
-	run_peephole_pass_inner(v, |ops| match ops {
-		[BrainIr::DynamicLoop(i)] => pass(i),
-		_ => None,
+pub fn run_loop_pass(v: &mut Vec<BrainOperation>, pass: impl LoopPass) -> bool {
+	run_peephole_pass_inner(v, |ops| {
+		let [op] = ops;
+
+		let child_ops = op.child_ops()?;
+
+		pass(child_ops)
 	})
 }
 
 #[tracing::instrument(skip_all)]
-pub fn run_peephole_pass<const N: usize>(v: &mut Vec<BrainIr>, pass: impl PeepholePass<N>) -> bool {
+pub fn run_peephole_pass<const N: usize>(
+	v: &mut Vec<BrainOperation>,
+	pass: impl PeepholePass<N>,
+) -> bool {
 	run_peephole_pass_inner(v, pass)
 }
 
 fn run_peephole_pass_inner<const N: usize>(
-	v: &mut Vec<BrainIr>,
+	v: &mut Vec<BrainOperation>,
 	pass: impl PeepholePass<N>,
 ) -> bool {
 	let mut i = 0;
@@ -46,21 +53,24 @@ fn run_peephole_pass_inner<const N: usize>(
 	}
 
 	v.iter_mut()
-		.filter_map(BrainIr::child_ops_mut)
+		.filter_map(BrainOperation::child_ops_mut)
 		.for_each(|child| {
-			progress |= run_peephole_pass_inner::<N>(child, pass);
+			progress |= run_peephole_pass_inner(child, pass);
 		});
 
 	progress
 }
 
 pub(crate) trait PeepholePass<const N: usize>:
-	Copy + Fn([&BrainIr; N]) -> Option<Change>
+	Copy + Fn([&BrainOperation; N]) -> Option<Change>
 {
 }
 
-impl<T, const N: usize> PeepholePass<N> for T where T: Copy + Fn([&BrainIr; N]) -> Option<Change> {}
+impl<T, const N: usize> PeepholePass<N> for T where
+	T: Copy + Fn([&BrainOperation; N]) -> Option<Change>
+{
+}
 
-pub(crate) trait LoopPass: Copy + Fn(&[BrainIr]) -> Option<Change> {}
+pub(crate) trait LoopPass: Copy + Fn(&[BrainOperation]) -> Option<Change> {}
 
-impl<T> LoopPass for T where T: Copy + Fn(&[BrainIr]) -> Option<Change> {}
+impl<T> LoopPass for T where T: Copy + Fn(&[BrainOperation]) -> Option<Change> {}
