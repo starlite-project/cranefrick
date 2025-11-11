@@ -44,7 +44,7 @@ name = "is_all_zero"
 
 [workspace]
 members = [
-    "crates/assembler",
+    "crates/assembler", "crates/instructions",
     "crates/interop",
     "crates/ir",
     "crates/new_optimizer",
