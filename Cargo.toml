@@ -10,10 +10,8 @@ clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
 dhat = { workspace = true, optional = true }
 frick_assembler = { path = "crates/assembler" }
-frick_ir = { workspace = true, features = ["parse"] }
 frick_new_optimizer = { path = "crates/new_optimizer" }
 frick_operations = { workspace = true, features = ["parse"] }
-frick_optimizer = { path = "crates/optimizer" }
 ron = "0.11"
 serde.workspace = true
 toml = { version = "0.9", features = ["serde"] }

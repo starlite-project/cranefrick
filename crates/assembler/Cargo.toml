@@ -9,9 +9,13 @@ version.workspace = true
 
 [dependencies]
 frick_interop.workspace = true
-frick_ir.workspace = true
+frick_operations.workspace = true
 frick_spec = { path = "../spec" }
-frick_utils = { workspace = true, features = ["convert", "get_or_zero", "slice_ext"] }
+frick_utils = { workspace = true, features = [
+    "convert",
+    "get_or_zero",
+    "slice_ext"
+] }
 inkwell.workspace = true
 libc.workspace = true
 send_wrapper.workspace = true

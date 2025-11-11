@@ -1,4 +1,7 @@
+#![expect(unused)]
+
 mod change;
+pub mod passes;
 
 use alloc::vec::Vec;
 use core::array;
@@ -9,13 +12,12 @@ pub use self::change::*;
 
 #[tracing::instrument(skip_all)]
 pub fn run_loop_pass(v: &mut Vec<BrainOperation>, pass: impl LoopPass) -> bool {
-	run_peephole_pass_inner(v, |ops| match ops {
-		[op] => {
-			let child_ops = op.child_ops()?;
+	run_peephole_pass_inner(v, |ops| {
+		let [op] = ops;
 
-			pass(child_ops)
-		}
-		_ => None,
+		let child_ops = op.child_ops()?;
+
+		pass(child_ops)
 	})
 }
 

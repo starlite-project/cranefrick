@@ -14,7 +14,7 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use frick_ir::BrainIr;
+use frick_operations::{BrainOperation, BrainOperationType};
 use frick_utils::Convert as _;
 use inkwell::{
 	OptimizationLevel,
@@ -78,7 +78,7 @@ impl Assembler {
 	#[tracing::instrument(skip_all, fields(indicatif.pb_show = tracing::field::Empty))]
 	pub fn assemble<'ctx>(
 		&'ctx self,
-		ops: &[BrainIr],
+		ops: &[BrainOperation],
 		output_path: &Path,
 	) -> Result<AssembledModule<'ctx>, AssemblyError> {
 		info!("initializing all targets");
@@ -226,7 +226,7 @@ pub enum AssemblyError {
 		alloca_name: String,
 		looking_after: bool,
 	},
-	NotImplemented(BrainIr),
+	NotImplemented(BrainOperationType),
 	Io(IoError),
 	SlotAlreadySet,
 }

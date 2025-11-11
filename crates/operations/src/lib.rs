@@ -40,11 +40,11 @@ impl BrainOperation {
 	}
 
 	#[must_use]
-	pub const fn op(&self) -> &BrainOperationType {
+	pub const fn ty(&self) -> &BrainOperationType {
 		&self.op
 	}
 
-	pub const fn op_mut(&mut self) -> &mut BrainOperationType {
+	pub const fn ty_mut(&mut self) -> &mut BrainOperationType {
 		&mut self.op
 	}
 
@@ -55,14 +55,14 @@ impl BrainOperation {
 
 	#[must_use]
 	pub const fn child_ops(&self) -> Option<&Vec<Self>> {
-		match self.op() {
+		match self.ty() {
 			BrainOperationType::DynamicLoop(ops) => Some(ops),
 			_ => None,
 		}
 	}
 
 	pub const fn child_ops_mut(&mut self) -> Option<&mut Vec<Self>> {
-		match self.op_mut() {
+		match self.ty_mut() {
 			BrainOperationType::DynamicLoop(ops) => Some(ops),
 			_ => None,
 		}

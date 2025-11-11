@@ -3,7 +3,7 @@ mod utils;
 
 use std::path::Path;
 
-use frick_ir::{BrainIr, SubOptions};
+use frick_operations::BrainOperation;
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
 use inkwell::{
@@ -128,13 +128,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub fn assemble(
 		self,
-		ops: &[BrainIr],
+		ops: &[BrainOperation],
 	) -> Result<(Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine), AssemblyError> {
 		tracing::debug!("writing instructions");
-		let mut op_count = 0;
-
 		let ops_span = tracing::info_span!("ops").entered();
-		self.ops(ops, &mut op_count)?;
+		self.ops(ops)?;
 		drop(ops_span);
 
 		tracing::debug!("declaring variables");
@@ -173,15 +171,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.build_return(None)?;
 
-		let debug_loc = self.debug_builder.create_debug_location(
-			self.context(),
-			1,
-			op_count as u32,
-			self.debug_builder.main_subprogram.as_debug_info_scope(),
-			None,
-		);
-
-		self.builder.set_current_debug_location(debug_loc);
+		self.builder.unset_current_debug_location();
 
 		tracing::debug!("setting up the landing pad");
 		let last_basic_block = self.functions.main.get_last_basic_block().unwrap();
@@ -235,44 +225,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(self.into_parts())
 	}
 
-	fn ops(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
+	#[allow(clippy::never_loop)]
+	fn ops(&self, ops: &[BrainOperation]) -> Result<(), AssemblyError> {
 		for op in ops {
-			tracing::trace!(%op_count, %op);
-			let debug_loc = self.debug_builder.create_debug_location(
-				self.context(),
-				1,
-				*op_count as u32,
-				self.debug_builder.main_subprogram.as_debug_info_scope(),
-				None,
-			);
-
-			self.builder.set_current_debug_location(debug_loc);
-
-			match op {
-				BrainIr::Boundary => {}
-				&BrainIr::ChangeCell(options) => self.change_cell(options)?,
-				&BrainIr::SetCell(options) => self.set_cell(options)?,
-				&BrainIr::SubCell(SubOptions::CellAt(options)) => self.sub_cell_at(options)?,
-				&BrainIr::SubCell(SubOptions::FromCell(options)) => self.sub_from_cell(options)?,
-				&BrainIr::MovePointer(offset) => self.move_pointer(offset)?,
-				&BrainIr::ScanTape(scan_tape_options) => self.scan_tape(scan_tape_options)?,
-				&BrainIr::InputIntoCell(input_options) => self.input_into_cell(input_options)?,
-				BrainIr::Output(options) => self.output(options)?,
-				&BrainIr::MoveValueTo(options) => self.move_value_to(options)?,
-				&BrainIr::TakeValueTo(options) => self.take_value_to(options)?,
-				&BrainIr::FetchValueFrom(options) => self.fetch_value_from(options)?,
-				&BrainIr::ReplaceValueFrom(options) => self.replace_value_from(options)?,
-				&BrainIr::ScaleValue(factor) => self.scale_value(factor)?,
-				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops, op_count)?,
-				BrainIr::IfNotZero(ops) => self.if_not_zero(ops, op_count)?,
-				BrainIr::ChangeManyCells(options) => self.change_many_cells(options)?,
-				&BrainIr::SetRange(options) => self.set_range(options)?,
-				BrainIr::SetManyCells(options) => self.set_many_cells(options)?,
-				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
-				_ => return Err(AssemblyError::NotImplemented(op.clone())),
+			match op.ty() {
+				ty => return Err(AssemblyError::NotImplemented(ty.clone())),
 			}
-
-			*op_count += 1;
 		}
 
 		Ok(())

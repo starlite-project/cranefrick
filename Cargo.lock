@@ -458,10 +458,8 @@ dependencies = [
  "criterion",
  "dhat",
  "frick_assembler",
- "frick_ir",
  "frick_new_optimizer",
  "frick_operations",
- "frick_optimizer",
  "mimalloc",
  "rand",
  "ron",
@@ -479,7 +477,7 @@ name = "frick_assembler"
 version = "0.1.0"
 dependencies = [
  "frick_interop",
- "frick_ir",
+ "frick_operations",
  "frick_spec",
  "frick_utils",
  "inkwell",

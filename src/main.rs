@@ -5,8 +5,6 @@ use std::{fs, path::Path};
 use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::Assembler;
-use frick_ir::parse;
-use frick_optimizer::Optimizer;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 use tracing_error::ErrorLayer;
@@ -49,34 +47,13 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	let mut new_optimizer = frick_new_optimizer::Optimizer::new(operations);
+	let mut optimizer = frick_new_optimizer::Optimizer::new(operations);
 
-	serialize(&new_optimizer, args.output_path(), "new_unoptimized")?;
-
-	new_optimizer.run();
-
-	serialize(&new_optimizer, args.output_path(), "new_optimized")?;
-
-	let raw_data = fs::read_to_string(args.file_path())?
-		.chars()
-		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
-		.collect::<String>();
-
-	let parsed = parse(raw_data)?;
-
-	if parsed.is_empty() {
-		tracing::warn!("no program parsed");
-
-		return Ok(());
-	}
-
-	let mut optimizer = parsed.into_iter().collect::<Optimizer>();
-
-	serialize(&optimizer, args.output_path(), "unoptimized")?;
+	serialize(&optimizer, args.output_path(), "new_unoptimized")?;
 
 	optimizer.run();
 
-	serialize(&optimizer, args.output_path(), "optimized")?;
+	serialize(&optimizer, args.output_path(), "new_optimized")?;
 
 	let mut assembler = match args.passes_path() {
 		None => Assembler::default(),
@@ -95,7 +72,7 @@ fn main() -> Result<()> {
 
 	assembler.set_path(args.file_path().to_owned());
 
-	let module = assembler.assemble(&optimizer, args.output_path())?;
+	let module = assembler.assemble(optimizer.ops(), args.output_path())?;
 
 	tracing::info!("finished assembling module");
 
