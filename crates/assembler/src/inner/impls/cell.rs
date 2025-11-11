@@ -1,3 +1,3 @@
-use crate::{InnerAssembler, AssemblyError};
+use crate::{AssemblyError, InnerAssembler};
 
 impl<'ctx> InnerAssembler<'ctx> {}
