@@ -9,3 +9,7 @@ version.workspace = true
 
 [dependencies]
 frick_operations.workspace = true
+serde = { workspace = true, default-features = false, features = [
+    "alloc",
+    "derive"
+] }

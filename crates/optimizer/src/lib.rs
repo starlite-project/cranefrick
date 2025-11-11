@@ -7,6 +7,7 @@ mod inner;
 
 use alloc::vec::Vec;
 
+use frick_instructions::{BrainInstruction, ToInstructions};
 use frick_operations::BrainOperation;
 use frick_utils::IntoIteratorExt as _;
 use inner::{passes, run_peephole_pass};
@@ -62,5 +63,14 @@ impl Optimizer {
 
 	pub const fn ops_mut(&mut self) -> &mut Vec<BrainOperation> {
 		&mut self.ops
+	}
+}
+
+impl ToInstructions for Optimizer {
+	fn to_instructions(&self) -> Vec<BrainInstruction> {
+		self.ops
+			.iter()
+			.flat_map(ToInstructions::to_instructions)
+			.collect()
 	}
 }

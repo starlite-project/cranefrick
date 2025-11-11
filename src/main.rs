@@ -5,6 +5,7 @@ use std::{fs, path::Path};
 use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::Assembler;
+use frick_instructions::ToInstructions as _;
 use frick_optimizer::Optimizer;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
@@ -50,11 +51,23 @@ fn main() -> Result<()> {
 
 	let mut optimizer = Optimizer::new(operations);
 
-	serialize(&optimizer, args.output_path(), "unoptimized")?;
+	serialize(&optimizer, args.output_path(), "unoptimized.ops")?;
+
+	serialize(
+		&optimizer.to_instructions(),
+		args.output_path(),
+		"unoptimized.instrs",
+	)?;
 
 	optimizer.run();
 
-	serialize(&optimizer, args.output_path(), "optimized")?;
+	serialize(&optimizer, args.output_path(), "optimized.ops")?;
+
+	serialize(
+		&optimizer.to_instructions(),
+		args.output_path(),
+		"optimized.instrs",
+	)?;
 
 	let assembler = match args.passes_path() {
 		None => Assembler::new("default<O0>".to_owned(), args.file_path().to_owned()),

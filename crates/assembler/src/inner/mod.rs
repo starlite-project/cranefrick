@@ -5,7 +5,7 @@ mod utils;
 
 use std::{fs, path::Path};
 
-use frick_instructions::{BrainInstruction, IntoInstructions as _};
+use frick_instructions::{BrainInstruction, ToInstructions as _};
 use frick_operations::BrainOperation;
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
@@ -234,8 +234,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn ops(&self, ops: &[BrainOperation]) -> Result<(), AssemblyError> {
 		let line_positions = line_numbers::LinePositions::from(self.file_data.as_str());
 
-		tracing::debug!("{line_positions:?}");
-
 		for op in ops {
 			let op_range = op.span();
 
@@ -250,6 +248,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			);
 
 			let instructions = op.to_instructions();
+
+			if instructions.is_empty() {
+				return Err(AssemblyError::NotImplemented(op.ty().clone()));
+			}
 
 			for i in instructions {
 				if !self.compile_instruction(i)? {

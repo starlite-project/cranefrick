@@ -458,6 +458,7 @@ dependencies = [
  "criterion",
  "dhat",
  "frick_assembler",
+ "frick_instructions",
  "frick_operations",
  "frick_optimizer",
  "mimalloc",
@@ -493,6 +494,7 @@ name = "frick_instructions"
 version = "0.1.0"
 dependencies = [
  "frick_operations",
+ "serde",
 ]
 
 [[package]]
@@ -540,6 +542,7 @@ dependencies = [
 name = "frick_optimizer"
 version = "0.1.0"
 dependencies = [
+ "frick_instructions",
  "frick_operations",
  "frick_utils",
  "serde",

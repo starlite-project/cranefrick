@@ -10,6 +10,7 @@ clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
 dhat = { workspace = true, optional = true }
 frick_assembler = { path = "crates/assembler" }
+frick_instructions.workspace = true
 frick_operations = { workspace = true, features = ["parse"] }
 frick_optimizer = { path = "crates/optimizer" }
 ron = "0.11"
