@@ -38,16 +38,31 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Vec<BrainOperation>, extra::Er
 {
 	recursive(|expr| {
 		choice((
-			just('+').to(BrainOperationType::ChangeCell(1)),
-			just('-').to(BrainOperationType::ChangeCell(-1)),
-			just('<').to(BrainOperationType::MovePointer(-1)),
-			just('>').to(BrainOperationType::MovePointer(1)),
-			just('.').to(BrainOperationType::OutputCurrentCell),
-			just(',').to(BrainOperationType::InputIntoCell),
+			just('+')
+				.to(BrainOperationType::ChangeCell(1))
+				.labelled("increment"),
+			just('-')
+				.to(BrainOperationType::ChangeCell(-1))
+				.labelled("decrement"),
+			just('<')
+				.to(BrainOperationType::MovePointer(-1))
+				.labelled("move left"),
+			just('>')
+				.to(BrainOperationType::MovePointer(1))
+				.labelled("move right"),
+			just('.')
+				.to(BrainOperationType::OutputCurrentCell)
+				.labelled("output"),
+			just(',')
+				.to(BrainOperationType::InputIntoCell)
+				.labelled("input"),
 			none_of("+-<>.,[]").map(|x: char| BrainOperationType::Comment(x.to_string())),
 		))
 		.or(expr
-			.delimited_by(just('['), just(']'))
+			.delimited_by(
+				just('[').labelled("start loop"),
+				just(']').labelled("end loop"),
+			)
 			.map(BrainOperationType::DynamicLoop))
 		.map_with(|e, t| {
 			BrainOperation::new(e, {

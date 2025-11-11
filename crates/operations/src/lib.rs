@@ -10,10 +10,7 @@ extern crate std;
 mod parse;
 
 use alloc::{string::String, vec::Vec};
-use core::{
-	fmt::{Display, Formatter, Result as FmtResult, Write as _},
-	ops::Range,
-};
+use core::ops::Range;
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
@@ -53,12 +50,6 @@ impl BrainOperation {
 	}
 }
 
-impl Display for BrainOperation {
-	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		Display::fmt(&self.op(), f)
-	}
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BrainOperationType {
 	ChangeCell(i8),
@@ -67,35 +58,4 @@ pub enum BrainOperationType {
 	OutputCurrentCell,
 	DynamicLoop(Vec<BrainOperation>),
 	Comment(String),
-}
-
-impl Display for BrainOperationType {
-	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		match self {
-			Self::ChangeCell(value_offset) => {
-				let char = if value_offset.is_negative() { '-' } else { '+' };
-				for _ in 0..value_offset.unsigned_abs() {
-					f.write_char(char)?;
-				}
-			}
-			Self::MovePointer(offset) => {
-				let char = if offset.is_negative() { '<' } else { '>' };
-				for _ in 0..offset.unsigned_abs() {
-					f.write_char(char)?;
-				}
-			}
-			Self::InputIntoCell => f.write_char(',')?,
-			Self::OutputCurrentCell => f.write_char('.')?,
-			Self::DynamicLoop(ops) => {
-				f.write_char('[')?;
-				for op in ops {
-					Display::fmt(&op.op(), f)?;
-				}
-				f.write_char(']')?;
-			}
-			Self::Comment(s) => f.write_str(s)?,
-		}
-
-		Ok(())
-	}
 }
