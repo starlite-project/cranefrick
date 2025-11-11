@@ -1,0 +1,25 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "frick_operations"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+ariadne = { workspace = true, optional = true }
+chumsky = { workspace = true, default-features = false, optional = true, features = [
+    "serde",
+    "stacker",
+    "std"
+] }
+frick_utils = { workspace = true, features = ["iter_ext"] }
+serde = { workspace = true, default-features = false, features = [
+    "alloc",
+    "derive"
+] }
+
+[features]
+parse = ["dep:ariadne", "dep:chumsky", "std"]
+std = []

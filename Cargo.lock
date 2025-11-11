@@ -506,6 +506,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "frick_operations"
+version = "0.1.0"
+dependencies = [
+ "ariadne",
+ "chumsky",
+ "frick_utils",
+ "serde",
+]
+
+[[package]]
 name = "frick_optimizer"
 version = "0.1.0"
 dependencies = [

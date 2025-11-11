@@ -47,6 +47,7 @@ members = [
     "crates/assembler",
     "crates/interop",
     "crates/ir",
+    "crates/operations",
     "crates/optimizer",
     "crates/spec",
     "crates/utils",
