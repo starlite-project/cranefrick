@@ -1,3 +1,5 @@
+#![expect(unused)]
+
 mod impls;
 mod utils;
 
