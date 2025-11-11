@@ -1,9 +1,9 @@
 #![expect(unused)]
 
-mod impls;
+mod instr;
 mod utils;
 
-use std::{fs, path::Path};
+use std::{cell::RefCell, fs, path::Path};
 
 use frick_instructions::{BrainInstruction, ToInstructions as _};
 use frick_operations::BrainOperation;
@@ -18,7 +18,7 @@ use inkwell::{
 	module::{FlagBehavior, Module},
 	targets::{TargetMachine, TargetTriple},
 	types::{BasicTypeEnum, VectorType},
-	values::{BasicMetadataValueEnum, FunctionValue, VectorValue},
+	values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue, IntValue, VectorValue},
 };
 
 pub use self::utils::AssemblerFunctions;
@@ -35,6 +35,8 @@ pub struct InnerAssembler<'ctx> {
 	target_machine: TargetMachine,
 	debug_builder: AssemblerDebugBuilder<'ctx>,
 	catch_block: BasicBlock<'ctx>,
+	registers: RefCell<Vec<BasicValueEnum<'ctx>>>,
+	loaded_pointer: RefCell<Option<IntValue<'ctx>>>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -128,6 +130,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			target_machine,
 			debug_builder,
 			catch_block,
+			registers: RefCell::default(),
+			loaded_pointer: RefCell::default(),
 		})
 	}
 
@@ -143,6 +147,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		tracing::debug!("declaring variables");
 		self.debug_builder
 			.declare_variables(self.context(), self.pointers)?;
+
+		self.builder.unset_current_debug_location();
 
 		let context = self.context();
 
@@ -175,8 +181,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		)?;
 
 		self.builder.build_return(None)?;
-
-		self.builder.unset_current_debug_location();
 
 		tracing::debug!("setting up the landing pad");
 		let last_basic_block = self.functions.main.get_last_basic_block().unwrap();
@@ -242,7 +246,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let debug_loc = self.debug_builder.create_debug_location(
 				self.context(),
 				(line_span.line.as_usize() + 1) as u32,
-				line_span.start_col,
+				line_span.start_col + 1,
 				self.debug_builder.main_subprogram.as_debug_info_scope(),
 				None,
 			);
@@ -265,8 +269,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn compile_instruction(&self, instr: BrainInstruction) -> Result<bool, AssemblyError> {
 		match instr {
-			_ => Ok(false),
+			BrainInstruction::LoadPointer => self.load_pointer()?,
+			BrainInstruction::LoadCellIntoRegister(slot) => self.load_cell_into_register(slot)?,
+			BrainInstruction::StoreRegisterIntoCell(slot) => self.store_register_into_cell(slot)?,
+			BrainInstruction::ChangeRegisterByImmediate(slot, imm) => {
+				self.change_register_by_immediate(slot, imm)?;
+			}
+			_ => return Ok(false),
 		}
+
+		Ok(true)
 	}
 
 	#[tracing::instrument(skip(self))]

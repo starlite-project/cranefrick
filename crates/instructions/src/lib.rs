@@ -9,10 +9,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BrainInstruction {
-	LoadCellIntoValue(u8),
-	StoreValueIntoCell(u8),
-	ChangeValueByConstant(u8, i8),
-	OutputValue(u8),
+	LoadCellIntoRegister(usize),
+	StoreRegisterIntoCell(usize),
+	ChangeRegisterByImmediate(usize, i8),
+	InputIntoRegister(usize),
+	OutputFromRegister(usize),
+	LoadPointer,
 	OffsetPointer(i32),
 	StorePointer,
 	StartLoop,
@@ -33,13 +35,24 @@ impl ToInstructions for BrainOperationType {
 	fn to_instructions(&self) -> Vec<BrainInstruction> {
 		match self {
 			&Self::ChangeCell(value) => vec![
-				BrainInstruction::LoadCellIntoValue(0),
-				BrainInstruction::ChangeValueByConstant(0, value),
-				BrainInstruction::StoreValueIntoCell(0),
+				BrainInstruction::LoadPointer,
+				BrainInstruction::LoadCellIntoRegister(0),
+				BrainInstruction::ChangeRegisterByImmediate(0, value),
+				BrainInstruction::StoreRegisterIntoCell(0),
 			],
 			&Self::MovePointer(offset) => vec![
+				BrainInstruction::LoadPointer,
 				BrainInstruction::OffsetPointer(offset),
 				BrainInstruction::StorePointer,
+			],
+			&Self::InputIntoCell => vec![
+				BrainInstruction::InputIntoRegister(0),
+				BrainInstruction::LoadPointer,
+				BrainInstruction::StoreRegisterIntoCell(0),
+			],
+			&Self::OutputCurrentCell => vec![
+				BrainInstruction::LoadCellIntoRegister(0),
+				BrainInstruction::OutputFromRegister(0),
 			],
 			Self::DynamicLoop(ops) => {
 				let mut output = vec![BrainInstruction::StartLoop];

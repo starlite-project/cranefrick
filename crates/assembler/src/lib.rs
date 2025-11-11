@@ -206,6 +206,8 @@ pub enum AssemblyError {
 	NotImplemented(BrainOperationType),
 	Io(IoError),
 	SlotAlreadySet,
+	PointerNotLoaded,
+	NoValueInRegister(usize),
 }
 
 impl AssemblyError {
@@ -247,6 +249,13 @@ impl Display for AssemblyError {
 			}
 			Self::Io(..) => f.write_str("an IO error has occurred"),
 			Self::SlotAlreadySet => f.write_str("the slot has already been written to"),
+			Self::PointerNotLoaded => {
+				f.write_str("pointer was not loaded before indexing into tape")
+			}
+			Self::NoValueInRegister(slot) => {
+				f.write_str("no value was found in register ")?;
+				Display::fmt(&slot, f)
+			}
 		}
 	}
 }
@@ -263,7 +272,9 @@ impl StdError for AssemblyError {
 			| Self::InvalidGEPType(..)
 			| Self::InvalidIntrinsicDeclaration(..)
 			| Self::NotImplemented(..)
-			| Self::SlotAlreadySet => None,
+			| Self::SlotAlreadySet
+			| Self::PointerNotLoaded
+			| Self::NoValueInRegister(..) => None,
 		}
 	}
 }

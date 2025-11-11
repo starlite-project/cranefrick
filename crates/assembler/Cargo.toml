@@ -8,12 +8,14 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
+frick_instructions.workspace = true
 frick_interop.workspace = true
 frick_operations.workspace = true
 frick_spec = { path = "../spec" }
 frick_utils = { workspace = true, features = [
     "convert",
     "get_or_zero",
+    "insert_or_push",
     "slice_ext"
 ] }
 inkwell.workspace = true
@@ -21,4 +23,3 @@ libc.workspace = true
 line-numbers = "0.4"
 send_wrapper.workspace = true
 tracing.workspace = true
-frick_instructions.workspace = true
