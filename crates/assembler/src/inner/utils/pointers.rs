@@ -32,8 +32,9 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		let tape = {
 			let tape_array_type = i8_type.array_type(TAPE_SIZE as u32);
+			let tape_array_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
-			builder.build_alloca(tape_array_type, "tape\0")?
+			builder.build_array_alloca(i8_type, tape_array_size, "tape\0")?
 		};
 
 		let pointer = builder.build_alloca(ptr_int_type, "pointer\0")?;
