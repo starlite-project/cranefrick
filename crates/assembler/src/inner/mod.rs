@@ -5,7 +5,7 @@ mod utils;
 
 use std::{cell::RefCell, fs, path::Path};
 
-use frick_instructions::{BrainInstruction, ToInstructions as _};
+use frick_instructions::{BrainInstruction, Reg, ToInstructions as _};
 use frick_operations::BrainOperation;
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
@@ -270,9 +270,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn compile_instruction(&self, instr: BrainInstruction) -> Result<bool, AssemblyError> {
 		match instr {
 			BrainInstruction::LoadPointer => self.load_pointer()?,
-			BrainInstruction::LoadCellIntoRegister(slot) => self.load_cell_into_register(slot)?,
-			BrainInstruction::StoreRegisterIntoCell(slot) => self.store_register_into_cell(slot)?,
-			BrainInstruction::ChangeRegisterByImmediate(slot, imm) => {
+			BrainInstruction::LoadCellIntoRegister(Reg(slot)) => {
+				self.load_cell_into_register(slot)?;
+			}
+			BrainInstruction::StoreRegisterIntoCell(Reg(slot)) => {
+				self.store_register_into_cell(slot)?;
+			}
+			BrainInstruction::ChangeRegisterByImmediate(Reg(slot), imm) => {
 				self.change_register_by_immediate(slot, imm)?;
 			}
 			_ => return Ok(false),

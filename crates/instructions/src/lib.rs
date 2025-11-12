@@ -9,17 +9,18 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BrainInstruction {
-	LoadCellIntoRegister(usize),
-	StoreRegisterIntoCell(usize),
-	ChangeRegisterByImmediate(usize, i8),
-	InputIntoRegister(usize),
-	OutputFromRegister(usize),
+	LoadCellIntoRegister(Reg),
+	StoreRegisterIntoCell(Reg),
+	ChangeRegisterByImmediate(Reg, i8),
+	InputIntoRegister(Reg),
+	OutputFromRegister(Reg),
 	LoadPointer,
 	OffsetPointer(i32),
 	StorePointer,
 	StartLoop,
 	EndLoop,
-	CompareRegisterToImmediate(usize, u8),
+	JumpIfZero(Reg),
+	JumpIfNotZero(Reg),
 }
 
 pub trait ToInstructions {
@@ -37,9 +38,9 @@ impl ToInstructions for BrainOperationType {
 		match self {
 			&Self::ChangeCell(value) => vec![
 				BrainInstruction::LoadPointer,
-				BrainInstruction::LoadCellIntoRegister(0),
-				BrainInstruction::ChangeRegisterByImmediate(0, value),
-				BrainInstruction::StoreRegisterIntoCell(0),
+				BrainInstruction::LoadCellIntoRegister(Reg(0)),
+				BrainInstruction::ChangeRegisterByImmediate(Reg(0), value),
+				BrainInstruction::StoreRegisterIntoCell(Reg(0)),
 			],
 			&Self::MovePointer(offset) => vec![
 				BrainInstruction::LoadPointer,
@@ -47,20 +48,20 @@ impl ToInstructions for BrainOperationType {
 				BrainInstruction::StorePointer,
 			],
 			&Self::InputIntoCell => vec![
-				BrainInstruction::InputIntoRegister(0),
+				BrainInstruction::InputIntoRegister(Reg(0)),
 				BrainInstruction::LoadPointer,
-				BrainInstruction::StoreRegisterIntoCell(0),
+				BrainInstruction::StoreRegisterIntoCell(Reg(0)),
 			],
 			&Self::OutputCurrentCell => vec![
-				BrainInstruction::LoadCellIntoRegister(0),
-				BrainInstruction::OutputFromRegister(0),
+				BrainInstruction::LoadCellIntoRegister(Reg(0)),
+				BrainInstruction::OutputFromRegister(Reg(0)),
 			],
 			Self::DynamicLoop(ops) => {
 				let mut output = vec![
 					BrainInstruction::StartLoop,
 					BrainInstruction::LoadPointer,
-					BrainInstruction::LoadCellIntoRegister(0),
-					BrainInstruction::CompareRegisterToImmediate(0, 0),
+					BrainInstruction::LoadCellIntoRegister(Reg(0)),
+					BrainInstruction::JumpIfNotZero(Reg(0)),
 				];
 
 				for op in ops {
@@ -75,3 +76,7 @@ impl ToInstructions for BrainOperationType {
 		}
 	}
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[repr(transparent)]
+pub struct Reg(pub usize);
