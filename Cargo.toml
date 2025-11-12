@@ -71,7 +71,7 @@ frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
 frick_operations = { path = "crates/operations" }
 frick_utils = { path = "crates/utils" }
-inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "0079487e1d424ac42961d29313472b92f7e870af", features = [
+inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "37ef0f589a77bf601c2112f3ece020b3a373756f", features = [
     "llvm21-1-force-static"
 ] }
 libc = "0.2"
