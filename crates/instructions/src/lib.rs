@@ -80,3 +80,15 @@ impl ToInstructions for BrainOperationType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct Reg(pub usize);
+
+impl From<usize> for Reg {
+	fn from(value: usize) -> Self {
+		Self(value)
+	}
+}
+
+impl From<Reg> for usize {
+	fn from(value: Reg) -> Self {
+		value.0
+	}
+}
