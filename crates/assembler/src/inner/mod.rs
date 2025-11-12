@@ -244,7 +244,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let instructions = op.to_instructions();
 
 			if instructions.is_empty() {
-				return Err(AssemblyError::NotImplemented(op.ty().clone(), None));
+				return Err(AssemblyError::NotImplemented(
+					op.op().clone(),
+					BrainInstructionType::NotImplemented,
+				));
 			}
 
 			for i in instructions {
@@ -262,10 +265,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				self.builder.set_current_debug_location(debug_loc);
 
 				if !self.compile_instruction(i.instr())? {
-					return Err(AssemblyError::NotImplemented(
-						op.ty().clone(),
-						Some(i.instr()),
-					));
+					return Err(AssemblyError::NotImplemented(op.op().clone(), i.instr()));
 				}
 			}
 		}

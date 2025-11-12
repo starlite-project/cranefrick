@@ -204,7 +204,7 @@ pub enum AssemblyError {
 	InvalidIntrinsicDeclaration(Cow<'static, str>),
 	InvalidGEPType(String),
 	Inkwell(inkwell::Error),
-	NotImplemented(BrainOperationType, Option<BrainInstructionType>),
+	NotImplemented(BrainOperationType, BrainInstructionType),
 	Io(IoError),
 	SlotAlreadySet,
 	PointerNotLoaded,
@@ -244,12 +244,12 @@ impl Display for AssemblyError {
 				f.write_str(ty)?;
 				f.write_str(" is invalid for GEP")
 			}
-			Self::NotImplemented(op, None) => {
+			Self::NotImplemented(op, BrainInstructionType::NotImplemented) => {
 				f.write_str("operation ")?;
 				Debug::fmt(&op, f)?;
 				f.write_str(" is not yet implemented")
 			}
-			Self::NotImplemented(op, Some(instr)) => {
+			Self::NotImplemented(op, instr) => {
 				f.write_str("operation ")?;
 				Debug::fmt(&op, f)?;
 				f.write_str(" could not be compiled as instruction ")?;

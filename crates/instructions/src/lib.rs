@@ -3,13 +3,13 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
-use core::ops::Range;
+use alloc::{vec, vec::Vec};
+use core::ops::{Deref, DerefMut, Range};
 
 use frick_operations::{BrainOperation, BrainOperationType};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BrainInstruction {
 	instr: BrainInstructionType,
 	byte_offset: usize,
@@ -22,18 +22,32 @@ impl BrainInstruction {
 	}
 
 	#[must_use]
-	pub const fn instr(&self) -> BrainInstructionType {
+	pub const fn instr(self) -> BrainInstructionType {
 		self.instr
 	}
 
 	#[must_use]
-	pub const fn byte_offset(&self) -> usize {
+	pub const fn byte_offset(self) -> usize {
 		self.byte_offset
 	}
 
 	#[must_use]
-	pub const fn span(&self) -> Range<usize> {
+	pub const fn span(self) -> Range<usize> {
 		self.byte_offset()..self.byte_offset()
+	}
+}
+
+impl Deref for BrainInstruction {
+	type Target = BrainInstructionType;
+
+	fn deref(&self) -> &Self::Target {
+		&self.instr
+	}
+}
+
+impl DerefMut for BrainInstruction {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.instr
 	}
 }
 
@@ -42,6 +56,7 @@ impl BrainInstruction {
 pub enum BrainInstructionType {
 	LoadCellIntoRegister(Reg),
 	StoreRegisterIntoCell(Reg),
+	StoreImmediateIntoCell(u8),
 	ChangeRegisterByImmediate(Reg, i8),
 	InputIntoRegister(Reg),
 	OutputFromRegister(Reg),
@@ -52,6 +67,7 @@ pub enum BrainInstructionType {
 	EndLoop,
 	JumpIfZero(Reg),
 	JumpIfNotZero(Reg),
+	NotImplemented,
 }
 
 pub trait ToInstructions {
@@ -60,7 +76,7 @@ pub trait ToInstructions {
 
 impl ToInstructions for BrainOperation {
 	fn to_instructions(&self) -> Vec<BrainInstruction> {
-		match self.ty() {
+		match self.op() {
 			&BrainOperationType::ChangeCell(value) => [
 				BrainInstructionType::LoadPointer,
 				BrainInstructionType::LoadCellIntoRegister(Reg(0)),
@@ -122,7 +138,10 @@ impl ToInstructions for BrainOperation {
 
 				output
 			}
-			_ => Vec::new(),
+			_ => vec![BrainInstruction::new(
+				BrainInstructionType::NotImplemented,
+				self.span().start,
+			)],
 		}
 	}
 }

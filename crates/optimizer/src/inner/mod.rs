@@ -6,7 +6,7 @@ pub mod passes;
 use alloc::vec::Vec;
 use core::array;
 
-use frick_operations::BrainOperation;
+use frick_operations::{BrainOperation, BrainOperationType};
 
 pub use self::change::*;
 
@@ -53,7 +53,7 @@ fn run_peephole_pass_inner<const N: usize>(
 	}
 
 	v.iter_mut()
-		.filter_map(BrainOperation::child_ops_mut)
+		.filter_map(|op| op.child_ops_mut())
 		.for_each(|child| {
 			progress |= run_peephole_pass_inner(child, pass);
 		});

@@ -53,6 +53,8 @@ impl Optimizer {
 	fn run_each_pass(&mut self, progress: &mut bool) {
 		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_consecutive_instructions);
 
+		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_set_cell_instruction);
+
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_comments);
 	}
 
