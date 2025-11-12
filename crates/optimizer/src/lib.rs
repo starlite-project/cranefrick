@@ -10,9 +10,10 @@ use alloc::vec::Vec;
 use frick_instructions::{BrainInstruction, ToInstructions};
 use frick_operations::BrainOperation;
 use frick_utils::IntoIteratorExt as _;
-use inner::{passes, run_peephole_pass};
 use serde::{Deserialize, Serialize};
 use tracing::info;
+
+use self::inner::{passes, run_loop_pass, run_peephole_pass};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(transparent)]
@@ -54,6 +55,7 @@ impl Optimizer {
 		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_consecutive_instructions);
 
 		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_set_cell_instruction);
+		*progress |= run_loop_pass(self.ops_mut(), passes::optimize_clear_cell_instruction);
 
 		*progress |= passes::fix_beginning_instructions(self.ops_mut());
 

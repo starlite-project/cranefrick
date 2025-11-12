@@ -34,6 +34,18 @@ pub fn optimize_set_cell_instruction(ops: [&BrainOperation; 2]) -> Option<Change
 	}
 }
 
+pub fn optimize_clear_cell_instruction(ops: &[BrainOperation]) -> Option<Change> {
+	match ops {
+		[op] => match op.op() {
+			BrainOperationType::ChangeCell(-1) => {
+				Some(Change::replace(BrainOperationType::SetCell(0)))
+			}
+			_ => None,
+		},
+		_ => None,
+	}
+}
+
 pub const fn remove_comments(ops: [&BrainOperation; 1]) -> Option<Change> {
 	match ops[0].op() {
 		BrainOperationType::Comment(..) => Some(Change::remove()),
