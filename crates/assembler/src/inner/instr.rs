@@ -64,6 +64,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"\0",
 		)?;
 
+		self.builder.position_at_end(continue_block);
+
 		let call_value = call_site_value
 			.try_as_basic_value()
 			.unwrap_basic()
@@ -74,8 +76,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.build_int_truncate_or_bit_cast(call_value, cell_type, "\0")?;
 
 		self.set_value_at(reg, truncated_value)?;
-
-		self.builder.position_at_end(continue_block);
 
 		Ok(())
 	}
@@ -248,8 +248,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder
 			.build_conditional_branch(comparison, loop_info.body, loop_info.exit)?;
-
-		self.builder.position_at_end(loop_info.body);
 
 		Ok(())
 	}
