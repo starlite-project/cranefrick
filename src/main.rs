@@ -51,20 +51,36 @@ fn main() -> Result<()> {
 
 	let mut optimizer = Optimizer::new(operations);
 
-	serialize(&optimizer, args.output_path(), "unoptimized.ops")?;
+	serialize(
+		&optimizer.ops().iter().map(|x| x.op()).collect::<Vec<_>>(),
+		args.output_path(),
+		"unoptimized.ops",
+	)?;
 
 	serialize(
-		&optimizer.to_instructions(),
+		&optimizer
+			.to_instructions()
+			.iter()
+			.map(|x| x.instr())
+			.collect::<Vec<_>>(),
 		args.output_path(),
 		"unoptimized.instrs",
 	)?;
 
 	optimizer.run();
 
-	serialize(&optimizer, args.output_path(), "optimized.ops")?;
+	serialize(
+		&optimizer.ops().iter().map(|x| x.op()).collect::<Vec<_>>(),
+		args.output_path(),
+		"optimized.ops",
+	)?;
 
 	serialize(
-		&optimizer.to_instructions(),
+		&optimizer
+			.to_instructions()
+			.iter()
+			.map(|x| x.instr())
+			.collect::<Vec<_>>(),
 		args.output_path(),
 		"optimized.instrs",
 	)?;
