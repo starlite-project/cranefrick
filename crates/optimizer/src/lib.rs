@@ -59,6 +59,8 @@ impl Optimizer {
 
 		*progress |= passes::fix_beginning_instructions(self.ops_mut());
 
+		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_unreachable_loops);
+
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_comments);
 	}
 
