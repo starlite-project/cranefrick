@@ -70,6 +70,7 @@ impl BrainOperation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum BrainOperationType {
 	ChangeCell(i8),
 	MovePointer(i32),

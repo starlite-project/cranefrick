@@ -2,14 +2,44 @@
 #![no_std]
 
 extern crate alloc;
-use alloc::{vec, vec::Vec};
+
+use alloc::vec::Vec;
+use core::ops::Range;
 
 use frick_operations::{BrainOperation, BrainOperationType};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BrainInstruction {
+	instr: BrainInstructionType,
+	byte_offset: usize,
+}
+
+impl BrainInstruction {
+	#[must_use]
+	pub const fn new(instr: BrainInstructionType, byte_offset: usize) -> Self {
+		Self { instr, byte_offset }
+	}
+
+	#[must_use]
+	pub const fn instr(&self) -> BrainInstructionType {
+		self.instr
+	}
+
+	#[must_use]
+	pub const fn byte_offset(&self) -> usize {
+		self.byte_offset
+	}
+
+	#[must_use]
+	pub const fn span(&self) -> Range<usize> {
+		self.byte_offset()..self.byte_offset()
+	}
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
-pub enum BrainInstruction {
+pub enum BrainInstructionType {
 	LoadCellIntoRegister(Reg),
 	StoreRegisterIntoCell(Reg),
 	ChangeRegisterByImmediate(Reg, i8),
@@ -30,52 +60,65 @@ pub trait ToInstructions {
 
 impl ToInstructions for BrainOperation {
 	fn to_instructions(&self) -> Vec<BrainInstruction> {
-		self.ty().to_instructions()
-	}
-}
-
-impl ToInstructions for BrainOperationType {
-	fn to_instructions(&self) -> Vec<BrainInstruction> {
-		match self {
-			&Self::ChangeCell(value) => vec![
-				BrainInstruction::LoadPointer,
-				BrainInstruction::LoadCellIntoRegister(Reg(0)),
-				BrainInstruction::ChangeRegisterByImmediate(Reg(0), value),
-				BrainInstruction::StoreRegisterIntoCell(Reg(0)),
-			],
-			&Self::MovePointer(offset) => vec![
-				BrainInstruction::LoadPointer,
-				BrainInstruction::OffsetPointer(offset),
-				BrainInstruction::StorePointer,
-			],
-			&Self::InputIntoCell => vec![
-				BrainInstruction::InputIntoRegister(Reg(0)),
-				BrainInstruction::LoadPointer,
-				BrainInstruction::StoreRegisterIntoCell(Reg(0)),
-			],
-			&Self::OutputCurrentCell => vec![
-				BrainInstruction::LoadPointer,
-				BrainInstruction::LoadCellIntoRegister(Reg(0)),
-				BrainInstruction::OutputFromRegister(Reg(0)),
-			],
-			Self::DynamicLoop(ops) => {
-				let mut output = vec![
-					BrainInstruction::StartLoop,
-					BrainInstruction::LoadPointer,
-					BrainInstruction::LoadCellIntoRegister(Reg(0)),
-					BrainInstruction::JumpIfZero(Reg(0)),
-				];
+		match self.ty() {
+			&BrainOperationType::ChangeCell(value) => [
+				BrainInstructionType::LoadPointer,
+				BrainInstructionType::LoadCellIntoRegister(Reg(0)),
+				BrainInstructionType::ChangeRegisterByImmediate(Reg(0), value),
+				BrainInstructionType::StoreRegisterIntoCell(Reg(0)),
+			]
+			.into_iter()
+			.map(|x| BrainInstruction::new(x, self.span().start))
+			.collect(),
+			&BrainOperationType::MovePointer(offset) => [
+				BrainInstructionType::LoadPointer,
+				BrainInstructionType::OffsetPointer(offset),
+				BrainInstructionType::StorePointer,
+			]
+			.into_iter()
+			.map(|x| BrainInstruction::new(x, self.span().start))
+			.collect(),
+			&BrainOperationType::InputIntoCell => [
+				BrainInstructionType::InputIntoRegister(Reg(0)),
+				BrainInstructionType::LoadPointer,
+				BrainInstructionType::StoreRegisterIntoCell(Reg(0)),
+			]
+			.into_iter()
+			.map(|x| BrainInstruction::new(x, self.span().start))
+			.collect(),
+			&BrainOperationType::OutputCurrentCell => [
+				BrainInstructionType::LoadPointer,
+				BrainInstructionType::LoadCellIntoRegister(Reg(0)),
+				BrainInstructionType::OutputFromRegister(Reg(0)),
+			]
+			.into_iter()
+			.map(|x| BrainInstruction::new(x, self.span().start))
+			.collect(),
+			BrainOperationType::DynamicLoop(ops) => {
+				let mut output = [
+					BrainInstructionType::StartLoop,
+					BrainInstructionType::LoadPointer,
+					BrainInstructionType::LoadCellIntoRegister(Reg(0)),
+					BrainInstructionType::JumpIfZero(Reg(0)),
+				]
+				.into_iter()
+				.map(|x| BrainInstruction::new(x, self.span().start))
+				.collect::<Vec<_>>();
 
 				for op in ops {
 					output.extend(op.to_instructions());
 				}
 
-				output.extend([
-					BrainInstruction::LoadPointer,
-					BrainInstruction::LoadCellIntoRegister(Reg(0)),
-					BrainInstruction::JumpIfNotZero(Reg(0)),
-					BrainInstruction::EndLoop,
-				]);
+				output.extend(
+					[
+						BrainInstructionType::LoadPointer,
+						BrainInstructionType::LoadCellIntoRegister(Reg(0)),
+						BrainInstructionType::JumpIfNotZero(Reg(0)),
+						BrainInstructionType::EndLoop,
+					]
+					.into_iter()
+					.map(|x| BrainInstruction::new(x, self.span().end)),
+				);
 
 				output
 			}

@@ -14,7 +14,7 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use frick_instructions::BrainInstruction;
+use frick_instructions::BrainInstructionType;
 use frick_operations::{BrainOperation, BrainOperationType};
 use frick_utils::Convert as _;
 use inkwell::{
@@ -204,7 +204,7 @@ pub enum AssemblyError {
 	InvalidIntrinsicDeclaration(Cow<'static, str>),
 	InvalidGEPType(String),
 	Inkwell(inkwell::Error),
-	NotImplemented(BrainOperationType, Option<BrainInstruction>),
+	NotImplemented(BrainOperationType, Option<BrainInstructionType>),
 	Io(IoError),
 	SlotAlreadySet,
 	PointerNotLoaded,

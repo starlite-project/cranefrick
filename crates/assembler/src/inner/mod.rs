@@ -5,7 +5,7 @@ mod utils;
 
 use std::{cell::RefCell, fs, path::Path};
 
-use frick_instructions::{BrainInstruction, Reg, ToInstructions as _};
+use frick_instructions::{BrainInstructionType, Reg, ToInstructions as _};
 use frick_operations::{BrainOperation, BrainOperationType};
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
@@ -241,20 +241,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let line_positions = line_numbers::LinePositions::from(self.file_data.as_str());
 
 		for op in ops {
-			let op_range = op.span();
-
-			let line_span = line_positions.from_region(op_range.start, op_range.end)[0];
-
-			// let debug_loc = self.debug_builder.create_debug_location(
-			// 	self.context(),
-			// 	(line_span.line.as_usize() + 1) as u32,
-			// 	line_span.start_col + 1,
-			// 	self.debug_builder.main_subprogram.as_debug_info_scope(),
-			// 	None,
-			// );
-
-			// self.builder.set_current_debug_location(debug_loc);
-
 			let instructions = op.to_instructions();
 
 			if instructions.is_empty() {
@@ -262,38 +248,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			}
 
 			for i in instructions {
-				// if matches!(i, BrainInstruction::StartLoop) {
-				// 	let last_debug_block_scope =
-				// 		self.debug_builder.blocks.borrow().last().map_or_else(
-				// 			|| self.debug_builder.main_subprogram.as_debug_info_scope(),
-				// 			|x| x.as_debug_info_scope(),
-				// 		);
+				let i_range = i.span();
 
-				// 	let debug_block = self.debug_builder.create_lexical_block(
-				// 		last_debug_block_scope,
-				// 		self.debug_builder.compile_unit.get_file(),
-				// 		(line_span.line.as_usize() + 1) as u32,
-				// 		line_span.start_col,
-				// 	);
-				// }
-
-				match i {
-					BrainInstruction::StartLoop => {
-						let lexical_block = self.debug_builder.create_lexical_block(
-							self.debug_builder.get_current_scope(),
-							self.debug_builder.compile_unit.get_file(),
-							(line_span.line.as_usize() + 1) as u32,
-							line_span.start_col + 1,
-						);
-
-						self.debug_builder.blocks.borrow_mut().push(lexical_block);
-					}
-					BrainInstruction::EndLoop => {
-						self.debug_builder.blocks.borrow_mut().pop();
-					}
-					_ => {}
-				}
-
+				let line_span = line_positions.from_region(i_range.start, i_range.end)[0];
 				let debug_loc = self.debug_builder.create_debug_location(
 					self.context(),
 					(line_span.line.as_usize() + 1) as u32,
@@ -304,8 +261,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 				self.builder.set_current_debug_location(debug_loc);
 
-				if !self.compile_instruction(i)? {
-					return Err(AssemblyError::NotImplemented(op.ty().clone(), Some(i)));
+				if !self.compile_instruction(i.instr())? {
+					return Err(AssemblyError::NotImplemented(
+						op.ty().clone(),
+						Some(i.instr()),
+					));
 				}
 			}
 		}
@@ -313,26 +273,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn compile_instruction(&self, instr: BrainInstruction) -> Result<bool, AssemblyError> {
+	fn compile_instruction(&self, instr: BrainInstructionType) -> Result<bool, AssemblyError> {
 		match instr {
-			BrainInstruction::LoadCellIntoRegister(Reg(reg)) => {
+			BrainInstructionType::LoadCellIntoRegister(Reg(reg)) => {
 				self.load_cell_into_register(reg)?;
 			}
-			BrainInstruction::StoreRegisterIntoCell(Reg(reg)) => {
+			BrainInstructionType::StoreRegisterIntoCell(Reg(reg)) => {
 				self.store_register_into_cell(reg)?;
 			}
-			BrainInstruction::ChangeRegisterByImmediate(Reg(reg), imm) => {
+			BrainInstructionType::ChangeRegisterByImmediate(Reg(reg), imm) => {
 				self.change_register_by_immediate(reg, imm)?;
 			}
-			BrainInstruction::InputIntoRegister(Reg(reg)) => self.input_into_register(reg)?,
-			BrainInstruction::OutputFromRegister(Reg(reg)) => self.output_from_register(reg)?,
-			BrainInstruction::LoadPointer => self.load_pointer()?,
-			BrainInstruction::OffsetPointer(offset) => self.offset_pointer(offset)?,
-			BrainInstruction::StorePointer => self.store_pointer()?,
-			BrainInstruction::StartLoop => self.start_loop()?,
-			BrainInstruction::EndLoop => self.end_loop()?,
-			BrainInstruction::JumpIfZero(Reg(reg)) => self.jump_if_zero(reg)?,
-			BrainInstruction::JumpIfNotZero(Reg(reg)) => self.jump_if_not_zero(reg)?,
+			BrainInstructionType::InputIntoRegister(Reg(reg)) => self.input_into_register(reg)?,
+			BrainInstructionType::OutputFromRegister(Reg(reg)) => self.output_from_register(reg)?,
+			BrainInstructionType::LoadPointer => self.load_pointer()?,
+			BrainInstructionType::OffsetPointer(offset) => self.offset_pointer(offset)?,
+			BrainInstructionType::StorePointer => self.store_pointer()?,
+			BrainInstructionType::StartLoop => self.start_loop()?,
+			BrainInstructionType::EndLoop => self.end_loop()?,
+			BrainInstructionType::JumpIfZero(Reg(reg)) => self.jump_if_zero(reg)?,
+			BrainInstructionType::JumpIfNotZero(Reg(reg)) => self.jump_if_not_zero(reg)?,
 			_ => return Ok(false),
 		}
 
