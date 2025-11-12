@@ -6,7 +6,7 @@ mod utils;
 use std::{cell::RefCell, fs, path::Path};
 
 use frick_instructions::{BrainInstruction, Reg, ToInstructions as _};
-use frick_operations::BrainOperation;
+use frick_operations::{BrainOperation, BrainOperationType};
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
 use inkwell::{
@@ -245,13 +245,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let line_span = line_positions.from_region(op_range.start, op_range.end)[0];
 
-			let debug_loc = self.debug_builder.create_debug_location(
-				self.context(),
-				(line_span.line.as_usize() + 1) as u32,
-				line_span.start_col + 1,
-				self.debug_builder.main_subprogram.as_debug_info_scope(),
-				None,
-			);
+			// let debug_loc = self.debug_builder.create_debug_location(
+			// 	self.context(),
+			// 	(line_span.line.as_usize() + 1) as u32,
+			// 	line_span.start_col + 1,
+			// 	self.debug_builder.main_subprogram.as_debug_info_scope(),
+			// 	None,
+			// );
+
+			// self.builder.set_current_debug_location(debug_loc);
 
 			let instructions = op.to_instructions();
 
@@ -260,6 +262,48 @@ impl<'ctx> InnerAssembler<'ctx> {
 			}
 
 			for i in instructions {
+				// if matches!(i, BrainInstruction::StartLoop) {
+				// 	let last_debug_block_scope =
+				// 		self.debug_builder.blocks.borrow().last().map_or_else(
+				// 			|| self.debug_builder.main_subprogram.as_debug_info_scope(),
+				// 			|x| x.as_debug_info_scope(),
+				// 		);
+
+				// 	let debug_block = self.debug_builder.create_lexical_block(
+				// 		last_debug_block_scope,
+				// 		self.debug_builder.compile_unit.get_file(),
+				// 		(line_span.line.as_usize() + 1) as u32,
+				// 		line_span.start_col,
+				// 	);
+				// }
+
+				match i {
+					BrainInstruction::StartLoop => {
+						let lexical_block = self.debug_builder.create_lexical_block(
+							self.debug_builder.get_current_scope(),
+							self.debug_builder.compile_unit.get_file(),
+							(line_span.line.as_usize() + 1) as u32,
+							line_span.start_col + 1,
+						);
+
+						self.debug_builder.blocks.borrow_mut().push(lexical_block);
+					}
+					BrainInstruction::EndLoop => {
+						self.debug_builder.blocks.borrow_mut().pop();
+					}
+					_ => {}
+				}
+
+				let debug_loc = self.debug_builder.create_debug_location(
+					self.context(),
+					(line_span.line.as_usize() + 1) as u32,
+					line_span.start_col + 1,
+					self.debug_builder.get_current_scope(),
+					None,
+				);
+
+				self.builder.set_current_debug_location(debug_loc);
+
 				if !self.compile_instruction(i)? {
 					return Err(AssemblyError::NotImplemented(op.ty().clone(), Some(i)));
 				}
