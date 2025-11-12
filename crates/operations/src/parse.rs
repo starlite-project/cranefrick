@@ -72,7 +72,7 @@ fn parser<'src>()
 			just(',')
 				.to(BrainOperationType::InputIntoCell)
 				.labelled("input"),
-			none_of("+-<>.,[]").map(|x: char| BrainOperationType::Comment(x.to_string())),
+			none_of("+-<>.,[]").map(BrainOperationType::Comment),
 		))
 		.or(expr
 			.delimited_by(

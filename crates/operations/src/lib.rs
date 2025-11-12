@@ -9,7 +9,7 @@ extern crate std;
 #[cfg(feature = "parse")]
 mod parse;
 
-use alloc::{string::String, vec::Vec};
+use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut, Range};
 
 use frick_utils::IntoIteratorExt as _;
@@ -77,7 +77,7 @@ pub enum BrainOperationType {
 	InputIntoCell,
 	OutputCurrentCell,
 	DynamicLoop(Vec<BrainOperation>),
-	Comment(String),
+	Comment(char),
 }
 
 impl BrainOperationType {
