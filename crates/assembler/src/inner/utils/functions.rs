@@ -17,7 +17,6 @@ pub struct AssemblerFunctions<'ctx> {
 	pub putchar: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
-	pub invariant: IntrinsicFunctionSet<'ctx>,
 	pub eh_personality: FunctionValue<'ctx>,
 }
 
@@ -59,22 +58,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
 		};
 
-		let invariant = {
-			let invariant_start = get_intrinsic_function_from_name(
-				"llvm.invariant.start",
-				module,
-				&[ptr_type.convert::<BasicTypeEnum<'ctx>>()],
-			)?;
-
-			let invariant_end = get_intrinsic_function_from_name(
-				"llvm.invariant.end",
-				module,
-				&[ptr_type.convert::<BasicTypeEnum<'ctx>>()],
-			)?;
-
-			IntrinsicFunctionSet::new(invariant_start, invariant_end)
-		};
-
 		let eh_personality_ty = i32_type.fn_type(
 			&[
 				i32_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
@@ -96,7 +79,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			putchar,
 			main,
 			lifetime,
-			invariant,
 			eh_personality,
 		};
 

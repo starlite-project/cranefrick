@@ -199,14 +199,11 @@ extern "C" fn handler(ptr: *const i8) {
 pub enum AssemblyError {
 	Llvm(SendWrapper<LLVMString>),
 	NoTargetMachine,
-	InvalidMetadata,
 	IntrinsicNotFound(Cow<'static, str>),
 	InvalidIntrinsicDeclaration(Cow<'static, str>),
-	InvalidGEPType(String),
 	Inkwell(inkwell::Error),
 	NotImplemented(BrainOperationType, BrainInstructionType),
 	Io(IoError),
-	SlotAlreadySet,
 	PointerNotLoaded,
 	NoValueInRegister(usize),
 	NoLoopInfo,
@@ -228,7 +225,6 @@ impl Display for AssemblyError {
 			Self::Llvm(..) => f.write_str("an error occurred from LLVM"),
 			Self::NoTargetMachine => f.write_str("unable to get target machine"),
 			Self::Inkwell(..) => f.write_str("an error occurred during translation"),
-			Self::InvalidMetadata => f.write_str("invalid metadata type"),
 			Self::IntrinsicNotFound(intrinsic) => {
 				f.write_str("intrinsic \"")?;
 				f.write_str(intrinsic)?;
@@ -238,11 +234,6 @@ impl Display for AssemblyError {
 				f.write_str("invalid declaration for intrinsic \"")?;
 				f.write_str(intrinsic)?;
 				f.write_char('"')
-			}
-			Self::InvalidGEPType(ty) => {
-				f.write_str("type ")?;
-				f.write_str(ty)?;
-				f.write_str(" is invalid for GEP")
 			}
 			Self::NotImplemented(op, BrainInstructionType::NotImplemented) => {
 				f.write_str("operation ")?;
@@ -257,7 +248,6 @@ impl Display for AssemblyError {
 				f.write_str(" is not implemented")
 			}
 			Self::Io(..) => f.write_str("an IO error has occurred"),
-			Self::SlotAlreadySet => f.write_str("the slot has already been written to"),
 			Self::PointerNotLoaded => {
 				f.write_str("pointer was not loaded before indexing into tape")
 			}
@@ -277,12 +267,9 @@ impl StdError for AssemblyError {
 			Self::Llvm(e) => Some(&**e),
 			Self::Io(e) => Some(e),
 			Self::NoTargetMachine
-			| Self::InvalidMetadata
 			| Self::IntrinsicNotFound(..)
-			| Self::InvalidGEPType(..)
 			| Self::InvalidIntrinsicDeclaration(..)
 			| Self::NotImplemented(..)
-			| Self::SlotAlreadySet
 			| Self::PointerNotLoaded
 			| Self::NoValueInRegister(..)
 			| Self::NoLoopInfo => None,
