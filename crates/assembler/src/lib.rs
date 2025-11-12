@@ -14,6 +14,7 @@ use std::{
 	path::{Path, PathBuf},
 };
 
+use frick_instructions::BrainInstruction;
 use frick_operations::{BrainOperation, BrainOperationType};
 use frick_utils::Convert as _;
 use inkwell::{
@@ -203,11 +204,12 @@ pub enum AssemblyError {
 	InvalidIntrinsicDeclaration(Cow<'static, str>),
 	InvalidGEPType(String),
 	Inkwell(inkwell::Error),
-	NotImplemented(BrainOperationType),
+	NotImplemented(BrainOperationType, Option<BrainInstruction>),
 	Io(IoError),
 	SlotAlreadySet,
 	PointerNotLoaded,
 	NoValueInRegister(usize),
+	NoLoopInfo,
 }
 
 impl AssemblyError {
@@ -242,10 +244,17 @@ impl Display for AssemblyError {
 				f.write_str(ty)?;
 				f.write_str(" is invalid for GEP")
 			}
-			Self::NotImplemented(instr) => {
-				f.write_str("instruction ")?;
-				Debug::fmt(&instr, f)?;
+			Self::NotImplemented(op, None) => {
+				f.write_str("operation ")?;
+				Debug::fmt(&op, f)?;
 				f.write_str(" is not yet implemented")
+			}
+			Self::NotImplemented(op, Some(instr)) => {
+				f.write_str("operation ")?;
+				Debug::fmt(&op, f)?;
+				f.write_str(" could not be compiled as instruction ")?;
+				Debug::fmt(&instr, f)?;
+				f.write_str(" is not implemented")
 			}
 			Self::Io(..) => f.write_str("an IO error has occurred"),
 			Self::SlotAlreadySet => f.write_str("the slot has already been written to"),
@@ -256,6 +265,7 @@ impl Display for AssemblyError {
 				f.write_str("no value was found in register ")?;
 				Display::fmt(&slot, f)
 			}
+			Self::NoLoopInfo => f.write_str("no loop info was present when expected"),
 		}
 	}
 }
@@ -274,7 +284,8 @@ impl StdError for AssemblyError {
 			| Self::NotImplemented(..)
 			| Self::SlotAlreadySet
 			| Self::PointerNotLoaded
-			| Self::NoValueInRegister(..) => None,
+			| Self::NoValueInRegister(..)
+			| Self::NoLoopInfo => None,
 		}
 	}
 }

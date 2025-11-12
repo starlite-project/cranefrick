@@ -7,7 +7,8 @@ use alloc::{vec, vec::Vec};
 use frick_operations::{BrainOperation, BrainOperationType};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum BrainInstruction {
 	LoadCellIntoRegister(Reg),
 	StoreRegisterIntoCell(Reg),
@@ -53,6 +54,7 @@ impl ToInstructions for BrainOperationType {
 				BrainInstruction::StoreRegisterIntoCell(Reg(0)),
 			],
 			&Self::OutputCurrentCell => vec![
+				BrainInstruction::LoadPointer,
 				BrainInstruction::LoadCellIntoRegister(Reg(0)),
 				BrainInstruction::OutputFromRegister(Reg(0)),
 			],
@@ -61,7 +63,7 @@ impl ToInstructions for BrainOperationType {
 					BrainInstruction::StartLoop,
 					BrainInstruction::LoadPointer,
 					BrainInstruction::LoadCellIntoRegister(Reg(0)),
-					BrainInstruction::JumpIfNotZero(Reg(0)),
+					BrainInstruction::JumpIfZero(Reg(0)),
 				];
 
 				for op in ops {
@@ -71,7 +73,7 @@ impl ToInstructions for BrainOperationType {
 				output.extend([
 					BrainInstruction::LoadPointer,
 					BrainInstruction::LoadCellIntoRegister(Reg(0)),
-					BrainInstruction::JumpIfZero(Reg(0)),
+					BrainInstruction::JumpIfNotZero(Reg(0)),
 					BrainInstruction::EndLoop,
 				]);
 

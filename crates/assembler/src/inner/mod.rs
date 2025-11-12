@@ -36,7 +36,8 @@ pub struct InnerAssembler<'ctx> {
 	debug_builder: AssemblerDebugBuilder<'ctx>,
 	catch_block: BasicBlock<'ctx>,
 	registers: RefCell<Vec<BasicValueEnum<'ctx>>>,
-	loaded_pointer: RefCell<Option<IntValue<'ctx>>>,
+	pointer_register: RefCell<Option<IntValue<'ctx>>>,
+	loop_blocks: RefCell<Vec<LoopBlocks<'ctx>>>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -131,7 +132,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			debug_builder,
 			catch_block,
 			registers: RefCell::default(),
-			loaded_pointer: RefCell::default(),
+			pointer_register: RefCell::default(),
+			loop_blocks: RefCell::default(),
 		})
 	}
 
@@ -254,12 +256,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			let instructions = op.to_instructions();
 
 			if instructions.is_empty() {
-				return Err(AssemblyError::NotImplemented(op.ty().clone()));
+				return Err(AssemblyError::NotImplemented(op.ty().clone(), None));
 			}
 
 			for i in instructions {
 				if !self.compile_instruction(i)? {
-					return Err(AssemblyError::NotImplemented(op.ty().clone()));
+					return Err(AssemblyError::NotImplemented(op.ty().clone(), Some(i)));
 				}
 			}
 		}
@@ -269,16 +271,24 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn compile_instruction(&self, instr: BrainInstruction) -> Result<bool, AssemblyError> {
 		match instr {
+			BrainInstruction::LoadCellIntoRegister(Reg(reg)) => {
+				self.load_cell_into_register(reg)?;
+			}
+			BrainInstruction::StoreRegisterIntoCell(Reg(reg)) => {
+				self.store_register_into_cell(reg)?;
+			}
+			BrainInstruction::ChangeRegisterByImmediate(Reg(reg), imm) => {
+				self.change_register_by_immediate(reg, imm)?;
+			}
+			BrainInstruction::InputIntoRegister(Reg(reg)) => self.input_into_register(reg)?,
+			BrainInstruction::OutputFromRegister(Reg(reg)) => self.output_from_register(reg)?,
 			BrainInstruction::LoadPointer => self.load_pointer()?,
-			BrainInstruction::LoadCellIntoRegister(Reg(slot)) => {
-				self.load_cell_into_register(slot)?;
-			}
-			BrainInstruction::StoreRegisterIntoCell(Reg(slot)) => {
-				self.store_register_into_cell(slot)?;
-			}
-			BrainInstruction::ChangeRegisterByImmediate(Reg(slot), imm) => {
-				self.change_register_by_immediate(slot, imm)?;
-			}
+			BrainInstruction::OffsetPointer(offset) => self.offset_pointer(offset)?,
+			BrainInstruction::StorePointer => self.store_pointer()?,
+			BrainInstruction::StartLoop => self.start_loop()?,
+			BrainInstruction::EndLoop => self.end_loop()?,
+			BrainInstruction::JumpIfZero(Reg(reg)) => self.jump_if_zero(reg)?,
+			BrainInstruction::JumpIfNotZero(Reg(reg)) => self.jump_if_not_zero(reg)?,
 			_ => return Ok(false),
 		}
 
@@ -449,4 +459,11 @@ unsafe impl<'ctx> AsContextRef<'ctx> for InnerAssembler<'ctx> {
 	fn as_ctx_ref(&self) -> LLVMContextRef {
 		self.module.get_context().as_ctx_ref()
 	}
+}
+
+#[derive(Debug, Clone, Copy)]
+struct LoopBlocks<'ctx> {
+	header: BasicBlock<'ctx>,
+	body: BasicBlock<'ctx>,
+	exit: BasicBlock<'ctx>,
 }
