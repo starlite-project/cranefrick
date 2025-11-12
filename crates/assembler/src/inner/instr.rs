@@ -3,7 +3,7 @@ use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
-	values::{BasicValue, BasicValueEnum, PointerValue},
+	values::{BasicMetadataValueEnum, BasicValue, BasicValueEnum, PointerValue},
 };
 
 use super::{AssemblyError, InnerAssembler, LoopBlocks};
@@ -63,20 +63,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn input_into_register(&self, reg: usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let continue_block =
-			context.append_basic_block(self.functions.main, "input_into_register.continue\0");
-
 		let cell_type = context.i8_type();
-
-		let call_site_value = self.builder.build_direct_invoke(
-			self.functions.getchar,
-			&[],
-			continue_block,
-			self.catch_block,
-			"\0",
-		)?;
-
-		self.builder.position_at_end(continue_block);
+		let call_site_value = self
+			.builder
+			.build_direct_call(self.functions.getchar, &[], "\0")?;
 
 		let call_value = call_site_value
 			.try_as_basic_value()
@@ -95,25 +85,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn output_from_register(&self, reg: usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let continue_block =
-			context.append_basic_block(self.functions.main, "output_from_register.continue\0");
-
 		let register_value = self.value_at(reg)?;
 
-		let call = self.builder.build_direct_invoke(
+		let call_value = self.builder.build_direct_call(
 			self.functions.putchar,
-			&[register_value],
-			continue_block,
-			self.catch_block,
+			&[register_value.convert::<BasicMetadataValueEnum<'ctx>>()],
 			"\0",
 		)?;
 
 		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0);
 
-		call.add_attribute(AttributeLoc::Param(0), zeroext_attr);
-		call.set_tail_call(true);
-
-		self.builder.position_at_end(continue_block);
+		call_value.add_attribute(AttributeLoc::Param(0), zeroext_attr);
+		call_value.set_tail_call(true);
 
 		Ok(())
 	}

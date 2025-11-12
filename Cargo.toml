@@ -139,11 +139,13 @@ version = "0.1.0"
 [profile.release]
 codegen-units = 1
 lto = "fat"
+panic = "abort"
 
 [workspace.metadata.docs.rs]
 all-features = true
 
 [profile.dev]
+panic = "abort"
 opt-level = 1
 
 [profile.dev.package.inkwell]

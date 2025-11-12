@@ -17,7 +17,6 @@ pub struct AssemblerFunctions<'ctx> {
 	pub putchar: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
-	pub eh_personality: FunctionValue<'ctx>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -30,7 +29,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let void_type = context.void_type();
 		let i8_type = context.i8_type();
 		let i32_type = context.i32_type();
-		let i64_type = context.i64_type();
 		let ptr_type = context.default_ptr_type();
 
 		let getchar_ty = i32_type.fn_type(&[], false);
@@ -58,28 +56,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
 		};
 
-		let eh_personality_ty = i32_type.fn_type(
-			&[
-				i32_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-				i32_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-				i64_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-				ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-				ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-			],
-			false,
-		);
-		let eh_personality = module.add_function(
-			"rust_eh_personality",
-			eh_personality_ty,
-			Some(Linkage::External),
-		);
-
 		let this = Self {
 			getchar,
 			putchar,
 			main,
 			lifetime,
-			eh_personality,
 		};
 
 		this.setup(cpu_name, cpu_features);
@@ -89,8 +70,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 	fn setup(&self, cpu_name: &str, cpu_features: &str) {
 		let context = self.context();
-
-		self.main.set_personality_function(self.eh_personality);
 
 		let nocallback_attr = context.create_named_enum_attribute("nocallback", 0);
 		let nofree_attr = context.create_named_enum_attribute("nofree", 0);
@@ -110,9 +89,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			u8::MIN.convert::<u64>(),
 			u8::MAX.convert::<u64>() + 1,
 		);
-		let eh_personality_range_attr =
-			context.create_range_attribute(Attribute::get_named_enum_kind_id("range"), 32, 0, 10);
-		let nonlazybind_attr = context.create_named_enum_attribute("nonlazybind", 0);
 		let target_cpu_attr = context.create_string_attribute("target-cpu", cpu_name);
 		let target_cpu_features_attr =
 			context.create_string_attribute("target-features", cpu_features);
@@ -130,6 +106,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				probe_stack_attr,
 				target_cpu_attr,
 				target_cpu_features_attr,
+				nounwind_attr,
 			],
 			[(0, zeroext_attr), (0, noundef_attr)],
 			[],
@@ -145,6 +122,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				probe_stack_attr,
 				target_cpu_attr,
 				target_cpu_features_attr,
+				nounwind_attr,
 			],
 			[],
 			[zeroext_attr, getchar_range_attr],
@@ -157,22 +135,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				probe_stack_attr,
 				target_cpu_attr,
 				target_cpu_features_attr,
-			],
-			[],
-			[],
-		);
-		add_attributes_to(
-			self.eh_personality,
-			[
 				nounwind_attr,
-				uwtable_attr,
-				nonlazybind_attr,
-				probe_stack_attr,
-				target_cpu_attr,
-				target_cpu_features_attr,
 			],
-			(0..5).map(|i| (i, noundef_attr)),
-			[noundef_attr, eh_personality_range_attr],
+			[],
+			[],
 		);
 	}
 }

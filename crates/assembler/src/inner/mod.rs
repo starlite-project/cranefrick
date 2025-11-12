@@ -15,14 +15,13 @@ use inkwell::{
 	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Module},
 	targets::{TargetMachine, TargetTriple},
-	types::BasicTypeEnum,
 	values::{BasicMetadataValueEnum, BasicValueEnum, IntValue},
 };
 
 pub use self::utils::AssemblerFunctions;
 use self::utils::{AssemblerDebugBuilder, AssemblerPointers};
 use super::AssemblyError;
-use crate::{ContextExt as _, ContextGetter as _, ModuleExt as _};
+use crate::{ContextGetter as _, ModuleExt as _};
 
 pub struct InnerAssembler<'ctx> {
 	file_data: String,
@@ -32,7 +31,6 @@ pub struct InnerAssembler<'ctx> {
 	pointers: AssemblerPointers<'ctx>,
 	target_machine: TargetMachine,
 	debug_builder: AssemblerDebugBuilder<'ctx>,
-	catch_block: BasicBlock<'ctx>,
 	registers: RefCell<Vec<BasicValueEnum<'ctx>>>,
 	pointer_register: RefCell<Option<IntValue<'ctx>>>,
 	loop_blocks: RefCell<Vec<LoopBlocks<'ctx>>>,
@@ -60,8 +58,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let basic_block = context.append_basic_block(functions.main, "entry\0");
 		builder.position_at_end(basic_block);
-
-		let catch_block = context.append_basic_block(functions.main, "lpad\0");
 
 		let pointers = AssemblerPointers::new(&module, &builder, &target_data)?;
 
@@ -128,7 +124,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			pointers,
 			target_machine,
 			debug_builder,
-			catch_block,
 			registers: RefCell::default(),
 			pointer_register: RefCell::default(),
 			loop_blocks: RefCell::default(),
@@ -153,8 +148,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let context = self.context();
 
 		let i64_type = context.i64_type();
-		let i32_type = context.i32_type();
-		let ptr_type = context.default_ptr_type();
 
 		let i64_size = i64_type.const_int(8, false);
 
@@ -181,53 +174,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		)?;
 
 		self.builder.build_return(None)?;
-
-		tracing::debug!("setting up the landing pad");
-		let last_basic_block = self.functions.main.get_last_basic_block().unwrap();
-
-		if last_basic_block != self.catch_block {
-			self.catch_block.move_after(last_basic_block).unwrap();
-		}
-
-		self.builder.position_at_end(self.catch_block);
-
-		let exception_type = context.struct_type(
-			&[
-				ptr_type.convert::<BasicTypeEnum<'ctx>>(),
-				i32_type.convert::<BasicTypeEnum<'ctx>>(),
-			],
-			false,
-		);
-
-		let exception = self.builder.build_landing_pad(
-			exception_type,
-			self.functions.eh_personality,
-			&[],
-			true,
-			"exception\0",
-		)?;
-
-		tracing::debug!("ending the lifetimes in catch block");
-		self.builder.build_call(
-			self.functions.lifetime.end,
-			&[
-				tape_size.convert::<BasicMetadataValueEnum<'ctx>>(),
-				self.pointers.tape.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
-			"\0",
-		)?;
-		self.builder.build_call(
-			self.functions.lifetime.end,
-			&[
-				i64_size.convert::<BasicMetadataValueEnum<'ctx>>(),
-				self.pointers
-					.pointer
-					.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
-			"\0",
-		)?;
-
-		self.builder.build_resume(exception)?;
 
 		self.debug_builder.di_builder.finalize();
 
