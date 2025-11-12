@@ -1,5 +1,3 @@
-use std::{cell::RefCell, collections::HashMap};
-
 use frick_utils::Convert as _;
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
@@ -7,7 +5,7 @@ use inkwell::{
 	intrinsics::Intrinsic,
 	llvm_sys::prelude::LLVMContextRef,
 	module::{Linkage, Module},
-	types::{BasicMetadataTypeEnum, BasicTypeEnum, VectorType},
+	types::{BasicMetadataTypeEnum, BasicTypeEnum},
 	values::FunctionValue,
 };
 
@@ -21,7 +19,6 @@ pub struct AssemblerFunctions<'ctx> {
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 	pub invariant: IntrinsicFunctionSet<'ctx>,
 	pub eh_personality: FunctionValue<'ctx>,
-	masked_vector_functions: RefCell<HashMap<VectorKey, FunctionValue<'ctx>>>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -101,53 +98,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			lifetime,
 			invariant,
 			eh_personality,
-			masked_vector_functions: RefCell::default(),
 		};
 
 		this.setup(cpu_name, cpu_features);
 
 		Ok(this)
-	}
-
-	pub fn get_vector_scatter(&self, vec_type: VectorType<'ctx>) -> Option<FunctionValue<'ctx>> {
-		self.get_vector_function(vec_type, VectorFunctionType::Scatter)
-	}
-
-	pub fn insert_vector_scatter(&self, vec_type: VectorType<'ctx>, fn_value: FunctionValue<'ctx>) {
-		self.insert_vector_function(vec_type, VectorFunctionType::Scatter, fn_value);
-	}
-
-	pub fn get_vector_gather(&self, vec_type: VectorType<'ctx>) -> Option<FunctionValue<'ctx>> {
-		self.get_vector_function(vec_type, VectorFunctionType::Gather)
-	}
-
-	pub fn insert_vector_gather(&self, vec_type: VectorType<'ctx>, fn_value: FunctionValue<'ctx>) {
-		self.insert_vector_function(vec_type, VectorFunctionType::Gather, fn_value);
-	}
-
-	fn get_vector_function(
-		&self,
-		vec_type: VectorType<'ctx>,
-		fn_type: VectorFunctionType,
-	) -> Option<FunctionValue<'ctx>> {
-		let key = VectorKey::new(vec_type, fn_type)?;
-
-		self.masked_vector_functions.borrow().get(&key).copied()
-	}
-
-	fn insert_vector_function(
-		&self,
-		vec_type: VectorType<'ctx>,
-		fn_type: VectorFunctionType,
-		fn_value: FunctionValue<'ctx>,
-	) {
-		let Some(key) = VectorKey::new(vec_type, fn_type) else {
-			return;
-		};
-
-		self.masked_vector_functions
-			.borrow_mut()
-			.insert(key, fn_value);
 	}
 
 	fn setup(&self, cpu_name: &str, cpu_features: &str) {
@@ -293,34 +248,4 @@ fn add_attributes_to(
 	for attribute in return_attrs {
 		func.add_attribute(AttributeLoc::Return, attribute);
 	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct VectorKey {
-	bit_width: u32,
-	size_of_vec: u32,
-	fn_type: VectorFunctionType,
-}
-
-impl VectorKey {
-	fn new(vec: VectorType<'_>, fn_type: VectorFunctionType) -> Option<Self> {
-		let bit_width = match vec.get_element_type() {
-			BasicTypeEnum::IntType(ty) => ty.get_bit_width(),
-			_ => return None,
-		};
-
-		let size_of_vec = vec.get_size();
-
-		Some(Self {
-			bit_width,
-			size_of_vec,
-			fn_type,
-		})
-	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum VectorFunctionType {
-	Gather,
-	Scatter,
 }

@@ -51,11 +51,7 @@ fn main() -> Result<()> {
 
 	let mut optimizer = Optimizer::new(operations);
 
-	serialize(
-		&optimizer.ops().iter().map(|x| x.op()).collect::<Vec<_>>(),
-		args.output_path(),
-		"unoptimized.ops",
-	)?;
+	serialize(&optimizer.ops(), args.output_path(), "unoptimized.ops")?;
 
 	serialize(
 		&optimizer
@@ -69,11 +65,7 @@ fn main() -> Result<()> {
 
 	optimizer.run();
 
-	serialize(
-		&optimizer.ops().iter().map(|x| x.op()).collect::<Vec<_>>(),
-		args.output_path(),
-		"optimized.ops",
-	)?;
+	serialize(&optimizer.ops(), args.output_path(), "optimized.ops")?;
 
 	serialize(
 		&optimizer
