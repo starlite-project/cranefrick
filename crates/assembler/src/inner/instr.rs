@@ -18,7 +18,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn load_cell_into_register(&self, slot: usize) -> Result<(), AssemblyError> {
 		let cell_type = self.context().i8_type();
 
-		let gep = self.offset_tape()?;
+		let gep = self.index_tape()?;
 
 		let cell_value = self.builder.build_load(cell_type, gep, "\0")?;
 
@@ -44,7 +44,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub(super) fn store_register_into_cell(&self, slot: usize) -> Result<(), AssemblyError> {
-		let gep = self.offset_tape()?;
+		let gep = self.index_tape()?;
 
 		let cell_value = self.value_at(slot)?;
 
@@ -53,7 +53,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn offset_tape(&self) -> Result<PointerValue<'ctx>, AssemblyError> {
+	fn index_tape(&self) -> Result<PointerValue<'ctx>, AssemblyError> {
 		let cell_type = self.context().i8_type();
 
 		let pointer_value = self

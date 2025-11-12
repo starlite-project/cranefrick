@@ -68,7 +68,12 @@ impl ToInstructions for BrainOperationType {
 					output.extend(op.to_instructions());
 				}
 
-				output.push(BrainInstruction::EndLoop);
+				output.extend([
+					BrainInstruction::LoadPointer,
+					BrainInstruction::LoadCellIntoRegister(Reg(0)),
+					BrainInstruction::JumpIfZero(Reg(0)),
+					BrainInstruction::EndLoop,
+				]);
 
 				output
 			}
