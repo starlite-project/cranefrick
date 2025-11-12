@@ -1,5 +1,5 @@
 use frick_spec::TAPE_SIZE;
-use frick_utils::InsertOrPush as _;
+use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
@@ -24,6 +24,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let gep = self.index_tape()?;
 
 		let cell_value = self.value_at(reg)?;
+
+		self.builder.build_store(gep, cell_value)?;
+
+		Ok(())
+	}
+
+	pub(super) fn store_immediate_into_cell(&self, imm: u8) -> Result<(), AssemblyError> {
+		let cell_type = self.context().i8_type();
+
+		let gep = self.index_tape()?;
+
+		let cell_value = cell_type.const_int(imm.convert::<u64>(), false);
 
 		self.builder.build_store(gep, cell_value)?;
 

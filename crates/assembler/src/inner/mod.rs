@@ -281,6 +281,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			BrainInstructionType::StoreRegisterIntoCell(Reg(reg)) => {
 				self.store_register_into_cell(reg)?;
 			}
+			BrainInstructionType::StoreImmediateIntoCell(imm) => {
+				self.store_immediate_into_cell(imm)?;
+			}
 			BrainInstructionType::ChangeRegisterByImmediate(Reg(reg), imm) => {
 				self.change_register_by_immediate(reg, imm)?;
 			}

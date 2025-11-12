@@ -86,6 +86,13 @@ impl ToInstructions for BrainOperation {
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
+			&BrainOperationType::SetCell(value) => [
+				BrainInstructionType::LoadPointer,
+				BrainInstructionType::StoreImmediateIntoCell(value),
+			]
+			.into_iter()
+			.map(|x| BrainInstruction::new(x, self.span().start))
+			.collect(),
 			&BrainOperationType::MovePointer(offset) => [
 				BrainInstructionType::LoadPointer,
 				BrainInstructionType::OffsetPointer(offset),

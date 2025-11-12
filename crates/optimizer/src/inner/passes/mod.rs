@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use frick_operations::{BrainOperation, BrainOperationType};
 
 use super::Change;
@@ -36,5 +38,22 @@ pub const fn remove_comments(ops: [&BrainOperation; 1]) -> Option<Change> {
 	match ops[0].op() {
 		BrainOperationType::Comment(..) => Some(Change::remove()),
 		_ => None,
+	}
+}
+
+pub fn fix_beginning_instructions(ops: &mut Vec<BrainOperation>) -> bool {
+	match ops.first() {
+		Some(op) => match op.op() {
+			BrainOperationType::DynamicLoop(..) => {
+				ops.remove(0);
+				true
+			}
+			BrainOperationType::ChangeCell(value) => {
+				ops[0] = BrainOperation::new(BrainOperationType::SetCell(*value as u8), op.span());
+				true
+			}
+			_ => false,
+		},
+		Some(..) | None => false,
 	}
 }

@@ -55,6 +55,8 @@ impl Optimizer {
 
 		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_set_cell_instruction);
 
+		*progress |= passes::fix_beginning_instructions(self.ops_mut());
+
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_comments);
 	}
 
