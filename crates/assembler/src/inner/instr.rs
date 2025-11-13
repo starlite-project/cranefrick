@@ -121,33 +121,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let offset_value = pointer_ty.const_int(offset as u64, false);
 
+		let tape_size = pointer_ty.const_int(TAPE_SIZE as u64, false);
+
 		self.pointer_register.borrow_mut().replace({
 			let added_pointer_value =
 				self.builder
 					.build_int_add(pointer_value, offset_value, "\0")?;
-			let tape_size = pointer_ty.const_int(TAPE_SIZE as u64, false);
 
-			if offset > 0 {
-				self.builder
-					.build_int_unsigned_rem(added_pointer_value, tape_size, "\0")?
-			} else {
-				let tmp =
-					self.builder
-						.build_int_signed_rem(added_pointer_value, tape_size, "\0")?;
-
-				let added_offset = self.builder.build_int_add(tmp, tape_size, "\0")?;
-
-				let cmp = self.builder.build_int_compare(
-					IntPredicate::SLT,
-					tmp,
-					pointer_ty.const_zero(),
-					"\0",
-				)?;
-
-				self.builder
-					.build_select(cmp, added_offset, tmp, "\0")?
-					.into_int_value()
-			}
+			self.builder.build_and(
+				added_pointer_value,
+				tape_size.const_sub(pointer_ty.const_int(1, false)),
+				"\0",
+			)?
 		});
 
 		Ok(())
