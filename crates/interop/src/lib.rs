@@ -21,10 +21,13 @@ unsafe extern "Rust" {
 pub unsafe extern "C" fn rust_putchar(c: u8) {
 	let mut stdout = io::stdout().lock();
 
-	stdout
+	if stdout
 		.write_all(slice::from_ref(&c))
 		.and_then(|()| stdout.flush())
-		.unwrap();
+		.is_err()
+	{
+		std::process::abort();
+	}
 }
 
 #[unsafe(no_mangle)]
