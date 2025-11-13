@@ -54,11 +54,7 @@ fn main() -> Result<()> {
 	serialize(&optimizer.ops(), args.output_path(), "unoptimized.ops")?;
 
 	serialize(
-		&optimizer
-			.to_instructions()
-			.iter()
-			.map(|x| x.instr())
-			.collect::<Vec<_>>(),
+		&optimizer.to_instructions(),
 		args.output_path(),
 		"unoptimized.instrs",
 	)?;
@@ -68,11 +64,7 @@ fn main() -> Result<()> {
 	serialize(&optimizer.ops(), args.output_path(), "optimized.ops")?;
 
 	serialize(
-		&optimizer
-			.to_instructions()
-			.iter()
-			.map(|x| x.instr())
-			.collect::<Vec<_>>(),
+		&optimizer.to_instructions(),
 		args.output_path(),
 		"optimized.instrs",
 	)?;

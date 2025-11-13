@@ -187,13 +187,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		for op in ops {
 			let instructions = op.to_instructions();
 
-			if instructions.is_empty() {
-				return Err(AssemblyError::NotImplemented(
-					op.op().clone(),
-					BrainInstructionType::NotImplemented,
-				));
-			}
-
 			for i in instructions {
 				let i_range = i.span();
 

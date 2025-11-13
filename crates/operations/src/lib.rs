@@ -18,8 +18,10 @@ use serde::{Deserialize, Serialize};
 pub use self::parse::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct BrainOperation {
 	op: BrainOperationType,
+	#[serde(skip)]
 	span: Range<usize>,
 }
 

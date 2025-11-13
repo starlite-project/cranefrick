@@ -10,8 +10,10 @@ use frick_operations::{BrainOperation, BrainOperationType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct BrainInstruction {
 	instr: BrainInstructionType,
+	#[serde(skip)]
 	byte_offset: usize,
 }
 
@@ -145,6 +147,7 @@ impl ToInstructions for BrainOperation {
 
 				output
 			}
+			BrainOperationType::Comment(..) => Vec::new(),
 			_ => vec![BrainInstruction::new(
 				BrainInstructionType::NotImplemented,
 				self.span().start,
