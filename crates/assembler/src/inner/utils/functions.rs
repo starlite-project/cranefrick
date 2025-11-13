@@ -80,7 +80,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0);
 		let arg_read_inaccessable_write_memory_attr =
 			context.create_named_enum_attribute("memory", 9);
-		let uwtable_attr = context.create_named_enum_attribute("uwtable", 2);
 		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
 		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
 		let getchar_range_attr = context.create_range_attribute(
@@ -102,7 +101,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				norecurse_attr,
 				willreturn_attr,
 				arg_read_inaccessable_write_memory_attr,
-				uwtable_attr,
 				probe_stack_attr,
 				target_cpu_attr,
 				target_cpu_features_attr,
@@ -131,7 +129,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			self.main,
 			[
 				nofree_attr,
-				uwtable_attr,
 				probe_stack_attr,
 				target_cpu_attr,
 				target_cpu_features_attr,
