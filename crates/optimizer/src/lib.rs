@@ -29,7 +29,7 @@ impl Optimizer {
 	}
 
 	#[tracing::instrument("optimize operations", skip(self))]
-	pub fn run(&mut self) {
+	pub fn run(&mut self) -> Vec<BrainInstruction> {
 		let mut iteration = 0;
 
 		let mut progress = self.run_passes(iteration);
@@ -40,6 +40,8 @@ impl Optimizer {
 		}
 
 		info!(iterations = iteration);
+
+		self.to_instructions()
 	}
 
 	#[tracing::instrument(skip(self))]

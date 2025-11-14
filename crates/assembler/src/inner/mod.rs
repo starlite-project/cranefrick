@@ -4,7 +4,7 @@ mod utils;
 
 use std::{cell::RefCell, fs, path::Path};
 
-use frick_instructions::{BrainInstructionType, Reg, ToInstructions as _};
+use frick_instructions::{BrainInstruction, BrainInstructionType, Reg, ToInstructions as _};
 use frick_operations::BrainOperation;
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
@@ -133,12 +133,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub fn assemble(
 		self,
-		ops: &[BrainOperation],
+		instrs: &[BrainInstruction],
 	) -> Result<(Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine), AssemblyError> {
 		tracing::debug!("writing instructions");
-		let ops_span = tracing::info_span!("ops").entered();
-		self.ops(ops)?;
-		drop(ops_span);
+		let instrs_span = tracing::info_span!("instrs").entered();
+		self.instrs(instrs)?;
+		drop(instrs_span);
 
 		tracing::debug!("declaring variables");
 		self.debug_builder
@@ -182,29 +182,25 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	#[allow(clippy::never_loop)]
-	fn ops(&self, ops: &[BrainOperation]) -> Result<(), AssemblyError> {
+	fn instrs(&self, instrs: &[BrainInstruction]) -> Result<(), AssemblyError> {
 		let line_positions = line_numbers::LinePositions::from(self.file_data.as_str());
 
-		for op in ops {
-			let instructions = op.to_instructions();
+		for i in instrs {
+			let i_range = i.span();
 
-			for i in instructions {
-				let i_range = i.span();
+			let line_span = line_positions.from_region(i_range.start, i_range.end)[0];
+			let debug_loc = self.debug_builder.create_debug_location(
+				self.context(),
+				(line_span.line.as_usize() + 1) as u32,
+				line_span.start_col + 1,
+				self.debug_builder.get_current_scope(),
+				None,
+			);
 
-				let line_span = line_positions.from_region(i_range.start, i_range.end)[0];
-				let debug_loc = self.debug_builder.create_debug_location(
-					self.context(),
-					(line_span.line.as_usize() + 1) as u32,
-					line_span.start_col + 1,
-					self.debug_builder.get_current_scope(),
-					None,
-				);
+			self.builder.set_current_debug_location(debug_loc);
 
-				self.builder.set_current_debug_location(debug_loc);
-
-				if !self.compile_instruction(i.instr())? {
-					return Err(AssemblyError::NotImplemented(op.op().clone(), i.instr()));
-				}
+			if !self.compile_instruction(i.instr())? {
+				return Err(AssemblyError::NotImplemented(i.instr()));
 			}
 		}
 

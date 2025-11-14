@@ -14,7 +14,7 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use frick_instructions::BrainInstructionType;
+use frick_instructions::{BrainInstruction, BrainInstructionType};
 use frick_operations::{BrainOperation, BrainOperationType};
 use frick_utils::Convert as _;
 use inkwell::{
@@ -66,7 +66,7 @@ impl Assembler {
 	#[tracing::instrument(skip_all, fields(indicatif.pb_show = tracing::field::Empty))]
 	pub fn assemble<'ctx>(
 		&'ctx self,
-		ops: &[BrainOperation],
+		instrs: &[BrainInstruction],
 		output_path: &Path,
 	) -> Result<AssembledModule<'ctx>, AssemblyError> {
 		info!("initializing all targets");
@@ -107,7 +107,8 @@ impl Assembler {
 			&self.file_path,
 		)?;
 
-		let (module, AssemblerFunctions { main, .. }, target_machine) = assembler.assemble(ops)?;
+		let (module, AssemblerFunctions { main, .. }, target_machine) =
+			assembler.assemble(instrs)?;
 
 		info!("verifying emitted LLVM IR");
 		module.verify()?;
@@ -202,7 +203,7 @@ pub enum AssemblyError {
 	IntrinsicNotFound(Cow<'static, str>),
 	InvalidIntrinsicDeclaration(Cow<'static, str>),
 	Inkwell(inkwell::Error),
-	NotImplemented(BrainOperationType, BrainInstructionType),
+	NotImplemented(BrainInstructionType),
 	Io(IoError),
 	PointerNotLoaded,
 	NoValueInRegister(usize),
@@ -235,16 +236,12 @@ impl Display for AssemblyError {
 				f.write_str(intrinsic)?;
 				f.write_char('"')
 			}
-			Self::NotImplemented(op, BrainInstructionType::NotImplemented) => {
-				f.write_str("operation ")?;
-				Debug::fmt(&op, f)?;
-				f.write_str(" is not yet implemented")
+			Self::NotImplemented(BrainInstructionType::NotImplemented) => {
+				f.write_str("an operation is not implemented")
 			}
-			Self::NotImplemented(op, instr) => {
-				f.write_str("operation ")?;
-				Debug::fmt(&op, f)?;
-				f.write_str(" could not be compiled as instruction ")?;
-				Debug::fmt(&instr, f)?;
+			Self::NotImplemented(i) => {
+				f.write_str("instruction ")?;
+				Debug::fmt(&i, f)?;
 				f.write_str(" is not implemented")
 			}
 			Self::Io(..) => f.write_str("an IO error has occurred"),
