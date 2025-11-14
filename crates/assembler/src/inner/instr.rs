@@ -30,16 +30,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub(super) fn store_immediate_into_cell(&self, imm: u8) -> Result<(), AssemblyError> {
+	pub(super) fn store_immediate_into_register(
+		&self,
+		output_reg: usize,
+		imm: u8,
+	) -> Result<(), AssemblyError> {
 		let cell_type = self.context().i8_type();
 
-		let gep = self.index_tape()?;
+		let value = cell_type.const_int(imm.convert::<u64>(), false);
 
-		let cell_value = cell_type.const_int(imm.convert::<u64>(), false);
-
-		self.builder.build_store(gep, cell_value)?;
-
-		Ok(())
+		self.set_value_at(output_reg, value)
 	}
 
 	pub(super) fn change_register_by_immediate(

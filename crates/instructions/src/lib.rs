@@ -62,7 +62,10 @@ pub enum BrainInstructionType {
 	StoreRegisterIntoCell {
 		input_reg: Reg,
 	},
-	StoreImmediateIntoCell(u8),
+	StoreImmediateIntoRegister {
+		output_reg: Reg,
+		imm: u8,
+	},
 	ChangeRegisterByImmediate {
 		input_reg: Reg,
 		output_reg: Reg,
@@ -115,7 +118,11 @@ impl ToInstructions for BrainOperation {
 			.collect(),
 			&BrainOperationType::SetCell(value) => [
 				BrainInstructionType::LoadPointer,
-				BrainInstructionType::StoreImmediateIntoCell(value),
+				BrainInstructionType::StoreImmediateIntoRegister {
+					output_reg: Reg(0),
+					imm: value,
+				},
+				BrainInstructionType::StoreRegisterIntoCell { input_reg: Reg(0) },
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
