@@ -15,7 +15,6 @@ use std::{
 };
 
 use frick_instructions::{BrainInstruction, BrainInstructionType};
-use frick_operations::{BrainOperation, BrainOperationType};
 use frick_utils::Convert as _;
 use inkwell::{
 	OptimizationLevel,

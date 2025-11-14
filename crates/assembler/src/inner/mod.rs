@@ -4,8 +4,7 @@ mod utils;
 
 use std::{cell::RefCell, fs, path::Path};
 
-use frick_instructions::{BrainInstruction, BrainInstructionType, Reg, ToInstructions as _};
-use frick_operations::BrainOperation;
+use frick_instructions::{BrainInstruction, BrainInstructionType, Reg};
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
 use inkwell::{

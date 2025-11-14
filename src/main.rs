@@ -59,15 +59,11 @@ fn main() -> Result<()> {
 		"unoptimized.instrs",
 	)?;
 
-	optimizer.run();
+	let output = optimizer.run();
 
 	serialize(&optimizer.ops(), args.output_path(), "optimized.ops")?;
 
-	serialize(
-		&optimizer.to_instructions(),
-		args.output_path(),
-		"optimized.instrs",
-	)?;
+	serialize(&output, args.output_path(), "optimized.instrs")?;
 
 	let assembler = match args.passes_path() {
 		None => Assembler::new("default<O0>".to_owned(), args.file_path().to_owned()),
@@ -85,7 +81,7 @@ fn main() -> Result<()> {
 		}
 	};
 
-	let module = assembler.assemble(optimizer.ops(), args.output_path())?;
+	let module = assembler.assemble(&output, args.output_path())?;
 
 	tracing::info!("finished assembling module");
 

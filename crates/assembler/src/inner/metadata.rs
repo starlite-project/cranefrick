@@ -1,5 +1,4 @@
-use frick_utils::Convert;
-use inkwell::values::{BasicMetadataValueEnum, InstructionOpcode, InstructionValue};
+use inkwell::values::{InstructionOpcode, InstructionValue};
 
 use super::InnerAssembler;
 use crate::{AssemblyError, ContextGetter as _};
