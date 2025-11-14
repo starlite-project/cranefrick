@@ -212,22 +212,34 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn compile_instruction(&self, instr: BrainInstructionType) -> Result<bool, AssemblyError> {
 		match instr {
-			BrainInstructionType::LoadCellIntoRegister(Reg(reg)) => {
+			BrainInstructionType::LoadCellIntoRegister {
+				output_reg: Reg(reg),
+			} => {
 				self.load_cell_into_register(reg)?;
 			}
-			BrainInstructionType::StoreRegisterIntoCell(Reg(reg)) => {
+			BrainInstructionType::StoreRegisterIntoCell {
+				input_reg: Reg(reg),
+			} => {
 				self.store_register_into_cell(reg)?;
 			}
 			BrainInstructionType::StoreImmediateIntoCell(imm) => {
 				self.store_immediate_into_cell(imm)?;
 			}
-			BrainInstructionType::ChangeRegisterByImmediate(Reg(reg), imm) => {
-				self.change_register_by_immediate(reg, imm)?;
+			BrainInstructionType::ChangeRegisterByImmediate {
+				input_reg: Reg(input_reg),
+				output_reg: Reg(output_reg),
+				imm,
+			} => {
+				self.change_register_by_immediate(input_reg, output_reg, imm)?;
 			}
-			BrainInstructionType::InputIntoRegister(Reg(reg)) => self.input_into_register(reg)?,
-			BrainInstructionType::OutputFromRegister(Reg(reg)) => self.output_from_register(reg)?,
+			BrainInstructionType::InputIntoRegister {
+				output_reg: Reg(reg),
+			} => self.input_into_register(reg)?,
+			BrainInstructionType::OutputFromRegister {
+				input_reg: Reg(reg),
+			} => self.output_from_register(reg)?,
 			BrainInstructionType::LoadPointer => self.load_pointer()?,
-			BrainInstructionType::OffsetPointer(offset) => self.offset_pointer(offset)?,
+			BrainInstructionType::OffsetPointer { offset } => self.offset_pointer(offset)?,
 			BrainInstructionType::StorePointer => self.store_pointer()?,
 			BrainInstructionType::StartLoop => self.start_loop()?,
 			BrainInstructionType::EndLoop => self.end_loop()?,

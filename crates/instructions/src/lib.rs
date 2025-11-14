@@ -56,14 +56,28 @@ impl DerefMut for BrainInstruction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum BrainInstructionType {
-	LoadCellIntoRegister(Reg),
-	StoreRegisterIntoCell(Reg),
+	LoadCellIntoRegister {
+		output_reg: Reg,
+	},
+	StoreRegisterIntoCell {
+		input_reg: Reg,
+	},
 	StoreImmediateIntoCell(u8),
-	ChangeRegisterByImmediate(Reg, i8),
-	InputIntoRegister(Reg),
-	OutputFromRegister(Reg),
+	ChangeRegisterByImmediate {
+		input_reg: Reg,
+		output_reg: Reg,
+		imm: i8,
+	},
+	InputIntoRegister {
+		output_reg: Reg,
+	},
+	OutputFromRegister {
+		input_reg: Reg,
+	},
 	LoadPointer,
-	OffsetPointer(i32),
+	OffsetPointer {
+		offset: i32,
+	},
 	StorePointer,
 	StartLoop,
 	EndLoop,
@@ -88,9 +102,13 @@ impl ToInstructions for BrainOperation {
 		match self.op() {
 			&BrainOperationType::ChangeCell(value) => [
 				BrainInstructionType::LoadPointer,
-				BrainInstructionType::LoadCellIntoRegister(Reg(0)),
-				BrainInstructionType::ChangeRegisterByImmediate(Reg(0), value),
-				BrainInstructionType::StoreRegisterIntoCell(Reg(0)),
+				BrainInstructionType::LoadCellIntoRegister { output_reg: Reg(0) },
+				BrainInstructionType::ChangeRegisterByImmediate {
+					input_reg: Reg(0),
+					output_reg: Reg(1),
+					imm: value,
+				},
+				BrainInstructionType::StoreRegisterIntoCell { input_reg: Reg(1) },
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
@@ -104,24 +122,24 @@ impl ToInstructions for BrainOperation {
 			.collect(),
 			&BrainOperationType::MovePointer(offset) => [
 				BrainInstructionType::LoadPointer,
-				BrainInstructionType::OffsetPointer(offset),
+				BrainInstructionType::OffsetPointer { offset },
 				BrainInstructionType::StorePointer,
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
 			&BrainOperationType::InputIntoCell => [
-				BrainInstructionType::InputIntoRegister(Reg(0)),
+				BrainInstructionType::InputIntoRegister { output_reg: Reg(0) },
 				BrainInstructionType::LoadPointer,
-				BrainInstructionType::StoreRegisterIntoCell(Reg(0)),
+				BrainInstructionType::StoreRegisterIntoCell { input_reg: Reg(0) },
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
 			&BrainOperationType::OutputCurrentCell => [
 				BrainInstructionType::LoadPointer,
-				BrainInstructionType::LoadCellIntoRegister(Reg(0)),
-				BrainInstructionType::OutputFromRegister(Reg(0)),
+				BrainInstructionType::LoadCellIntoRegister { output_reg: Reg(0) },
+				BrainInstructionType::OutputFromRegister { input_reg: Reg(0) },
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
@@ -130,7 +148,7 @@ impl ToInstructions for BrainOperation {
 				let mut output = [
 					BrainInstructionType::StartLoop,
 					BrainInstructionType::LoadPointer,
-					BrainInstructionType::LoadCellIntoRegister(Reg(0)),
+					BrainInstructionType::LoadCellIntoRegister { output_reg: Reg(0) },
 					BrainInstructionType::CompareRegisterToImmediate {
 						input_reg: Reg(0),
 						output_reg: Reg(1),

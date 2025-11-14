@@ -44,12 +44,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn change_register_by_immediate(
 		&self,
-		reg: usize,
+		input_reg: usize,
+		output_reg: usize,
 		value: i8,
 	) -> Result<(), AssemblyError> {
 		let cell_type = self.context().i8_type();
 
-		let register_value = self.value_at(reg)?.into_int_value();
+		let register_value = self.value_at(input_reg)?.into_int_value();
 
 		let new_value = self.builder.build_int_add(
 			register_value,
@@ -57,7 +58,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"\0",
 		)?;
 
-		self.set_value_at(reg, new_value)
+		self.set_value_at(output_reg, new_value)
 	}
 
 	pub(super) fn input_into_register(&self, reg: usize) -> Result<(), AssemblyError> {
