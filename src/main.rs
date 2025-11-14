@@ -49,21 +49,7 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	let mut optimizer = Optimizer::new(operations);
-
-	serialize(&optimizer.ops(), args.output_path(), "unoptimized.ops")?;
-
-	serialize(
-		&optimizer.to_instructions(),
-		args.output_path(),
-		"unoptimized.instrs",
-	)?;
-
-	let output = optimizer.run();
-
-	serialize(&optimizer.ops(), args.output_path(), "optimized.ops")?;
-
-	serialize(&output, args.output_path(), "optimized.instrs")?;
+	let output = Optimizer::run(operations);
 
 	let assembler = match args.passes_path() {
 		None => Assembler::new("default<O0>".to_owned(), args.file_path().to_owned()),

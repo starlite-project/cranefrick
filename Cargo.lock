@@ -545,6 +545,7 @@ dependencies = [
  "frick_instructions",
  "frick_operations",
  "frick_utils",
+ "ron",
  "serde",
  "tracing",
 ]

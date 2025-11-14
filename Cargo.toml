@@ -75,6 +75,7 @@ inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "37ef0f589a77
     "llvm21-1-force-static"
 ] }
 libc = "0.2"
+ron = "0.11"
 send_wrapper = "0.6"
 serde = { version = "1", default-features = false }
 tracing = "0.1"
@@ -145,8 +146,8 @@ panic = "abort"
 all-features = true
 
 [profile.dev]
-panic = "abort"
 opt-level = 1
+panic = "abort"
 
 [profile.dev.package.inkwell]
 debug-assertions = false
