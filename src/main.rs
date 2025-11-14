@@ -5,7 +5,7 @@ use std::{fs, path::Path};
 use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::Assembler;
-use frick_ir::parse;
+use frick_instructions::ToInstructions as _;
 use frick_optimizer::Optimizer;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
@@ -49,37 +49,10 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	let mut new_optimizer = frick_new_optimizer::Optimizer::new(operations);
+	let output = Optimizer::run(operations);
 
-	serialize(&new_optimizer, args.output_path(), "new_unoptimized")?;
-
-	new_optimizer.run();
-
-	serialize(&new_optimizer, args.output_path(), "new_optimized")?;
-
-	let raw_data = fs::read_to_string(args.file_path())?
-		.chars()
-		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
-		.collect::<String>();
-
-	let parsed = parse(raw_data)?;
-
-	if parsed.is_empty() {
-		tracing::warn!("no program parsed");
-
-		return Ok(());
-	}
-
-	let mut optimizer = parsed.into_iter().collect::<Optimizer>();
-
-	serialize(&optimizer, args.output_path(), "unoptimized")?;
-
-	optimizer.run();
-
-	serialize(&optimizer, args.output_path(), "optimized")?;
-
-	let mut assembler = match args.passes_path() {
-		None => Assembler::default(),
+	let assembler = match args.passes_path() {
+		None => Assembler::new("default<O0>".to_owned(), args.file_path().to_owned()),
 		Some(passes_path) => {
 			let passes = fs::read_to_string(passes_path)?;
 
@@ -89,13 +62,12 @@ fn main() -> Result<()> {
 					.map(|l| l.trim())
 					.collect::<Vec<_>>()
 					.join(","),
+				args.file_path().to_owned(),
 			)
 		}
 	};
 
-	assembler.set_path(args.file_path().to_owned());
-
-	let module = assembler.assemble(&optimizer, args.output_path())?;
+	let module = assembler.assemble(&output, args.output_path())?;
 
 	tracing::info!("finished assembling module");
 
@@ -144,7 +116,7 @@ fn install_tracing(folder_path: &Path) {
 }
 
 fn env_filter() -> EnvFilter {
-	EnvFilter::new("info,frick_optimizer=debug")
+	EnvFilter::new("debug")
 }
 
 fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {

@@ -10,8 +10,7 @@ clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
 dhat = { workspace = true, optional = true }
 frick_assembler = { path = "crates/assembler" }
-frick_ir = { workspace = true, features = ["parse"] }
-frick_new_optimizer = { path = "crates/new_optimizer" }
+frick_instructions.workspace = true
 frick_operations = { workspace = true, features = ["parse"] }
 frick_optimizer = { path = "crates/optimizer" }
 ron = "0.11"
@@ -47,9 +46,10 @@ name = "is_all_zero"
 [workspace]
 members = [
     "crates/assembler",
+    "crates/instructions",
     "crates/interop",
     "crates/ir",
-    "crates/new_optimizer",
+    "crates/old_optimizer",
     "crates/operations",
     "crates/optimizer",
     "crates/spec",
@@ -66,14 +66,16 @@ clap = "4"
 color-eyre = "0.6"
 criterion = "0.7"
 dhat = "0.3"
+frick_instructions = { path = "crates/instructions" }
 frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
 frick_operations = { path = "crates/operations" }
 frick_utils = { path = "crates/utils" }
-inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "0079487e1d424ac42961d29313472b92f7e870af", features = [
+inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "37ef0f589a77bf601c2112f3ece020b3a373756f", features = [
     "llvm21-1-force-static"
 ] }
 libc = "0.2"
+ron = "0.11"
 send_wrapper = "0.6"
 serde = { version = "1", default-features = false }
 tracing = "0.1"
@@ -138,12 +140,14 @@ version = "0.1.0"
 [profile.release]
 codegen-units = 1
 lto = "fat"
+panic = "abort"
 
 [workspace.metadata.docs.rs]
 all-features = true
 
 [profile.dev]
 opt-level = 1
+panic = "abort"
 
 [profile.dev.package.inkwell]
 debug-assertions = false
