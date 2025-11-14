@@ -1,4 +1,5 @@
 mod instr;
+mod metadata;
 mod utils;
 
 use std::{cell::RefCell, fs, path::Path};
