@@ -183,51 +183,43 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub(super) fn jump_if_zero(&self, reg: usize) -> Result<(), AssemblyError> {
+	pub(super) fn compare_reg_to_immediate(
+		&self,
+		input_reg: usize,
+		output_reg: usize,
+		imm: u8,
+	) -> Result<(), AssemblyError> {
 		let cell_type = self.context().i8_type();
 
-		let reg_value = self.value_at(reg)?.into_int_value();
+		let compare_value = cell_type.const_int(imm.convert::<u64>(), false);
 
-		let cell_zero = cell_type.const_zero();
+		let input_value = self.value_at(input_reg)?.into_int_value();
 
-		let comparison =
+		let output =
 			self.builder
-				.build_int_compare(IntPredicate::EQ, reg_value, cell_zero, "\0")?;
+				.build_int_compare(IntPredicate::EQ, input_value, compare_value, "\0")?;
 
-		let loop_info = self
-			.loop_blocks
-			.borrow()
-			.last()
-			.copied()
-			.ok_or(AssemblyError::NoLoopInfo)?;
+		self.set_value_at(output_reg, output)?;
+
+		Ok(())
+	}
+
+	pub(super) fn jump_if(&self, input_reg: usize) -> Result<(), AssemblyError> {
+		let loop_info = self.last_loop_info()?;
+
+		let compare_value = self.value_at(input_reg)?.into_int_value();
 
 		self.builder
-			.build_conditional_branch(comparison, loop_info.exit, loop_info.body)?;
+			.build_conditional_branch(compare_value, loop_info.exit, loop_info.body)?;
 		self.builder.position_at_end(loop_info.body);
 
 		Ok(())
 	}
 
-	pub(super) fn jump_if_not_zero(&self, reg: usize) -> Result<(), AssemblyError> {
-		let cell_type = self.context().i8_type();
+	pub(super) fn jump_to_header(&self) -> Result<(), AssemblyError> {
+		let loop_info = self.last_loop_info()?;
 
-		let reg_value = self.value_at(reg)?.into_int_value();
-
-		let cell_zero = cell_type.const_zero();
-
-		let comparison =
-			self.builder
-				.build_int_compare(IntPredicate::NE, reg_value, cell_zero, "\0")?;
-
-		let loop_info = self
-			.loop_blocks
-			.borrow()
-			.last()
-			.copied()
-			.ok_or(AssemblyError::NoLoopInfo)?;
-
-		self.builder
-			.build_conditional_branch(comparison, loop_info.body, loop_info.exit)?;
+		self.builder.build_unconditional_branch(loop_info.header)?;
 
 		Ok(())
 	}
@@ -266,5 +258,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.insert_or_push(reg, value.as_basic_value_enum());
 
 		Ok(())
+	}
+
+	fn last_loop_info(&self) -> Result<LoopBlocks<'ctx>, AssemblyError> {
+		self.loop_blocks
+			.borrow()
+			.last()
+			.copied()
+			.ok_or(AssemblyError::NoLoopInfo)
 	}
 }

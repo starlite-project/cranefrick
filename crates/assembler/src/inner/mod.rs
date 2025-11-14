@@ -231,8 +231,15 @@ impl<'ctx> InnerAssembler<'ctx> {
 			BrainInstructionType::StorePointer => self.store_pointer()?,
 			BrainInstructionType::StartLoop => self.start_loop()?,
 			BrainInstructionType::EndLoop => self.end_loop()?,
-			BrainInstructionType::JumpIfZero(Reg(reg)) => self.jump_if_zero(reg)?,
-			BrainInstructionType::JumpIfNotZero(Reg(reg)) => self.jump_if_not_zero(reg)?,
+			BrainInstructionType::CompareRegisterToImmediate {
+				input_reg: Reg(input_reg),
+				output_reg: Reg(output_reg),
+				imm,
+			} => self.compare_reg_to_immediate(input_reg, output_reg, imm)?,
+			BrainInstructionType::JumpIf {
+				input_reg: Reg(input_reg),
+			} => self.jump_if(input_reg)?,
+			BrainInstructionType::JumpToHeader => self.jump_to_header()?,
 			_ => return Ok(false),
 		}
 
