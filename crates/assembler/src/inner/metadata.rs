@@ -1,5 +1,5 @@
 use frick_utils::Convert;
-use inkwell::values::{BasicMetadataValueEnum, InstructionValue};
+use inkwell::values::{BasicMetadataValueEnum, InstructionOpcode, InstructionValue};
 
 use super::InnerAssembler;
 use crate::{AssemblyError, ContextGetter as _};
@@ -9,6 +9,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		instr: InstructionValue<'ctx>,
 	) -> Result<(), AssemblyError> {
+		assert!(matches!(
+			instr.get_opcode(),
+			InstructionOpcode::Load | InstructionOpcode::Store
+		));
+
 		let context = self.context();
 
 		let noalias_metadata_node = context.metadata_node(&[]);
