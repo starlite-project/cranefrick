@@ -10,8 +10,8 @@ version.workspace = true
 [dependencies]
 frick_instructions.workspace = true
 frick_operations.workspace = true
+frick_serialize.workspace = true
 frick_utils = { workspace = true, features = ["insert_or_push", "iter_ext"] }
-ron.workspace = true
 serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"

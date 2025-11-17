@@ -3,8 +3,7 @@
 mod change;
 pub mod passes;
 
-use alloc::vec::Vec;
-use core::array;
+use std::array;
 
 use frick_operations::{BrainOperation, BrainOperationType};
 

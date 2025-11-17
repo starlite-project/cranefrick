@@ -1,7 +1,5 @@
 mod inner;
 
-use alloc::vec::Vec;
-
 use frick_operations::BrainOperation;
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
@@ -10,6 +8,7 @@ use tracing::info;
 use self::inner::{passes, run_loop_pass, run_peephole_pass};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 #[repr(transparent)]
 pub struct OperationsOptimizer {
 	ops: Vec<BrainOperation>,
@@ -56,11 +55,6 @@ impl OperationsOptimizer {
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_unreachable_loops);
 
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_comments);
-	}
-
-	#[must_use]
-	pub const fn ops(&self) -> &Vec<BrainOperation> {
-		&self.ops
 	}
 
 	pub const fn ops_mut(&mut self) -> &mut Vec<BrainOperation> {

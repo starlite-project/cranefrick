@@ -13,9 +13,6 @@ frick_assembler = { path = "crates/assembler" }
 frick_instructions.workspace = true
 frick_operations = { workspace = true, features = ["parse"] }
 frick_optimizer = { path = "crates/optimizer" }
-ron = "0.11"
-serde.workspace = true
-toml = { version = "0.9", features = ["serde"] }
 tracing.workspace = true
 tracing-error = "0.2.1"
 tracing-indicatif.workspace = true
@@ -52,6 +49,7 @@ members = [
     "crates/old_optimizer",
     "crates/operations",
     "crates/optimizer",
+    "crates/serialize",
     "crates/spec",
     "crates/utils",
     "tools/pattern_finder"
@@ -70,12 +68,13 @@ frick_instructions = { path = "crates/instructions" }
 frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
 frick_operations = { path = "crates/operations" }
+frick_serialize = { path = "crates/serialize" }
 frick_utils = { path = "crates/utils" }
 inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "37ef0f589a77bf601c2112f3ece020b3a373756f", features = [
     "llvm21-1-force-static"
 ] }
 libc = "0.2"
-ron = "0.11"
+ron = "0.12"
 send_wrapper = "0.6"
 serde = { version = "1", default-features = false }
 tracing = "0.1"

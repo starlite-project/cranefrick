@@ -5,10 +5,7 @@ use std::{fs, path::Path};
 use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::Assembler;
-use frick_instructions::ToInstructions as _;
 use frick_optimizer::Optimizer;
-use ron::ser::PrettyConfig;
-use serde::Serialize;
 use tracing_error::ErrorLayer;
 use tracing_indicatif::{IndicatifLayer, filter::IndicatifFilter, style::ProgressStyle};
 use tracing_subscriber::{
@@ -49,11 +46,7 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	serialize(&operations, args.output_path(), "unoptimized")?;
-
-	let output = Optimizer::run(operations);
-
-	serialize(&output, args.output_path(), "optimized")?;
+	let output = Optimizer::run(operations, args.output_path());
 
 	let assembler = match args.passes_path() {
 		None => Assembler::new("default<O0>".to_owned(), args.file_path().to_owned()),
@@ -121,25 +114,4 @@ fn install_tracing(folder_path: &Path) {
 
 fn env_filter() -> EnvFilter {
 	EnvFilter::new("debug")
-}
-
-fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
-	serialize_as_ron(value, folder_path, file_name)
-}
-
-fn serialize_as_ron<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
-	let mut output = String::new();
-	let mut serializer = ron::Serializer::with_options(
-		&mut output,
-		Some(PrettyConfig::new().separate_tuple_members(true)),
-		&ron::Options::default().without_recursion_limit(),
-	)?;
-
-	value.serialize(&mut serializer)?;
-
-	drop(serializer);
-
-	fs::write(folder_path.join(format!("{file_name}.ron")), output)?;
-
-	Ok(())
 }
