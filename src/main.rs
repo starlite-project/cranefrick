@@ -49,7 +49,11 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
+	serialize(&operations, args.output_path(), "unoptimized")?;
+
 	let output = Optimizer::run(operations);
+
+	serialize(&output, args.output_path(), "optimized")?;
 
 	let assembler = match args.passes_path() {
 		None => Assembler::new("default<O0>".to_owned(), args.file_path().to_owned()),
