@@ -1,0 +1,21 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "frick_old_optimizer"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+frick_ir.workspace = true
+frick_utils = { workspace = true, features = [
+    "contains_range",
+    "convert",
+    "insert_or_push",
+    "iter_ext",
+    "slice_ext"
+] }
+serde.workspace = true
+tracing = { workspace = true, features = ["attributes"] }
+tracing-indicatif.workspace = true

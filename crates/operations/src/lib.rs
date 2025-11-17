@@ -9,8 +9,8 @@ extern crate std;
 #[cfg(feature = "parse")]
 mod parse;
 
-use alloc::{string::String, vec::Vec};
-use core::ops::Range;
+use alloc::vec::Vec;
+use core::ops::{Deref, DerefMut, Range};
 
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
@@ -18,8 +18,10 @@ use serde::{Deserialize, Serialize};
 pub use self::parse::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct BrainOperation {
 	op: BrainOperationType,
+	#[serde(skip)]
 	span: Range<usize>,
 }
 
@@ -52,29 +54,52 @@ impl BrainOperation {
 	pub const fn span(&self) -> Range<usize> {
 		self.span.start..self.span.end
 	}
+}
 
-	#[must_use]
-	pub const fn child_ops(&self) -> Option<&Vec<Self>> {
-		match self.op() {
-			BrainOperationType::DynamicLoop(ops) => Some(ops),
-			_ => None,
-		}
+impl Deref for BrainOperation {
+	type Target = BrainOperationType;
+
+	fn deref(&self) -> &Self::Target {
+		&self.op
 	}
+}
 
-	pub const fn child_ops_mut(&mut self) -> Option<&mut Vec<Self>> {
-		match self.op_mut() {
-			BrainOperationType::DynamicLoop(ops) => Some(ops),
-			_ => None,
-		}
+impl DerefMut for BrainOperation {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.op
 	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum BrainOperationType {
 	ChangeCell(i8),
+	SetCell(u8),
 	MovePointer(i32),
 	InputIntoCell,
 	OutputCurrentCell,
 	DynamicLoop(Vec<BrainOperation>),
-	Comment(String),
+	Comment(char),
+}
+
+impl BrainOperationType {
+	#[must_use]
+	pub const fn is_zeroing_cell(&self) -> bool {
+		matches!(self, Self::DynamicLoop(..) | Self::SetCell(0))
+	}
+
+	#[must_use]
+	pub const fn child_ops(&self) -> Option<&Vec<BrainOperation>> {
+		match self {
+			Self::DynamicLoop(ops) => Some(ops),
+			_ => None,
+		}
+	}
+
+	pub const fn child_ops_mut(&mut self) -> Option<&mut Vec<BrainOperation>> {
+		match self {
+			Self::DynamicLoop(ops) => Some(ops),
+			_ => None,
+		}
+	}
 }

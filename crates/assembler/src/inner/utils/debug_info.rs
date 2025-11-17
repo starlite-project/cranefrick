@@ -1,4 +1,5 @@
 use std::{
+	cell::RefCell,
 	mem,
 	ops::{Deref, DerefMut},
 };
@@ -7,8 +8,8 @@ use frick_spec::TAPE_SIZE;
 use inkwell::{
 	context::ContextRef,
 	debug_info::{
-		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DILocalVariable, DISubprogram,
-		DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
+		AsDIScope as _, DICompileUnit, DIFlagsConstants as _, DILexicalBlock, DILocalVariable,
+		DIScope, DISubprogram, DWARFEmissionKind, DWARFSourceLanguage, DebugInfoBuilder,
 	},
 	module::Module,
 };
@@ -21,6 +22,7 @@ pub struct AssemblerDebugBuilder<'ctx> {
 	pub compile_unit: DICompileUnit<'ctx>,
 	pub variables: AssemblerDebugVariables<'ctx>,
 	pub main_subprogram: DISubprogram<'ctx>,
+	pub blocks: RefCell<Vec<DILexicalBlock<'ctx>>>,
 }
 
 impl<'ctx> AssemblerDebugBuilder<'ctx> {
@@ -71,7 +73,15 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			compile_unit,
 			variables,
 			main_subprogram,
+			blocks: RefCell::default(),
 		})
+	}
+
+	pub fn get_current_scope(&self) -> DIScope<'ctx> {
+		self.blocks.borrow().last().map_or_else(
+			|| self.main_subprogram.as_debug_info_scope(),
+			|x| x.as_debug_info_scope(),
+		)
 	}
 
 	pub fn declare_subprograms(

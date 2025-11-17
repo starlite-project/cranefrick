@@ -1,0 +1,16 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "frick_serialize"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+ron = { workspace = true, optional = true }
+serde.workspace = true
+
+[features]
+default = ["ron"]
+ron = ["dep:ron"]

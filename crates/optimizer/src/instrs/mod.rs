@@ -1,0 +1,65 @@
+mod inner;
+
+use frick_instructions::BrainInstruction;
+use frick_utils::IntoIteratorExt as _;
+use inner::passes::{self, Pass};
+use serde::{Deserialize, Serialize};
+use tracing::info;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+#[repr(transparent)]
+pub struct InstructionsOptimizer {
+	instrs: Vec<BrainInstruction>,
+}
+
+impl InstructionsOptimizer {
+	pub fn new(instrs: impl IntoIterator<Item = BrainInstruction>) -> Self {
+		Self {
+			instrs: instrs.collect_to(),
+		}
+	}
+
+	#[tracing::instrument("optimize instructions", skip(self))]
+	pub fn run(&mut self) {
+		let mut iteration = 0;
+
+		let mut progress = self.run_passes(iteration);
+
+		while progress {
+			iteration += 1;
+			progress = self.run_passes(iteration);
+		}
+
+		info!(iterations = iteration);
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn run_passes(&mut self, iteration: usize) -> bool {
+		let mut progress = false;
+
+		self.run_each_pass(&mut progress);
+
+		progress
+	}
+
+	fn run_each_pass(&mut self, progress: &mut bool) {
+		*progress |= self.run_pass(passes::PointerDCEPass::default());
+	}
+
+	fn run_pass<P: Pass>(&mut self, mut pass: P) -> bool {
+		if !pass.run_analysis_passes(self.instrs()) {
+			return false;
+		}
+
+		pass.run(self.instrs_mut())
+	}
+
+	pub const fn instrs(&self) -> &Vec<BrainInstruction> {
+		&self.instrs
+	}
+
+	pub const fn instrs_mut(&mut self) -> &mut Vec<BrainInstruction> {
+		&mut self.instrs
+	}
+}

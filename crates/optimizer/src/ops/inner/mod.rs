@@ -1,21 +1,22 @@
+#![expect(unused)]
+
 mod change;
+pub mod passes;
 
-use alloc::vec::Vec;
-use core::array;
+use std::array;
 
-use frick_operations::BrainOperation;
+use frick_operations::{BrainOperation, BrainOperationType};
 
 pub use self::change::*;
 
 #[tracing::instrument(skip_all)]
 pub fn run_loop_pass(v: &mut Vec<BrainOperation>, pass: impl LoopPass) -> bool {
-	run_peephole_pass_inner(v, |ops| match ops {
-		[op] => {
-			let child_ops = op.child_ops()?;
+	run_peephole_pass_inner(v, |ops| {
+		let [op] = ops;
 
-			pass(child_ops)
-		}
-		_ => None,
+		let child_ops = op.child_ops()?;
+
+		pass(child_ops)
 	})
 }
 
@@ -51,7 +52,7 @@ fn run_peephole_pass_inner<const N: usize>(
 	}
 
 	v.iter_mut()
-		.filter_map(BrainOperation::child_ops_mut)
+		.filter_map(|op| op.child_ops_mut())
 		.for_each(|child| {
 			progress |= run_peephole_pass_inner(child, pass);
 		});
