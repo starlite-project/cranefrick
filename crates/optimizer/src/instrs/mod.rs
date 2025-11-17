@@ -2,6 +2,7 @@ mod inner;
 
 use frick_instructions::BrainInstruction;
 use frick_utils::IntoIteratorExt as _;
+use inner::passes::{self, Pass};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -37,10 +38,28 @@ impl InstructionsOptimizer {
 	fn run_passes(&mut self, iteration: usize) -> bool {
 		let mut progress = false;
 
+		self.run_each_pass(&mut progress);
+
 		progress
 	}
 
-	pub fn instrs_mut(&mut self) -> &mut Vec<BrainInstruction> {
+	fn run_each_pass(&mut self, progress: &mut bool) {
+		*progress |= self.run_pass(passes::PointerDCEPass::default());
+	}
+
+	fn run_pass<P: Pass>(&mut self, mut pass: P) -> bool {
+		if !pass.run_analysis_passes(self.instrs()) {
+			return false;
+		}
+
+		pass.run(self.instrs_mut())
+	}
+
+	pub const fn instrs(&self) -> &Vec<BrainInstruction> {
+		&self.instrs
+	}
+
+	pub const fn instrs_mut(&mut self) -> &mut Vec<BrainInstruction> {
 		&mut self.instrs
 	}
 }
