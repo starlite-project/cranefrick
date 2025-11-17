@@ -57,6 +57,10 @@ impl OperationsOptimizer {
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_comments);
 	}
 
+	pub const fn ops(&self) -> &Vec<BrainOperation> {
+		&self.ops
+	}
+
 	pub const fn ops_mut(&mut self) -> &mut Vec<BrainOperation> {
 		&mut self.ops
 	}

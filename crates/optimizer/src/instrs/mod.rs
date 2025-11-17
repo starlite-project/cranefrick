@@ -1,9 +1,46 @@
+mod inner;
+
 use frick_instructions::BrainInstruction;
+use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 #[repr(transparent)]
 pub struct InstructionsOptimizer {
 	instrs: Vec<BrainInstruction>,
+}
+
+impl InstructionsOptimizer {
+	pub fn new(instrs: impl IntoIterator<Item = BrainInstruction>) -> Self {
+		Self {
+			instrs: instrs.collect_to(),
+		}
+	}
+
+	#[tracing::instrument("optimize instructions", skip(self))]
+	pub fn run(&mut self) {
+		let mut iteration = 0;
+
+		let mut progress = self.run_passes(iteration);
+
+		while progress {
+			iteration += 1;
+			progress = self.run_passes(iteration);
+		}
+
+		info!(iterations = iteration);
+	}
+
+	#[tracing::instrument(skip(self))]
+	fn run_passes(&mut self, iteration: usize) -> bool {
+		let mut progress = false;
+
+		progress
+	}
+
+	pub fn instrs_mut(&mut self) -> &mut Vec<BrainInstruction> {
+		&mut self.instrs
+	}
 }
