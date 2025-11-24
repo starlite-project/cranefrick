@@ -2,20 +2,9 @@
 
 use std::{
 	io::{self, prelude::*},
+	process::abort,
 	slice,
 };
-
-// pub use libc::getchar as rust_getchar;
-
-unsafe extern "Rust" {
-	pub fn rust_eh_personality(
-		version: i32,
-		actions: i32,
-		exception_class: i64,
-		exception_object: *mut u8,
-		context: *mut u8,
-	) -> i32;
-}
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rust_putchar(c: u8) {
@@ -26,7 +15,7 @@ pub unsafe extern "C" fn rust_putchar(c: u8) {
 		.and_then(|()| stdout.flush())
 		.is_err()
 	{
-		std::process::abort();
+		abort();
 	}
 }
 
