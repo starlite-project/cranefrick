@@ -4,11 +4,11 @@ use super::{Pass, PointerAnalysis};
 
 #[derive(Debug, Default, Clone)]
 #[repr(transparent)]
-pub struct PointerDCEPass {
+pub struct PointerRedundantLoadsPass {
 	analysis: PointerAnalysis,
 }
 
-impl Pass for PointerDCEPass {
+impl Pass for PointerRedundantLoadsPass {
 	fn run(&mut self, instrs: &mut Vec<BrainInstruction>) -> bool {
 		if !self.analysis.analyze(instrs) {
 			tracing::debug!("no pointer analysis available");

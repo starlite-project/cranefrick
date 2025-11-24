@@ -1,4 +1,4 @@
-mod dce;
+mod redundant_loads;
 
 use std::{
 	collections::BTreeMap,
@@ -7,7 +7,7 @@ use std::{
 
 use frick_instructions::{BrainInstruction, BrainInstructionType};
 
-pub use self::dce::*;
+pub use self::redundant_loads::*;
 use super::Pass;
 
 #[derive(Debug, Default, Clone)]
