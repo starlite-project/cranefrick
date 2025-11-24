@@ -82,12 +82,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			context.create_named_enum_attribute("memory", 9);
 		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
 		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
-		let getchar_range_attr = context.create_range_attribute(
-			Attribute::get_named_enum_kind_id("range"),
-			32,
-			u8::MIN.convert::<u64>(),
-			u8::MAX.convert::<u64>() + 1,
-		);
 		let target_cpu_attr = context.create_string_attribute("target-cpu", cpu_name);
 		let target_cpu_features_attr =
 			context.create_string_attribute("target-features", cpu_features);
@@ -123,7 +117,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				nounwind_attr,
 			],
 			[],
-			[zeroext_attr, getchar_range_attr, noundef_attr],
+			[zeroext_attr, noundef_attr],
 		);
 		add_attributes_to(
 			self.main,
