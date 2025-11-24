@@ -493,7 +493,6 @@ name = "frick_interop"
 version = "0.1.0"
 dependencies = [
  "libc",
- "tracing",
 ]
 
 [[package]]

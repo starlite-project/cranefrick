@@ -173,12 +173,6 @@ impl Assembler {
 			execution_engine.add_global_mapping(&putchar, frick_interop::rust_putchar as usize);
 		}
 
-		if let Some(eh_personality) = module.get_function("rust_eh_personality\0") {
-			info!("adding rust_eh_personality to the execution engine");
-			execution_engine
-				.add_global_mapping(&eh_personality, frick_interop::rust_eh_personality as usize);
-		}
-
 		Ok(AssembledModule {
 			execution_engine,
 			main,
