@@ -53,8 +53,6 @@ impl PointerAnalysis {
 					);
 				}
 				BrainInstructionType::StorePointer
-				| BrainInstructionType::JumpIf { .. }
-				| BrainInstructionType::JumpToHeader
 				| BrainInstructionType::StartLoop
 				| BrainInstructionType::EndLoop => {
 					self.insert(
