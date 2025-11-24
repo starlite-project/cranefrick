@@ -71,7 +71,7 @@ frick_operations = { path = "crates/operations" }
 frick_serialize = { path = "crates/serialize" }
 frick_utils = { path = "crates/utils" }
 inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "ae49132d89fb4ae1054d7023520cd7ffc4d1ae66", features = [
-    "llvm21-1-force-static"
+    "llvm21-1"
 ] }
 libc = "0.2"
 ron = "0.12"
