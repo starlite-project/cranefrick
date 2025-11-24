@@ -51,10 +51,6 @@ impl InstructionsOptimizer {
 		pass.run(self.instrs_mut())
 	}
 
-	pub const fn instrs(&self) -> &Vec<BrainInstruction> {
-		&self.instrs
-	}
-
 	pub const fn instrs_mut(&mut self) -> &mut Vec<BrainInstruction> {
 		&mut self.instrs
 	}
