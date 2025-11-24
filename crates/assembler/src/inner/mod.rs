@@ -2,7 +2,7 @@ mod instr;
 mod metadata;
 mod utils;
 
-use std::{cell::RefCell, fs, path::Path};
+use std::{cell::RefCell, cmp, fs, path::Path};
 
 use frick_instructions::{BrainInstruction, BrainInstructionType, Reg};
 use frick_spec::TAPE_SIZE;
@@ -135,6 +135,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		instrs: &[BrainInstruction],
 	) -> Result<(Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine), AssemblyError> {
 		tracing::debug!("writing instructions");
+
+		self.loop_blocks
+			.replace(Vec::with_capacity(most_regs_used(instrs)));
+
 		let instrs_span = tracing::info_span!("instrs").entered();
 		self.instrs(instrs)?;
 		drop(instrs_span);
@@ -240,11 +244,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			BrainInstructionType::StorePointer => self.store_pointer()?,
 			BrainInstructionType::StartLoop => self.start_loop()?,
 			BrainInstructionType::EndLoop => self.end_loop()?,
-			BrainInstructionType::CompareRegisterToImmediate {
-				input_reg: Reg(input_reg),
+			BrainInstructionType::CompareRegisterToRegister {
+				lhs_reg: Reg(lhs),
+				rhs_reg: Reg(rhs),
 				output_reg: Reg(output_reg),
-				imm,
-			} => self.compare_reg_to_immediate(input_reg, output_reg, imm)?,
+			} => self.compare_reg_to_reg(lhs, rhs, output_reg)?,
 			BrainInstructionType::JumpIf {
 				input_reg: Reg(input_reg),
 			} => self.jump_if(input_reg)?,
@@ -271,4 +275,35 @@ struct LoopBlocks<'ctx> {
 	header: BasicBlock<'ctx>,
 	body: BasicBlock<'ctx>,
 	exit: BasicBlock<'ctx>,
+}
+
+#[tracing::instrument(level = tracing::Level::DEBUG, skip_all, ret)]
+fn most_regs_used(instrs: &[BrainInstruction]) -> usize {
+	let mut most_used = 0;
+
+	for i in instrs.iter().map(|i| i.instr()) {
+		most_used = match i {
+			BrainInstructionType::LoadCellIntoRegister { output_reg: Reg(r) }
+			| BrainInstructionType::StoreRegisterIntoCell { input_reg: Reg(r) }
+			| BrainInstructionType::StoreImmediateIntoRegister {
+				output_reg: Reg(r), ..
+			}
+			| BrainInstructionType::JumpIf { input_reg: Reg(r) }
+			| BrainInstructionType::InputIntoRegister { output_reg: Reg(r) }
+			| BrainInstructionType::OutputFromRegister { input_reg: Reg(r) } => cmp::max(most_used, r),
+			BrainInstructionType::ChangeRegisterByRegister {
+				lhs_reg: Reg(r1),
+				rhs_reg: Reg(r2),
+				output_reg: Reg(r3),
+			}
+			| BrainInstructionType::CompareRegisterToRegister {
+				lhs_reg: Reg(r1),
+				rhs_reg: Reg(r2),
+				output_reg: Reg(r3),
+			} => cmp::max(r1, r2).max(r3).max(most_used),
+			_ => most_used,
+		}
+	}
+
+	most_used
 }

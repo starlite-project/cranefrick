@@ -3,11 +3,13 @@ use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
-	types::BasicTypeEnum,
-	values::{BasicMetadataValueEnum, BasicValue, BasicValueEnum, PointerValue},
+	values::{BasicMetadataValueEnum, BasicValue, PointerValue},
 };
 
-use super::{AssemblyError, InnerAssembler, LoopBlocks};
+use super::{
+	AssemblyError, InnerAssembler, LoopBlocks,
+	utils::{Bool, Castable, Int},
+};
 use crate::{ContextExt, ContextGetter as _};
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -28,9 +30,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn store_register_into_cell(&self, reg: usize) -> Result<(), AssemblyError> {
 		let gep = self.index_tape()?;
 
-		let cell_value = self.value_at(reg)?;
-
-		Self::assert_value_is_type(cell_value, self.context().i8_type().into());
+		let cell_value = self.value_at::<Int<8>>(reg)?;
 
 		let instr = self.builder.build_store(gep, cell_value)?;
 
@@ -55,18 +55,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		rhs: usize,
 		output_reg: usize,
 	) -> Result<(), AssemblyError> {
-		let cell_type = self.context().i8_type();
-
-		let lhs_value = self.value_at(lhs)?;
-
-		Self::assert_value_is_type(lhs_value, cell_type.into());
-
-		let rhs_value = self.value_at(rhs)?;
-
-		Self::assert_value_is_type(rhs_value, cell_type.into());
-
-		let lhs_value = lhs_value.into_int_value();
-		let rhs_value = rhs_value.into_int_value();
+		let lhs_value = self.value_at::<Int<8>>(lhs)?;
+		let rhs_value = self.value_at::<Int<8>>(rhs)?;
 
 		let new_value = self.builder.build_int_add(lhs_value, rhs_value, "\0")?;
 
@@ -98,9 +88,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn output_from_register(&self, reg: usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let register_value = self.value_at(reg)?;
-
-		Self::assert_value_is_type(register_value, context.i8_type().into());
+		let register_value = self.value_at::<Int<8>>(reg)?;
 
 		let call_value = self.builder.build_direct_call(
 			self.functions.putchar,
@@ -198,39 +186,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub(super) fn compare_reg_to_immediate(
+	pub(super) fn compare_reg_to_reg(
 		&self,
-		input_reg: usize,
+		lhs: usize,
+		rhs: usize,
 		output_reg: usize,
-		imm: u8,
 	) -> Result<(), AssemblyError> {
-		let cell_type = self.context().i8_type();
-
-		let compare_value = cell_type.const_int(imm.convert::<u64>(), false);
-
-		let input_value = self.value_at(input_reg)?;
-
-		Self::assert_value_is_type(input_value, cell_type.into());
-
-		let input_value = input_value.into_int_value();
+		let lhs_value = self.value_at::<Int<8>>(lhs)?;
+		let rhs_value = self.value_at::<Int<8>>(rhs)?;
 
 		let output =
 			self.builder
-				.build_int_compare(IntPredicate::EQ, input_value, compare_value, "\0")?;
+				.build_int_compare(IntPredicate::EQ, lhs_value, rhs_value, "\0")?;
 
-		self.set_value_at(output_reg, output)?;
-
-		Ok(())
+		self.set_value_at(output_reg, output)
 	}
 
 	pub(super) fn jump_if(&self, input_reg: usize) -> Result<(), AssemblyError> {
 		let loop_info = self.last_loop_info()?;
 
-		let compare_value = self.value_at(input_reg)?;
-
-		Self::assert_value_is_type(compare_value, self.context().bool_type().into());
-
-		let compare_value = compare_value.into_int_value();
+		let compare_value = self.value_at::<Bool>(input_reg)?;
 
 		self.builder
 			.build_conditional_branch(compare_value, loop_info.exit, loop_info.body)?;
@@ -265,12 +240,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 		})
 	}
 
-	fn value_at(&self, reg: usize) -> Result<BasicValueEnum<'ctx>, AssemblyError> {
-		self.registers
+	fn value_at<T: Castable<'ctx>>(&self, reg: usize) -> Result<T::Value, AssemblyError> {
+		let basic_value = self
+			.registers
 			.borrow()
 			.get(reg)
 			.copied()
-			.ok_or_else(|| AssemblyError::NoValueInRegister(reg))
+			.ok_or_else(|| AssemblyError::NoValueInRegister(reg))?;
+
+		T::assert_type_matches(basic_value, self.context());
+
+		Ok(T::cast(basic_value))
 	}
 
 	fn set_value_at(&self, reg: usize, value: impl BasicValue<'ctx>) -> Result<(), AssemblyError> {
@@ -287,9 +267,5 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.last()
 			.copied()
 			.ok_or(AssemblyError::NoLoopInfo)
-	}
-
-	fn assert_value_is_type(value: BasicValueEnum<'ctx>, ty: BasicTypeEnum<'ctx>) {
-		assert_eq!(value.get_type(), ty);
 	}
 }

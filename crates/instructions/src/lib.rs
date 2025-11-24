@@ -84,10 +84,10 @@ pub enum BrainInstructionType {
 	StorePointer,
 	StartLoop,
 	EndLoop,
-	CompareRegisterToImmediate {
-		input_reg: Reg,
+	CompareRegisterToRegister {
+		lhs_reg: Reg,
+		rhs_reg: Reg,
 		output_reg: Reg,
-		imm: u8,
 	},
 	JumpIf {
 		input_reg: Reg,
@@ -160,12 +160,16 @@ impl ToInstructions for BrainOperation {
 					BrainInstructionType::StartLoop,
 					BrainInstructionType::LoadPointer,
 					BrainInstructionType::LoadCellIntoRegister { output_reg: Reg(0) },
-					BrainInstructionType::CompareRegisterToImmediate {
-						input_reg: Reg(0),
+					BrainInstructionType::StoreImmediateIntoRegister {
 						output_reg: Reg(1),
 						imm: 0,
 					},
-					BrainInstructionType::JumpIf { input_reg: Reg(1) },
+					BrainInstructionType::CompareRegisterToRegister {
+						lhs_reg: Reg(0),
+						rhs_reg: Reg(1),
+						output_reg: Reg(2),
+					},
+					BrainInstructionType::JumpIf { input_reg: Reg(2) },
 				]
 				.into_iter()
 				.map(|x| BrainInstruction::new(x, self.span().start))
