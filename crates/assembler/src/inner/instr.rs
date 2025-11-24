@@ -231,8 +231,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	fn index_tape(&self) -> Result<PointerValue<'ctx>, AssemblyError> {
 		let cell_type = self.context().i8_type();
-		let ptr_int_type = self.pointers.pointer_ty;
-		let tape_type = cell_type.array_type(TAPE_SIZE as u32);
 
 		let pointer_value = self
 			.pointer_register
@@ -241,9 +239,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		Ok(unsafe {
 			self.builder.build_in_bounds_gep(
-				tape_type,
+				cell_type,
 				self.pointers.tape,
-				&[ptr_int_type.const_zero(), pointer_value],
+				&[pointer_value],
 				"\0",
 			)?
 		})
