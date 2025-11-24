@@ -123,7 +123,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				nounwind_attr,
 			],
 			[],
-			[zeroext_attr, getchar_range_attr],
+			[zeroext_attr, getchar_range_attr, noundef_attr],
 		);
 		add_attributes_to(
 			self.main,
