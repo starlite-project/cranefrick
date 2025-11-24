@@ -41,7 +41,7 @@ impl Optimizer {
 
 		ops_optimizer.run();
 
-		frick_serialize::serialize(&ops_optimizer, output_path, "optimized.ron").unwrap();
+		frick_serialize::serialize(&ops_optimizer, output_path, "optimized.ops").unwrap();
 
 		let finished_ops = mem::take(ops_optimizer.ops_mut());
 

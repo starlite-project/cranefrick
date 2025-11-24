@@ -48,10 +48,6 @@ impl InstructionsOptimizer {
 	}
 
 	fn run_pass<P: Pass>(&mut self, mut pass: P) -> bool {
-		if !pass.run_analysis_passes(self.instrs()) {
-			return false;
-		}
-
 		pass.run(self.instrs_mut())
 	}
 
