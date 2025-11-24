@@ -224,13 +224,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			} => {
 				self.store_immediate_into_register(reg, imm)?;
 			}
-			BrainInstructionType::ChangeRegisterByImmediate {
-				input_reg: Reg(input_reg),
+			BrainInstructionType::ChangeRegisterByRegister {
+				lhs_reg: Reg(lhs),
+				rhs_reg: Reg(rhs),
 				output_reg: Reg(output_reg),
-				imm,
-			} => {
-				self.change_register_by_immediate(input_reg, output_reg, imm)?;
-			}
+			} => self.change_register_by_register(lhs, rhs, output_reg)?,
 			BrainInstructionType::InputIntoRegister {
 				output_reg: Reg(reg),
 			} => self.input_into_register(reg)?,
