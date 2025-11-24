@@ -9,4 +9,3 @@ version.workspace = true
 
 [dependencies]
 libc.workspace = true
-crossterm = "0.29"
