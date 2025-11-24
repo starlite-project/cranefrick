@@ -3,6 +3,7 @@ use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
+	types::BasicTypeEnum,
 	values::{BasicMetadataValueEnum, BasicValue, BasicValueEnum, PointerValue},
 };
 
@@ -29,6 +30,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let cell_value = self.value_at(reg)?;
 
+		Self::assert_value_is_type(cell_value, self.context().i8_type().into());
+
 		let instr = self.builder.build_store(gep, cell_value)?;
 
 		self.add_noalias_metadata_to_mem(instr)
@@ -54,7 +57,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let cell_type = self.context().i8_type();
 
-		let register_value = self.value_at(input_reg)?.into_int_value();
+		let register_value = self.value_at(input_reg)?;
+
+		Self::assert_value_is_type(register_value, cell_type.into());
+
+		let register_value = register_value.into_int_value();
 
 		let new_value = self.builder.build_int_add(
 			register_value,
@@ -91,6 +98,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let context = self.context();
 
 		let register_value = self.value_at(reg)?;
+
+		Self::assert_value_is_type(register_value, context.i8_type().into());
 
 		let call_value = self.builder.build_direct_call(
 			self.functions.putchar,
@@ -198,7 +207,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let compare_value = cell_type.const_int(imm.convert::<u64>(), false);
 
-		let input_value = self.value_at(input_reg)?.into_int_value();
+		let input_value = self.value_at(input_reg)?;
+
+		Self::assert_value_is_type(input_value, cell_type.into());
+
+		let input_value = input_value.into_int_value();
 
 		let output =
 			self.builder
@@ -212,7 +225,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn jump_if(&self, input_reg: usize) -> Result<(), AssemblyError> {
 		let loop_info = self.last_loop_info()?;
 
-		let compare_value = self.value_at(input_reg)?.into_int_value();
+		let compare_value = self.value_at(input_reg)?;
+
+		Self::assert_value_is_type(compare_value, self.context().bool_type().into());
+
+		let compare_value = compare_value.into_int_value();
 
 		self.builder
 			.build_conditional_branch(compare_value, loop_info.exit, loop_info.body)?;
@@ -269,5 +286,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.last()
 			.copied()
 			.ok_or(AssemblyError::NoLoopInfo)
+	}
+
+	fn assert_value_is_type(value: BasicValueEnum<'ctx>, ty: BasicTypeEnum<'ctx>) {
+		assert_eq!(value.get_type(), ty);
 	}
 }
