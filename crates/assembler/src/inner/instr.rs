@@ -95,6 +95,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let register_value = self.value_at::<Int<8>>(reg)?;
 
+		if let Some(instr_value) = register_value.as_instruction() {
+			self.add_nontemporal_metadata_to_mem(instr_value)?;
+		}
+
 		let call_site_value = self.builder.build_direct_call(
 			self.functions.putchar,
 			&[register_value.convert::<BasicMetadataValueEnum<'ctx>>()],
