@@ -1,7 +1,7 @@
 mod redundant_loads;
 
 use std::{
-	collections::BTreeMap,
+	collections::HashMap,
 	ops::{Deref, DerefMut},
 };
 
@@ -13,7 +13,7 @@ use crate::instrs::inner::{Analyzer, Pass};
 #[derive(Debug, Default, Clone)]
 #[repr(transparent)]
 struct PointerAnalysis {
-	states: BTreeMap<usize, PointerState>,
+	states: HashMap<usize, PointerState>,
 }
 
 impl PointerAnalysis {
@@ -65,7 +65,7 @@ impl Analyzer for PointerAnalysis {
 }
 
 impl Deref for PointerAnalysis {
-	type Target = BTreeMap<usize, PointerState>;
+	type Target = HashMap<usize, PointerState>;
 
 	fn deref(&self) -> &Self::Target {
 		&self.states
@@ -89,6 +89,7 @@ impl PointerState {
 		Self { dirty, value_known }
 	}
 
+	#[expect(unused, reason = "future api")]
 	const fn is_dirty(self) -> bool {
 		self.dirty
 	}
