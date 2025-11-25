@@ -186,7 +186,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub(super) fn compare_reg_to_reg(
+	pub(super) fn compare_register_to_register(
 		&self,
 		lhs: usize,
 		rhs: usize,

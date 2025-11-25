@@ -248,7 +248,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				lhs_reg: Reg(lhs),
 				rhs_reg: Reg(rhs),
 				output_reg: Reg(output_reg),
-			} => self.compare_reg_to_reg(lhs, rhs, output_reg)?,
+			} => self.compare_register_to_register(lhs, rhs, output_reg)?,
 			BrainInstructionType::JumpIf {
 				input_reg: Reg(input_reg),
 			} => self.jump_if(input_reg)?,
