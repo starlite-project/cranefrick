@@ -1,5 +1,5 @@
 use frick_instructions::BinaryOperation;
-use frick_spec::TAPE_SIZE;
+use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,
@@ -142,9 +142,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub(super) fn load_pointer(&self) -> Result<(), AssemblyError> {
+		let ptr_type = self.context().custom_width_int_type(POINTER_SIZE as u32);
+
 		self.pointer_register.borrow_mut().replace(
 			self.builder
-				.build_load(self.pointers.pointer_ty, self.pointers.pointer, "\0")?
+				.build_load(ptr_type, self.pointers.pointer, "\0")?
 				.into_int_value(),
 		);
 
@@ -152,7 +154,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub(super) fn offset_pointer(&self, offset: i32) -> Result<(), AssemblyError> {
-		let pointer_ty = self.pointers.pointer_ty;
+		let pointer_ty = self.context().custom_width_int_type(POINTER_SIZE as u32);
 
 		let pointer_value = self
 			.pointer_register
