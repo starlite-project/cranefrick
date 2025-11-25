@@ -15,7 +15,7 @@ use inkwell::{
 	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Module},
 	targets::{TargetMachine, TargetTriple},
-	values::{BasicMetadataValueEnum, BasicValueEnum, IntValue},
+	values::{BasicMetadataValueEnum, BasicValueEnum},
 };
 
 pub use self::utils::AssemblerFunctions;
@@ -61,6 +61,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let pointers = AssemblerPointers::new(&module, &builder)?;
 
 		pointers.setup(&builder, &functions)?;
+
+		let start_block = context.append_basic_block(functions.main, "start\0");
+		builder.build_unconditional_branch(start_block)?;
+		builder.position_at_end(start_block);
 
 		let debug_metadata_version = {
 			let i32_type = context.i32_type();

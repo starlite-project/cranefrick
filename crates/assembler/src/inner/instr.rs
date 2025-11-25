@@ -1,5 +1,5 @@
 use frick_instructions::{BinaryOperation, Imm};
-use frick_spec::{POINTER_SIZE, TAPE_SIZE};
+use frick_spec::POINTER_SIZE;
 use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,
