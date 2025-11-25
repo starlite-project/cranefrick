@@ -1,3 +1,4 @@
+use frick_instructions::BinaryOperation;
 use frick_spec::TAPE_SIZE;
 use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
@@ -54,11 +55,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 		lhs: usize,
 		rhs: usize,
 		output_reg: usize,
+		op: BinaryOperation,
 	) -> Result<(), AssemblyError> {
 		let lhs_value = self.value_at::<Int<8>>(lhs)?;
 		let rhs_value = self.value_at::<Int<8>>(rhs)?;
 
-		let new_value = self.builder.build_int_add(lhs_value, rhs_value, "\0")?;
+		let new_value = match op {
+			BinaryOperation::Add => self.builder.build_int_add(lhs_value, rhs_value, "\0")?,
+			BinaryOperation::Sub => self.builder.build_int_sub(lhs_value, rhs_value, "\0")?,
+			_ => unimplemented!(),
+		};
 
 		self.set_value_at(output_reg, new_value)
 	}

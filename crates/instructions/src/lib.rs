@@ -66,10 +66,11 @@ pub enum BrainInstructionType {
 		imm: u8,
 		output_reg: Reg,
 	},
-	ChangeRegisterByRegister {
+	CommitRegisterBinaryOperation {
 		lhs_reg: Reg,
 		rhs_reg: Reg,
 		output_reg: Reg,
+		op: BinaryOperation,
 	},
 	InputIntoRegister {
 		output_reg: Reg,
@@ -108,12 +109,17 @@ impl ToInstructions for BrainOperation {
 				BrainInstructionType::LoadCellIntoRegister { output_reg: Reg(0) },
 				BrainInstructionType::StoreImmediateIntoRegister {
 					output_reg: Reg(1),
-					imm: value as u8,
+					imm: value.unsigned_abs(),
 				},
-				BrainInstructionType::ChangeRegisterByRegister {
+				BrainInstructionType::CommitRegisterBinaryOperation {
 					lhs_reg: Reg(0),
 					rhs_reg: Reg(1),
 					output_reg: Reg(2),
+					op: if value.is_negative() {
+						BinaryOperation::Sub
+					} else {
+						BinaryOperation::Add
+					},
 				},
 				BrainInstructionType::StoreRegisterIntoCell { input_reg: Reg(2) },
 			]
@@ -213,4 +219,11 @@ impl From<Reg> for usize {
 	fn from(value: Reg) -> Self {
 		value.0
 	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub enum BinaryOperation {
+	Add,
+	Sub,
 }
