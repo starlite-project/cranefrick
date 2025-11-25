@@ -47,7 +47,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.set_value_at(output_reg, value)
 	}
 
-	pub fn change_register_by_register(
+	pub fn perform_binary_register_operation(
 		&self,
 		lhs: usize,
 		rhs: usize,

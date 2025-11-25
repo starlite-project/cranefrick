@@ -66,7 +66,7 @@ pub enum BrainInstructionType {
 		imm: u8,
 		output_reg: Reg,
 	},
-	CommitRegisterBinaryOperation {
+	PerformBinaryRegisterOperation {
 		lhs_reg: Reg,
 		rhs_reg: Reg,
 		output_reg: Reg,
@@ -111,7 +111,7 @@ impl ToInstructions for BrainOperation {
 					output_reg: Reg(1),
 					imm: value.unsigned_abs(),
 				},
-				BrainInstructionType::CommitRegisterBinaryOperation {
+				BrainInstructionType::PerformBinaryRegisterOperation {
 					lhs_reg: Reg(0),
 					rhs_reg: Reg(1),
 					output_reg: Reg(2),

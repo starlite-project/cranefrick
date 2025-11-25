@@ -228,12 +228,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			} => {
 				self.store_immediate_into_register(reg, imm)?;
 			}
-			BrainInstructionType::CommitRegisterBinaryOperation {
+			BrainInstructionType::PerformBinaryRegisterOperation {
 				lhs_reg: Reg(lhs),
 				rhs_reg: Reg(rhs),
 				output_reg: Reg(output_reg),
 				op,
-			} => self.change_register_by_register(lhs, rhs, output_reg, op)?,
+			} => self.perform_binary_register_operation(lhs, rhs, output_reg, op)?,
 			BrainInstructionType::InputIntoRegister {
 				output_reg: Reg(reg),
 			} => self.input_into_register(reg)?,
@@ -292,7 +292,7 @@ fn most_regs_used(instrs: &[BrainInstruction]) -> usize {
 			| BrainInstructionType::JumpIf { input_reg: Reg(r) }
 			| BrainInstructionType::InputIntoRegister { output_reg: Reg(r) }
 			| BrainInstructionType::OutputFromRegister { input_reg: Reg(r) } => cmp::max(most_used, r),
-			BrainInstructionType::CommitRegisterBinaryOperation {
+			BrainInstructionType::PerformBinaryRegisterOperation {
 				lhs_reg: Reg(r1),
 				rhs_reg: Reg(r2),
 				output_reg: Reg(r3),
