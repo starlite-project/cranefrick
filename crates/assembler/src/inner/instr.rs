@@ -5,7 +5,7 @@ use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
 	llvm_sys::{LLVMGEPFlagInBounds, LLVMGEPFlagNUW},
-	values::{BasicMetadataValueEnum, BasicValue, PointerValue},
+	values::{BasicMetadataValueEnum, BasicValue, LLVMTailCallKind, PointerValue},
 };
 
 use super::{
@@ -78,6 +78,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_direct_call(self.functions.getchar, &[], "\0")?;
 
+		call_site_value.set_tail_call_kind(LLVMTailCallKind::LLVMTailCallKindNoTail);
+
 		let call_value = call_site_value
 			.try_as_basic_value()
 			.unwrap_basic()
@@ -97,7 +99,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let register_value = self.value_at::<Int<8>>(reg)?;
 
-		let call_value = self.builder.build_direct_call(
+		let call_site_value = self.builder.build_direct_call(
 			self.functions.putchar,
 			&[register_value.convert::<BasicMetadataValueEnum<'ctx>>()],
 			"\0",
@@ -105,8 +107,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0);
 
-		call_value.add_attribute(AttributeLoc::Param(0), zeroext_attr);
-		call_value.set_tail_call(true);
+		call_site_value.add_attribute(AttributeLoc::Param(0), zeroext_attr);
+		call_site_value.set_tail_call_kind(LLVMTailCallKind::LLVMTailCallKindTail);
 
 		Ok(())
 	}
