@@ -8,7 +8,7 @@ use std::{
 use frick_instructions::{BrainInstruction, BrainInstructionType};
 
 pub use self::redundant_loads::*;
-use super::Pass;
+use crate::instrs::inner::{Analyzer, Pass};
 
 #[derive(Debug, Default, Clone)]
 #[repr(transparent)]
@@ -28,40 +28,24 @@ impl PointerAnalysis {
 			unreachable!()
 		}
 	}
+}
 
-	fn analyze(&mut self, instrs: &[BrainInstruction]) -> bool {
+impl Analyzer for PointerAnalysis {
+	fn run(&mut self, instrs: &[BrainInstruction]) -> bool {
 		self.insert(0, PointerState::default());
 
 		for (i, instr) in instrs.iter().enumerate() {
 			match instr.instr() {
 				BrainInstructionType::LoadPointer => {
-					self.insert(
-						i,
-						PointerState {
-							dirty: false,
-							value_known: true,
-						},
-					);
+					self.insert(i, PointerState::new(false, true));
 				}
 				BrainInstructionType::OffsetPointer { .. } => {
-					self.insert(
-						i,
-						PointerState {
-							dirty: true,
-							value_known: false,
-						},
-					);
+					self.insert(i, PointerState::new(true, false));
 				}
 				BrainInstructionType::StorePointer
 				| BrainInstructionType::StartLoop
 				| BrainInstructionType::EndLoop => {
-					self.insert(
-						i,
-						PointerState {
-							dirty: false,
-							value_known: false,
-						},
-					);
+					self.insert(i, PointerState::default());
 				}
 				_ => {}
 			}
@@ -94,8 +78,28 @@ impl DerefMut for PointerAnalysis {
 	}
 }
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct PointerState {
 	dirty: bool,
 	value_known: bool,
+}
+
+impl PointerState {
+	const fn new(dirty: bool, value_known: bool) -> Self {
+		Self { dirty, value_known }
+	}
+
+	const fn is_dirty(self) -> bool {
+		self.dirty
+	}
+
+	const fn is_value_known(self) -> bool {
+		self.value_known
+	}
+}
+
+impl Default for PointerState {
+	fn default() -> Self {
+		Self::new(false, false)
+	}
 }

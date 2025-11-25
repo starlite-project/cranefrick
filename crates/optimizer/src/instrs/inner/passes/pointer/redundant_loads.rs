@@ -1,6 +1,6 @@
 use frick_instructions::{BrainInstruction, BrainInstructionType};
 
-use super::{Pass, PointerAnalysis};
+use super::{Analyzer as _, Pass, PointerAnalysis};
 
 #[derive(Debug, Default, Clone)]
 #[repr(transparent)]
@@ -10,31 +10,37 @@ pub struct PointerRedundantLoadsPass {
 
 impl Pass for PointerRedundantLoadsPass {
 	fn run(&mut self, instrs: &mut Vec<BrainInstruction>) -> bool {
-		if !self.analysis.analyze(instrs) {
+		if !self.analysis.run(instrs) {
 			tracing::debug!("no pointer analysis available");
 			return false;
 		}
 
-		let mut indices_to_remove = Vec::<usize>::with_capacity(self.analysis.len());
+		let indices_to_remove = instrs
+			.iter()
+			.copied()
+			.enumerate()
+			.skip(1)
+			.filter_map(|(i, instr)| {
+				if !matches!(instr.instr(), BrainInstructionType::LoadPointer) {
+					return None;
+				}
 
-		for (i, instr) in instrs.iter().copied().enumerate().skip(1) {
-			if !matches!(instr.instr(), BrainInstructionType::LoadPointer) {
-				continue;
-			}
+				let prev_state = self.analysis.pointer_state_at(i - 1);
 
-			let prev_state = self.analysis.pointer_state_at(i - 1);
+				if prev_state.is_value_known() {
+					Some(i)
+				} else {
+					None
+				}
+			})
+			.collect::<Vec<_>>();
 
-			if !prev_state.value_known {
-				continue;
-			}
-
-			indices_to_remove.push(i);
-		}
-
+		let mut removed_any = false;
 		for i in indices_to_remove.iter().copied().rev() {
 			instrs.remove(i);
+			removed_any = true;
 		}
 
-		!indices_to_remove.is_empty()
+		removed_any
 	}
 }

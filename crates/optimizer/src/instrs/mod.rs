@@ -2,9 +2,10 @@ mod inner;
 
 use frick_instructions::BrainInstruction;
 use frick_utils::IntoIteratorExt as _;
-use inner::passes::{self, Pass};
 use serde::{Deserialize, Serialize};
 use tracing::info;
+
+use self::inner::{Pass, passes};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
