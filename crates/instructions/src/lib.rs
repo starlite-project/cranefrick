@@ -63,8 +63,8 @@ pub enum BrainInstructionType {
 		input_reg: Reg,
 	},
 	StoreImmediateIntoRegister {
-		output_reg: Reg,
 		imm: u8,
+		output_reg: Reg,
 	},
 	ChangeRegisterByRegister {
 		lhs_reg: Reg,
