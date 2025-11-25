@@ -5,32 +5,40 @@ use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
 	llvm_sys::{LLVMGEPFlagInBounds, LLVMGEPFlagNUW},
-	values::{BasicMetadataValueEnum, BasicValue, LLVMTailCallKind, PointerValue},
+	values::{BasicMetadataValueEnum, BasicValue, LLVMTailCallKind},
 };
 
 use super::{
 	AssemblyError, InnerAssembler, LoopBlocks,
-	utils::{Bool, Castable, Int},
+	utils::{Bool, Castable, Int, Pointer},
 };
 use crate::{BuilderExt as _, ContextExt, ContextGetter as _};
 
 impl<'ctx> InnerAssembler<'ctx> {
-	pub(super) fn load_cell_into_register(&self, reg: usize) -> Result<(), AssemblyError> {
+	pub(super) fn load_cell_into_register(
+		&self,
+		pointer_reg: usize,
+		output_reg: usize,
+	) -> Result<(), AssemblyError> {
 		let cell_type = self.context().i8_type();
 
-		let gep = self.index_tape()?;
+		let ptr_value = self.value_at::<Pointer>(pointer_reg)?;
 
-		let cell_value = self.builder.build_load(cell_type, gep, "\0")?;
+		let cell_value = self.builder.build_load(cell_type, ptr_value, "\0")?;
 
-		self.set_value_at(reg, cell_value)
+		self.set_value_at(output_reg, cell_value)
 	}
 
-	pub(super) fn store_register_into_cell(&self, reg: usize) -> Result<(), AssemblyError> {
-		let gep = self.index_tape()?;
+	pub(super) fn store_register_into_cell(
+		&self,
+		value_reg: usize,
+		pointer_reg: usize,
+	) -> Result<(), AssemblyError> {
+		let ptr_value = self.value_at::<Pointer>(pointer_reg)?;
 
-		let cell_value = self.value_at::<Int<8>>(reg)?;
+		let cell_value = self.value_at::<Int<8>>(value_reg)?;
 
-		self.builder.build_store(gep, cell_value)?;
+		self.builder.build_store(ptr_value, cell_value)?;
 
 		Ok(())
 	}
@@ -47,7 +55,27 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.set_value_at(output_reg, value)
 	}
 
-	pub fn perform_binary_register_operation(
+	pub(super) fn calculate_tape_offset(&self, output_reg: usize) -> Result<(), AssemblyError> {
+		let cell_type = self.context().i8_type();
+		let pointer_value = self
+			.pointer_register
+			.borrow()
+			.ok_or(AssemblyError::PointerNotLoaded)?;
+
+		let offset_pointer = unsafe {
+			self.builder.build_gep_with_no_wrap_flags(
+				cell_type,
+				self.pointers.tape,
+				&[pointer_value],
+				"\0",
+				LLVMGEPFlagInBounds | LLVMGEPFlagNUW,
+			)?
+		};
+
+		self.set_value_at(output_reg, offset_pointer)
+	}
+
+	pub(super) fn perform_binary_register_operation(
 		&self,
 		lhs: usize,
 		rhs: usize,
@@ -229,25 +257,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder.build_unconditional_branch(loop_info.header)?;
 
 		Ok(())
-	}
-
-	fn index_tape(&self) -> Result<PointerValue<'ctx>, AssemblyError> {
-		let cell_type = self.context().i8_type();
-
-		let pointer_value = self
-			.pointer_register
-			.borrow()
-			.ok_or(AssemblyError::PointerNotLoaded)?;
-
-		Ok(unsafe {
-			self.builder.build_gep_with_no_wrap_flags(
-				cell_type,
-				self.pointers.tape,
-				&[pointer_value],
-				"\0",
-				LLVMGEPFlagInBounds | LLVMGEPFlagNUW,
-			)?
-		})
 	}
 
 	fn value_at<T: Castable<'ctx>>(&self, reg: usize) -> Result<T::Value, AssemblyError> {

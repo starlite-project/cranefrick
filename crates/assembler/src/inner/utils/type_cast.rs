@@ -1,10 +1,10 @@
 use inkwell::{
 	context::AsContextRef,
-	types::{BasicType, IntType},
-	values::{BasicValue, IntValue},
+	types::{BasicType, IntType, PointerType},
+	values::{BasicValue, IntValue, PointerValue},
 };
 
-use crate::ContextGetter as _;
+use crate::{ContextExt as _, ContextGetter as _};
 
 #[repr(transparent)]
 pub struct Bool;
@@ -38,6 +38,24 @@ impl<'ctx, const N: u32> Castable<'ctx> for Int<N> {
 
 	fn assert_type_matches(v: impl BasicValue<'ctx>, context: impl AsContextRef<'ctx>) {
 		let matching_ty = context.context().custom_width_int_type(N);
+
+		assert_eq!(v.as_basic_value_enum().get_type(), matching_ty.into());
+	}
+}
+
+#[repr(transparent)]
+pub struct Pointer;
+
+impl<'ctx> Castable<'ctx> for Pointer {
+	type Type = PointerType<'ctx>;
+	type Value = PointerValue<'ctx>;
+
+	fn cast(v: impl BasicValue<'ctx>) -> Self::Value {
+		v.as_any_value_enum().into_pointer_value()
+	}
+
+	fn assert_type_matches(v: impl BasicValue<'ctx>, context: impl AsContextRef<'ctx>) {
+		let matching_ty = context.context().default_ptr_type();
 
 		assert_eq!(v.as_basic_value_enum().get_type(), matching_ty.into());
 	}

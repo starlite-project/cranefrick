@@ -2,7 +2,7 @@ mod instr;
 mod metadata;
 mod utils;
 
-use std::{cell::RefCell, cmp, fs, path::Path};
+use std::{cell::RefCell, fs, path::Path};
 
 use frick_instructions::{BrainInstruction, BrainInstructionType, Reg};
 use frick_spec::TAPE_SIZE;
@@ -136,9 +136,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine), AssemblyError> {
 		tracing::debug!("writing instructions");
 
-		self.loop_blocks
-			.replace(Vec::with_capacity(most_regs_used(instrs)));
-
 		let instrs_span = tracing::info_span!("instrs").entered();
 		self.instrs(instrs)?;
 		drop(instrs_span);
@@ -213,14 +210,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn compile_instruction(&self, instr: BrainInstructionType) -> Result<bool, AssemblyError> {
 		match instr {
 			BrainInstructionType::LoadCellIntoRegister {
-				output_reg: Reg(reg),
+				input_reg: Reg(input_reg),
+				output_reg: Reg(output_reg),
 			} => {
-				self.load_cell_into_register(reg)?;
+				self.load_cell_into_register(input_reg, output_reg)?;
 			}
 			BrainInstructionType::StoreRegisterIntoCell {
-				input_reg: Reg(reg),
+				value_reg: Reg(value_reg),
+				pointer_reg: Reg(pointer_reg),
 			} => {
-				self.store_register_into_cell(reg)?;
+				self.store_register_into_cell(value_reg, pointer_reg)?;
 			}
 			BrainInstructionType::StoreImmediateIntoRegister {
 				output_reg: Reg(reg),
@@ -228,6 +227,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			} => {
 				self.store_immediate_into_register(reg, imm)?;
 			}
+			BrainInstructionType::CalculateTapeOffset {
+				output_reg: Reg(output_reg),
+			} => self.calculate_tape_offset(output_reg)?,
 			BrainInstructionType::PerformBinaryRegisterOperation {
 				lhs_reg: Reg(lhs),
 				rhs_reg: Reg(rhs),
@@ -276,36 +278,4 @@ struct LoopBlocks<'ctx> {
 	header: BasicBlock<'ctx>,
 	body: BasicBlock<'ctx>,
 	exit: BasicBlock<'ctx>,
-}
-
-#[tracing::instrument(level = tracing::Level::DEBUG, skip_all, ret)]
-fn most_regs_used(instrs: &[BrainInstruction]) -> usize {
-	let mut most_used = 0;
-
-	for i in instrs.iter().map(|i| i.instr()) {
-		most_used = match i {
-			BrainInstructionType::LoadCellIntoRegister { output_reg: Reg(r) }
-			| BrainInstructionType::StoreRegisterIntoCell { input_reg: Reg(r) }
-			| BrainInstructionType::StoreImmediateIntoRegister {
-				output_reg: Reg(r), ..
-			}
-			| BrainInstructionType::JumpIf { input_reg: Reg(r) }
-			| BrainInstructionType::InputIntoRegister { output_reg: Reg(r) }
-			| BrainInstructionType::OutputFromRegister { input_reg: Reg(r) } => cmp::max(most_used, r),
-			BrainInstructionType::PerformBinaryRegisterOperation {
-				lhs_reg: Reg(r1),
-				rhs_reg: Reg(r2),
-				output_reg: Reg(r3),
-				..
-			}
-			| BrainInstructionType::CompareRegisterToRegister {
-				lhs_reg: Reg(r1),
-				rhs_reg: Reg(r2),
-				output_reg: Reg(r3),
-			} => cmp::max(r1, r2).max(r3).max(most_used),
-			_ => most_used,
-		}
-	}
-
-	most_used
 }
