@@ -22,10 +22,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let cell_value = self.builder.build_load(cell_type, gep, "\0")?;
 
-		if let Some(instr) = cell_value.as_instruction_value() {
-			self.add_noalias_metadata_to_mem(instr)?;
-		}
-
 		self.set_value_at(reg, cell_value)
 	}
 
@@ -34,9 +30,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let cell_value = self.value_at::<Int<8>>(reg)?;
 
-		let instr = self.builder.build_store(gep, cell_value)?;
+		self.builder.build_store(gep, cell_value)?;
 
-		self.add_noalias_metadata_to_mem(instr)
+		Ok(())
 	}
 
 	pub(super) fn store_immediate_into_register(

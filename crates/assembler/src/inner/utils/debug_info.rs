@@ -94,10 +94,6 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 			.create_basic_type("u8", mem::size_of::<u8>() as u64 * 8, 7, i32::ZERO)?
 			.as_type();
 
-		let char_type = self
-			.create_basic_type("char", mem::size_of::<u32>() as u64 * 8, 8, i32::ZERO)?
-			.as_type();
-
 		let putchar_subroutine_type =
 			self.create_subroutine_type(self.compile_unit.get_file(), None, &[u8_type], i32::ZERO);
 
@@ -119,7 +115,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 		let getchar_subroutine_type = self.create_subroutine_type(
 			self.compile_unit.get_file(),
-			Some(char_type),
+			Some(u8_type),
 			&[],
 			i32::ZERO,
 		);

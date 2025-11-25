@@ -28,10 +28,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	) -> Result<Self, AssemblyError> {
 		let void_type = context.void_type();
 		let i8_type = context.i8_type();
-		let i32_type = context.i32_type();
 		let ptr_type = context.default_ptr_type();
 
-		let getchar_ty = i32_type.fn_type(&[], false);
+		let getchar_ty = i8_type.fn_type(&[], false);
 		let getchar = module.add_function("rust_getchar", getchar_ty, Some(Linkage::External));
 
 		let putchar_ty =
