@@ -7,6 +7,8 @@ use alloc::{vec, vec::Vec};
 use core::ops::{Deref, DerefMut, Range};
 
 use frick_operations::{BrainOperation, BrainOperationType};
+use frick_spec::POINTER_SIZE;
+use frick_utils::Convert as _;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -65,7 +67,7 @@ pub enum BrainInstructionType {
 		pointer_reg: Reg,
 	},
 	StoreImmediateIntoRegister {
-		imm: u8,
+		imm: Imm,
 		output_reg: Reg,
 	},
 	LoadTapePointerIntoRegister {
@@ -127,7 +129,7 @@ impl ToInstructions for BrainOperation {
 					output_reg: Reg(2),
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: value.unsigned_abs(),
+					imm: Imm::cell(value.unsigned_abs().convert::<u64>()),
 					output_reg: Reg(3),
 				},
 				BrainInstructionType::PerformBinaryRegisterOperation {
@@ -156,7 +158,7 @@ impl ToInstructions for BrainOperation {
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
 					output_reg: Reg(2),
-					imm: value,
+					imm: Imm::cell(value.convert::<u64>()),
 				},
 				BrainInstructionType::StoreRegisterIntoCell {
 					value_reg: Reg(2),
@@ -218,7 +220,7 @@ impl ToInstructions for BrainOperation {
 					},
 					BrainInstructionType::StoreImmediateIntoRegister {
 						output_reg: Reg(3),
-						imm: 0,
+						imm: Imm::CELL_ZERO,
 					},
 					BrainInstructionType::CompareRegisterToRegister {
 						lhs_reg: Reg(2),
@@ -268,6 +270,41 @@ impl From<usize> for Reg {
 impl From<Reg> for usize {
 	fn from(value: Reg) -> Self {
 		value.0
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Imm {
+	value: u64,
+	size: u32,
+}
+
+impl Imm {
+	pub const CELL_ZERO: Self = Self::cell(0);
+
+	#[must_use]
+	pub const fn new(value: u64, size: u32) -> Self {
+		Self { value, size }
+	}
+
+	#[must_use]
+	pub const fn pointer(value: u64) -> Self {
+		Self::new(value, POINTER_SIZE as u32)
+	}
+
+	#[must_use]
+	pub const fn cell(value: u64) -> Self {
+		Self::new(value, 8)
+	}
+
+	#[must_use]
+	pub const fn value(self) -> u64 {
+		self.value
+	}
+
+	#[must_use]
+	pub const fn size(self) -> u32 {
+		self.size
 	}
 }
 

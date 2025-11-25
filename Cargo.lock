@@ -485,6 +485,8 @@ name = "frick_instructions"
 version = "0.1.0"
 dependencies = [
  "frick_operations",
+ "frick_spec",
+ "frick_utils",
  "serde",
 ]
 

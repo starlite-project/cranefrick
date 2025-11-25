@@ -1,4 +1,4 @@
-use frick_instructions::BinaryOperation;
+use frick_instructions::{BinaryOperation, Imm};
 use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
@@ -46,11 +46,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn store_immediate_into_register(
 		&self,
 		output_reg: usize,
-		imm: u8,
+		imm: Imm,
 	) -> Result<(), AssemblyError> {
-		let cell_type = self.context().i8_type();
+		let int_type = self.context().custom_width_int_type(imm.size());
 
-		let value = cell_type.const_int(imm.convert::<u64>(), false);
+		let value = int_type.const_int(imm.value(), false);
 
 		self.set_value_at(output_reg, value)
 	}
