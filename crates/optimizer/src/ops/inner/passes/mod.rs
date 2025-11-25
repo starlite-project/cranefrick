@@ -82,3 +82,13 @@ pub fn fix_beginning_instructions(ops: &mut Vec<BrainOperation>) -> bool {
 		Some(..) | None => false,
 	}
 }
+
+pub fn remove_changes_before_input(ops: [&BrainOperation; 2]) -> Option<Change> {
+	match ops.map(BrainOperation::op) {
+		[
+			&BrainOperationType::ChangeCell(..),
+			&BrainOperationType::InputIntoCell,
+		] => Some(Change::remove_offset(0)),
+		_ => None,
+	}
+}
