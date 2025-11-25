@@ -4,6 +4,7 @@ use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
+	llvm_sys::{LLVMGEPFlagInBounds, LLVMGEPFlagNUW},
 	values::{BasicMetadataValueEnum, BasicValue, PointerValue},
 };
 
@@ -11,7 +12,7 @@ use super::{
 	AssemblyError, InnerAssembler, LoopBlocks,
 	utils::{Bool, Castable, Int},
 };
-use crate::{ContextExt, ContextGetter as _};
+use crate::{BuilderExt as _, ContextExt, ContextGetter as _};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn load_cell_into_register(&self, reg: usize) -> Result<(), AssemblyError> {
@@ -237,11 +238,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.ok_or(AssemblyError::PointerNotLoaded)?;
 
 		Ok(unsafe {
-			self.builder.build_in_bounds_gep(
+			self.builder.build_gep_with_no_wrap_flags(
 				cell_type,
 				self.pointers.tape,
 				&[pointer_value],
 				"\0",
+				LLVMGEPFlagInBounds | LLVMGEPFlagNUW,
 			)?
 		})
 	}

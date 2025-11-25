@@ -15,13 +15,16 @@ use inkwell::{
 		DIBasicType, DICompileUnit, DICompositeType, DIDerivedType, DIExpression, DIFile,
 		DILexicalBlock, DILocalVariable, DILocation, DINamespace, DIScope, DIType,
 	},
-	llvm_sys::core::{
-		LLVMBuildGEP2, LLVMCreateConstantRangeAttribute, LLVMIsNewDbgInfoFormat,
-		LLVMSetIsNewDbgInfoFormat,
+	llvm_sys::{
+		LLVMGEPNoWrapFlags,
+		core::{
+			LLVMBuildGEPWithNoWrapFlags, LLVMCreateConstantRangeAttribute, LLVMIsNewDbgInfoFormat,
+			LLVMSetIsNewDbgInfoFormat,
+		},
 	},
 	module::Module,
 	types::{BasicType, PointerType},
-	values::{AsValueRef, MetadataValue, PointerValue, VectorValue},
+	values::{AsValueRef, IntValue, MetadataValue, PointerValue},
 };
 
 pub trait ContextGetter<'ctx> {
@@ -160,39 +163,45 @@ impl<'ctx> ModuleExt<'ctx> for Module<'ctx> {
 }
 
 pub trait BuilderExt<'ctx> {
-	unsafe fn build_vec_gep<T: BasicType<'ctx>>(
+	unsafe fn build_gep_with_no_wrap_flags<T: BasicType<'ctx>>(
 		&self,
 		pointee_ty: T,
 		ptr: PointerValue<'ctx>,
-		vec_of_indices: VectorValue<'ctx>,
+		ordered_indexes: &[IntValue<'ctx>],
 		name: &str,
-	) -> Result<VectorValue<'ctx>, BuilderError>;
+		flags: LLVMGEPNoWrapFlags,
+	) -> Result<PointerValue<'ctx>, BuilderError>;
 }
 
 impl<'ctx> BuilderExt<'ctx> for Builder<'ctx> {
-	unsafe fn build_vec_gep<T: BasicType<'ctx>>(
+	unsafe fn build_gep_with_no_wrap_flags<T: BasicType<'ctx>>(
 		&self,
 		pointee_ty: T,
 		ptr: PointerValue<'ctx>,
-		vec_of_indices: VectorValue<'ctx>,
+		ordered_indexes: &[IntValue<'ctx>],
 		name: &str,
-	) -> Result<VectorValue<'ctx>, BuilderError> {
+		flags: LLVMGEPNoWrapFlags,
+	) -> Result<PointerValue<'ctx>, BuilderError> {
 		let c_string = to_c_string(name);
 
-		let mut index_values = [vec_of_indices.as_value_ref()];
+		let mut indexed_values = ordered_indexes
+			.iter()
+			.map(AsValueRef::as_value_ref)
+			.collect::<Vec<_>>();
 
 		let value = unsafe {
-			LLVMBuildGEP2(
+			LLVMBuildGEPWithNoWrapFlags(
 				self.as_mut_ptr(),
 				pointee_ty.as_type_ref(),
 				ptr.as_value_ref(),
-				index_values.as_mut_ptr(),
-				index_values.len() as u32,
+				indexed_values.as_mut_ptr(),
+				indexed_values.len() as u32,
 				c_string.as_ptr(),
+				flags,
 			)
 		};
 
-		Ok(unsafe { VectorValue::new(value) })
+		Ok(unsafe { PointerValue::new(value) })
 	}
 }
 
