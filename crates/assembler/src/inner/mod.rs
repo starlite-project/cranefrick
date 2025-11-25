@@ -208,7 +208,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn compile_instruction(&self, instr: BrainInstructionType) -> Result<bool, AssemblyError> {
 		match instr {
 			BrainInstructionType::LoadCellIntoRegister {
-				input_reg: Reg(input_reg),
+				pointer_reg: Reg(input_reg),
 				output_reg: Reg(output_reg),
 			} => {
 				self.load_cell_into_register(input_reg, output_reg)?;
@@ -232,7 +232,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				input_reg: Reg(input_reg),
 			} => self.store_register_into_tape_pointer(input_reg)?,
 			BrainInstructionType::CalculateTapeOffset {
-				input_reg: Reg(input_reg),
+				tape_pointer_reg: Reg(input_reg),
 				output_reg: Reg(output_reg),
 			} => self.calculate_tape_offset(input_reg, output_reg)?,
 			BrainInstructionType::PerformBinaryRegisterOperation {

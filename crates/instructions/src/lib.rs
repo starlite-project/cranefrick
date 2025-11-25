@@ -59,7 +59,7 @@ impl DerefMut for BrainInstruction {
 #[non_exhaustive]
 pub enum BrainInstructionType {
 	LoadCellIntoRegister {
-		input_reg: Reg,
+		pointer_reg: Reg,
 		output_reg: Reg,
 	},
 	StoreRegisterIntoCell {
@@ -77,7 +77,7 @@ pub enum BrainInstructionType {
 		input_reg: Reg,
 	},
 	CalculateTapeOffset {
-		input_reg: Reg,
+		tape_pointer_reg: Reg,
 		output_reg: Reg,
 	},
 	PerformBinaryRegisterOperation {
@@ -116,11 +116,11 @@ impl ToInstructions for BrainOperation {
 			&BrainOperationType::ChangeCell(value) => [
 				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
 				BrainInstructionType::CalculateTapeOffset {
-					input_reg: Reg(0),
+					tape_pointer_reg: Reg(0),
 					output_reg: Reg(1),
 				},
 				BrainInstructionType::LoadCellIntoRegister {
-					input_reg: Reg(1),
+					pointer_reg: Reg(1),
 					output_reg: Reg(2),
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
@@ -148,7 +148,7 @@ impl ToInstructions for BrainOperation {
 			&BrainOperationType::SetCell(value) => [
 				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
 				BrainInstructionType::CalculateTapeOffset {
-					input_reg: Reg(0),
+					tape_pointer_reg: Reg(0),
 					output_reg: Reg(1),
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
@@ -198,7 +198,7 @@ impl ToInstructions for BrainOperation {
 				BrainInstructionType::InputIntoRegister { output_reg: Reg(0) },
 				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(1) },
 				BrainInstructionType::CalculateTapeOffset {
-					input_reg: Reg(1),
+					tape_pointer_reg: Reg(1),
 					output_reg: Reg(2),
 				},
 				BrainInstructionType::StoreRegisterIntoCell {
@@ -212,11 +212,11 @@ impl ToInstructions for BrainOperation {
 			&BrainOperationType::OutputCurrentCell => [
 				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
 				BrainInstructionType::CalculateTapeOffset {
-					input_reg: Reg(0),
+					tape_pointer_reg: Reg(0),
 					output_reg: Reg(1),
 				},
 				BrainInstructionType::LoadCellIntoRegister {
-					input_reg: Reg(1),
+					pointer_reg: Reg(1),
 					output_reg: Reg(2),
 				},
 				BrainInstructionType::OutputFromRegister { input_reg: Reg(2) },
@@ -229,11 +229,11 @@ impl ToInstructions for BrainOperation {
 					BrainInstructionType::StartLoop,
 					BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
 					BrainInstructionType::CalculateTapeOffset {
-						input_reg: Reg(0),
+						tape_pointer_reg: Reg(0),
 						output_reg: Reg(1),
 					},
 					BrainInstructionType::LoadCellIntoRegister {
-						input_reg: Reg(1),
+						pointer_reg: Reg(1),
 						output_reg: Reg(2),
 					},
 					BrainInstructionType::StoreImmediateIntoRegister {
