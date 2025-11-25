@@ -227,9 +227,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 			} => {
 				self.store_immediate_into_register(reg, imm)?;
 			}
-			BrainInstructionType::CalculateTapeOffset {
+			BrainInstructionType::LoadTapePointerIntoRegister {
 				output_reg: Reg(output_reg),
-			} => self.calculate_tape_offset(output_reg)?,
+			} => self.load_tape_pointer_into_register(output_reg)?,
+			BrainInstructionType::CalculateTapeOffset {
+				input_reg: Reg(input_reg),
+				output_reg: Reg(output_reg),
+			} => self.calculate_tape_offset(input_reg, output_reg)?,
 			BrainInstructionType::PerformBinaryRegisterOperation {
 				lhs_reg: Reg(lhs),
 				rhs_reg: Reg(rhs),

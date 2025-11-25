@@ -55,12 +55,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.set_value_at(output_reg, value)
 	}
 
-	pub(super) fn calculate_tape_offset(&self, output_reg: usize) -> Result<(), AssemblyError> {
+	pub(super) fn load_tape_pointer_into_register(
+		&self,
+		output_reg: usize,
+	) -> Result<(), AssemblyError> {
+		let pointer_type = self.context().custom_width_int_type(POINTER_SIZE as u32);
+
+		let value = self
+			.builder
+			.build_load(pointer_type, self.pointers.pointer, "\0")?;
+
+		self.set_value_at(output_reg, value)
+	}
+
+	pub(super) fn calculate_tape_offset(
+		&self,
+		input_reg: usize,
+		output_reg: usize,
+	) -> Result<(), AssemblyError> {
 		let cell_type = self.context().i8_type();
-		let pointer_value = self
-			.pointer_register
-			.borrow()
-			.ok_or(AssemblyError::PointerNotLoaded)?;
+		let pointer_value = self.value_at::<Int>(input_reg)?;
 
 		let offset_pointer = unsafe {
 			self.builder.build_gep_with_no_wrap_flags(
