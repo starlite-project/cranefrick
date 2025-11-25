@@ -9,10 +9,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		instr: InstructionValue<'ctx>,
 	) -> Result<(), AssemblyError> {
-		assert!(matches!(
+		if !matches!(
 			instr.get_opcode(),
 			InstructionOpcode::Load | InstructionOpcode::Store
-		));
+		) {
+			return Ok(());
+		}
 
 		let context = self.context();
 
