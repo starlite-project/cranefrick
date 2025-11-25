@@ -7,7 +7,7 @@ use alloc::{vec, vec::Vec};
 use core::ops::{Deref, DerefMut, Range};
 
 use frick_operations::{BrainOperation, BrainOperationType};
-use frick_spec::POINTER_SIZE;
+use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_utils::Convert as _;
 use serde::{Deserialize, Serialize};
 
@@ -92,11 +92,6 @@ pub enum BrainInstructionType {
 	OutputFromRegister {
 		input_reg: Reg,
 	},
-	LoadPointer,
-	OffsetPointer {
-		offset: i32,
-	},
-	StorePointer,
 	StartLoop,
 	EndLoop,
 	CompareRegisterToRegister {
@@ -169,9 +164,32 @@ impl ToInstructions for BrainOperation {
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
 			&BrainOperationType::MovePointer(offset) => [
-				BrainInstructionType::LoadPointer,
-				BrainInstructionType::OffsetPointer { offset },
-				BrainInstructionType::StorePointer,
+				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
+				BrainInstructionType::StoreImmediateIntoRegister {
+					imm: Imm::pointer(offset.unsigned_abs().convert::<u64>()),
+					output_reg: Reg(1),
+				},
+				BrainInstructionType::PerformBinaryRegisterOperation {
+					lhs_reg: Reg(0),
+					rhs_reg: Reg(1),
+					output_reg: Reg(2),
+					op: if offset.is_positive() {
+						BinaryOperation::Add
+					} else {
+						BinaryOperation::Sub
+					},
+				},
+				BrainInstructionType::StoreImmediateIntoRegister {
+					imm: Imm::pointer(TAPE_SIZE as u64 - 1),
+					output_reg: Reg(3),
+				},
+				BrainInstructionType::PerformBinaryRegisterOperation {
+					lhs_reg: Reg(2),
+					rhs_reg: Reg(3),
+					output_reg: Reg(4),
+					op: BinaryOperation::BitwiseAnd,
+				},
+				BrainInstructionType::StoreRegisterIntoTapePointer { input_reg: Reg(4) },
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))

@@ -68,6 +68,17 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.set_value_at(output_reg, value)
 	}
 
+	pub(super) fn store_register_into_tape_pointer(
+		&self,
+		input_reg: usize,
+	) -> Result<(), AssemblyError> {
+		let ptr_value = self.value_at::<Int>(input_reg)?;
+
+		self.builder.build_store(self.pointers.pointer, ptr_value)?;
+
+		Ok(())
+	}
+
 	pub(super) fn calculate_tape_offset(
 		&self,
 		input_reg: usize,
@@ -102,6 +113,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let new_value = match op {
 			BinaryOperation::Add => self.builder.build_int_add(lhs_value, rhs_value, "\0")?,
 			BinaryOperation::Sub => self.builder.build_int_sub(lhs_value, rhs_value, "\0")?,
+			BinaryOperation::BitwiseAnd => self.builder.build_and(lhs_value, rhs_value, "\0")?,
 			_ => unimplemented!(),
 		};
 
@@ -151,58 +163,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		call_site_value.add_attribute(AttributeLoc::Param(0), zeroext_attr);
 		call_site_value.set_tail_call_kind(LLVMTailCallKind::LLVMTailCallKindTail);
-
-		Ok(())
-	}
-
-	pub(super) fn load_pointer(&self) -> Result<(), AssemblyError> {
-		let ptr_type = self.context().custom_width_int_type(POINTER_SIZE as u32);
-
-		self.pointer_register.borrow_mut().replace(
-			self.builder
-				.build_load(ptr_type, self.pointers.pointer, "\0")?
-				.into_int_value(),
-		);
-
-		Ok(())
-	}
-
-	pub(super) fn offset_pointer(&self, offset: i32) -> Result<(), AssemblyError> {
-		let pointer_ty = self.context().custom_width_int_type(POINTER_SIZE as u32);
-
-		let pointer_value = self
-			.pointer_register
-			.borrow()
-			.ok_or(AssemblyError::PointerNotLoaded)?;
-
-		let offset_value = pointer_ty.const_int(offset as u64, false);
-
-		let tape_size = pointer_ty.const_int(TAPE_SIZE as u64, false);
-
-		self.pointer_register.borrow_mut().replace({
-			let added_pointer_value =
-				self.builder
-					.build_int_add(pointer_value, offset_value, "\0")?;
-
-			self.builder.build_and(
-				added_pointer_value,
-				tape_size.const_sub(pointer_ty.const_int(1, false)),
-				"\0",
-			)?
-		});
-
-		Ok(())
-	}
-
-	pub(super) fn store_pointer(&self) -> Result<(), AssemblyError> {
-		let pointer_value = self
-			.pointer_register
-			.borrow_mut()
-			.take()
-			.ok_or(AssemblyError::PointerNotLoaded)?;
-
-		self.builder
-			.build_store(self.pointers.pointer, pointer_value)?;
 
 		Ok(())
 	}

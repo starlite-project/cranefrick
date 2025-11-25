@@ -32,7 +32,6 @@ pub struct InnerAssembler<'ctx> {
 	target_machine: TargetMachine,
 	debug_builder: AssemblerDebugBuilder<'ctx>,
 	registers: RefCell<Vec<BasicValueEnum<'ctx>>>,
-	pointer_register: RefCell<Option<IntValue<'ctx>>>,
 	loop_blocks: RefCell<Vec<LoopBlocks<'ctx>>>,
 }
 
@@ -125,7 +124,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			target_machine,
 			debug_builder,
 			registers: RefCell::default(),
-			pointer_register: RefCell::default(),
 			loop_blocks: RefCell::default(),
 		})
 	}
@@ -230,6 +228,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			BrainInstructionType::LoadTapePointerIntoRegister {
 				output_reg: Reg(output_reg),
 			} => self.load_tape_pointer_into_register(output_reg)?,
+			BrainInstructionType::StoreRegisterIntoTapePointer {
+				input_reg: Reg(input_reg),
+			} => self.store_register_into_tape_pointer(input_reg)?,
 			BrainInstructionType::CalculateTapeOffset {
 				input_reg: Reg(input_reg),
 				output_reg: Reg(output_reg),
@@ -246,9 +247,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 			BrainInstructionType::OutputFromRegister {
 				input_reg: Reg(reg),
 			} => self.output_from_register(reg)?,
-			BrainInstructionType::LoadPointer => self.load_pointer()?,
-			BrainInstructionType::OffsetPointer { offset } => self.offset_pointer(offset)?,
-			BrainInstructionType::StorePointer => self.store_pointer()?,
 			BrainInstructionType::StartLoop => self.start_loop()?,
 			BrainInstructionType::EndLoop => self.end_loop()?,
 			BrainInstructionType::CompareRegisterToRegister {
