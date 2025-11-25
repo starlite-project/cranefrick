@@ -1,10 +1,7 @@
 use inkwell::{
-	context::AsContextRef,
 	types::{BasicType, IntType, PointerType},
 	values::{BasicValue, IntValue, PointerValue},
 };
-
-use crate::{ContextExt as _, ContextGetter as _};
 
 #[repr(transparent)]
 pub struct Bool;
@@ -18,17 +15,15 @@ impl<'ctx> Castable<'ctx> for Bool {
 		v.as_basic_value_enum().into_int_value()
 	}
 
-	fn assert_type_matches(v: impl BasicValue<'ctx>, context: impl AsContextRef<'ctx>) {
-		let bool_type = context.context().bool_type();
-
-		assert_eq!(v.as_basic_value_enum().get_type(), bool_type.into());
+	fn assert_type_matches(v: impl BasicValue<'ctx>) {
+		assert!(v.as_basic_value_enum().is_int_value());
 	}
 }
 
 #[repr(transparent)]
-pub struct Int<const N: u32>;
+pub struct Int;
 
-impl<'ctx, const N: u32> Castable<'ctx> for Int<N> {
+impl<'ctx> Castable<'ctx> for Int {
 	type Type = IntType<'ctx>;
 	type Value = IntValue<'ctx>;
 
@@ -36,10 +31,8 @@ impl<'ctx, const N: u32> Castable<'ctx> for Int<N> {
 		v.as_basic_value_enum().into_int_value()
 	}
 
-	fn assert_type_matches(v: impl BasicValue<'ctx>, context: impl AsContextRef<'ctx>) {
-		let matching_ty = context.context().custom_width_int_type(N);
-
-		assert_eq!(v.as_basic_value_enum().get_type(), matching_ty.into());
+	fn assert_type_matches(v: impl BasicValue<'ctx>) {
+		assert!(v.as_basic_value_enum().is_int_value());
 	}
 }
 
@@ -54,10 +47,8 @@ impl<'ctx> Castable<'ctx> for Pointer {
 		v.as_any_value_enum().into_pointer_value()
 	}
 
-	fn assert_type_matches(v: impl BasicValue<'ctx>, context: impl AsContextRef<'ctx>) {
-		let matching_ty = context.context().default_ptr_type();
-
-		assert_eq!(v.as_basic_value_enum().get_type(), matching_ty.into());
+	fn assert_type_matches(v: impl BasicValue<'ctx>) {
+		assert!(v.as_basic_value_enum().is_pointer_value());
 	}
 }
 
@@ -68,5 +59,7 @@ pub trait Castable<'ctx> {
 
 	fn cast(v: impl BasicValue<'ctx>) -> Self::Value;
 
-	fn assert_type_matches(v: impl BasicValue<'ctx>, context: impl AsContextRef<'ctx>);
+	fn assert_type_matches(v: impl BasicValue<'ctx>) {
+		assert!(v.as_basic_value_enum().is_int_value());
+	}
 }

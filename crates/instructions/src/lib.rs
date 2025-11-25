@@ -71,6 +71,12 @@ pub enum BrainInstructionType {
 	CalculateTapeOffset {
 		output_reg: Reg,
 	},
+	LoadTapePointerIntoRegister {
+		output_reg: Reg,
+	},
+	StoreRegisterIntoTapePointer {
+		input_reg: Reg,
+	},
 	PerformBinaryRegisterOperation {
 		lhs_reg: Reg,
 		rhs_reg: Reg,
@@ -254,4 +260,5 @@ impl From<Reg> for usize {
 pub enum BinaryOperation {
 	Add,
 	Sub,
+	BitwiseAnd,
 }

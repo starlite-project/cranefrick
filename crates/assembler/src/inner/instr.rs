@@ -36,7 +36,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let ptr_value = self.value_at::<Pointer>(pointer_reg)?;
 
-		let cell_value = self.value_at::<Int<8>>(value_reg)?;
+		let cell_value = self.value_at::<Int>(value_reg)?;
 
 		self.builder.build_store(ptr_value, cell_value)?;
 
@@ -82,8 +82,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		output_reg: usize,
 		op: BinaryOperation,
 	) -> Result<(), AssemblyError> {
-		let lhs_value = self.value_at::<Int<8>>(lhs)?;
-		let rhs_value = self.value_at::<Int<8>>(rhs)?;
+		let lhs_value = self.value_at::<Int>(lhs)?;
+		let rhs_value = self.value_at::<Int>(rhs)?;
 
 		let new_value = match op {
 			BinaryOperation::Add => self.builder.build_int_add(lhs_value, rhs_value, "\0")?,
@@ -121,7 +121,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn output_from_register(&self, reg: usize) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let register_value = self.value_at::<Int<8>>(reg)?;
+		let register_value = self.value_at::<Int>(reg)?;
 
 		if let Some(instr_value) = register_value.as_instruction() {
 			self.add_nontemporal_metadata_to_mem(instr_value)?;
@@ -231,8 +231,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 		rhs: usize,
 		output_reg: usize,
 	) -> Result<(), AssemblyError> {
-		let lhs_value = self.value_at::<Int<8>>(lhs)?;
-		let rhs_value = self.value_at::<Int<8>>(rhs)?;
+		let lhs_value = self.value_at::<Int>(lhs)?;
+		let rhs_value = self.value_at::<Int>(rhs)?;
 
 		let output =
 			self.builder
@@ -269,7 +269,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.copied()
 			.ok_or_else(|| AssemblyError::NoValueInRegister(reg))?;
 
-		T::assert_type_matches(basic_value, self.context());
+		T::assert_type_matches(basic_value);
 
 		Ok(T::cast(basic_value))
 	}
