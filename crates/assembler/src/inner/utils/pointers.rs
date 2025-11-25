@@ -5,8 +5,6 @@ use inkwell::{
 	context::AsContextRef,
 	llvm_sys::prelude::LLVMContextRef,
 	module::Module,
-	targets::TargetData,
-	types::IntType,
 	values::{BasicMetadataValueEnum, PointerValue},
 };
 
