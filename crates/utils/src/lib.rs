@@ -15,12 +15,7 @@ extern crate alloc;
 
 #[cfg(feature = "contains_range")]
 mod contains_range;
-#[cfg(any(
-	feature = "unwrap_from",
-	feature = "get_or_zero",
-	feature = "convert",
-	feature = "into_range"
-))]
+#[cfg(any(feature = "get_or_zero", feature = "convert", feature = "into_range"))]
 mod convert;
 #[cfg(feature = "insert_or_push")]
 mod insert_or_push;
@@ -31,12 +26,7 @@ mod slice;
 
 #[cfg(feature = "contains_range")]
 pub use self::contains_range::*;
-#[cfg(any(
-	feature = "unwrap_from",
-	feature = "get_or_zero",
-	feature = "convert",
-	feature = "into_range"
-))]
+#[cfg(any(feature = "get_or_zero", feature = "convert", feature = "into_range"))]
 pub use self::convert::*;
 #[cfg(feature = "insert_or_push")]
 pub use self::insert_or_push::*;
