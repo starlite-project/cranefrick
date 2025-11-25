@@ -1,37 +1,47 @@
-use alloc::{string::ToString as _, vec::Vec};
-use std::{io, path::Path};
+use alloc::{borrow::ToOwned, string::ToString as _, vec::Vec};
+use core::ops::Range;
+use std::{
+	fs::{self, File},
+	io::{self, BufReader, Read, Seek},
+	path::{Path, PathBuf},
+};
 
-use ariadne::{Color, IndexType, Label, Report, ReportKind, Source};
-use chumsky::prelude::*;
+use ariadne::{FileCache, IndexType, Label, Report, ReportKind};
+use chumsky::{input::ValueInput, prelude::*};
 
 use crate::{BrainOperation, BrainOperationType};
 
 pub fn parse(file_path: impl AsRef<Path>) -> io::Result<Vec<BrainOperation>> {
-	let file_path = file_path.as_ref();
+	let file_path = file_path.as_ref().to_owned();
 
-	let file_name = file_path.file_name().and_then(|s| s.to_str()).unwrap();
+	let file = fs::File::open(&file_path)?;
 
-	let file_data = std::fs::read_to_string(file_path)?;
-
-	match parser().parse(file_data.as_str()).into_result() {
+	match parser().parse(CharIoInput::new(file)).into_result() {
 		Ok(e) => Ok(e),
 		Err(errs) => {
 			for err in errs {
-				let report = Report::build(ReportKind::Error, (file_name, err.span().into_range()))
-					.with_config(ariadne::Config::new().with_index_type(IndexType::Byte))
-					.with_message(err.to_string())
-					.with_label(
-						Label::new((file_name, err.span().into_range()))
-							.with_message(err.reason().to_string())
-							.with_color(Color::Red),
-					)
-					.finish();
+				let report = Report::build(
+					ReportKind::Error,
+					ErrorSpan {
+						file_path: file_path.clone(),
+						span: err.span().into_range(),
+					},
+				)
+				.with_config(ariadne::Config::new().with_index_type(IndexType::Byte))
+				.with_message(err.to_string())
+				.with_label(Label::new(ErrorSpan {
+					file_path: file_path.clone(),
+					span: err.span().into_range(),
+				}))
+				.finish();
+				let cache = FileCache::default();
+
 				if let Some(indicatif_writer) =
 					tracing_indicatif::writer::get_indicatif_stderr_writer()
 				{
-					report.write((file_name, Source::from(&file_data)), indicatif_writer)?;
+					report.write(cache, indicatif_writer)?;
 				} else {
-					report.eprint((file_name, Source::from(&file_data)))?;
+					report.eprint(cache)?;
 				}
 			}
 
@@ -40,29 +50,17 @@ pub fn parse(file_path: impl AsRef<Path>) -> io::Result<Vec<BrainOperation>> {
 	}
 }
 
-fn parser<'src>() -> impl Parser<'src, &'src str, Vec<BrainOperation>, extra::Err<Rich<'src, char>>>
-{
+fn parser<'src>()
+-> impl Parser<'src, CharIoInput<File>, Vec<BrainOperation>, extra::Err<Rich<'src, char>>> {
 	recursive(|expr| {
 		choice((
-			just('+')
-				.to(BrainOperationType::ChangeCell(1))
-				.labelled("increment"),
-			just('-')
-				.to(BrainOperationType::ChangeCell(-1))
-				.labelled("decrement"),
-			just('<')
-				.to(BrainOperationType::MovePointer(-1))
-				.labelled("move left"),
-			just('>')
-				.to(BrainOperationType::MovePointer(1))
-				.labelled("move right"),
-			just('.')
-				.to(BrainOperationType::OutputCurrentCell)
-				.labelled("output"),
-			just(',')
-				.to(BrainOperationType::InputIntoCell)
-				.labelled("input"),
-			none_of("+-<>.,[]").map(|x: char| BrainOperationType::Comment(x.to_string())),
+			just('+').to(BrainOperationType::ChangeCell(1)),
+			just('-').to(BrainOperationType::ChangeCell(-1)),
+			just('<').to(BrainOperationType::MovePointer(-1)),
+			just('>').to(BrainOperationType::MovePointer(1)),
+			just('.').to(BrainOperationType::OutputCurrentCell),
+			just(',').to(BrainOperationType::InputIntoCell),
+			none_of("+-<>.,[]").map(BrainOperationType::Comment),
 		))
 		.or(expr
 			.delimited_by(
@@ -80,4 +78,99 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Vec<BrainOperation>, extra::Er
 		.repeated()
 		.collect()
 	})
+}
+
+struct ErrorSpan {
+	file_path: PathBuf,
+	span: Range<usize>,
+}
+
+impl ariadne::Span for ErrorSpan {
+	type SourceId = Path;
+
+	fn source(&self) -> &Self::SourceId {
+		self.file_path.as_path()
+	}
+
+	fn start(&self) -> usize {
+		self.span.start
+	}
+
+	fn end(&self) -> usize {
+		self.span.end
+	}
+}
+
+struct CharIoInput<R> {
+	reader: BufReader<R>,
+	last_cursor: usize,
+}
+
+impl<R> CharIoInput<R>
+where
+	R: Read + Seek,
+{
+	pub fn new(reader: R) -> Self {
+		Self {
+			reader: BufReader::new(reader),
+			last_cursor: 0,
+		}
+	}
+}
+
+impl<'src, R> Input<'src> for CharIoInput<R>
+where
+	R: Read + Seek + 'src,
+{
+	type Cache = Self;
+	type Cursor = usize;
+	type MaybeToken = char;
+	type Span = SimpleSpan;
+	type Token = char;
+
+	fn begin(self) -> (Self::Cursor, Self::Cache) {
+		(0, self)
+	}
+
+	fn cursor_location(cursor: &Self::Cursor) -> usize {
+		*cursor
+	}
+
+	unsafe fn next_maybe(
+		this: &mut Self::Cache,
+		cursor: &mut Self::Cursor,
+	) -> Option<Self::MaybeToken> {
+		unsafe { Self::next(this, cursor) }
+	}
+
+	unsafe fn span(_: &mut Self::Cache, range: Range<&Self::Cursor>) -> Self::Span {
+		(*range.start..*range.end).into()
+	}
+}
+
+impl<'src, R> ValueInput<'src> for CharIoInput<R>
+where
+	R: Read + Seek + 'src,
+{
+	unsafe fn next(this: &mut Self::Cache, cursor: &mut Self::Cursor) -> Option<Self::Token> {
+		if *cursor != this.last_cursor {
+			let seek = *cursor as i64 - this.last_cursor as i64;
+
+			this.reader.seek_relative(seek).unwrap();
+
+			this.last_cursor = *cursor;
+		}
+
+		let mut out = 0;
+		let r = this.reader.read_exact(std::slice::from_mut(&mut out));
+
+		match r {
+			Ok(()) => {
+				this.last_cursor += 1;
+				*cursor += 1;
+				Some(out as char)
+			}
+			Err(..) => None,
+		}
+	}
 }

@@ -1,12 +1,10 @@
-use frick_spec::TAPE_SIZE;
+use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_utils::Convert as _;
 use inkwell::{
 	builder::Builder,
 	context::AsContextRef,
 	llvm_sys::prelude::LLVMContextRef,
 	module::Module,
-	targets::TargetData,
-	types::IntType,
 	values::{BasicMetadataValueEnum, PointerValue},
 };
 
@@ -17,32 +15,23 @@ use crate::{AssemblyError, ContextGetter as _};
 pub struct AssemblerPointers<'ctx> {
 	pub tape: PointerValue<'ctx>,
 	pub pointer: PointerValue<'ctx>,
-	pub pointer_ty: IntType<'ctx>,
 }
 
 impl<'ctx> AssemblerPointers<'ctx> {
-	pub fn new(
-		module: &Module<'ctx>,
-		builder: &Builder<'ctx>,
-		target_data: &TargetData,
-	) -> Result<Self, AssemblyError> {
+	pub fn new(module: &Module<'ctx>, builder: &Builder<'ctx>) -> Result<Self, AssemblyError> {
 		let context = module.get_context();
 		let i8_type = context.i8_type();
-		let ptr_int_type = context.ptr_sized_int_type(target_data, None);
+		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
 
 		let tape = {
-			let tape_array_type = i8_type.array_type(TAPE_SIZE as u32);
+			let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
-			builder.build_alloca(tape_array_type, "tape\0")?
+			builder.build_array_alloca(i8_type, tape_size, "tape")?
 		};
 
 		let pointer = builder.build_alloca(ptr_int_type, "pointer\0")?;
 
-		Ok(Self {
-			tape,
-			pointer,
-			pointer_ty: ptr_int_type,
-		})
+		Ok(Self { tape, pointer })
 	}
 
 	pub fn setup(
@@ -54,6 +43,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
+		let ptr_type = context.custom_width_int_type(POINTER_SIZE as u32);
 
 		let tape_array_size = i64_type.const_int(TAPE_SIZE as u64, false);
 
@@ -80,7 +70,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let i8_zero = i8_type.const_zero();
 
 		builder.build_memset(self.tape, 1, i8_zero, tape_array_size)?;
-		builder.build_store(self.pointer, self.pointer_ty.const_zero())?;
+		builder.build_store(self.pointer, ptr_type.const_zero())?;
 
 		Ok(())
 	}

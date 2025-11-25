@@ -1,5 +1,3 @@
-use std::{cell::RefCell, collections::HashMap};
-
 use frick_utils::Convert as _;
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
@@ -7,7 +5,7 @@ use inkwell::{
 	intrinsics::Intrinsic,
 	llvm_sys::prelude::LLVMContextRef,
 	module::{Linkage, Module},
-	types::{BasicMetadataTypeEnum, BasicTypeEnum, VectorType},
+	types::{BasicMetadataTypeEnum, BasicTypeEnum},
 	values::FunctionValue,
 };
 
@@ -19,9 +17,6 @@ pub struct AssemblerFunctions<'ctx> {
 	pub putchar: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
-	pub invariant: IntrinsicFunctionSet<'ctx>,
-	pub eh_personality: FunctionValue<'ctx>,
-	masked_vector_functions: RefCell<HashMap<VectorKey, FunctionValue<'ctx>>>,
 }
 
 impl<'ctx> AssemblerFunctions<'ctx> {
@@ -33,11 +28,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	) -> Result<Self, AssemblyError> {
 		let void_type = context.void_type();
 		let i8_type = context.i8_type();
-		let i32_type = context.i32_type();
-		let i64_type = context.i64_type();
 		let ptr_type = context.default_ptr_type();
 
-		let getchar_ty = i32_type.fn_type(&[], false);
+		let getchar_ty = i8_type.fn_type(&[], false);
 		let getchar = module.add_function("rust_getchar", getchar_ty, Some(Linkage::External));
 
 		let putchar_ty =
@@ -62,46 +55,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			IntrinsicFunctionSet::new(lifetime_start, lifetime_end)
 		};
 
-		let invariant = {
-			let invariant_start = get_intrinsic_function_from_name(
-				"llvm.invariant.start",
-				module,
-				&[ptr_type.convert::<BasicTypeEnum<'ctx>>()],
-			)?;
-
-			let invariant_end = get_intrinsic_function_from_name(
-				"llvm.invariant.end",
-				module,
-				&[ptr_type.convert::<BasicTypeEnum<'ctx>>()],
-			)?;
-
-			IntrinsicFunctionSet::new(invariant_start, invariant_end)
-		};
-
-		let eh_personality_ty = i32_type.fn_type(
-			&[
-				i32_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-				i32_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-				i64_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-				ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-				ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>(),
-			],
-			false,
-		);
-		let eh_personality = module.add_function(
-			"rust_eh_personality",
-			eh_personality_ty,
-			Some(Linkage::External),
-		);
-
 		let this = Self {
 			getchar,
 			putchar,
 			main,
 			lifetime,
-			invariant,
-			eh_personality,
-			masked_vector_functions: RefCell::default(),
 		};
 
 		this.setup(cpu_name, cpu_features);
@@ -109,51 +67,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		Ok(this)
 	}
 
-	pub fn get_vector_scatter(&self, vec_type: VectorType<'ctx>) -> Option<FunctionValue<'ctx>> {
-		self.get_vector_function(vec_type, VectorFunctionType::Scatter)
-	}
-
-	pub fn insert_vector_scatter(&self, vec_type: VectorType<'ctx>, fn_value: FunctionValue<'ctx>) {
-		self.insert_vector_function(vec_type, VectorFunctionType::Scatter, fn_value);
-	}
-
-	pub fn get_vector_gather(&self, vec_type: VectorType<'ctx>) -> Option<FunctionValue<'ctx>> {
-		self.get_vector_function(vec_type, VectorFunctionType::Gather)
-	}
-
-	pub fn insert_vector_gather(&self, vec_type: VectorType<'ctx>, fn_value: FunctionValue<'ctx>) {
-		self.insert_vector_function(vec_type, VectorFunctionType::Gather, fn_value);
-	}
-
-	fn get_vector_function(
-		&self,
-		vec_type: VectorType<'ctx>,
-		fn_type: VectorFunctionType,
-	) -> Option<FunctionValue<'ctx>> {
-		let key = VectorKey::new(vec_type, fn_type)?;
-
-		self.masked_vector_functions.borrow().get(&key).copied()
-	}
-
-	fn insert_vector_function(
-		&self,
-		vec_type: VectorType<'ctx>,
-		fn_type: VectorFunctionType,
-		fn_value: FunctionValue<'ctx>,
-	) {
-		let Some(key) = VectorKey::new(vec_type, fn_type) else {
-			return;
-		};
-
-		self.masked_vector_functions
-			.borrow_mut()
-			.insert(key, fn_value);
-	}
-
 	fn setup(&self, cpu_name: &str, cpu_features: &str) {
 		let context = self.context();
-
-		self.main.set_personality_function(self.eh_personality);
 
 		let nocallback_attr = context.create_named_enum_attribute("nocallback", 0);
 		let nofree_attr = context.create_named_enum_attribute("nofree", 0);
@@ -164,18 +79,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0);
 		let arg_read_inaccessable_write_memory_attr =
 			context.create_named_enum_attribute("memory", 9);
-		let uwtable_attr = context.create_named_enum_attribute("uwtable", 2);
 		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
 		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
-		let getchar_range_attr = context.create_range_attribute(
-			Attribute::get_named_enum_kind_id("range"),
-			32,
-			u8::MIN.convert::<u64>(),
-			u8::MAX.convert::<u64>() + 1,
-		);
-		let eh_personality_range_attr =
-			context.create_range_attribute(Attribute::get_named_enum_kind_id("range"), 32, 0, 10);
-		let nonlazybind_attr = context.create_named_enum_attribute("nonlazybind", 0);
 		let target_cpu_attr = context.create_string_attribute("target-cpu", cpu_name);
 		let target_cpu_features_attr =
 			context.create_string_attribute("target-features", cpu_features);
@@ -189,10 +94,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				norecurse_attr,
 				willreturn_attr,
 				arg_read_inaccessable_write_memory_attr,
-				uwtable_attr,
 				probe_stack_attr,
 				target_cpu_attr,
 				target_cpu_features_attr,
+				nounwind_attr,
 			],
 			[(0, zeroext_attr), (0, noundef_attr)],
 			[],
@@ -208,34 +113,22 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				probe_stack_attr,
 				target_cpu_attr,
 				target_cpu_features_attr,
+				nounwind_attr,
 			],
 			[],
-			[zeroext_attr, getchar_range_attr],
+			[zeroext_attr, noundef_attr],
 		);
 		add_attributes_to(
 			self.main,
 			[
 				nofree_attr,
-				uwtable_attr,
 				probe_stack_attr,
 				target_cpu_attr,
 				target_cpu_features_attr,
-			],
-			[],
-			[],
-		);
-		add_attributes_to(
-			self.eh_personality,
-			[
 				nounwind_attr,
-				uwtable_attr,
-				nonlazybind_attr,
-				probe_stack_attr,
-				target_cpu_attr,
-				target_cpu_features_attr,
 			],
-			(0..5).map(|i| (i, noundef_attr)),
-			[noundef_attr, eh_personality_range_attr],
+			[],
+			[],
 		);
 	}
 }
@@ -293,34 +186,4 @@ fn add_attributes_to(
 	for attribute in return_attrs {
 		func.add_attribute(AttributeLoc::Return, attribute);
 	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct VectorKey {
-	bit_width: u32,
-	size_of_vec: u32,
-	fn_type: VectorFunctionType,
-}
-
-impl VectorKey {
-	fn new(vec: VectorType<'_>, fn_type: VectorFunctionType) -> Option<Self> {
-		let bit_width = match vec.get_element_type() {
-			BasicTypeEnum::IntType(ty) => ty.get_bit_width(),
-			_ => return None,
-		};
-
-		let size_of_vec = vec.get_size();
-
-		Some(Self {
-			bit_width,
-			size_of_vec,
-			fn_type,
-		})
-	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum VectorFunctionType {
-	Gather,
-	Scatter,
 }

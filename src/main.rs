@@ -5,10 +5,7 @@ use std::{fs, path::Path};
 use clap::Parser as _;
 use color_eyre::Result;
 use frick_assembler::Assembler;
-use frick_ir::parse;
 use frick_optimizer::Optimizer;
-use ron::ser::PrettyConfig;
-use serde::Serialize;
 use tracing_error::ErrorLayer;
 use tracing_indicatif::{IndicatifLayer, filter::IndicatifFilter, style::ProgressStyle};
 use tracing_subscriber::{
@@ -49,37 +46,10 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	let mut new_optimizer = frick_new_optimizer::Optimizer::new(operations);
+	let output = Optimizer::run(operations, args.output_path());
 
-	serialize(&new_optimizer, args.output_path(), "new_unoptimized")?;
-
-	new_optimizer.run();
-
-	serialize(&new_optimizer, args.output_path(), "new_optimized")?;
-
-	let raw_data = fs::read_to_string(args.file_path())?
-		.chars()
-		.filter(|c| matches!(c, '[' | ']' | '>' | '<' | '+' | '-' | ',' | '.'))
-		.collect::<String>();
-
-	let parsed = parse(raw_data)?;
-
-	if parsed.is_empty() {
-		tracing::warn!("no program parsed");
-
-		return Ok(());
-	}
-
-	let mut optimizer = parsed.into_iter().collect::<Optimizer>();
-
-	serialize(&optimizer, args.output_path(), "unoptimized")?;
-
-	optimizer.run();
-
-	serialize(&optimizer, args.output_path(), "optimized")?;
-
-	let mut assembler = match args.passes_path() {
-		None => Assembler::default(),
+	let assembler = match args.passes_path() {
+		None => Assembler::new("default<O0>".to_owned(), args.file_path().to_owned()),
 		Some(passes_path) => {
 			let passes = fs::read_to_string(passes_path)?;
 
@@ -89,13 +59,12 @@ fn main() -> Result<()> {
 					.map(|l| l.trim())
 					.collect::<Vec<_>>()
 					.join(","),
+				args.file_path().to_owned(),
 			)
 		}
 	};
 
-	assembler.set_path(args.file_path().to_owned());
-
-	let module = assembler.assemble(&optimizer, args.output_path())?;
+	let module = assembler.assemble(&output, args.output_path())?;
 
 	tracing::info!("finished assembling module");
 
@@ -144,26 +113,5 @@ fn install_tracing(folder_path: &Path) {
 }
 
 fn env_filter() -> EnvFilter {
-	EnvFilter::new("info,frick_optimizer=debug")
-}
-
-fn serialize<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
-	serialize_as_ron(value, folder_path, file_name)
-}
-
-fn serialize_as_ron<T: Serialize>(value: &T, folder_path: &Path, file_name: &str) -> Result<()> {
-	let mut output = String::new();
-	let mut serializer = ron::Serializer::with_options(
-		&mut output,
-		Some(PrettyConfig::new().separate_tuple_members(true)),
-		&ron::Options::default().without_recursion_limit(),
-	)?;
-
-	value.serialize(&mut serializer)?;
-
-	drop(serializer);
-
-	fs::write(folder_path.join(format!("{file_name}.ron")), output)?;
-
-	Ok(())
+	EnvFilter::new("debug")
 }

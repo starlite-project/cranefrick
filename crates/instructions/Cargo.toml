@@ -3,15 +3,15 @@ lints.workspace = true
 [package]
 edition.workspace = true
 license.workspace = true
-name = "frick_new_optimizer"
+name = "frick_instructions"
 rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
 frick_operations.workspace = true
-frick_utils = { workspace = true, features = ["insert_or_push", "iter_ext"] }
+frick_spec.workspace = true
+frick_utils = { workspace = true, features = ["convert"] }
 serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"
 ] }
-tracing = { workspace = true, features = ["attributes"] }

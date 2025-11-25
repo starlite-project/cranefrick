@@ -1,5 +1,5 @@
 [unstable]
-build-std = ["core", "alloc", "std"]
+build-std = ["core", "alloc", "std", "panic_abort"]
 
 [build]
 rustdocflags = ["--cfg", "docsrs", "--show-type-layout", "-Z", "unstable-options"]

@@ -1,9 +1,10 @@
-mod impls;
+mod instr;
+mod metadata;
 mod utils;
 
-use std::path::Path;
+use std::{cell::RefCell, fs, path::Path};
 
-use frick_ir::{BrainIr, SubOptions};
+use frick_instructions::{BrainInstruction, BrainInstructionType, Reg};
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
 use inkwell::{
@@ -14,23 +15,24 @@ use inkwell::{
 	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Module},
 	targets::{TargetMachine, TargetTriple},
-	types::{BasicTypeEnum, VectorType},
-	values::{BasicMetadataValueEnum, FunctionValue, VectorValue},
+	values::{BasicMetadataValueEnum, BasicValueEnum},
 };
 
 pub use self::utils::AssemblerFunctions;
 use self::utils::{AssemblerDebugBuilder, AssemblerPointers};
 use super::AssemblyError;
-use crate::{ContextExt as _, ContextGetter as _, ModuleExt as _};
+use crate::{ContextGetter as _, ModuleExt as _};
 
 pub struct InnerAssembler<'ctx> {
+	file_data: String,
 	module: Module<'ctx>,
 	builder: Builder<'ctx>,
 	functions: AssemblerFunctions<'ctx>,
 	pointers: AssemblerPointers<'ctx>,
 	target_machine: TargetMachine,
 	debug_builder: AssemblerDebugBuilder<'ctx>,
-	catch_block: BasicBlock<'ctx>,
+	registers: RefCell<Vec<BasicValueEnum<'ctx>>>,
+	loop_blocks: RefCell<Vec<LoopBlocks<'ctx>>>,
 }
 
 impl<'ctx> InnerAssembler<'ctx> {
@@ -40,7 +42,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		target_triple: TargetTriple,
 		cpu_name: &str,
 		cpu_features: &str,
-		path: Option<&Path>,
+		file_path: &Path,
 	) -> Result<Self, AssemblyError> {
 		let module = context.create_module("frick\0");
 		let functions = AssemblerFunctions::new(context, &module, cpu_name, cpu_features)?;
@@ -56,11 +58,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let basic_block = context.append_basic_block(functions.main, "entry\0");
 		builder.position_at_end(basic_block);
 
-		let catch_block = context.append_basic_block(functions.main, "lpad\0");
-
-		let pointers = AssemblerPointers::new(&module, &builder, &target_data)?;
+		let pointers = AssemblerPointers::new(&module, &builder)?;
 
 		pointers.setup(&builder, &functions)?;
+
+		let start_block = context.append_basic_block(functions.main, "start\0");
+		builder.build_unconditional_branch(start_block)?;
+		builder.position_at_end(start_block);
 
 		let debug_metadata_version = {
 			let i32_type = context.i32_type();
@@ -77,23 +81,21 @@ impl<'ctx> InnerAssembler<'ctx> {
 			debug_metadata_version,
 		);
 
-		let (file_name, directory) = if let Some(path) = path {
-			assert!(path.is_file());
+		let (file_name, directory) = {
+			assert!(file_path.is_file());
 
-			let file_name = path
+			let file_name = file_path
 				.file_name()
 				.map(|s| s.to_string_lossy().into_owned())
 				.unwrap_or_default();
 
-			let directory = path
+			let directory = file_path
 				.parent()
 				.and_then(|s| s.canonicalize().ok())
 				.map(|s| s.to_string_lossy().into_owned())
 				.unwrap_or_default();
 
 			(file_name, directory)
-		} else {
-			("frick_source_file.bf".to_owned(), "/".to_owned())
 		};
 
 		let debug_builder = AssemblerDebugBuilder::new(&module, &file_name, &directory)?;
@@ -115,37 +117,40 @@ impl<'ctx> InnerAssembler<'ctx> {
 		builder.set_current_debug_location(debug_loc);
 		module.set_source_file_name(&file_name);
 
+		let file_data = fs::read_to_string(file_path)?;
+
 		Ok(Self {
+			file_data,
 			module,
 			builder,
 			functions,
 			pointers,
 			target_machine,
 			debug_builder,
-			catch_block,
+			registers: RefCell::default(),
+			loop_blocks: RefCell::default(),
 		})
 	}
 
 	pub fn assemble(
 		self,
-		ops: &[BrainIr],
+		instrs: &[BrainInstruction],
 	) -> Result<(Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine), AssemblyError> {
 		tracing::debug!("writing instructions");
-		let mut op_count = 0;
 
-		let ops_span = tracing::info_span!("ops").entered();
-		self.ops(ops, &mut op_count)?;
-		drop(ops_span);
+		let instrs_span = tracing::info_span!("instrs").entered();
+		self.instrs(instrs)?;
+		drop(instrs_span);
 
 		tracing::debug!("declaring variables");
 		self.debug_builder
 			.declare_variables(self.context(), self.pointers)?;
 
+		self.builder.unset_current_debug_location();
+
 		let context = self.context();
 
 		let i64_type = context.i64_type();
-		let i32_type = context.i32_type();
-		let ptr_type = context.default_ptr_type();
 
 		let i64_size = i64_type.const_int(8, false);
 
@@ -173,264 +178,94 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.build_return(None)?;
 
-		let debug_loc = self.debug_builder.create_debug_location(
-			self.context(),
-			1,
-			op_count as u32,
-			self.debug_builder.main_subprogram.as_debug_info_scope(),
-			None,
-		);
-
-		self.builder.set_current_debug_location(debug_loc);
-
-		tracing::debug!("setting up the landing pad");
-		let last_basic_block = self.functions.main.get_last_basic_block().unwrap();
-
-		if last_basic_block != self.catch_block {
-			self.catch_block.move_after(last_basic_block).unwrap();
-		}
-
-		self.builder.position_at_end(self.catch_block);
-
-		let exception_type = context.struct_type(
-			&[
-				ptr_type.convert::<BasicTypeEnum<'ctx>>(),
-				i32_type.convert::<BasicTypeEnum<'ctx>>(),
-			],
-			false,
-		);
-
-		let exception = self.builder.build_landing_pad(
-			exception_type,
-			self.functions.eh_personality,
-			&[],
-			true,
-			"exception\0",
-		)?;
-
-		tracing::debug!("ending the lifetimes in catch block");
-		self.builder.build_call(
-			self.functions.lifetime.end,
-			&[
-				tape_size.convert::<BasicMetadataValueEnum<'ctx>>(),
-				self.pointers.tape.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
-			"\0",
-		)?;
-		self.builder.build_call(
-			self.functions.lifetime.end,
-			&[
-				i64_size.convert::<BasicMetadataValueEnum<'ctx>>(),
-				self.pointers
-					.pointer
-					.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
-			"\0",
-		)?;
-
-		self.builder.build_resume(exception)?;
-
 		self.debug_builder.di_builder.finalize();
 
 		Ok(self.into_parts())
 	}
 
-	fn ops(&self, ops: &[BrainIr], op_count: &mut usize) -> Result<(), AssemblyError> {
-		for op in ops {
-			tracing::trace!(%op_count, %op);
+	#[allow(clippy::never_loop)]
+	fn instrs(&self, instrs: &[BrainInstruction]) -> Result<(), AssemblyError> {
+		let line_positions = line_numbers::LinePositions::from(self.file_data.as_str());
+
+		for i in instrs {
+			let i_range = i.span();
+
+			let line_span = line_positions.from_region(i_range.start, i_range.end)[0];
 			let debug_loc = self.debug_builder.create_debug_location(
 				self.context(),
-				1,
-				*op_count as u32,
-				self.debug_builder.main_subprogram.as_debug_info_scope(),
+				(line_span.line.as_usize() + 1) as u32,
+				line_span.start_col + 1,
+				self.debug_builder.get_current_scope(),
 				None,
 			);
 
 			self.builder.set_current_debug_location(debug_loc);
 
-			match op {
-				BrainIr::Boundary => {}
-				&BrainIr::ChangeCell(options) => self.change_cell(options)?,
-				&BrainIr::SetCell(options) => self.set_cell(options)?,
-				&BrainIr::SubCell(SubOptions::CellAt(options)) => self.sub_cell_at(options)?,
-				&BrainIr::SubCell(SubOptions::FromCell(options)) => self.sub_from_cell(options)?,
-				&BrainIr::MovePointer(offset) => self.move_pointer(offset)?,
-				&BrainIr::ScanTape(scan_tape_options) => self.scan_tape(scan_tape_options)?,
-				&BrainIr::InputIntoCell(input_options) => self.input_into_cell(input_options)?,
-				BrainIr::Output(options) => self.output(options)?,
-				&BrainIr::MoveValueTo(options) => self.move_value_to(options)?,
-				&BrainIr::TakeValueTo(options) => self.take_value_to(options)?,
-				&BrainIr::FetchValueFrom(options) => self.fetch_value_from(options)?,
-				&BrainIr::ReplaceValueFrom(options) => self.replace_value_from(options)?,
-				&BrainIr::ScaleValue(factor) => self.scale_value(factor)?,
-				BrainIr::DynamicLoop(ops) => self.dynamic_loop(ops, op_count)?,
-				BrainIr::IfNotZero(ops) => self.if_not_zero(ops, op_count)?,
-				BrainIr::ChangeManyCells(options) => self.change_many_cells(options)?,
-				&BrainIr::SetRange(options) => self.set_range(options)?,
-				BrainIr::SetManyCells(options) => self.set_many_cells(options)?,
-				BrainIr::DuplicateCell { values } => self.duplicate_cell(values)?,
-				_ => return Err(AssemblyError::NotImplemented(op.clone())),
+			if !self.compile_instruction(i.instr())? {
+				return Err(AssemblyError::NotImplemented(i.instr()));
 			}
-
-			*op_count += 1;
 		}
 
 		Ok(())
 	}
 
-	#[tracing::instrument(skip(self))]
-	fn call_vector_scatter(
-		&self,
-		vec_of_values: VectorValue<'ctx>,
-		vec_of_pointers: VectorValue<'ctx>,
-	) -> Result<(), AssemblyError> {
-		assert!(
-			vec_of_pointers
-				.get_type()
-				.get_element_type()
-				.is_pointer_type()
-		);
-		assert_eq!(
-			vec_of_values.get_type().get_size(),
-			vec_of_pointers.get_type().get_size()
-		);
-
-		let context = self.context();
-
-		let bool_type = context.bool_type();
-		let i32_type = context.i32_type();
-
-		let bool_vec_all_on = {
-			let vec_of_trues =
-				vec![bool_type.const_all_ones(); vec_of_values.get_type().get_size() as usize];
-
-			VectorType::const_vector(&vec_of_trues)
-		};
-
-		let vec_store_alignment = i32_type.const_int(1, false);
-
-		let vector_scatter = self.get_vector_scatter(vec_of_values.get_type())?;
-
-		self.builder.build_direct_call(
-			vector_scatter,
-			&[
-				vec_of_values.convert::<BasicMetadataValueEnum<'ctx>>(),
-				vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
-				vec_store_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
-				bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
-			"call_vector_scatter\0",
-		)?;
-
-		Ok(())
-	}
-
-	#[tracing::instrument(skip(self))]
-	fn call_vector_gather(
-		&self,
-		res_type: VectorType<'ctx>,
-		vec_of_pointers: VectorValue<'ctx>,
-	) -> Result<VectorValue<'ctx>, AssemblyError> {
-		assert!(
-			vec_of_pointers
-				.get_type()
-				.get_element_type()
-				.is_pointer_type()
-		);
-		assert_eq!(res_type.get_size(), vec_of_pointers.get_type().get_size());
-
-		let context = self.context();
-
-		let bool_type = context.bool_type();
-		let i32_type = context.i32_type();
-
-		let bool_vec_all_on = {
-			let vec_of_trues = vec![bool_type.const_all_ones(); res_type.get_size() as usize];
-
-			VectorType::const_vector(&vec_of_trues)
-		};
-
-		let vec_load_alignment = i32_type.const_int(1, false);
-
-		let vector_gather = self.get_vector_gather(res_type)?;
-
-		Ok(self
-			.builder
-			.build_direct_call(
-				vector_gather,
-				&[
-					vec_of_pointers.convert::<BasicMetadataValueEnum<'ctx>>(),
-					vec_load_alignment.convert::<BasicMetadataValueEnum<'ctx>>(),
-					bool_vec_all_on.convert::<BasicMetadataValueEnum<'ctx>>(),
-					res_type
-						.get_poison()
-						.convert::<BasicMetadataValueEnum<'ctx>>(),
-				],
-				"call_vector_gather\0",
-			)?
-			.try_as_basic_value()
-			.unwrap_basic()
-			.into_vector_value())
-	}
-
-	fn get_vector_scatter(
-		&self,
-		vec_type: VectorType<'ctx>,
-	) -> Result<FunctionValue<'ctx>, AssemblyError> {
-		if let Some(known_fn) = self.functions.get_vector_scatter(vec_type) {
-			return Ok(known_fn);
+	fn compile_instruction(&self, instr: BrainInstructionType) -> Result<bool, AssemblyError> {
+		match instr {
+			BrainInstructionType::LoadCellIntoRegister {
+				pointer_reg: Reg(input_reg),
+				output_reg: Reg(output_reg),
+			} => {
+				self.load_cell_into_register(input_reg, output_reg)?;
+			}
+			BrainInstructionType::StoreRegisterIntoCell {
+				value_reg: Reg(value_reg),
+				pointer_reg: Reg(pointer_reg),
+			} => {
+				self.store_register_into_cell(value_reg, pointer_reg)?;
+			}
+			BrainInstructionType::StoreImmediateIntoRegister {
+				output_reg: Reg(reg),
+				imm,
+			} => {
+				self.store_immediate_into_register(reg, imm)?;
+			}
+			BrainInstructionType::LoadTapePointerIntoRegister {
+				output_reg: Reg(output_reg),
+			} => self.load_tape_pointer_into_register(output_reg)?,
+			BrainInstructionType::StoreRegisterIntoTapePointer {
+				input_reg: Reg(input_reg),
+			} => self.store_register_into_tape_pointer(input_reg)?,
+			BrainInstructionType::CalculateTapeOffset {
+				tape_pointer_reg: Reg(input_reg),
+				output_reg: Reg(output_reg),
+			} => self.calculate_tape_offset(input_reg, output_reg)?,
+			BrainInstructionType::PerformBinaryRegisterOperation {
+				lhs_reg: Reg(lhs),
+				rhs_reg: Reg(rhs),
+				output_reg: Reg(output_reg),
+				op,
+			} => self.perform_binary_register_operation(lhs, rhs, output_reg, op)?,
+			BrainInstructionType::InputIntoRegister {
+				output_reg: Reg(reg),
+			} => self.input_into_register(reg)?,
+			BrainInstructionType::OutputFromRegister {
+				input_reg: Reg(reg),
+			} => self.output_from_register(reg)?,
+			BrainInstructionType::StartLoop => self.start_loop()?,
+			BrainInstructionType::EndLoop => self.end_loop()?,
+			BrainInstructionType::CompareRegisterToRegister {
+				lhs_reg: Reg(lhs),
+				rhs_reg: Reg(rhs),
+				output_reg: Reg(output_reg),
+			} => self.compare_register_to_register(lhs, rhs, output_reg)?,
+			BrainInstructionType::JumpIf {
+				input_reg: Reg(input_reg),
+			} => self.jump_if(input_reg)?,
+			BrainInstructionType::JumpToHeader => self.jump_to_header()?,
+			_ => return Ok(false),
 		}
 
-		let size = vec_type.get_size();
-
-		let ptr_vec_type = {
-			let ptr_type = self.context().default_ptr_type();
-
-			ptr_type.vec_type(size)
-		};
-
-		let fn_value = self::utils::get_intrinsic_function_from_name(
-			"llvm.masked.scatter",
-			&self.module,
-			&[
-				vec_type.convert::<BasicTypeEnum<'ctx>>(),
-				ptr_vec_type.convert::<BasicTypeEnum<'ctx>>(),
-			],
-		)?;
-
-		self.functions.insert_vector_scatter(vec_type, fn_value);
-
-		Ok(fn_value)
-	}
-
-	fn get_vector_gather(
-		&self,
-		vec_type: VectorType<'ctx>,
-	) -> Result<FunctionValue<'ctx>, AssemblyError> {
-		if let Some(known_fn) = self.functions.get_vector_gather(vec_type) {
-			return Ok(known_fn);
-		}
-
-		let size = vec_type.get_size();
-
-		let ptr_vec_type = {
-			let ptr_type = self.context().default_ptr_type();
-
-			ptr_type.vec_type(size)
-		};
-
-		let fn_value = self::utils::get_intrinsic_function_from_name(
-			"llvm.masked.gather",
-			&self.module,
-			&[
-				vec_type.convert::<BasicTypeEnum<'ctx>>(),
-				ptr_vec_type.convert::<BasicTypeEnum<'ctx>>(),
-			],
-		)?;
-
-		self.functions.insert_vector_gather(vec_type, fn_value);
-
-		Ok(fn_value)
+		Ok(true)
 	}
 
 	fn into_parts(self) -> (Module<'ctx>, AssemblerFunctions<'ctx>, TargetMachine) {
@@ -442,4 +277,11 @@ unsafe impl<'ctx> AsContextRef<'ctx> for InnerAssembler<'ctx> {
 	fn as_ctx_ref(&self) -> LLVMContextRef {
 		self.module.get_context().as_ctx_ref()
 	}
+}
+
+#[derive(Debug, Clone, Copy)]
+struct LoopBlocks<'ctx> {
+	header: BasicBlock<'ctx>,
+	body: BasicBlock<'ctx>,
+	exit: BasicBlock<'ctx>,
 }

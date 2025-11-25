@@ -10,13 +10,9 @@ clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
 dhat = { workspace = true, optional = true }
 frick_assembler = { path = "crates/assembler" }
-frick_ir = { workspace = true, features = ["parse"] }
-frick_new_optimizer = { path = "crates/new_optimizer" }
+frick_instructions.workspace = true
 frick_operations = { workspace = true, features = ["parse"] }
 frick_optimizer = { path = "crates/optimizer" }
-ron = "0.11"
-serde.workspace = true
-toml = { version = "0.9", features = ["serde"] }
 tracing.workspace = true
 tracing-error = "0.2.1"
 tracing-indicatif.workspace = true
@@ -47,11 +43,13 @@ name = "is_all_zero"
 [workspace]
 members = [
     "crates/assembler",
+    "crates/instructions",
     "crates/interop",
     "crates/ir",
-    "crates/new_optimizer",
+    "crates/old_optimizer",
     "crates/operations",
     "crates/optimizer",
+    "crates/serialize",
     "crates/spec",
     "crates/utils",
     "tools/pattern_finder"
@@ -66,14 +64,18 @@ clap = "4"
 color-eyre = "0.6"
 criterion = "0.7"
 dhat = "0.3"
+frick_instructions = { path = "crates/instructions" }
 frick_interop = { path = "crates/interop" }
 frick_ir = { path = "crates/ir" }
 frick_operations = { path = "crates/operations" }
+frick_serialize = { path = "crates/serialize" }
+frick_spec = { path = "crates/spec" }
 frick_utils = { path = "crates/utils" }
-inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "0079487e1d424ac42961d29313472b92f7e870af", features = [
-    "llvm21-1-force-static"
+inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "ae49132d89fb4ae1054d7023520cd7ffc4d1ae66", features = [
+    "llvm21-1"
 ] }
 libc = "0.2"
+ron = "0.12"
 send_wrapper = "0.6"
 serde = { version = "1", default-features = false }
 tracing = "0.1"
@@ -138,12 +140,14 @@ version = "0.1.0"
 [profile.release]
 codegen-units = 1
 lto = "fat"
+panic = "abort"
 
 [workspace.metadata.docs.rs]
 all-features = true
 
 [profile.dev]
 opt-level = 1
+panic = "abort"
 
 [profile.dev.package.inkwell]
 debug-assertions = false

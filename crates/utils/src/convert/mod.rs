@@ -5,15 +5,11 @@ use core::convert::TryInto;
 mod get_or_zero;
 #[cfg(feature = "into_range")]
 mod into_range;
-#[cfg(feature = "unwrap_from")]
-mod unwrap_from;
 
 #[cfg(feature = "get_or_zero")]
 pub use self::get_or_zero::*;
 #[cfg(feature = "into_range")]
 pub use self::into_range::*;
-#[cfg(feature = "unwrap_from")]
-pub use self::unwrap_from::*;
 
 #[cfg(feature = "convert")]
 pub trait Convert

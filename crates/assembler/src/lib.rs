@@ -14,7 +14,7 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use frick_ir::BrainIr;
+use frick_instructions::{BrainInstruction, BrainInstructionType};
 use frick_utils::Convert as _;
 use inkwell::{
 	OptimizationLevel,
@@ -42,12 +42,12 @@ use self::{
 pub struct Assembler {
 	context: Context,
 	passes: String,
-	file_path: Option<PathBuf>,
+	file_path: PathBuf,
 }
 
 impl Assembler {
 	#[must_use]
-	pub fn new(passes: String) -> Self {
+	pub fn new(passes: String, file_path: PathBuf) -> Self {
 		inkwell::support::error_handling::reset_fatal_error_handler();
 		unsafe {
 			inkwell::support::error_handling::install_fatal_error_handler(handler);
@@ -58,27 +58,14 @@ impl Assembler {
 		Self {
 			context: Context::create(),
 			passes,
-			file_path: None,
+			file_path,
 		}
-	}
-
-	pub fn set_path(&mut self, path: PathBuf) {
-		self.file_path = Some(path);
-	}
-
-	#[must_use]
-	pub fn with_path(passes: String, path: PathBuf) -> Self {
-		let mut this = Self::new(passes);
-
-		this.set_path(path);
-
-		this
 	}
 
 	#[tracing::instrument(skip_all, fields(indicatif.pb_show = tracing::field::Empty))]
 	pub fn assemble<'ctx>(
 		&'ctx self,
-		ops: &[BrainIr],
+		instrs: &[BrainInstruction],
 		output_path: &Path,
 	) -> Result<AssembledModule<'ctx>, AssemblyError> {
 		info!("initializing all targets");
@@ -116,10 +103,11 @@ impl Assembler {
 			target_triple,
 			&cpu,
 			&cpu_features,
-			self.file_path.as_deref(),
+			&self.file_path,
 		)?;
 
-		let (module, AssemblerFunctions { main, .. }, target_machine) = assembler.assemble(ops)?;
+		let (module, AssemblerFunctions { main, .. }, target_machine) =
+			assembler.assemble(instrs)?;
 
 		info!("verifying emitted LLVM IR");
 		module.verify()?;
@@ -185,12 +173,6 @@ impl Assembler {
 			execution_engine.add_global_mapping(&putchar, frick_interop::rust_putchar as usize);
 		}
 
-		if let Some(eh_personality) = module.get_function("rust_eh_personality\0") {
-			info!("adding rust_eh_personality to the execution engine");
-			execution_engine
-				.add_global_mapping(&eh_personality, frick_interop::rust_eh_personality as usize);
-		}
-
 		Ok(AssembledModule {
 			execution_engine,
 			main,
@@ -207,28 +189,18 @@ extern "C" fn handler(ptr: *const i8) {
 	std::process::abort()
 }
 
-impl Default for Assembler {
-	fn default() -> Self {
-		Self::new("default<O0>".to_owned())
-	}
-}
-
 #[derive(Debug)]
 pub enum AssemblyError {
 	Llvm(SendWrapper<LLVMString>),
 	NoTargetMachine,
-	InvalidMetadata,
 	IntrinsicNotFound(Cow<'static, str>),
 	InvalidIntrinsicDeclaration(Cow<'static, str>),
-	InvalidGEPType(String),
 	Inkwell(inkwell::Error),
-	MissingPointerInstruction {
-		alloca_name: String,
-		looking_after: bool,
-	},
-	NotImplemented(BrainIr),
+	NotImplemented(BrainInstructionType),
 	Io(IoError),
-	SlotAlreadySet,
+	PointerNotLoaded,
+	NoValueInRegister(usize),
+	NoLoopInfo,
 }
 
 impl AssemblyError {
@@ -247,7 +219,6 @@ impl Display for AssemblyError {
 			Self::Llvm(..) => f.write_str("an error occurred from LLVM"),
 			Self::NoTargetMachine => f.write_str("unable to get target machine"),
 			Self::Inkwell(..) => f.write_str("an error occurred during translation"),
-			Self::InvalidMetadata => f.write_str("invalid metadata type"),
 			Self::IntrinsicNotFound(intrinsic) => {
 				f.write_str("intrinsic \"")?;
 				f.write_str(intrinsic)?;
@@ -258,34 +229,23 @@ impl Display for AssemblyError {
 				f.write_str(intrinsic)?;
 				f.write_char('"')
 			}
-			Self::InvalidGEPType(ty) => {
-				f.write_str("type ")?;
-				f.write_str(ty)?;
-				f.write_str(" is invalid for GEP")
+			Self::NotImplemented(BrainInstructionType::NotImplemented) => {
+				f.write_str("an operation is not implemented")
 			}
-			Self::MissingPointerInstruction {
-				alloca_name,
-				looking_after: false,
-			} => {
-				f.write_str("alloca for '")?;
-				f.write_str(alloca_name)?;
-				f.write_str("' could not be found")
-			}
-			Self::MissingPointerInstruction {
-				alloca_name,
-				looking_after: true,
-			} => {
-				f.write_str("instruction after alloca '")?;
-				f.write_str(alloca_name)?;
-				f.write_str("' was not found")
-			}
-			Self::NotImplemented(instr) => {
+			Self::NotImplemented(i) => {
 				f.write_str("instruction ")?;
-				Debug::fmt(&instr, f)?;
-				f.write_str(" is not yet implemented")
+				Debug::fmt(&i, f)?;
+				f.write_str(" is not implemented")
 			}
 			Self::Io(..) => f.write_str("an IO error has occurred"),
-			Self::SlotAlreadySet => f.write_str("the slot has already been written to"),
+			Self::PointerNotLoaded => {
+				f.write_str("pointer was not loaded before indexing into tape")
+			}
+			Self::NoValueInRegister(slot) => {
+				f.write_str("no value was found in register ")?;
+				Display::fmt(&slot, f)
+			}
+			Self::NoLoopInfo => f.write_str("no loop info was present when expected"),
 		}
 	}
 }
@@ -297,13 +257,12 @@ impl StdError for AssemblyError {
 			Self::Llvm(e) => Some(&**e),
 			Self::Io(e) => Some(e),
 			Self::NoTargetMachine
-			| Self::InvalidMetadata
 			| Self::IntrinsicNotFound(..)
-			| Self::InvalidGEPType(..)
 			| Self::InvalidIntrinsicDeclaration(..)
 			| Self::NotImplemented(..)
-			| Self::MissingPointerInstruction { .. }
-			| Self::SlotAlreadySet => None,
+			| Self::PointerNotLoaded
+			| Self::NoValueInRegister(..)
+			| Self::NoLoopInfo => None,
 		}
 	}
 }
