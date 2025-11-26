@@ -21,16 +21,26 @@ impl Pass for PointerRedundantLoadsPass {
 			.enumerate()
 			.skip(1)
 			.filter_map(|(i, instr)| {
-				if !matches!(
-					instr.instr(),
-					BrainInstructionType::LoadTapePointerIntoRegister { .. }
-				) {
+				// if !matches!(
+				// 	instr.instr(),
+				// 	BrainInstructionType::LoadTapePointerIntoRegister { .. }
+				// ) {
+				// 	return None;
+				// }
+
+				let BrainInstructionType::LoadTapePointerIntoRegister { output_reg } =
+					instr.instr()
+				else {
 					return None;
-				}
+				};
 
 				let prev_state = self.state_analyzer.pointer_state_at(i - 1);
 
-				if prev_state.is_value_known() && !prev_state.is_dirty() {
+				if !prev_state.is_dirty()
+					&& prev_state
+						.register_index()
+						.is_some_and(|reg| reg == output_reg)
+				{
 					Some(i)
 				} else {
 					None
