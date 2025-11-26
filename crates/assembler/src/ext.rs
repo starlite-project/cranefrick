@@ -21,7 +21,7 @@ use inkwell::{
 			LLVMBuildGEPWithNoWrapFlags, LLVMCreateConstantRangeAttribute, LLVMIsNewDbgInfoFormat,
 			LLVMSetIsNewDbgInfoFormat,
 		},
-		target_machine::{LLVMSetTargetMachineFastISel, LLVMSetTargetMachineGlobalISel},
+		target_machine::LLVMSetTargetMachineFastISel,
 	},
 	module::Module,
 	targets::TargetMachine,
