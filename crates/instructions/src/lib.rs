@@ -8,6 +8,7 @@ use core::ops::{Deref, DerefMut, Range};
 
 use frick_operations::{BrainOperation, BrainOperationType};
 use frick_spec::{POINTER_SIZE, TAPE_SIZE};
+use frick_types::{Bool, Int, Pointer, Register};
 use frick_utils::Convert as _;
 use serde::{Deserialize, Serialize};
 
@@ -59,48 +60,48 @@ impl DerefMut for BrainInstruction {
 #[non_exhaustive]
 pub enum BrainInstructionType {
 	LoadCellIntoRegister {
-		pointer_reg: Reg,
-		output_reg: Reg,
+		pointer_reg: Register<Pointer>,
+		output_reg: Register<Int>,
 	},
 	StoreRegisterIntoCell {
-		value_reg: Reg,
-		pointer_reg: Reg,
+		value_reg: Register<Int>,
+		pointer_reg: Register<Pointer>,
 	},
 	StoreImmediateIntoRegister {
 		imm: Imm,
-		output_reg: Reg,
+		output_reg: Register<Int>,
 	},
 	LoadTapePointerIntoRegister {
-		output_reg: Reg,
+		output_reg: Register<Int>,
 	},
 	StoreRegisterIntoTapePointer {
-		input_reg: Reg,
+		input_reg: Register<Int>,
 	},
 	CalculateTapeOffset {
-		tape_pointer_reg: Reg,
-		output_reg: Reg,
+		tape_pointer_reg: Register<Int>,
+		output_reg: Register<Pointer>,
 	},
 	PerformBinaryRegisterOperation {
-		lhs_reg: Reg,
-		rhs_reg: Reg,
-		output_reg: Reg,
+		lhs_reg: Register<Int>,
+		rhs_reg: Register<Int>,
+		output_reg: Register<Int>,
 		op: BinaryOperation,
 	},
 	InputIntoRegister {
-		output_reg: Reg,
+		output_reg: Register<Int>,
 	},
 	OutputFromRegister {
-		input_reg: Reg,
+		input_reg: Register<Int>,
 	},
 	StartLoop,
 	EndLoop,
 	CompareRegisterToRegister {
-		lhs_reg: Reg,
-		rhs_reg: Reg,
-		output_reg: Reg,
+		lhs_reg: Register<Int>,
+		rhs_reg: Register<Int>,
+		output_reg: Register<Bool>,
 	},
 	JumpIf {
-		input_reg: Reg,
+		input_reg: Register<Bool>,
 	},
 	JumpToHeader,
 	NotImplemented,
@@ -114,23 +115,25 @@ impl ToInstructions for BrainOperation {
 	fn to_instructions(&self) -> Vec<BrainInstruction> {
 		match self.op() {
 			&BrainOperationType::ChangeCell(value) => [
-				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
+				BrainInstructionType::LoadTapePointerIntoRegister {
+					output_reg: Register::new(0),
+				},
 				BrainInstructionType::CalculateTapeOffset {
-					tape_pointer_reg: Reg(0),
-					output_reg: Reg(1),
+					tape_pointer_reg: Register::new(0),
+					output_reg: Register::new(1),
 				},
 				BrainInstructionType::LoadCellIntoRegister {
-					pointer_reg: Reg(1),
-					output_reg: Reg(2),
+					pointer_reg: Register::new(1),
+					output_reg: Register::new(2),
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
 					imm: Imm::cell(value.unsigned_abs().convert::<u64>()),
-					output_reg: Reg(3),
+					output_reg: Register::new(3),
 				},
 				BrainInstructionType::PerformBinaryRegisterOperation {
-					lhs_reg: Reg(2),
-					rhs_reg: Reg(3),
-					output_reg: Reg(4),
+					lhs_reg: Register::new(2),
+					rhs_reg: Register::new(3),
+					output_reg: Register::new(4),
 					op: if value.is_positive() {
 						BinaryOperation::Add
 					} else {
@@ -138,41 +141,45 @@ impl ToInstructions for BrainOperation {
 					},
 				},
 				BrainInstructionType::StoreRegisterIntoCell {
-					value_reg: Reg(4),
-					pointer_reg: Reg(1),
+					value_reg: Register::new(4),
+					pointer_reg: Register::new(1),
 				},
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
 			&BrainOperationType::SetCell(value) => [
-				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
+				BrainInstructionType::LoadTapePointerIntoRegister {
+					output_reg: Register::new(0),
+				},
 				BrainInstructionType::CalculateTapeOffset {
-					tape_pointer_reg: Reg(0),
-					output_reg: Reg(1),
+					tape_pointer_reg: Register::new(0),
+					output_reg: Register::new(1),
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
-					output_reg: Reg(2),
+					output_reg: Register::new(2),
 					imm: Imm::cell(value.convert::<u64>()),
 				},
 				BrainInstructionType::StoreRegisterIntoCell {
-					value_reg: Reg(2),
-					pointer_reg: Reg(1),
+					value_reg: Register::new(2),
+					pointer_reg: Register::new(1),
 				},
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
 			&BrainOperationType::MovePointer(offset) => [
-				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
+				BrainInstructionType::LoadTapePointerIntoRegister {
+					output_reg: Register::new(0),
+				},
 				BrainInstructionType::StoreImmediateIntoRegister {
 					imm: Imm::pointer(offset.unsigned_abs().convert::<u64>()),
-					output_reg: Reg(1),
+					output_reg: Register::new(1),
 				},
 				BrainInstructionType::PerformBinaryRegisterOperation {
-					lhs_reg: Reg(0),
-					rhs_reg: Reg(1),
-					output_reg: Reg(2),
+					lhs_reg: Register::new(0),
+					rhs_reg: Register::new(1),
+					output_reg: Register::new(2),
 					op: if offset.is_positive() {
 						BinaryOperation::Add
 					} else {
@@ -181,45 +188,55 @@ impl ToInstructions for BrainOperation {
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
 					imm: Imm::pointer(TAPE_SIZE as u64 - 1),
-					output_reg: Reg(3),
+					output_reg: Register::new(3),
 				},
 				BrainInstructionType::PerformBinaryRegisterOperation {
-					lhs_reg: Reg(2),
-					rhs_reg: Reg(3),
-					output_reg: Reg(4),
+					lhs_reg: Register::new(2),
+					rhs_reg: Register::new(3),
+					output_reg: Register::new(4),
 					op: BinaryOperation::BitwiseAnd,
 				},
-				BrainInstructionType::StoreRegisterIntoTapePointer { input_reg: Reg(4) },
+				BrainInstructionType::StoreRegisterIntoTapePointer {
+					input_reg: Register::new(4),
+				},
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
 			&BrainOperationType::InputIntoCell => [
-				BrainInstructionType::InputIntoRegister { output_reg: Reg(0) },
-				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(1) },
+				BrainInstructionType::InputIntoRegister {
+					output_reg: Register::new(0),
+				},
+				BrainInstructionType::LoadTapePointerIntoRegister {
+					output_reg: Register::new(1),
+				},
 				BrainInstructionType::CalculateTapeOffset {
-					tape_pointer_reg: Reg(1),
-					output_reg: Reg(2),
+					tape_pointer_reg: Register::new(1),
+					output_reg: Register::new(2),
 				},
 				BrainInstructionType::StoreRegisterIntoCell {
-					value_reg: Reg(0),
-					pointer_reg: Reg(2),
+					value_reg: Register::new(0),
+					pointer_reg: Register::new(2),
 				},
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
 			&BrainOperationType::OutputCurrentCell => [
-				BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
+				BrainInstructionType::LoadTapePointerIntoRegister {
+					output_reg: Register::new(0),
+				},
 				BrainInstructionType::CalculateTapeOffset {
-					tape_pointer_reg: Reg(0),
-					output_reg: Reg(1),
+					tape_pointer_reg: Register::new(0),
+					output_reg: Register::new(1),
 				},
 				BrainInstructionType::LoadCellIntoRegister {
-					pointer_reg: Reg(1),
-					output_reg: Reg(2),
+					pointer_reg: Register::new(1),
+					output_reg: Register::new(2),
 				},
-				BrainInstructionType::OutputFromRegister { input_reg: Reg(2) },
+				BrainInstructionType::OutputFromRegister {
+					input_reg: Register::new(2),
+				},
 			]
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
@@ -227,25 +244,29 @@ impl ToInstructions for BrainOperation {
 			BrainOperationType::DynamicLoop(ops) => {
 				let mut output = [
 					BrainInstructionType::StartLoop,
-					BrainInstructionType::LoadTapePointerIntoRegister { output_reg: Reg(0) },
+					BrainInstructionType::LoadTapePointerIntoRegister {
+						output_reg: Register::new(0),
+					},
 					BrainInstructionType::CalculateTapeOffset {
-						tape_pointer_reg: Reg(0),
-						output_reg: Reg(1),
+						tape_pointer_reg: Register::new(0),
+						output_reg: Register::new(1),
 					},
 					BrainInstructionType::LoadCellIntoRegister {
-						pointer_reg: Reg(1),
-						output_reg: Reg(2),
+						pointer_reg: Register::new(1),
+						output_reg: Register::new(2),
 					},
 					BrainInstructionType::StoreImmediateIntoRegister {
-						output_reg: Reg(3),
+						output_reg: Register::new(3),
 						imm: Imm::CELL_ZERO,
 					},
 					BrainInstructionType::CompareRegisterToRegister {
-						lhs_reg: Reg(2),
-						rhs_reg: Reg(3),
-						output_reg: Reg(4),
+						lhs_reg: Register::new(2),
+						rhs_reg: Register::new(3),
+						output_reg: Register::new(4),
 					},
-					BrainInstructionType::JumpIf { input_reg: Reg(4) },
+					BrainInstructionType::JumpIf {
+						input_reg: Register::new(4),
+					},
 				]
 				.into_iter()
 				.map(|x| BrainInstruction::new(x, self.span().start))
@@ -272,22 +293,6 @@ impl ToInstructions for BrainOperation {
 				self.span().start,
 			)],
 		}
-	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[repr(transparent)]
-pub struct Reg(pub usize);
-
-impl From<usize> for Reg {
-	fn from(value: usize) -> Self {
-		Self(value)
-	}
-}
-
-impl From<Reg> for usize {
-	fn from(value: Reg) -> Self {
-		value.0
 	}
 }
 

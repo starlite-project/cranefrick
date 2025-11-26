@@ -472,6 +472,7 @@ dependencies = [
  "frick_interop",
  "frick_operations",
  "frick_spec",
+ "frick_types",
  "frick_utils",
  "inkwell",
  "libc",
@@ -486,6 +487,7 @@ version = "0.1.0"
 dependencies = [
  "frick_operations",
  "frick_spec",
+ "frick_types",
  "frick_utils",
  "serde",
 ]
@@ -554,6 +556,13 @@ dependencies = [
 [[package]]
 name = "frick_spec"
 version = "0.1.0"
+
+[[package]]
+name = "frick_types"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "frick_utils"

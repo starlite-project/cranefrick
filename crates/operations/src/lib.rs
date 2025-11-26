@@ -15,6 +15,7 @@ use core::ops::{Deref, DerefMut, Range};
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "parse")]
 pub use self::parse::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

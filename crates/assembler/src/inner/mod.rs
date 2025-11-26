@@ -4,7 +4,7 @@ mod utils;
 
 use std::{cell::RefCell, fs, path::Path};
 
-use frick_instructions::{BrainInstruction, BrainInstructionType, Reg};
+use frick_instructions::{BrainInstruction, BrainInstructionType};
 use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
 use inkwell::{
@@ -212,55 +212,46 @@ impl<'ctx> InnerAssembler<'ctx> {
 	fn compile_instruction(&self, instr: BrainInstructionType) -> Result<bool, AssemblyError> {
 		match instr {
 			BrainInstructionType::LoadCellIntoRegister {
-				pointer_reg: Reg(input_reg),
-				output_reg: Reg(output_reg),
-			} => {
-				self.load_cell_into_register(input_reg, output_reg)?;
-			}
+				pointer_reg,
+				output_reg,
+			} => self.load_cell_into_register(pointer_reg, output_reg)?,
 			BrainInstructionType::StoreRegisterIntoCell {
-				value_reg: Reg(value_reg),
-				pointer_reg: Reg(pointer_reg),
-			} => {
-				self.store_register_into_cell(value_reg, pointer_reg)?;
+				value_reg,
+				pointer_reg,
+			} => self.store_register_into_cell(value_reg, pointer_reg)?,
+			BrainInstructionType::StoreImmediateIntoRegister { output_reg, imm } => {
+				self.store_immediate_into_register(output_reg, imm)?;
 			}
-			BrainInstructionType::StoreImmediateIntoRegister {
-				output_reg: Reg(reg),
-				imm,
-			} => {
-				self.store_immediate_into_register(reg, imm)?;
+			BrainInstructionType::LoadTapePointerIntoRegister { output_reg } => {
+				self.load_tape_pointer_into_register(output_reg)?;
 			}
-			BrainInstructionType::LoadTapePointerIntoRegister {
-				output_reg: Reg(output_reg),
-			} => self.load_tape_pointer_into_register(output_reg)?,
-			BrainInstructionType::StoreRegisterIntoTapePointer {
-				input_reg: Reg(input_reg),
-			} => self.store_register_into_tape_pointer(input_reg)?,
+			BrainInstructionType::StoreRegisterIntoTapePointer { input_reg } => {
+				self.store_register_into_tape_pointer(input_reg)?;
+			}
 			BrainInstructionType::CalculateTapeOffset {
-				tape_pointer_reg: Reg(input_reg),
-				output_reg: Reg(output_reg),
-			} => self.calculate_tape_offset(input_reg, output_reg)?,
+				tape_pointer_reg,
+				output_reg,
+			} => self.calculate_tape_offset(tape_pointer_reg, output_reg)?,
 			BrainInstructionType::PerformBinaryRegisterOperation {
-				lhs_reg: Reg(lhs),
-				rhs_reg: Reg(rhs),
-				output_reg: Reg(output_reg),
+				lhs_reg,
+				rhs_reg,
+				output_reg,
 				op,
-			} => self.perform_binary_register_operation(lhs, rhs, output_reg, op)?,
-			BrainInstructionType::InputIntoRegister {
-				output_reg: Reg(reg),
-			} => self.input_into_register(reg)?,
-			BrainInstructionType::OutputFromRegister {
-				input_reg: Reg(reg),
-			} => self.output_from_register(reg)?,
+			} => self.perform_binary_register_operation(lhs_reg, rhs_reg, output_reg, op)?,
+			BrainInstructionType::InputIntoRegister { output_reg } => {
+				self.input_into_register(output_reg)?;
+			}
+			BrainInstructionType::OutputFromRegister { input_reg } => {
+				self.output_from_register(input_reg)?;
+			}
 			BrainInstructionType::StartLoop => self.start_loop()?,
 			BrainInstructionType::EndLoop => self.end_loop()?,
 			BrainInstructionType::CompareRegisterToRegister {
-				lhs_reg: Reg(lhs),
-				rhs_reg: Reg(rhs),
-				output_reg: Reg(output_reg),
-			} => self.compare_register_to_register(lhs, rhs, output_reg)?,
-			BrainInstructionType::JumpIf {
-				input_reg: Reg(input_reg),
-			} => self.jump_if(input_reg)?,
+				lhs_reg,
+				rhs_reg,
+				output_reg,
+			} => self.compare_register_to_register(lhs_reg, rhs_reg, output_reg)?,
+			BrainInstructionType::JumpIf { input_reg } => self.jump_if(input_reg)?,
 			BrainInstructionType::JumpToHeader => self.jump_to_header()?,
 			_ => return Ok(false),
 		}

@@ -1,28 +1,26 @@
 use frick_instructions::{BinaryOperation, Imm};
 use frick_spec::POINTER_SIZE;
+use frick_types::{Bool, Int, Pointer, Register};
 use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
 	llvm_sys::{LLVMGEPFlagInBounds, LLVMGEPFlagNUW},
-	values::{BasicMetadataValueEnum, BasicValue, LLVMTailCallKind},
+	values::{BasicMetadataValueEnum, BasicValue, BasicValueEnum, LLVMTailCallKind},
 };
 
-use super::{
-	AssemblyError, InnerAssembler, LoopBlocks,
-	utils::{Bool, Castable, Int, Pointer},
-};
+use super::{AssemblyError, InnerAssembler, LoopBlocks, utils::Castable};
 use crate::{BuilderExt as _, ContextExt, ContextGetter as _};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn load_cell_into_register(
 		&self,
-		pointer_reg: usize,
-		output_reg: usize,
+		pointer_reg: Register<Pointer>,
+		output_reg: Register<Int>,
 	) -> Result<(), AssemblyError> {
 		let cell_type = self.context().i8_type();
 
-		let ptr_value = self.value_at::<Pointer>(pointer_reg)?;
+		let ptr_value = self.value_at(pointer_reg)?;
 
 		let cell_value = self.builder.build_load(cell_type, ptr_value, "\0")?;
 
@@ -31,12 +29,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn store_register_into_cell(
 		&self,
-		value_reg: usize,
-		pointer_reg: usize,
+		value_reg: Register<Int>,
+		pointer_reg: Register<Pointer>,
 	) -> Result<(), AssemblyError> {
-		let ptr_value = self.value_at::<Pointer>(pointer_reg)?;
+		let ptr_value = self.value_at(pointer_reg)?;
 
-		let cell_value = self.value_at::<Int>(value_reg)?;
+		let cell_value = self.value_at(value_reg)?;
 
 		self.builder.build_store(ptr_value, cell_value)?;
 
@@ -45,7 +43,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn store_immediate_into_register(
 		&self,
-		output_reg: usize,
+		output_reg: Register<Int>,
 		imm: Imm,
 	) -> Result<(), AssemblyError> {
 		let int_type = self.context().custom_width_int_type(imm.size());
@@ -57,7 +55,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn load_tape_pointer_into_register(
 		&self,
-		output_reg: usize,
+		output_reg: Register<Int>,
 	) -> Result<(), AssemblyError> {
 		let pointer_type = self.context().custom_width_int_type(POINTER_SIZE as u32);
 
@@ -70,9 +68,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn store_register_into_tape_pointer(
 		&self,
-		input_reg: usize,
+		input_reg: Register<Int>,
 	) -> Result<(), AssemblyError> {
-		let ptr_value = self.value_at::<Int>(input_reg)?;
+		let ptr_value = self.value_at(input_reg)?;
 
 		self.builder.build_store(self.pointers.pointer, ptr_value)?;
 
@@ -81,11 +79,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn calculate_tape_offset(
 		&self,
-		input_reg: usize,
-		output_reg: usize,
+		input_reg: Register<Int>,
+		output_reg: Register<Pointer>,
 	) -> Result<(), AssemblyError> {
 		let cell_type = self.context().i8_type();
-		let pointer_value = self.value_at::<Int>(input_reg)?;
+		let pointer_value = self.value_at(input_reg)?;
 
 		let offset_pointer = unsafe {
 			self.builder.build_gep_with_no_wrap_flags(
@@ -102,9 +100,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn perform_binary_register_operation(
 		&self,
-		lhs: usize,
-		rhs: usize,
-		output_reg: usize,
+		lhs: Register<Int>,
+		rhs: Register<Int>,
+		output_reg: Register<Int>,
 		op: BinaryOperation,
 	) -> Result<(), AssemblyError> {
 		let lhs_value = self.value_at::<Int>(lhs)?;
@@ -120,7 +118,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.set_value_at(output_reg, new_value)
 	}
 
-	pub(super) fn input_into_register(&self, reg: usize) -> Result<(), AssemblyError> {
+	pub(super) fn input_into_register(&self, reg: Register<Int>) -> Result<(), AssemblyError> {
 		let context = self.context();
 
 		let cell_type = context.i8_type();
@@ -144,10 +142,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub(super) fn output_from_register(&self, reg: usize) -> Result<(), AssemblyError> {
+	pub(super) fn output_from_register(&self, reg: Register<Int>) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let register_value = self.value_at::<Int>(reg)?;
+		let register_value = self.value_at(reg)?;
 
 		if let Some(instr_value) = register_value.as_instruction() {
 			self.add_nontemporal_metadata_to_mem(instr_value)?;
@@ -201,12 +199,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn compare_register_to_register(
 		&self,
-		lhs: usize,
-		rhs: usize,
-		output_reg: usize,
+		lhs: Register<Int>,
+		rhs: Register<Int>,
+		output_reg: Register<Bool>,
 	) -> Result<(), AssemblyError> {
-		let lhs_value = self.value_at::<Int>(lhs)?;
-		let rhs_value = self.value_at::<Int>(rhs)?;
+		let lhs_value = self.value_at(lhs)?;
+		let rhs_value = self.value_at(rhs)?;
 
 		let output =
 			self.builder
@@ -215,10 +213,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.set_value_at(output_reg, output)
 	}
 
-	pub(super) fn jump_if(&self, input_reg: usize) -> Result<(), AssemblyError> {
+	pub(super) fn jump_if(&self, input_reg: Register<Bool>) -> Result<(), AssemblyError> {
 		let loop_info = self.last_loop_info()?;
 
-		let compare_value = self.value_at::<Bool>(input_reg)?;
+		let compare_value = self.value_at(input_reg)?;
 
 		self.builder
 			.build_conditional_branch(compare_value, loop_info.exit, loop_info.body)?;
@@ -235,23 +233,32 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	fn value_at<T: Castable<'ctx>>(&self, reg: usize) -> Result<T::Value, AssemblyError> {
+	fn value_at<T: Castable<'ctx>>(&self, reg: Register<T>) -> Result<T::Value, AssemblyError> {
 		let basic_value = self
 			.registers
 			.borrow()
-			.get(reg)
+			.get(reg.index())
 			.copied()
-			.ok_or_else(|| AssemblyError::NoValueInRegister(reg))?;
+			.ok_or_else(|| AssemblyError::NoValueInRegister(reg.index()))?;
 
 		T::assert_type_matches(basic_value);
 
 		Ok(T::cast(basic_value))
 	}
 
-	fn set_value_at(&self, reg: usize, value: impl BasicValue<'ctx>) -> Result<(), AssemblyError> {
+	fn set_value_at<T: Castable<'ctx>, V>(
+		&self,
+		reg: Register<T>,
+		value: V,
+	) -> Result<(), AssemblyError>
+	where
+		V: BasicValue<'ctx> + Copy,
+	{
+		T::assert_type_matches(value);
+
 		self.registers
 			.borrow_mut()
-			.insert_or_push(reg, value.as_basic_value_enum());
+			.insert_or_push(reg.index(), value.as_basic_value_enum());
 
 		Ok(())
 	}

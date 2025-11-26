@@ -12,6 +12,7 @@ frick_instructions.workspace = true
 frick_interop.workspace = true
 frick_operations.workspace = true
 frick_spec = { path = "../spec" }
+frick_types.workspace = true
 frick_utils = { workspace = true, features = [
     "convert",
     "get_or_zero",

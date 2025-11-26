@@ -1,0 +1,11 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "frick_types"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+serde = { workspace = true, default-features = false }
