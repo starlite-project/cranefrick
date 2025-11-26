@@ -107,6 +107,51 @@ pub enum BrainInstructionType {
 	NotImplemented,
 }
 
+impl BrainInstructionType {
+	#[must_use]
+	pub fn uses_register(self, reg: usize) -> bool {
+		match self {
+			Self::LoadCellIntoRegister {
+				pointer_reg,
+				output_reg: int_reg,
+			}
+			| Self::StoreRegisterIntoCell {
+				value_reg: int_reg,
+				pointer_reg,
+			}
+			| Self::CalculateTapeOffset {
+				tape_pointer_reg: int_reg,
+				output_reg: pointer_reg,
+			} => pointer_reg == reg || int_reg == reg,
+			Self::StoreImmediateIntoRegister {
+				output_reg: int_reg,
+				..
+			}
+			| Self::LoadTapePointerIntoRegister {
+				output_reg: int_reg,
+			}
+			| Self::StoreRegisterIntoTapePointer { input_reg: int_reg }
+			| Self::InputIntoRegister {
+				output_reg: int_reg,
+			}
+			| Self::OutputFromRegister { input_reg: int_reg } => int_reg == reg,
+			Self::PerformBinaryRegisterOperation {
+				lhs_reg,
+				rhs_reg,
+				output_reg,
+				..
+			} => lhs_reg == reg || rhs_reg == reg || output_reg == reg,
+			Self::CompareRegisterToRegister {
+				lhs_reg,
+				rhs_reg,
+				output_reg,
+			} => lhs_reg == reg || rhs_reg == reg || output_reg == reg,
+			Self::JumpIf { input_reg } => input_reg == reg,
+			_ => false,
+		}
+	}
+}
+
 pub trait ToInstructions {
 	fn to_instructions(&self) -> Vec<BrainInstruction>;
 }

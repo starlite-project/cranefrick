@@ -8,4 +8,12 @@ pub trait Pass {
 
 pub trait Analyzer {
 	fn run(&mut self, instrs: &[BrainInstruction]) -> bool;
+
+	fn reset(&mut self) {}
+
+	fn reset_and_run(&mut self, instrs: &[BrainInstruction]) -> bool {
+		self.reset();
+
+		self.run(instrs)
+	}
 }

@@ -93,6 +93,24 @@ where
 	}
 }
 
+impl<T> PartialEq<usize> for Register<T>
+where
+	T: ?Sized + RegisterType,
+{
+	fn eq(&self, other: &usize) -> bool {
+		PartialEq::eq(&self.index, other)
+	}
+}
+
+impl<T> PartialEq<Register<T>> for usize
+where
+	T: ?Sized + RegisterType,
+{
+	fn eq(&self, other: &Register<T>) -> bool {
+		PartialEq::eq(self, &other.index)
+	}
+}
+
 pub enum Bool {}
 
 impl RegisterType for Bool {}
