@@ -7,7 +7,6 @@ use std::{
 };
 
 #[unsafe(no_mangle)]
-#[tracing::instrument(level = tracing::Level::TRACE)]
 pub unsafe extern "C" fn rust_putchar(c: u8) {
 	let mut stdout = io::stdout().lock();
 
@@ -22,7 +21,6 @@ pub unsafe extern "C" fn rust_putchar(c: u8) {
 
 #[unsafe(no_mangle)]
 #[must_use]
-#[tracing::instrument(level = tracing::Level::TRACE, ret)]
 pub unsafe extern "C" fn rust_getchar() -> u8 {
 	unsafe { libc::getchar() as u8 }
 }
