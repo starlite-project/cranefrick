@@ -21,8 +21,10 @@ use inkwell::{
 			LLVMBuildGEPWithNoWrapFlags, LLVMCreateConstantRangeAttribute, LLVMIsNewDbgInfoFormat,
 			LLVMSetIsNewDbgInfoFormat,
 		},
+		target_machine::{LLVMSetTargetMachineFastISel, LLVMSetTargetMachineGlobalISel},
 	},
 	module::Module,
+	targets::TargetMachine,
 	types::{BasicType, PointerType},
 	values::{AsValueRef, IntValue, MetadataValue, PointerValue},
 };
@@ -159,6 +161,18 @@ impl<'ctx> ModuleExt<'ctx> for Module<'ctx> {
 
 	fn is_new_debug_format(&self) -> bool {
 		!matches!(unsafe { LLVMIsNewDbgInfoFormat(self.as_mut_ptr()) }, 0)
+	}
+}
+
+pub trait TargetMachineExt {
+	fn set_fast_instruction_selection(&self, value: bool);
+}
+
+impl TargetMachineExt for TargetMachine {
+	fn set_fast_instruction_selection(&self, value: bool) {
+		unsafe {
+			LLVMSetTargetMachineFastISel(self.as_mut_ptr(), value.convert::<i32>());
+		}
 	}
 }
 

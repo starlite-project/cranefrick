@@ -94,6 +94,7 @@ impl Assembler {
 				.ok_or(AssemblyError::NoTargetMachine)?
 		};
 
+		target_machine.set_fast_instruction_selection(true);
 		target_machine.set_asm_verbosity(true);
 
 		info!("lowering into LLVM IR");
@@ -184,7 +185,7 @@ impl Assembler {
 extern "C" fn handler(ptr: *const i8) {
 	let c_str = unsafe { CStr::from_ptr(ptr) };
 
-	println!("{}", c_str.to_string_lossy());
+	tracing::error!("{}", c_str.to_string_lossy());
 
 	std::process::abort()
 }
