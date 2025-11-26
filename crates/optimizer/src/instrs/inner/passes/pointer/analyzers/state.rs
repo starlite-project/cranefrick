@@ -121,11 +121,6 @@ impl PointerState {
 	pub const fn is_dirty(self) -> bool {
 		self.dirty
 	}
-
-	#[must_use]
-	pub const fn is_value_known(self) -> bool {
-		self.register_index.is_some()
-	}
 }
 
 impl Default for PointerState {
