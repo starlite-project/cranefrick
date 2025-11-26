@@ -1,7 +1,7 @@
 use frick_types::{Bool, Int, Pointer, RegisterType};
 use inkwell::{
 	types::{BasicType, IntType, PointerType},
-	values::{BasicValue, BasicValueEnum, IntValue, PointerValue},
+	values::{BasicValue, IntValue, PointerValue},
 };
 
 pub trait Castable<'ctx>: RegisterType {

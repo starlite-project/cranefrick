@@ -6,7 +6,7 @@ use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
 	llvm_sys::{LLVMGEPFlagInBounds, LLVMGEPFlagNUW},
-	values::{BasicMetadataValueEnum, BasicValue, BasicValueEnum, LLVMTailCallKind},
+	values::{BasicMetadataValueEnum, BasicValue, LLVMTailCallKind},
 };
 
 use super::{AssemblyError, InnerAssembler, LoopBlocks, utils::Castable};
