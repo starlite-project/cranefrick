@@ -2,7 +2,7 @@ use frick_operations::{BrainOperation, BrainOperationType};
 
 use super::Change;
 
-pub fn optimize_consecutive_instructions(ops: [&BrainOperation; 2]) -> Option<Change> {
+pub fn optimize_consecutive_ops(ops: [&BrainOperation; 2]) -> Option<Change> {
 	match ops.map(BrainOperation::op) {
 		[
 			&BrainOperationType::ChangeCell(a),
@@ -24,7 +24,7 @@ pub fn optimize_consecutive_instructions(ops: [&BrainOperation; 2]) -> Option<Ch
 	}
 }
 
-pub fn optimize_set_cell_instruction(ops: [&BrainOperation; 2]) -> Option<Change> {
+pub fn optimize_set_cell(ops: [&BrainOperation; 2]) -> Option<Change> {
 	match ops.map(BrainOperation::op) {
 		[i, &BrainOperationType::ChangeCell(value)] if i.is_zeroing_cell() => Some(Change::swap([
 			ops[0].clone(),
@@ -47,7 +47,7 @@ pub fn remove_unreachable_loops(ops: [&BrainOperation; 2]) -> Option<Change> {
 	}
 }
 
-pub fn optimize_clear_cell_instruction(ops: &[BrainOperation]) -> Option<Change> {
+pub fn optimize_clear_cell(ops: &[BrainOperation]) -> Option<Change> {
 	match ops {
 		[op] => match op.op() {
 			BrainOperationType::ChangeCell(-1) => {
@@ -89,6 +89,19 @@ pub fn remove_changes_before_input(ops: [&BrainOperation; 2]) -> Option<Change> 
 			&BrainOperationType::ChangeCell(..),
 			&BrainOperationType::InputIntoCell,
 		] => Some(Change::remove_offset(0)),
+		_ => None,
+	}
+}
+
+pub fn optimize_output_value(ops: [&BrainOperation; 2]) -> Option<Change> {
+	match ops.map(BrainOperation::op) {
+		[
+			&BrainOperationType::SetCell(set_value),
+			&BrainOperationType::OutputCurrentCell,
+		] => Some(Change::swap([
+			BrainOperation::new(BrainOperationType::OutputValue(set_value), ops[1].span()),
+			BrainOperation::new(BrainOperationType::SetCell(set_value), ops[0].span()),
+		])),
 		_ => None,
 	}
 }

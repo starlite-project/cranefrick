@@ -286,6 +286,18 @@ impl ToInstructions for BrainOperation {
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
+			&BrainOperationType::OutputValue(value) => [
+				BrainInstructionType::StoreImmediateIntoRegister {
+					imm: Imm::cell(value.convert::<u64>()),
+					output_reg: Register::new(0),
+				},
+				BrainInstructionType::OutputFromRegister {
+					input_reg: Register::new(0),
+				},
+			]
+			.into_iter()
+			.map(|x| BrainInstruction::new(x, self.span().start))
+			.collect(),
 			BrainOperationType::DynamicLoop(ops) => {
 				let mut output = [
 					BrainInstructionType::StartLoop,

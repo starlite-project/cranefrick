@@ -45,10 +45,10 @@ impl OperationsOptimizer {
 	}
 
 	fn run_each_pass(&mut self, progress: &mut bool) {
-		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_consecutive_instructions);
-
-		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_set_cell_instruction);
-		*progress |= run_loop_pass(self.ops_mut(), passes::optimize_clear_cell_instruction);
+		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_consecutive_ops);
+		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_set_cell);
+		*progress |= run_loop_pass(self.ops_mut(), passes::optimize_clear_cell);
+		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_output_value);
 
 		*progress |= passes::fix_beginning_instructions(self.ops_mut());
 
