@@ -79,6 +79,7 @@ impl Analyzer for PointerStateAnalyzer {
 	}
 
 	fn reset(&mut self) {
+		self.clear();
 		self.insert(0, PointerState::default());
 	}
 }
