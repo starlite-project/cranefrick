@@ -89,34 +89,34 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		add_attributes_to(
 			self.putchar,
 			[
-				nocallback_attr,
-				nofree_attr,
-				norecurse_attr,
-				willreturn_attr,
-				arg_read_inaccessable_write_memory_attr,
-				probe_stack_attr,
-				target_cpu_attr,
-				target_cpu_features_attr,
-				nounwind_attr,
+				AppliedAttribute::Function(nocallback_attr),
+				AppliedAttribute::Function(nofree_attr),
+				AppliedAttribute::Function(norecurse_attr),
+				AppliedAttribute::Function(willreturn_attr),
+				AppliedAttribute::Function(arg_read_inaccessable_write_memory_attr),
+				AppliedAttribute::Function(probe_stack_attr),
+				AppliedAttribute::Function(target_cpu_attr),
+				AppliedAttribute::Function(target_cpu_features_attr),
+				AppliedAttribute::Function(nounwind_attr),
+				AppliedAttribute::Param(0, zeroext_attr),
+				AppliedAttribute::Param(0, noundef_attr),
 			],
-			[(0, zeroext_attr), (0, noundef_attr)],
-			[],
 		);
 		add_attributes_to(
 			self.getchar,
 			[
-				nocallback_attr,
-				nofree_attr,
-				norecurse_attr,
-				willreturn_attr,
-				arg_none_inaccessable_read_memory_attr,
-				probe_stack_attr,
-				target_cpu_attr,
-				target_cpu_features_attr,
-				nounwind_attr,
+				AppliedAttribute::Function(nocallback_attr),
+				AppliedAttribute::Function(nofree_attr),
+				AppliedAttribute::Function(norecurse_attr),
+				AppliedAttribute::Function(willreturn_attr),
+				AppliedAttribute::Function(arg_none_inaccessable_read_memory_attr),
+				AppliedAttribute::Function(probe_stack_attr),
+				AppliedAttribute::Function(target_cpu_attr),
+				AppliedAttribute::Function(target_cpu_features_attr),
+				AppliedAttribute::Function(nounwind_attr),
+				AppliedAttribute::Return(zeroext_attr),
+				AppliedAttribute::Return(noundef_attr),
 			],
-			[],
-			[zeroext_attr, noundef_attr],
 		);
 		add_attributes_to(
 			self.main,
@@ -126,9 +126,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				target_cpu_attr,
 				target_cpu_features_attr,
 				nounwind_attr,
-			],
-			[],
-			[],
+			]
+			.map(AppliedAttribute::Function),
 		);
 	}
 }
@@ -169,21 +168,20 @@ pub fn get_intrinsic_function_from_name<'ctx>(
 	Ok(declaration)
 }
 
-fn add_attributes_to(
-	func: FunctionValue<'_>,
-	func_attrs: impl IntoIterator<Item = Attribute>,
-	param_attrs: impl IntoIterator<Item = (u32, Attribute)>,
-	return_attrs: impl IntoIterator<Item = Attribute>,
-) {
-	for attribute in func_attrs {
-		func.add_attribute(AttributeLoc::Function, attribute);
+fn add_attributes_to(func: FunctionValue<'_>, attrs: impl IntoIterator<Item = AppliedAttribute>) {
+	for attribute in attrs {
+		match attribute {
+			AppliedAttribute::Function(attr) => func.add_attribute(AttributeLoc::Function, attr),
+			AppliedAttribute::Param(idx, attr) => {
+				func.add_attribute(AttributeLoc::Param(idx), attr);
+			}
+			AppliedAttribute::Return(attr) => func.add_attribute(AttributeLoc::Return, attr),
+		}
 	}
+}
 
-	for (param_idx, attribute) in param_attrs {
-		func.add_attribute(AttributeLoc::Param(param_idx), attribute);
-	}
-
-	for attribute in return_attrs {
-		func.add_attribute(AttributeLoc::Return, attribute);
-	}
+enum AppliedAttribute {
+	Function(Attribute),
+	Param(u32, Attribute),
+	Return(Attribute),
 }
