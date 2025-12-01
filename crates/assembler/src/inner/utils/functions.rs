@@ -168,7 +168,7 @@ pub fn get_intrinsic_function_from_name<'ctx>(
 	Ok(declaration)
 }
 
-fn add_attributes_to(func: FunctionValue<'_>, attrs: impl IntoIterator<Item = AppliedAttribute>) {
+fn add_attributes_to<const N: usize>(func: FunctionValue<'_>, attrs: [AppliedAttribute; N]) {
 	for attribute in attrs {
 		match attribute {
 			AppliedAttribute::Function(attr) => func.add_attribute(AttributeLoc::Function, attr),
