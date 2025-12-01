@@ -20,8 +20,7 @@ use inkwell::{
 
 pub use self::utils::AssemblerFunctions;
 use self::utils::{AssemblerDebugBuilder, AssemblerPointers};
-use super::AssemblyError;
-use crate::{ContextGetter as _, ModuleExt as _};
+use super::{AssemblyError, ContextGetter as _, ModuleExt as _};
 
 pub struct InnerAssembler<'ctx> {
 	file_data: String,
