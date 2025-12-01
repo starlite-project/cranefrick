@@ -1,5 +1,6 @@
 allow-unwrap-in-tests = true
 avoid-breaking-exported-api = false
+disallowed-types = ["std::collections::HashMap", "std::collections::HashSet"]
 doc-valid-idents = ["..", "AccessKit"]
 pass-by-value-size-limit = 256
 too-many-arguments-threshold = 16
