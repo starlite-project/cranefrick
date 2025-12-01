@@ -6,6 +6,8 @@ pub struct WindowsN<'a, T: 'a, const N: usize> {
 }
 
 impl<'a, T: 'a, const N: usize> WindowsN<'a, T, N> {
+	const _LENGTH_CHECK: () = const { assert!(N != 0) };
+
 	const fn new(slice: &'a [T]) -> Self {
 		Self { v: slice }
 	}
