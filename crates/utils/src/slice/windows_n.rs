@@ -8,7 +8,7 @@ pub struct WindowsN<'a, T: 'a, const N: usize> {
 impl<'a, T: 'a, const N: usize> WindowsN<'a, T, N> {
 	const _LENGTH_CHECK: () = const { assert!(N != 0) };
 
-	const fn new(slice: &'a [T]) -> Self {
+	pub(super) const fn new(slice: &'a [T]) -> Self {
 		Self { slice }
 	}
 }
@@ -92,15 +92,5 @@ impl<'a, T: 'a, const N: usize> Iterator for WindowsN<'a, T, N> {
 			let start = self.slice.len() - N;
 			Some((&self.slice[start..]).try_into().ok()?)
 		}
-	}
-}
-
-pub trait SliceExt<T> {
-	fn windows_n<const N: usize>(&self) -> WindowsN<'_, T, N>;
-}
-
-impl<T> SliceExt<T> for [T] {
-	fn windows_n<const N: usize>(&self) -> WindowsN<'_, T, N> {
-		WindowsN::new(self)
 	}
 }
