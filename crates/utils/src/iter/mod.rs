@@ -27,37 +27,45 @@ pub trait IteratorExt: Iterator {
 	}
 
 	#[cfg(feature = "alloc")]
-	fn sorted_by<F>(self, sorter: F) -> SortedBy<Self::Item, F>
+	fn sorted_by(
+		self,
+		sorter: impl FnMut(&Self::Item, &Self::Item) -> Ordering,
+	) -> SortedBy<Self::Item>
 	where
 		Self: Sized,
-		F: FnMut(&Self::Item, &Self::Item) -> Ordering,
 	{
 		SortedBy::new(self, sorter)
 	}
 
 	#[cfg(feature = "alloc")]
-	fn sorted_unstable_by<F>(self, sorter: F) -> SortedUnstableBy<Self::Item, F>
+	fn sorted_unstable_by(
+		self,
+		sorter: impl FnMut(&Self::Item, &Self::Item) -> Ordering,
+	) -> SortedUnstableBy<Self::Item>
 	where
 		Self: Sized,
-		F: FnMut(&Self::Item, &Self::Item) -> Ordering,
 	{
 		SortedUnstableBy::new(self, sorter)
 	}
 
 	#[cfg(feature = "alloc")]
-	fn sorted_by_key<K: Ord, F>(self, sorter: F) -> SortedByKey<Self::Item, K, F>
+	fn sorted_by_key<K: Ord>(
+		self,
+		sorter: impl FnMut(&Self::Item) -> K,
+	) -> SortedByKey<Self::Item, K>
 	where
 		Self: Sized,
-		F: FnMut(&Self::Item) -> K,
 	{
 		SortedByKey::new(self, sorter)
 	}
 
 	#[cfg(feature = "alloc")]
-	fn sorted_unstable_by_key<K: Ord, F>(self, sorter: F) -> SortedUnstableByKey<Self::Item, K, F>
+	fn sorted_unstable_by_key<K: Ord>(
+		self,
+		sorter: impl FnMut(&Self::Item) -> K,
+	) -> SortedUnstableByKey<Self::Item, K>
 	where
 		Self: Sized,
-		F: FnMut(&Self::Item) -> K,
 	{
 		SortedUnstableByKey::new(self, sorter)
 	}

@@ -1,66 +1,41 @@
 use alloc::vec::{IntoIter as VecIntoIter, Vec};
-use core::{cmp::Ordering, iter::FusedIterator, marker::PhantomData, mem};
+use core::{cmp::Ordering, iter::FusedIterator, marker::PhantomData};
 
 use crate::IntoIteratorExt as _;
 
+#[repr(transparent)]
 pub struct Sorted<T> {
 	pub(crate) iter: VecIntoIter<T>,
-	sorted: bool,
-}
-
-impl<T> Sorted<T> {
-	pub(crate) fn new(iter: impl IntoIterator<Item = T>) -> Self {
-		Self {
-			iter: iter.collect_to::<Vec<_>>().into_iter(),
-			sorted: false,
-		}
-	}
-
-	const fn is_sorted(&self) -> bool {
-		self.sorted
-	}
 }
 
 impl<T: Ord> Sorted<T> {
-	fn sort(&mut self) {
-		self.iter = {
-			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
+	pub(crate) fn new(iter: impl IntoIterator<Item = T>) -> Self {
+		let mut iter = iter.collect_to::<Vec<_>>().into_iter();
 
-			iter.sort();
+		iter.as_mut_slice().sort();
 
-			iter.into_iter()
-		};
-
-		self.sorted = true;
+		Self { iter }
 	}
 }
 
-impl<T: Ord> DoubleEndedIterator for Sorted<T> {
+impl<T> DoubleEndedIterator for Sorted<T> {
 	fn next_back(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			self.sort();
-		}
-
 		self.iter.next_back()
 	}
 }
 
-impl<T: Ord> ExactSizeIterator for Sorted<T> {
+impl<T> ExactSizeIterator for Sorted<T> {
 	fn len(&self) -> usize {
 		self.iter.len()
 	}
 }
 
-impl<T: Ord> FusedIterator for Sorted<T> {}
+impl<T> FusedIterator for Sorted<T> {}
 
-impl<T: Ord> Iterator for Sorted<T> {
+impl<T> Iterator for Sorted<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			self.sort();
-		}
-
 		self.iter.next()
 	}
 
@@ -77,88 +52,46 @@ impl<T: Ord> Iterator for Sorted<T> {
 	}
 
 	fn is_sorted(self) -> bool {
-		Self::is_sorted(&self)
+		true
 	}
 }
 
-pub struct SortedBy<T, F> {
+#[repr(transparent)]
+pub struct SortedBy<T> {
 	pub(crate) iter: VecIntoIter<T>,
-	sorter: Option<F>,
 }
 
-impl<T, F> SortedBy<T, F> {
-	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: F) -> Self {
-		Self {
-			iter: iter.collect_to::<Vec<_>>().into_iter(),
-			sorter: Some(sorter),
-		}
-	}
+impl<T> SortedBy<T> {
+	pub(crate) fn new(
+		iter: impl IntoIterator<Item = T>,
+		sorter: impl FnMut(&T, &T) -> Ordering,
+	) -> Self {
+		let mut iter = iter.collect_to::<Vec<_>>().into_iter();
 
-	const fn is_sorted(&self) -> bool {
-		self.sorter.is_none()
-	}
-}
+		iter.as_mut_slice().sort_by(sorter);
 
-impl<T, F> SortedBy<T, F>
-where
-	F: FnMut(&T, &T) -> Ordering,
-{
-	unsafe fn sort_unchecked(&mut self) {
-		let sorter = unsafe { self.sorter.take().unwrap_unchecked() };
-
-		self.sort_with(sorter);
-	}
-
-	fn sort_with(&mut self, sorter: F) {
-		self.iter = {
-			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
-
-			iter.sort_by(sorter);
-
-			iter.into_iter()
-		};
+		Self { iter }
 	}
 }
 
-impl<T, F> DoubleEndedIterator for SortedBy<T, F>
-where
-	F: FnMut(&T, &T) -> Ordering,
-{
+impl<T> DoubleEndedIterator for SortedBy<T> {
 	fn next_back(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			unsafe {
-				self.sort_unchecked();
-			}
-		}
-
 		self.iter.next_back()
 	}
 }
 
-impl<T, F> ExactSizeIterator for SortedBy<T, F>
-where
-	F: FnMut(&T, &T) -> Ordering,
-{
+impl<T> ExactSizeIterator for SortedBy<T> {
 	fn len(&self) -> usize {
 		self.iter.len()
 	}
 }
 
-impl<T, F> FusedIterator for SortedBy<T, F> where F: FnMut(&T, &T) -> Ordering {}
+impl<T> FusedIterator for SortedBy<T> {}
 
-impl<T, F> Iterator for SortedBy<T, F>
-where
-	F: FnMut(&T, &T) -> Ordering,
-{
+impl<T> Iterator for SortedBy<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			unsafe {
-				self.sort_unchecked();
-			}
-		}
-
 		self.iter.next()
 	}
 
@@ -175,86 +108,43 @@ where
 	}
 }
 
-pub struct SortedByKey<T, K, F> {
+#[repr(transparent)]
+pub struct SortedByKey<T, K> {
 	pub(crate) iter: VecIntoIter<T>,
-	sorter: Option<F>,
 	marker: PhantomData<K>,
 }
 
-impl<T, K, F> SortedByKey<T, K, F> {
-	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: F) -> Self {
+impl<T, K: Ord> SortedByKey<T, K> {
+	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: impl FnMut(&T) -> K) -> Self {
+		let mut iter = iter.collect_to::<Vec<_>>().into_iter();
+
+		iter.as_mut_slice().sort_by_key(sorter);
+
 		Self {
-			iter: iter.collect_to::<Vec<_>>().into_iter(),
-			sorter: Some(sorter),
+			iter,
 			marker: PhantomData,
 		}
 	}
-
-	const fn is_sorted(&self) -> bool {
-		self.sorter.is_none()
-	}
 }
 
-impl<T, K: Ord, F> SortedByKey<T, K, F>
-where
-	F: FnMut(&T) -> K,
-{
-	unsafe fn sort_unchecked(&mut self) {
-		let sorter = unsafe { self.sorter.take().unwrap_unchecked() };
-
-		self.sort_with(sorter);
-	}
-
-	fn sort_with(&mut self, sorter: F) {
-		self.iter = {
-			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
-
-			iter.sort_by_key(sorter);
-
-			iter.into_iter()
-		};
-	}
-}
-
-impl<T, K: Ord, F> DoubleEndedIterator for SortedByKey<T, K, F>
-where
-	F: FnMut(&T) -> K,
-{
+impl<T, K: Ord> DoubleEndedIterator for SortedByKey<T, K> {
 	fn next_back(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			unsafe {
-				self.sort_unchecked();
-			}
-		}
-
 		self.iter.next_back()
 	}
 }
 
-impl<T, K: Ord, F> ExactSizeIterator for SortedByKey<T, K, F>
-where
-	F: FnMut(&T) -> K,
-{
+impl<T, K: Ord> ExactSizeIterator for SortedByKey<T, K> {
 	fn len(&self) -> usize {
 		self.iter.len()
 	}
 }
 
-impl<T, K: Ord, F> FusedIterator for SortedByKey<T, K, F> where F: FnMut(&T) -> K {}
+impl<T, K: Ord> FusedIterator for SortedByKey<T, K> {}
 
-impl<T, K: Ord, F> Iterator for SortedByKey<T, K, F>
-where
-	F: FnMut(&T) -> K,
-{
+impl<T, K: Ord> Iterator for SortedByKey<T, K> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			unsafe {
-				self.sort_unchecked();
-			}
-		}
-
 		self.iter.next()
 	}
 
@@ -271,64 +161,39 @@ where
 	}
 }
 
+#[repr(transparent)]
 pub struct SortedUnstable<T> {
 	pub(crate) iter: VecIntoIter<T>,
-	sorted: bool,
-}
-
-impl<T> SortedUnstable<T> {
-	pub(crate) fn new(iter: impl IntoIterator<Item = T>) -> Self {
-		Self {
-			iter: iter.collect_to::<Vec<_>>().into_iter(),
-			sorted: false,
-		}
-	}
-
-	const fn is_sorted(&self) -> bool {
-		self.sorted
-	}
 }
 
 impl<T: Ord> SortedUnstable<T> {
-	fn sort(&mut self) {
-		self.iter = {
-			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
+	pub(crate) fn new(iter: impl IntoIterator<Item = T>) -> Self {
+		let mut iter = iter.collect_to::<Vec<_>>().into_iter();
 
-			iter.sort_unstable();
+		iter.as_mut_slice().sort_unstable();
 
-			iter.into_iter()
-		};
-
-		self.sorted = true;
+		Self { iter }
 	}
 }
 
-impl<T: Ord> DoubleEndedIterator for SortedUnstable<T> {
+impl<T> DoubleEndedIterator for SortedUnstable<T> {
 	fn next_back(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			self.sort();
-		}
-
 		self.iter.next_back()
 	}
 }
 
-impl<T: Ord> ExactSizeIterator for SortedUnstable<T> {
+impl<T> ExactSizeIterator for SortedUnstable<T> {
 	fn len(&self) -> usize {
 		self.iter.len()
 	}
 }
 
-impl<T: Ord> FusedIterator for SortedUnstable<T> {}
+impl<T> FusedIterator for SortedUnstable<T> {}
 
-impl<T: Ord> Iterator for SortedUnstable<T> {
+impl<T> Iterator for SortedUnstable<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			self.sort();
-		}
-
 		self.iter.next()
 	}
 
@@ -345,88 +210,45 @@ impl<T: Ord> Iterator for SortedUnstable<T> {
 	}
 
 	fn is_sorted(self) -> bool {
-		Self::is_sorted(&self)
+		true
 	}
 }
 
-pub struct SortedUnstableBy<T, F> {
+pub struct SortedUnstableBy<T> {
 	pub(crate) iter: VecIntoIter<T>,
-	sorter: Option<F>,
 }
 
-impl<T, F> SortedUnstableBy<T, F> {
-	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: F) -> Self {
-		Self {
-			iter: iter.collect_to::<Vec<_>>().into_iter(),
-			sorter: Some(sorter),
-		}
-	}
+impl<T> SortedUnstableBy<T> {
+	pub(crate) fn new(
+		iter: impl IntoIterator<Item = T>,
+		sorter: impl FnMut(&T, &T) -> Ordering,
+	) -> Self {
+		let mut iter = iter.collect_to::<Vec<_>>().into_iter();
 
-	const fn is_sorted(&self) -> bool {
-		self.sorter.is_none()
-	}
-}
+		iter.as_mut_slice().sort_unstable_by(sorter);
 
-impl<T, F> SortedUnstableBy<T, F>
-where
-	F: FnMut(&T, &T) -> Ordering,
-{
-	unsafe fn sort_unchecked(&mut self) {
-		let sorter = unsafe { self.sorter.take().unwrap_unchecked() };
-
-		self.sort_with(sorter);
-	}
-
-	fn sort_with(&mut self, sorter: F) {
-		self.iter = {
-			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
-
-			iter.sort_unstable_by(sorter);
-
-			iter.into_iter()
-		};
+		Self { iter }
 	}
 }
 
-impl<T, F> DoubleEndedIterator for SortedUnstableBy<T, F>
-where
-	F: FnMut(&T, &T) -> Ordering,
-{
+impl<T> DoubleEndedIterator for SortedUnstableBy<T> {
 	fn next_back(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			unsafe {
-				self.sort_unchecked();
-			}
-		}
-
 		self.iter.next_back()
 	}
 }
 
-impl<T, F> ExactSizeIterator for SortedUnstableBy<T, F>
-where
-	F: FnMut(&T, &T) -> Ordering,
-{
+impl<T> ExactSizeIterator for SortedUnstableBy<T> {
 	fn len(&self) -> usize {
 		self.iter.len()
 	}
 }
 
-impl<T, F> FusedIterator for SortedUnstableBy<T, F> where F: FnMut(&T, &T) -> Ordering {}
+impl<T> FusedIterator for SortedUnstableBy<T> {}
 
-impl<T, F> Iterator for SortedUnstableBy<T, F>
-where
-	F: FnMut(&T, &T) -> Ordering,
-{
+impl<T> Iterator for SortedUnstableBy<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			unsafe {
-				self.sort_unchecked();
-			}
-		}
-
 		self.iter.next()
 	}
 
@@ -443,86 +265,43 @@ where
 	}
 }
 
-pub struct SortedUnstableByKey<T, K, F> {
+#[repr(transparent)]
+pub struct SortedUnstableByKey<T, K> {
 	pub(crate) iter: VecIntoIter<T>,
-	sorter: Option<F>,
 	marker: PhantomData<K>,
 }
 
-impl<T, K, F> SortedUnstableByKey<T, K, F> {
-	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: F) -> Self {
+impl<T, K: Ord> SortedUnstableByKey<T, K> {
+	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: impl FnMut(&T) -> K) -> Self {
+		let mut iter = iter.collect_to::<Vec<_>>().into_iter();
+
+		iter.as_mut_slice().sort_unstable_by_key(sorter);
+
 		Self {
-			iter: iter.collect_to::<Vec<_>>().into_iter(),
-			sorter: Some(sorter),
+			iter,
 			marker: PhantomData,
 		}
 	}
-
-	const fn is_sorted(&self) -> bool {
-		self.sorter.is_none()
-	}
 }
 
-impl<T, K: Ord, F> SortedUnstableByKey<T, K, F>
-where
-	F: FnMut(&T) -> K,
-{
-	unsafe fn sort_unchecked(&mut self) {
-		let sorter = unsafe { self.sorter.take().unwrap_unchecked() };
-
-		self.sort_with(sorter);
-	}
-
-	fn sort_with(&mut self, sorter: F) {
-		self.iter = {
-			let mut iter = mem::take(&mut self.iter).collect::<Vec<_>>();
-
-			iter.sort_unstable_by_key(sorter);
-
-			iter.into_iter()
-		};
-	}
-}
-
-impl<T, K: Ord, F> DoubleEndedIterator for SortedUnstableByKey<T, K, F>
-where
-	F: FnMut(&T) -> K,
-{
+impl<T, K: Ord> DoubleEndedIterator for SortedUnstableByKey<T, K> {
 	fn next_back(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			unsafe {
-				self.sort_unchecked();
-			}
-		}
-
 		self.iter.next_back()
 	}
 }
 
-impl<T, K: Ord, F> ExactSizeIterator for SortedUnstableByKey<T, K, F>
-where
-	F: FnMut(&T) -> K,
-{
+impl<T, K: Ord> ExactSizeIterator for SortedUnstableByKey<T, K> {
 	fn len(&self) -> usize {
 		self.iter.len()
 	}
 }
 
-impl<T, K: Ord, F> FusedIterator for SortedUnstableByKey<T, K, F> where F: FnMut(&T) -> K {}
+impl<T, K: Ord> FusedIterator for SortedUnstableByKey<T, K> {}
 
-impl<T, K: Ord, F> Iterator for SortedUnstableByKey<T, K, F>
-where
-	F: FnMut(&T) -> K,
-{
+impl<T, K: Ord> Iterator for SortedUnstableByKey<T, K> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if !Self::is_sorted(self) {
-			unsafe {
-				self.sort_unchecked();
-			}
-		}
-
 		self.iter.next()
 	}
 
