@@ -73,7 +73,7 @@ frick_serialize = { path = "crates/serialize" }
 frick_spec = { path = "crates/spec" }
 frick_types = { path = "crates/types" }
 frick_utils = { path = "crates/utils" }
-inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "ae49132d89fb4ae1054d7023520cd7ffc4d1ae66", features = [
+inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "b9c53276e30935ccec841d12c9687a17e9199958", features = [
     "llvm21-1"
 ] }
 libc = "0.2"
