@@ -1,5 +1,5 @@
 use alloc::vec::{IntoIter as VecIntoIter, Vec};
-use core::{cmp::Ordering, iter::FusedIterator, marker::PhantomData};
+use core::{cmp::Ordering, iter::FusedIterator};
 
 use crate::IntoIteratorExt as _;
 
