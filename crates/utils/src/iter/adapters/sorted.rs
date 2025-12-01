@@ -109,39 +109,38 @@ impl<T> Iterator for SortedBy<T> {
 }
 
 #[repr(transparent)]
-pub struct SortedByKey<T, K> {
+pub struct SortedByKey<T> {
 	pub(crate) iter: VecIntoIter<T>,
-	marker: PhantomData<K>,
 }
 
-impl<T, K: Ord> SortedByKey<T, K> {
-	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: impl FnMut(&T) -> K) -> Self {
+impl<T> SortedByKey<T> {
+	pub(crate) fn new<K: Ord>(
+		iter: impl IntoIterator<Item = T>,
+		sorter: impl FnMut(&T) -> K,
+	) -> Self {
 		let mut iter = iter.collect_to::<Vec<_>>().into_iter();
 
 		iter.as_mut_slice().sort_by_key(sorter);
 
-		Self {
-			iter,
-			marker: PhantomData,
-		}
+		Self { iter }
 	}
 }
 
-impl<T, K: Ord> DoubleEndedIterator for SortedByKey<T, K> {
+impl<T> DoubleEndedIterator for SortedByKey<T> {
 	fn next_back(&mut self) -> Option<Self::Item> {
 		self.iter.next_back()
 	}
 }
 
-impl<T, K: Ord> ExactSizeIterator for SortedByKey<T, K> {
+impl<T> ExactSizeIterator for SortedByKey<T> {
 	fn len(&self) -> usize {
 		self.iter.len()
 	}
 }
 
-impl<T, K: Ord> FusedIterator for SortedByKey<T, K> {}
+impl<T> FusedIterator for SortedByKey<T> {}
 
-impl<T, K: Ord> Iterator for SortedByKey<T, K> {
+impl<T> Iterator for SortedByKey<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -266,39 +265,38 @@ impl<T> Iterator for SortedUnstableBy<T> {
 }
 
 #[repr(transparent)]
-pub struct SortedUnstableByKey<T, K> {
+pub struct SortedUnstableByKey<T> {
 	pub(crate) iter: VecIntoIter<T>,
-	marker: PhantomData<K>,
 }
 
-impl<T, K: Ord> SortedUnstableByKey<T, K> {
-	pub(crate) fn new(iter: impl IntoIterator<Item = T>, sorter: impl FnMut(&T) -> K) -> Self {
+impl<T> SortedUnstableByKey<T> {
+	pub(crate) fn new<K: Ord>(
+		iter: impl IntoIterator<Item = T>,
+		sorter: impl FnMut(&T) -> K,
+	) -> Self {
 		let mut iter = iter.collect_to::<Vec<_>>().into_iter();
 
 		iter.as_mut_slice().sort_unstable_by_key(sorter);
 
-		Self {
-			iter,
-			marker: PhantomData,
-		}
+		Self { iter }
 	}
 }
 
-impl<T, K: Ord> DoubleEndedIterator for SortedUnstableByKey<T, K> {
+impl<T> DoubleEndedIterator for SortedUnstableByKey<T> {
 	fn next_back(&mut self) -> Option<Self::Item> {
 		self.iter.next_back()
 	}
 }
 
-impl<T, K: Ord> ExactSizeIterator for SortedUnstableByKey<T, K> {
+impl<T> ExactSizeIterator for SortedUnstableByKey<T> {
 	fn len(&self) -> usize {
 		self.iter.len()
 	}
 }
 
-impl<T, K: Ord> FusedIterator for SortedUnstableByKey<T, K> {}
+impl<T> FusedIterator for SortedUnstableByKey<T> {}
 
-impl<T, K: Ord> Iterator for SortedUnstableByKey<T, K> {
+impl<T> Iterator for SortedUnstableByKey<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {

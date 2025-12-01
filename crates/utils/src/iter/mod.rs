@@ -49,10 +49,7 @@ pub trait IteratorExt: Iterator {
 	}
 
 	#[cfg(feature = "alloc")]
-	fn sorted_by_key<K: Ord>(
-		self,
-		sorter: impl FnMut(&Self::Item) -> K,
-	) -> SortedByKey<Self::Item, K>
+	fn sorted_by_key<K: Ord>(self, sorter: impl FnMut(&Self::Item) -> K) -> SortedByKey<Self::Item>
 	where
 		Self: Sized,
 	{
@@ -63,7 +60,7 @@ pub trait IteratorExt: Iterator {
 	fn sorted_unstable_by_key<K: Ord>(
 		self,
 		sorter: impl FnMut(&Self::Item) -> K,
-	) -> SortedUnstableByKey<Self::Item, K>
+	) -> SortedUnstableByKey<Self::Item>
 	where
 		Self: Sized,
 	{
