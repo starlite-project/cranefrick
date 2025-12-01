@@ -1,9 +1,7 @@
-use std::{
-	collections::HashMap,
-	ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 use frick_instructions::BrainInstructionType;
+use rustc_hash::FxHashMap as HashMap;
 
 use crate::instrs::inner::Analyzer;
 
