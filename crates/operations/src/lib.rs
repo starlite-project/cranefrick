@@ -6,6 +6,7 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+mod cell_offset_options;
 #[cfg(feature = "parse")]
 mod parse;
 
@@ -15,6 +16,7 @@ use core::ops::{Deref, DerefMut, Range};
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 
+pub use self::cell_offset_options::*;
 #[cfg(feature = "parse")]
 pub use self::parse::*;
 
@@ -74,10 +76,9 @@ impl DerefMut for BrainOperation {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum BrainOperationType {
-	// ChangeCell(i8, i32),
-	IncrementCell(u8, i32),
-	DecrementCell(u8, i32),
-	SetCell(u8, i32),
+	IncrementCell(CellOffsetOptions),
+	DecrementCell(CellOffsetOptions),
+	SetCell(CellOffsetOptions),
 	MovePointer(i32),
 	InputIntoCell,
 	OutputCurrentCell,
@@ -89,7 +90,14 @@ pub enum BrainOperationType {
 impl BrainOperationType {
 	#[must_use]
 	pub const fn is_zeroing_cell(&self) -> bool {
-		matches!(self, Self::DynamicLoop(..) | Self::SetCell(0, 0))
+		matches!(
+			self,
+			Self::DynamicLoop(..)
+				| Self::SetCell(CellOffsetOptions {
+					value: 0,
+					offset: 0
+				})
+		)
 	}
 
 	#[must_use]
@@ -114,7 +122,7 @@ impl BrainOperationType {
 
 	#[must_use]
 	pub const fn increment_cell_at(value: u8, offset: i32) -> Self {
-		Self::IncrementCell(value, offset)
+		Self::IncrementCell(CellOffsetOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -124,7 +132,7 @@ impl BrainOperationType {
 
 	#[must_use]
 	pub const fn decrement_cell_at(value: u8, offset: i32) -> Self {
-		Self::DecrementCell(value, offset)
+		Self::DecrementCell(CellOffsetOptions::new(value, offset))
 	}
 
 	#[must_use]
@@ -134,7 +142,7 @@ impl BrainOperationType {
 
 	#[must_use]
 	pub const fn set_cell_at(value: u8, offset: i32) -> Self {
-		Self::SetCell(value, offset)
+		Self::SetCell(CellOffsetOptions::new(value, offset))
 	}
 
 	#[must_use]
