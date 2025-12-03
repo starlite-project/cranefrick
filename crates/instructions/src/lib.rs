@@ -3,14 +3,21 @@
 
 extern crate alloc;
 
+mod helpers;
+
 use alloc::{vec, vec::Vec};
-use core::ops::{Deref, DerefMut, Range};
+use core::{
+	mem,
+	ops::{Deref, DerefMut, Range},
+};
 
 use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
 use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_types::{BinaryOperation, Bool, Int, Pointer, Register};
 use frick_utils::Convert as _;
 use serde::{Deserialize, Serialize};
+
+use self::helpers::LoadCellInformation;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -160,51 +167,55 @@ impl ToInstructions for BrainOperation {
 	fn to_instructions(&self) -> Vec<BrainInstruction> {
 		match self.op() {
 			&BrainOperationType::IncrementCell(CellOffsetOptions { value, offset }) => {
-				let (mut output, cell_reg_idx, pointer_reg_idx) = load_cell(offset, 0);
+				let mut load_cell_info = LoadCellInformation::create(offset, 0, None);
 
-				output.extend([
+				let mut instrs = mem::take(&mut load_cell_info.instrs);
+
+				instrs.extend([
 					BrainInstructionType::StoreImmediateIntoRegister {
 						imm: Imm::cell(value.convert::<u64>()),
-						output_reg: Register::new(cell_reg_idx + 1),
+						output_reg: Register::new(load_cell_info.instr_offset),
 					},
 					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: Register::new(cell_reg_idx),
-						rhs_reg: Register::new(cell_reg_idx + 1),
-						output_reg: Register::new(cell_reg_idx + 2),
+						lhs_reg: load_cell_info.cell_reg,
+						rhs_reg: Register::new(load_cell_info.instr_offset),
+						output_reg: Register::new(load_cell_info.instr_offset + 1),
 						op: BinaryOperation::Add,
 					},
 					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(cell_reg_idx + 2),
-						pointer_reg: Register::new(pointer_reg_idx),
+						value_reg: Register::new(load_cell_info.instr_offset + 1),
+						pointer_reg: load_cell_info.pointer_reg,
 					},
 				]);
 
-				output
+				instrs
 					.into_iter()
 					.map(|i| BrainInstruction::new(i, self.span().start))
 					.collect()
 			}
 			&BrainOperationType::DecrementCell(CellOffsetOptions { value, offset }) => {
-				let (mut output, cell_reg_idx, pointer_reg_idx) = load_cell(offset, 0);
+				let mut load_cell_info = LoadCellInformation::create(offset, 0, None);
 
-				output.extend([
+				let mut instrs = mem::take(&mut load_cell_info.instrs);
+
+				instrs.extend([
 					BrainInstructionType::StoreImmediateIntoRegister {
 						imm: Imm::cell(value.convert::<u64>()),
-						output_reg: Register::new(cell_reg_idx + 1),
+						output_reg: Register::new(load_cell_info.instr_offset),
 					},
 					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: Register::new(cell_reg_idx),
-						rhs_reg: Register::new(cell_reg_idx + 1),
-						output_reg: Register::new(cell_reg_idx + 2),
+						lhs_reg: load_cell_info.cell_reg,
+						rhs_reg: Register::new(load_cell_info.instr_offset),
+						output_reg: Register::new(load_cell_info.instr_offset + 1),
 						op: BinaryOperation::Sub,
 					},
 					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(cell_reg_idx + 2),
-						pointer_reg: Register::new(pointer_reg_idx),
+						value_reg: Register::new(load_cell_info.instr_offset + 1),
+						pointer_reg: load_cell_info.pointer_reg,
 					},
 				]);
 
-				output
+				instrs
 					.into_iter()
 					.map(|i| BrainInstruction::new(i, self.span().start))
 					.collect()
