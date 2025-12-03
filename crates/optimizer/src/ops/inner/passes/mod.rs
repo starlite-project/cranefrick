@@ -152,6 +152,37 @@ pub fn add_offsets(ops: [&BrainOperation; 3]) -> Option<Change> {
 				ops[0].span(),
 			),
 		])),
+		[
+			&BrainOperationType::MovePointer(x),
+			&BrainOperationType::DecrementCell(options),
+			&BrainOperationType::MovePointer(y),
+		] => Some(Change::swap([
+			BrainOperation::new(
+				BrainOperationType::decrement_cell_at(
+					options.value(),
+					options.offset().wrapping_add(x),
+				),
+				ops[1].span(),
+			),
+			BrainOperation::new(
+				BrainOperationType::MovePointer(x.wrapping_add(y)),
+				ops[0].span(),
+			),
+		])),
+		[
+			&BrainOperationType::MovePointer(x),
+			&BrainOperationType::SetCell(options),
+			&BrainOperationType::MovePointer(y),
+		] => Some(Change::swap([
+			BrainOperation::new(
+				BrainOperationType::set_cell_at(options.value(), options.offset().wrapping_add(x)),
+				ops[1].span(),
+			),
+			BrainOperation::new(
+				BrainOperationType::MovePointer(x.wrapping_add(y)),
+				ops[0].span(),
+			),
+		])),
 		_ => None,
 	}
 }

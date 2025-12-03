@@ -347,6 +347,50 @@ impl ToInstructions for BrainOperation {
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
+			&BrainOperationType::SetCell(CellOffsetOptions { value, offset }) => [
+				BrainInstructionType::LoadTapePointerIntoRegister {
+					output_reg: Register::new(0),
+				},
+				BrainInstructionType::StoreImmediateIntoRegister {
+					imm: Imm::pointer(offset.unsigned_abs().convert::<u64>()),
+					output_reg: Register::new(1),
+				},
+				BrainInstructionType::PerformBinaryRegisterOperation {
+					lhs_reg: Register::new(0),
+					rhs_reg: Register::new(1),
+					output_reg: Register::new(2),
+					op: if offset.is_positive() {
+						BinaryOperation::Add
+					} else {
+						BinaryOperation::Sub
+					},
+				},
+				BrainInstructionType::StoreImmediateIntoRegister {
+					imm: Imm::pointer(TAPE_SIZE as u64 - 1),
+					output_reg: Register::new(3),
+				},
+				BrainInstructionType::PerformBinaryRegisterOperation {
+					lhs_reg: Register::new(2),
+					rhs_reg: Register::new(3),
+					output_reg: Register::new(4),
+					op: BinaryOperation::BitwiseAnd,
+				},
+				BrainInstructionType::CalculateTapeOffset {
+					tape_pointer_reg: Register::new(4),
+					output_reg: Register::new(5),
+				},
+				BrainInstructionType::StoreImmediateIntoRegister {
+					imm: Imm::cell(value.convert::<u64>()),
+					output_reg: Register::new(6),
+				},
+				BrainInstructionType::StoreRegisterIntoCell {
+					value_reg: Register::new(6),
+					pointer_reg: Register::new(5),
+				},
+			]
+			.into_iter()
+			.map(|x| BrainInstruction::new(x, self.span().start))
+			.collect(),
 			&BrainOperationType::MovePointer(offset) => [
 				BrainInstructionType::LoadTapePointerIntoRegister {
 					output_reg: Register::new(0),
