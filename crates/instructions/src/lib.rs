@@ -159,7 +159,7 @@ pub trait ToInstructions {
 impl ToInstructions for BrainOperation {
 	fn to_instructions(&self) -> Vec<BrainInstruction> {
 		match self.op() {
-			&BrainOperationType::ChangeCell(value) => [
+			&BrainOperationType::IncrementCell(value, 0) => [
 				BrainInstructionType::LoadTapePointerIntoRegister {
 					output_reg: Register::new(0),
 				},
@@ -172,18 +172,14 @@ impl ToInstructions for BrainOperation {
 					output_reg: Register::new(2),
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Imm::cell(value.unsigned_abs().convert::<u64>()),
+					imm: Imm::cell(value.convert::<u64>()),
 					output_reg: Register::new(3),
 				},
 				BrainInstructionType::PerformBinaryRegisterOperation {
 					lhs_reg: Register::new(2),
 					rhs_reg: Register::new(3),
 					output_reg: Register::new(4),
-					op: if value.is_positive() {
-						BinaryOperation::Add
-					} else {
-						BinaryOperation::Sub
-					},
+					op: BinaryOperation::Add,
 				},
 				BrainInstructionType::StoreRegisterIntoCell {
 					value_reg: Register::new(4),
@@ -193,7 +189,37 @@ impl ToInstructions for BrainOperation {
 			.into_iter()
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
-			&BrainOperationType::SetCell(value) => [
+			&BrainOperationType::DecrementCell(value, 0) => [
+				BrainInstructionType::LoadTapePointerIntoRegister {
+					output_reg: Register::new(0),
+				},
+				BrainInstructionType::CalculateTapeOffset {
+					tape_pointer_reg: Register::new(0),
+					output_reg: Register::new(1),
+				},
+				BrainInstructionType::LoadCellIntoRegister {
+					pointer_reg: Register::new(1),
+					output_reg: Register::new(2),
+				},
+				BrainInstructionType::StoreImmediateIntoRegister {
+					imm: Imm::cell(value.convert::<u64>()),
+					output_reg: Register::new(3),
+				},
+				BrainInstructionType::PerformBinaryRegisterOperation {
+					lhs_reg: Register::new(2),
+					rhs_reg: Register::new(3),
+					output_reg: Register::new(4),
+					op: BinaryOperation::Sub,
+				},
+				BrainInstructionType::StoreRegisterIntoCell {
+					value_reg: Register::new(4),
+					pointer_reg: Register::new(1),
+				},
+			]
+			.into_iter()
+			.map(|x| BrainInstruction::new(x, self.span().start))
+			.collect(),
+			&BrainOperationType::SetCell(value, 0) => [
 				BrainInstructionType::LoadTapePointerIntoRegister {
 					output_reg: Register::new(0),
 				},

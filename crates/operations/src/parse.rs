@@ -54,8 +54,8 @@ fn parser<'src>()
 -> impl Parser<'src, CharIoInput<File>, Vec<BrainOperation>, extra::Err<Rich<'src, char>>> {
 	recursive(|expr| {
 		choice((
-			just('+').to(BrainOperationType::ChangeCell(1)),
-			just('-').to(BrainOperationType::ChangeCell(-1)),
+			just('+').to(BrainOperationType::increment_cell(1)),
+			just('-').to(BrainOperationType::decrement_cell(1)),
 			just('<').to(BrainOperationType::MovePointer(-1)),
 			just('>').to(BrainOperationType::MovePointer(1)),
 			just('.').to(BrainOperationType::OutputCurrentCell),

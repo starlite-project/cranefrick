@@ -74,8 +74,10 @@ impl DerefMut for BrainOperation {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum BrainOperationType {
-	ChangeCell(i8),
-	SetCell(u8),
+	// ChangeCell(i8, i32),
+	IncrementCell(u8, i32),
+	DecrementCell(u8, i32),
+	SetCell(u8, i32),
 	MovePointer(i32),
 	InputIntoCell,
 	OutputCurrentCell,
@@ -87,7 +89,7 @@ pub enum BrainOperationType {
 impl BrainOperationType {
 	#[must_use]
 	pub const fn is_zeroing_cell(&self) -> bool {
-		matches!(self, Self::DynamicLoop(..) | Self::SetCell(0))
+		matches!(self, Self::DynamicLoop(..) | Self::SetCell(0, 0))
 	}
 
 	#[must_use]
@@ -103,5 +105,45 @@ impl BrainOperationType {
 			Self::DynamicLoop(ops) => Some(ops),
 			_ => None,
 		}
+	}
+
+	#[must_use]
+	pub const fn increment_cell(value: u8) -> Self {
+		Self::increment_cell_at(value, 0)
+	}
+
+	#[must_use]
+	pub const fn increment_cell_at(value: u8, offset: i32) -> Self {
+		Self::IncrementCell(value, offset)
+	}
+
+	#[must_use]
+	pub const fn decrement_cell(value: u8) -> Self {
+		Self::decrement_cell_at(value, 0)
+	}
+
+	#[must_use]
+	pub const fn decrement_cell_at(value: u8, offset: i32) -> Self {
+		Self::DecrementCell(value, offset)
+	}
+
+	#[must_use]
+	pub const fn set_cell(value: u8) -> Self {
+		Self::set_cell_at(value, 0)
+	}
+
+	#[must_use]
+	pub const fn set_cell_at(value: u8, offset: i32) -> Self {
+		Self::SetCell(value, offset)
+	}
+
+	#[must_use]
+	pub const fn clear_cell() -> Self {
+		Self::clear_cell_at(0)
+	}
+
+	#[must_use]
+	pub const fn clear_cell_at(offset: i32) -> Self {
+		Self::set_cell_at(0, offset)
 	}
 }
