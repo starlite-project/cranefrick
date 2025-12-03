@@ -2,6 +2,18 @@ use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
 
 use super::Change;
 
+pub fn remove_noop_ops(ops: [&BrainOperation; 1]) -> Option<Change> {
+	match ops.map(BrainOperation::op) {
+		[
+			BrainOperationType::Comment(..)
+			| &BrainOperationType::MovePointer(0)
+			| &BrainOperationType::IncrementCell(CellOffsetOptions { value: 0, .. })
+			| &BrainOperationType::DecrementCell(CellOffsetOptions { value: 0, .. }),
+		] => Some(Change::remove()),
+		_ => None,
+	}
+}
+
 pub fn optimize_consecutive_ops(ops: [&BrainOperation; 2]) -> Option<Change> {
 	match ops.map(BrainOperation::op) {
 		[
@@ -79,13 +91,6 @@ pub fn optimize_clear_cell(ops: &[BrainOperation]) -> Option<Change> {
 			}) => Some(Change::replace(BrainOperationType::clear_cell())),
 			_ => None,
 		},
-		_ => None,
-	}
-}
-
-pub fn remove_comments(ops: [&BrainOperation; 1]) -> Option<Change> {
-	match ops.map(BrainOperation::op) {
-		[BrainOperationType::Comment(..)] => Some(Change::remove()),
 		_ => None,
 	}
 }
