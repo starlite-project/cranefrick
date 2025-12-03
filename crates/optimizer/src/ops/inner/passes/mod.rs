@@ -132,3 +132,26 @@ pub fn optimize_output_value(ops: [&BrainOperation; 2]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn add_offsets(ops: [&BrainOperation; 3]) -> Option<Change> {
+	match ops.map(BrainOperation::op) {
+		[
+			&BrainOperationType::MovePointer(x),
+			&BrainOperationType::IncrementCell(options),
+			&BrainOperationType::MovePointer(y),
+		] => Some(Change::swap([
+			BrainOperation::new(
+				BrainOperationType::increment_cell_at(
+					options.value(),
+					options.offset().wrapping_add(x),
+				),
+				ops[1].span(),
+			),
+			BrainOperation::new(
+				BrainOperationType::MovePointer(x.wrapping_add(y)),
+				ops[0].span(),
+			),
+		])),
+		_ => None,
+	}
+}

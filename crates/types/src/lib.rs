@@ -2,12 +2,14 @@
 #![no_std]
 
 mod sealed;
-mod serde;
+mod serde_impl;
 
 use core::{
 	fmt::{Debug, Formatter, Result as FmtResult},
 	marker::PhantomData,
 };
+
+use serde::{Deserialize, Serialize};
 
 #[repr(transparent)]
 pub struct Register<T>
@@ -122,5 +124,13 @@ impl RegisterType for Int {}
 pub enum Pointer {}
 
 impl RegisterType for Pointer {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub enum BinaryOperation {
+	Add,
+	Sub,
+	BitwiseAnd,
+}
 
 pub trait RegisterType: self::sealed::Sealed {}

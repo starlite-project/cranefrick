@@ -1,6 +1,6 @@
-use frick_instructions::{BinaryOperation, Imm};
+use frick_instructions::Imm;
 use frick_spec::POINTER_SIZE;
-use frick_types::{Bool, Int, Pointer, Register};
+use frick_types::{BinaryOperation, Bool, Int, Pointer, Register};
 use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,

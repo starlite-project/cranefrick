@@ -8,4 +8,4 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-serde = { workspace = true, default-features = false }
+serde = { workspace = true, default-features = false, features = ["derive"] }
