@@ -534,25 +534,25 @@ impl ToInstructions for BrainOperation {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Imm {
 	value: u64,
-	size: u32,
+	size: ImmSize,
 }
 
 impl Imm {
 	pub const CELL_ZERO: Self = Self::cell(0);
 
 	#[must_use]
-	pub const fn new(value: u64, size: u32) -> Self {
+	pub const fn new(value: u64, size: ImmSize) -> Self {
 		Self { value, size }
 	}
 
 	#[must_use]
 	pub const fn pointer(value: u64) -> Self {
-		Self::new(value, POINTER_SIZE as u32)
+		Self::new(value, ImmSize::Pointer)
 	}
 
 	#[must_use]
 	pub const fn cell(value: u64) -> Self {
-		Self::new(value, 8)
+		Self::new(value, ImmSize::Cell)
 	}
 
 	#[must_use]
@@ -562,6 +562,15 @@ impl Imm {
 
 	#[must_use]
 	pub const fn size(self) -> u32 {
-		self.size
+		match self.size {
+			ImmSize::Cell => 8,
+			ImmSize::Pointer => POINTER_SIZE as u32,
+		}
 	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ImmSize {
+	Cell,
+	Pointer,
 }
