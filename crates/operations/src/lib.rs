@@ -80,6 +80,7 @@ pub enum BrainOperationType {
 	DecrementCell(CellOffsetOptions),
 	SetCell(CellOffsetOptions),
 	MovePointer(i32),
+	MoveCellValue(CellOffsetOptions),
 	InputIntoCell,
 	OutputCurrentCell,
 	OutputValue(u8),

@@ -16,3 +16,23 @@ pub fn optimize_clear_cell(ops: &[BrainOperation]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_move_cell_value(ops: &[BrainOperation]) -> Option<Change> {
+	let mapped = ops.iter().map(BrainOperation::op).collect::<Vec<_>>();
+
+	match &*mapped {
+		[
+			BrainOperationType::IncrementCell(CellOffsetOptions {
+				value: a,
+				offset: x,
+			}),
+			BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: 1,
+				offset: 0,
+			}),
+		] => Some(Change::replace(BrainOperationType::MoveCellValue(
+			CellOffsetOptions::new(*a, *x),
+		))),
+		_ => None,
+	}
+}

@@ -111,8 +111,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let new_value = match op {
 			BinaryOperation::Add => self.builder.build_int_add(lhs_value, rhs_value, "\0")?,
 			BinaryOperation::Sub => self.builder.build_int_sub(lhs_value, rhs_value, "\0")?,
+			BinaryOperation::Mul => self.builder.build_int_mul(lhs_value, rhs_value, "\0")?,
 			BinaryOperation::BitwiseAnd => self.builder.build_and(lhs_value, rhs_value, "\0")?,
-			_ => unimplemented!(),
+			op => unimplemented!("binary operation {op:?}"),
 		};
 
 		self.set_value_at(output_reg, new_value)

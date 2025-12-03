@@ -130,6 +130,7 @@ impl RegisterType for Pointer {}
 pub enum BinaryOperation {
 	Add,
 	Sub,
+	Mul,
 	BitwiseAnd,
 }
 
