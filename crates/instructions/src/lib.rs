@@ -515,6 +515,7 @@ pub enum ImmSize {
 	Pointer,
 }
 
+#[deprecated = "Use LoadCellInformation instead"]
 fn load_cell(offset: i32, instr_offset: usize) -> (Vec<BrainInstructionType>, usize, usize) {
 	let mut output = Vec::new();
 
