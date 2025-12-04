@@ -167,9 +167,7 @@ impl ToInstructions for BrainOperation {
 	fn to_instructions(&self) -> Vec<BrainInstruction> {
 		match self.op() {
 			&BrainOperationType::IncrementCell(CellOffsetOptions { value, offset }) => {
-				let mut load_cell_info = LoadCellInformation::create(offset, 0, None);
-
-				let mut instrs = mem::take(&mut load_cell_info.instrs);
+				let (load_cell_info, mut instrs) = LoadCellInformation::create(offset, 0, None);
 
 				instrs.extend([
 					BrainInstructionType::StoreImmediateIntoRegister {
@@ -194,9 +192,7 @@ impl ToInstructions for BrainOperation {
 					.collect()
 			}
 			&BrainOperationType::DecrementCell(CellOffsetOptions { value, offset }) => {
-				let mut load_cell_info = LoadCellInformation::create(offset, 0, None);
-
-				let mut instrs = mem::take(&mut load_cell_info.instrs);
+				let (load_cell_info, mut instrs) = LoadCellInformation::create(offset, 0, None);
 
 				instrs.extend([
 					BrainInstructionType::StoreImmediateIntoRegister {
@@ -320,48 +316,51 @@ impl ToInstructions for BrainOperation {
 			.map(|x| BrainInstruction::new(x, self.span().start))
 			.collect(),
 			&BrainOperationType::MoveCellValue(CellOffsetOptions { value, offset }) => {
-				let (mut output, current_cell_reg_idx, current_cell_pointer_idx) = load_cell(0, 0);
+				let (current_cell_info, mut instrs) = LoadCellInformation::create(0, 0, None);
 
-				output.extend([
+				instrs.extend([
 					BrainInstructionType::StoreImmediateIntoRegister {
 						imm: Imm::CELL_ZERO,
-						output_reg: Register::new(current_cell_reg_idx + 1),
+						output_reg: Register::new(current_cell_info.instr_offset),
 					},
 					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(current_cell_reg_idx + 1),
-						pointer_reg: Register::new(current_cell_pointer_idx),
+						value_reg: Register::new(current_cell_info.instr_offset),
+						pointer_reg: current_cell_info.pointer_reg,
 					},
 					BrainInstructionType::StoreImmediateIntoRegister {
 						imm: Imm::cell(value.convert::<u64>()),
-						output_reg: Register::new(current_cell_reg_idx + 2),
+						output_reg: Register::new(current_cell_info.instr_offset + 1),
 					},
 					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: Register::new(current_cell_reg_idx),
-						rhs_reg: Register::new(current_cell_reg_idx + 2),
-						output_reg: Register::new(current_cell_reg_idx + 3),
+						lhs_reg: current_cell_info.cell_reg,
+						rhs_reg: Register::new(current_cell_info.instr_offset + 1),
+						output_reg: Register::new(current_cell_info.instr_offset + 2),
 						op: BinaryOperation::Mul,
 					},
 				]);
 
-				let (mut load_instrs, other_cell_reg_idx, other_cell_pointer_reg_idx) =
-					load_cell(offset, current_cell_reg_idx + 4);
+				let (other_cell_info, mut other_cell_instrs) = LoadCellInformation::create(
+					offset,
+					current_cell_info.instr_offset + 3,
+					Some(current_cell_info.tape_pointer_reg),
+				);
 
-				output.append(&mut load_instrs);
+				instrs.append(&mut other_cell_instrs);
 
-				output.extend([
+				instrs.extend([
 					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: Register::new(current_cell_reg_idx + 3),
-						rhs_reg: Register::new(other_cell_reg_idx),
-						output_reg: Register::new(other_cell_reg_idx + 1),
+						lhs_reg: Register::new(current_cell_info.instr_offset + 2),
+						rhs_reg: other_cell_info.cell_reg,
+						output_reg: Register::new(other_cell_info.instr_offset),
 						op: BinaryOperation::Add,
 					},
 					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(other_cell_reg_idx + 1),
-						pointer_reg: Register::new(other_cell_pointer_reg_idx),
+						value_reg: Register::new(other_cell_info.instr_offset),
+						pointer_reg: other_cell_info.pointer_reg,
 					},
 				]);
 
-				output
+				instrs
 					.into_iter()
 					.map(|i| BrainInstruction::new(i, self.span().start))
 					.collect()
@@ -513,69 +512,4 @@ impl Imm {
 pub enum ImmSize {
 	Cell,
 	Pointer,
-}
-
-#[deprecated = "Use LoadCellInformation instead"]
-fn load_cell(offset: i32, instr_offset: usize) -> (Vec<BrainInstructionType>, usize, usize) {
-	let mut output = Vec::new();
-
-	let (cell_reg_idx, pointer_reg_idx) = if matches!(offset, 0) {
-		output.extend([
-			BrainInstructionType::LoadTapePointerIntoRegister {
-				output_reg: Register::new(instr_offset),
-			},
-			BrainInstructionType::CalculateTapeOffset {
-				tape_pointer_reg: Register::new(instr_offset),
-				output_reg: Register::new(instr_offset + 1),
-			},
-			BrainInstructionType::LoadCellIntoRegister {
-				pointer_reg: Register::new(instr_offset + 1),
-				output_reg: Register::new(instr_offset + 2),
-			},
-		]);
-
-		(instr_offset + 2, instr_offset + 1)
-	} else {
-		output.extend([
-			BrainInstructionType::LoadTapePointerIntoRegister {
-				output_reg: Register::new(instr_offset),
-			},
-			BrainInstructionType::StoreImmediateIntoRegister {
-				imm: Imm::pointer(offset.unsigned_abs().convert::<u64>()),
-				output_reg: Register::new(instr_offset + 1),
-			},
-			BrainInstructionType::PerformBinaryRegisterOperation {
-				lhs_reg: Register::new(instr_offset),
-				rhs_reg: Register::new(instr_offset + 1),
-				output_reg: Register::new(instr_offset + 2),
-				op: if offset.is_positive() {
-					BinaryOperation::Add
-				} else {
-					BinaryOperation::Sub
-				},
-			},
-			BrainInstructionType::StoreImmediateIntoRegister {
-				imm: Imm::pointer(TAPE_SIZE as u64 - 1),
-				output_reg: Register::new(instr_offset + 3),
-			},
-			BrainInstructionType::PerformBinaryRegisterOperation {
-				lhs_reg: Register::new(instr_offset + 2),
-				rhs_reg: Register::new(instr_offset + 3),
-				output_reg: Register::new(instr_offset + 4),
-				op: BinaryOperation::BitwiseAnd,
-			},
-			BrainInstructionType::CalculateTapeOffset {
-				tape_pointer_reg: Register::new(instr_offset + 4),
-				output_reg: Register::new(instr_offset + 5),
-			},
-			BrainInstructionType::LoadCellIntoRegister {
-				pointer_reg: Register::new(instr_offset + 5),
-				output_reg: Register::new(instr_offset + 6),
-			},
-		]);
-
-		(instr_offset + 6, instr_offset + 5)
-	};
-
-	(output, cell_reg_idx, pointer_reg_idx)
 }

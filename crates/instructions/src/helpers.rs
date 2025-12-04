@@ -9,7 +9,6 @@ use crate::Imm;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoadCellInformation {
-	pub instrs: Vec<BrainInstructionType>,
 	pub cell_reg: Register<Int>,
 	pub tape_pointer_reg: Register<Int>,
 	pub pointer_reg: Register<Pointer>,
@@ -21,7 +20,7 @@ impl LoadCellInformation {
 		offset: i32,
 		instr_offset: usize,
 		tape_pointer_reg: Option<Register<Int>>,
-	) -> Self {
+	) -> (Self, Vec<BrainInstructionType>) {
 		let mut instrs = Vec::new();
 
 		let (cell_reg, tape_pointer_reg, pointer_reg, instr_offset) =
@@ -157,12 +156,14 @@ impl LoadCellInformation {
 				}
 			};
 
-		Self {
+		(
+			Self {
+				cell_reg,
+				tape_pointer_reg,
+				pointer_reg,
+				instr_offset,
+			},
 			instrs,
-			cell_reg,
-			tape_pointer_reg,
-			pointer_reg,
-			instr_offset,
-		}
+		)
 	}
 }
