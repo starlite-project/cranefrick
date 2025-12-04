@@ -175,6 +175,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"\0",
 		)?;
 
+		self.builder.build_free(self.pointers.tape)?;
+
 		self.builder.build_return(None)?;
 
 		self.debug_builder.di_builder.finalize();
