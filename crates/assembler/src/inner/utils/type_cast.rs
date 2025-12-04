@@ -1,7 +1,7 @@
-use frick_types::{Bool, Int, Pointer, RegisterType};
+use frick_types::{Any, Bool, Int, Pointer, RegisterType};
 use inkwell::{
-	types::{BasicType, IntType, PointerType},
-	values::{BasicValue, IntValue, PointerValue},
+	types::{BasicType, BasicTypeEnum, IntType, PointerType},
+	values::{BasicValue, BasicValueEnum, IntValue, PointerValue},
 };
 
 pub trait Castable<'ctx>: RegisterType {
@@ -12,6 +12,17 @@ pub trait Castable<'ctx>: RegisterType {
 	fn cast(v: impl BasicValue<'ctx>) -> Self::Value;
 
 	fn assert_type_matches(v: impl BasicValue<'ctx>);
+}
+
+impl<'ctx> Castable<'ctx> for Any {
+	type Type = BasicTypeEnum<'ctx>;
+	type Value = BasicValueEnum<'ctx>;
+
+	fn cast(v: impl BasicValue<'ctx>) -> Self::Value {
+		v.as_basic_value_enum()
+	}
+
+	fn assert_type_matches(_: impl BasicValue<'ctx>) {}
 }
 
 // LLVM uses i1 for boolean types

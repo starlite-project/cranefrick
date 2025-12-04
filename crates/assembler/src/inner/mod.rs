@@ -237,6 +237,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 				output_reg,
 				op,
 			} => self.perform_binary_register_operation(lhs_reg, rhs_reg, output_reg, op)?,
+			BrainInstructionType::DuplicateRegister {
+				input_reg,
+				output_reg,
+			} => self.duplicate_register(input_reg, output_reg)?,
 			BrainInstructionType::InputIntoRegister { output_reg } => {
 				self.input_into_register(output_reg)?;
 			}

@@ -1,6 +1,6 @@
 use frick_instructions::Imm;
 use frick_spec::POINTER_SIZE;
-use frick_types::{BinaryOperation, Bool, Int, Pointer, Register};
+use frick_types::{Any, BinaryOperation, Bool, Int, Pointer, Register};
 use frick_utils::{Convert as _, InsertOrPush as _};
 use inkwell::{
 	IntPredicate,
@@ -117,6 +117,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		self.set_value_at(output_reg, new_value)
+	}
+
+	pub(super) fn duplicate_register(
+		&self,
+		input_reg: Register<Any>,
+		output_reg: Register<Any>,
+	) -> Result<(), AssemblyError> {
+		let input = self.value_at(input_reg)?;
+
+		self.set_value_at(output_reg, input)
 	}
 
 	pub(super) fn input_into_register(&self, reg: Register<Int>) -> Result<(), AssemblyError> {

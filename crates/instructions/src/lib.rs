@@ -10,7 +10,7 @@ use core::ops::{Deref, DerefMut, Range};
 
 use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
 use frick_spec::{POINTER_SIZE, TAPE_SIZE};
-use frick_types::{BinaryOperation, Bool, Int, Pointer, Register};
+use frick_types::{Any, BinaryOperation, Bool, Int, Pointer, Register};
 use frick_utils::Convert as _;
 use serde::{Deserialize, Serialize};
 
@@ -90,6 +90,10 @@ pub enum BrainInstructionType {
 		rhs_reg: Register<Int>,
 		output_reg: Register<Int>,
 		op: BinaryOperation,
+	},
+	DuplicateRegister {
+		input_reg: Register<Any>,
+		output_reg: Register<Any>,
 	},
 	InputIntoRegister {
 		output_reg: Register<Int>,

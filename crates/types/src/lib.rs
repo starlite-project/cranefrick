@@ -113,6 +113,10 @@ where
 	}
 }
 
+pub enum Any {}
+
+impl RegisterType for Any {}
+
 pub enum Bool {}
 
 impl RegisterType for Bool {}

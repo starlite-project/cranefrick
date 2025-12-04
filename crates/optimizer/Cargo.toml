@@ -11,10 +11,11 @@ version.workspace = true
 frick_instructions.workspace = true
 frick_operations.workspace = true
 frick_serialize.workspace = true
+frick_types.workspace = true
 frick_utils = { workspace = true, features = ["insert_or_push", "iter_ext"] }
+rustc-hash = "2"
 serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"
 ] }
 tracing = { workspace = true, features = ["attributes"] }
-rustc-hash = "2"
