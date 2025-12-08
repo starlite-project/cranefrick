@@ -2,15 +2,13 @@ use frick_instructions::{BrainInstruction, BrainInstructionType};
 
 use crate::instrs::inner::{Analyzer as _, Pass, passes::PointerStateAnalyzer};
 
-#[derive(Debug, Default, Clone)]
-#[repr(transparent)]
-pub struct PointerRedundantLoadsPass {
-	state_analyzer: PointerStateAnalyzer,
-}
+pub struct PointerRedundantLoadsPass;
 
 impl Pass for PointerRedundantLoadsPass {
 	fn run(&mut self, instrs: &mut Vec<BrainInstruction>) -> bool {
-		if !self.state_analyzer.reset_and_run(instrs) {
+		let mut state_analyzer = PointerStateAnalyzer::default();
+
+		if !state_analyzer.reset_and_run(instrs) {
 			tracing::debug!("no pointer analysis available");
 			return false;
 		}
@@ -27,7 +25,7 @@ impl Pass for PointerRedundantLoadsPass {
 					return None;
 				};
 
-				let prev_state = self.state_analyzer.pointer_state_at(i - 1);
+				let prev_state = state_analyzer.pointer_state_at(i - 1);
 
 				if !prev_state.is_dirty()
 					&& prev_state
