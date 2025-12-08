@@ -104,6 +104,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let alloc_family_attr = context.create_string_attribute("alloc-family", "alloc");
 		let allockind_alloc_attr = context.create_named_enum_attribute("allockind", 0b0001_0001);
 		let allockind_free_attr = context.create_named_enum_attribute("allockind", 0b0100);
+		let noalias_attr = context.create_named_enum_attribute("noalias", 0);
+		let inaccessable_readwrite_memory_attr =
+			context.create_named_enum_attribute("memory", 0b1100);
 
 		tracing::info!(?allockind_free_attr);
 
@@ -159,6 +162,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				AppliedAttribute::Function(target_cpu_features_attr),
 				AppliedAttribute::Function(alloc_family_attr),
 				AppliedAttribute::Function(allockind_alloc_attr),
+				AppliedAttribute::Function(willreturn_attr),
+				AppliedAttribute::Function(nofree_attr),
+				AppliedAttribute::Function(inaccessable_readwrite_memory_attr),
+				AppliedAttribute::Return(noalias_attr),
+				AppliedAttribute::Return(noundef_attr),
 			],
 		);
 		add_attributes_to(

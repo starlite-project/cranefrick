@@ -1,6 +1,7 @@
 use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_utils::Convert as _;
 use inkwell::{
+	attributes::AttributeLoc,
 	builder::Builder,
 	context::AsContextRef,
 	llvm_sys::prelude::LLVMContextRef,
@@ -9,7 +10,7 @@ use inkwell::{
 };
 
 use super::AssemblerFunctions;
-use crate::{AssemblyError, ContextGetter as _};
+use crate::{AssemblyError, ContextExt, ContextGetter as _};
 
 #[derive(Debug, Clone, Copy)]
 pub struct AssemblerPointers<'ctx> {
@@ -29,12 +30,18 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let tape = {
 			let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
-			builder
-				.build_call(
-					malloc,
-					&[tape_size.convert::<BasicMetadataValueEnum<'ctx>>()],
-					"tape",
-				)?
+			let tape_malloc_call = builder.build_call(
+				malloc,
+				&[tape_size.convert::<BasicMetadataValueEnum<'ctx>>()],
+				"tape",
+			)?;
+
+			let dereferenceable_or_null_attr =
+				context.create_named_enum_attribute("dereferenceable_or_null", TAPE_SIZE as u64);
+
+			tape_malloc_call.add_attribute(AttributeLoc::Return, dereferenceable_or_null_attr);
+
+			tape_malloc_call
 				.try_as_basic_value()
 				.expect_basic("expected ptr from malloc")
 				.into_pointer_value()
@@ -78,9 +85,6 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			"\0",
 		)?;
 
-		let i8_zero = i8_type.const_zero();
-
-		builder.build_memset(self.tape, 1, i8_zero, tape_array_size)?;
 		builder.build_store(self.pointer, ptr_type.const_zero())?;
 
 		Ok(())
