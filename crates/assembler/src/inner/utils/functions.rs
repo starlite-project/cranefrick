@@ -84,6 +84,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	}
 
 	fn setup(self, cpu_name: &str, cpu_features: &str) {
+		const ARG_READ: u64 = 0b0001;
+		const ARG_WRITE: u64 = 0b0010;
+		const INACCESSABLE_READ: u64 = 0b0100;
+		const INACCESSABLE_WRITE: u64 = 0b1000;
+
 		let context = self.context();
 
 		let nocallback_attr = context.create_named_enum_attribute("nocallback", 0b0);
@@ -91,10 +96,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let norecurse_attr = context.create_named_enum_attribute("norecurse", 0b0);
 		let willreturn_attr = context.create_named_enum_attribute("willreturn", 0b0);
 		let arg_none_inaccessable_read_memory_attr =
-			context.create_named_enum_attribute("memory", 0b0100);
+			context.create_named_enum_attribute("memory", INACCESSABLE_READ);
 		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0b0);
 		let arg_read_inaccessable_write_memory_attr =
-			context.create_named_enum_attribute("memory", 0b1001);
+			context.create_named_enum_attribute("memory", ARG_READ | INACCESSABLE_WRITE);
 		let noundef_attr = context.create_named_enum_attribute("noundef", 0b0);
 		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0b0);
 		let target_cpu_attr = context.create_string_attribute("target-cpu", cpu_name);
@@ -104,9 +109,14 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let alloc_family_attr = context.create_string_attribute("alloc-family", "alloc");
 		let allockind_alloc_attr = context.create_named_enum_attribute("allockind", 0b0001_0001);
 		let allockind_free_attr = context.create_named_enum_attribute("allockind", 0b0100);
-		let noalias_attr = context.create_named_enum_attribute("noalias", 0);
-		let inaccessable_readwrite_memory_attr =
-			context.create_named_enum_attribute("memory", 0b1100);
+		let noalias_attr = context.create_named_enum_attribute("noalias", 0b0);
+		let arg_none_inaccessable_readwrite_memory_attr =
+			context.create_named_enum_attribute("memory", INACCESSABLE_READ | INACCESSABLE_WRITE);
+		let allocptr_attr = context.create_named_enum_attribute("allocptr", 0b0);
+		let arg_readwrite_inaccessable_readwrite_memory_attr = context.create_named_enum_attribute(
+			"memory",
+			ARG_READ | ARG_WRITE | INACCESSABLE_READ | INACCESSABLE_WRITE,
+		);
 
 		tracing::info!(?allockind_free_attr);
 
@@ -143,17 +153,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			],
 		);
 		add_attributes_to(
-			self.main,
-			[
-				nofree_attr,
-				probe_stack_attr,
-				target_cpu_attr,
-				target_cpu_features_attr,
-				nounwind_attr,
-			]
-			.map(AppliedAttribute::Function),
-		);
-		add_attributes_to(
 			self.alloc,
 			[
 				AppliedAttribute::Function(nounwind_attr),
@@ -164,7 +163,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				AppliedAttribute::Function(allockind_alloc_attr),
 				AppliedAttribute::Function(willreturn_attr),
 				AppliedAttribute::Function(nofree_attr),
-				AppliedAttribute::Function(inaccessable_readwrite_memory_attr),
+				AppliedAttribute::Function(arg_none_inaccessable_readwrite_memory_attr),
 				AppliedAttribute::Return(noalias_attr),
 				AppliedAttribute::Return(noundef_attr),
 			],
@@ -178,7 +177,22 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				AppliedAttribute::Function(target_cpu_features_attr),
 				AppliedAttribute::Function(alloc_family_attr),
 				AppliedAttribute::Function(allockind_free_attr),
+				AppliedAttribute::Function(willreturn_attr),
+				AppliedAttribute::Function(arg_readwrite_inaccessable_readwrite_memory_attr),
+				AppliedAttribute::Param(0, allocptr_attr),
+				AppliedAttribute::Param(0, noundef_attr),
 			],
+		);
+		add_attributes_to(
+			self.main,
+			[
+				nofree_attr,
+				probe_stack_attr,
+				target_cpu_attr,
+				target_cpu_features_attr,
+				nounwind_attr,
+			]
+			.map(AppliedAttribute::Function),
 		);
 	}
 }
