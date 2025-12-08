@@ -18,7 +18,7 @@ where
 
 impl<T> GetOrZero<T> for Option<T>
 where
-	T: Default,
+	T: Default + ZeroablePrimitive,
 {
 	fn get_or_zero(self) -> T {
 		self.unwrap_or_default()
