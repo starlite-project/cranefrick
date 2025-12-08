@@ -174,9 +174,9 @@ impl Assembler {
 			execution_engine.add_global_mapping(&putchar, frick_interop::rust_putchar as usize);
 		}
 
-		if let Some(malloc) = module.get_function("rust_malloc\0") {
-			info!("adding rust_malloc to execution engine");
-			execution_engine.add_global_mapping(&malloc, frick_interop::rust_malloc as usize);
+		if let Some(alloc) = module.get_function("rust_alloc\0") {
+			info!("adding rust_alloc to execution engine");
+			execution_engine.add_global_mapping(&alloc, frick_interop::rust_alloc as usize);
 		}
 
 		if let Some(free) = module.get_function("rust_free\0") {

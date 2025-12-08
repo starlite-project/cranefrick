@@ -16,7 +16,7 @@ use crate::{AssemblyError, ContextExt as _, ContextGetter as _};
 pub struct AssemblerFunctions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
-	pub malloc: FunctionValue<'ctx>,
+	pub alloc: FunctionValue<'ctx>,
 	pub free: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
@@ -41,11 +41,11 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			void_type.fn_type(&[i8_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
 		let putchar = module.add_function("rust_putchar", putchar_ty, Some(Linkage::External));
 
-		let malloc_ty = ptr_type.fn_type(
+		let alloc_ty = ptr_type.fn_type(
 			&[ptr_int_type.convert::<BasicMetadataTypeEnum<'ctx>>()],
 			false,
 		);
-		let malloc = module.add_function("rust_malloc", malloc_ty, Some(Linkage::External));
+		let alloc = module.add_function("rust_alloc", alloc_ty, Some(Linkage::External));
 
 		let free_ty =
 			void_type.fn_type(&[ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
@@ -72,7 +72,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let this = Self {
 			getchar,
 			putchar,
-			malloc,
+			alloc,
 			free,
 			main,
 			lifetime,
@@ -86,24 +86,26 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 	fn setup(self, cpu_name: &str, cpu_features: &str) {
 		let context = self.context();
 
-		let nocallback_attr = context.create_named_enum_attribute("nocallback", 0);
-		let nofree_attr = context.create_named_enum_attribute("nofree", 0);
-		let norecurse_attr = context.create_named_enum_attribute("norecurse", 0);
-		let willreturn_attr = context.create_named_enum_attribute("willreturn", 0);
+		let nocallback_attr = context.create_named_enum_attribute("nocallback", 0b0);
+		let nofree_attr = context.create_named_enum_attribute("nofree", 0b0);
+		let norecurse_attr = context.create_named_enum_attribute("norecurse", 0b0);
+		let willreturn_attr = context.create_named_enum_attribute("willreturn", 0b0);
 		let arg_none_inaccessable_read_memory_attr =
-			context.create_named_enum_attribute("memory", 4);
-		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0);
+			context.create_named_enum_attribute("memory", 0b0100);
+		let zeroext_attr = context.create_named_enum_attribute("zeroext", 0b0);
 		let arg_read_inaccessable_write_memory_attr =
-			context.create_named_enum_attribute("memory", 9);
-		let noundef_attr = context.create_named_enum_attribute("noundef", 0);
-		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0);
+			context.create_named_enum_attribute("memory", 0b1001);
+		let noundef_attr = context.create_named_enum_attribute("noundef", 0b0);
+		let nounwind_attr = context.create_named_enum_attribute("nounwind", 0b0);
 		let target_cpu_attr = context.create_string_attribute("target-cpu", cpu_name);
 		let target_cpu_features_attr =
 			context.create_string_attribute("target-features", cpu_features);
 		let probe_stack_attr = context.create_string_attribute("probe-stack", "inline-asm");
-		let alloc_family_attr = context.create_string_attribute("alloc-family", "malloc");
-		let allockind_alloc_attr = context.create_named_enum_attribute("allockind", 1);
-		let allockind_free_attr = context.create_named_enum_attribute("allockind", 4);
+		let alloc_family_attr = context.create_string_attribute("alloc-family", "alloc");
+		let allockind_alloc_attr = context.create_named_enum_attribute("allockind", 0b0001_0001);
+		let allockind_free_attr = context.create_named_enum_attribute("allockind", 0b0100);
+
+		tracing::info!(?allockind_free_attr);
 
 		add_attributes_to(
 			self.putchar,
@@ -149,7 +151,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			.map(AppliedAttribute::Function),
 		);
 		add_attributes_to(
-			self.malloc,
+			self.alloc,
 			[
 				AppliedAttribute::Function(nounwind_attr),
 				AppliedAttribute::Function(probe_stack_attr),
