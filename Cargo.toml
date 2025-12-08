@@ -147,10 +147,6 @@ panic = "abort"
 [workspace.metadata.docs.rs]
 all-features = true
 
-[profile.dev]
-opt-level = 1
-panic = "abort"
-
 [profile.dev.package.inkwell]
 debug-assertions = false
 opt-level = 3
