@@ -86,7 +86,7 @@ impl<'ctx> AssemblerDebugBuilder<'ctx> {
 
 	pub fn declare_subprograms(
 		&self,
-		functions: &AssemblerFunctions<'ctx>,
+		functions: AssemblerFunctions<'ctx>,
 	) -> Result<(), AssemblyError> {
 		functions.main.set_subprogram(self.main_subprogram);
 

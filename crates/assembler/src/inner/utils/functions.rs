@@ -1,3 +1,4 @@
+use frick_spec::POINTER_SIZE;
 use frick_utils::Convert as _;
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
@@ -11,11 +12,13 @@ use inkwell::{
 
 use crate::{AssemblyError, ContextExt as _, ContextGetter as _};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct AssemblerFunctions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
+	pub malloc: FunctionValue<'ctx>,
+	pub free: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 }
 
@@ -29,6 +32,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let void_type = context.void_type();
 		let i8_type = context.i8_type();
 		let ptr_type = context.default_ptr_type();
+		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
 
 		let getchar_ty = i8_type.fn_type(&[], false);
 		let getchar = module.add_function("rust_getchar", getchar_ty, Some(Linkage::External));
@@ -39,6 +43,14 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
+
+		let malloc_ty =
+			ptr_type.fn_type(&[ptr_int_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
+		let malloc = module.add_function("rust_malloc", malloc_ty, Some(Linkage::External));
+
+		let free_ty =
+			void_type.fn_type(&[ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
+		let free = module.add_function("rust_free", free_ty, Some(Linkage::External));
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(
@@ -59,6 +71,8 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			getchar,
 			putchar,
 			main,
+			malloc,
+			free,
 			lifetime,
 		};
 
@@ -67,7 +81,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		Ok(this)
 	}
 
-	fn setup(&self, cpu_name: &str, cpu_features: &str) {
+	fn setup(self, cpu_name: &str, cpu_features: &str) {
 		let context = self.context();
 
 		let nocallback_attr = context.create_named_enum_attribute("nocallback", 0);

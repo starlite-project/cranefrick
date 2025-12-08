@@ -5,7 +5,7 @@ use inkwell::{
 	context::AsContextRef,
 	llvm_sys::prelude::LLVMContextRef,
 	module::Module,
-	values::{BasicMetadataValueEnum, PointerValue},
+	values::{BasicMetadataValueEnum, FunctionValue, PointerValue},
 };
 
 use super::AssemblerFunctions;
@@ -18,16 +18,26 @@ pub struct AssemblerPointers<'ctx> {
 }
 
 impl<'ctx> AssemblerPointers<'ctx> {
-	pub fn new(module: &Module<'ctx>, builder: &Builder<'ctx>) -> Result<Self, AssemblyError> {
+	pub fn new(
+		module: &Module<'ctx>,
+		builder: &Builder<'ctx>,
+		malloc: FunctionValue<'ctx>,
+	) -> Result<Self, AssemblyError> {
 		let context = module.get_context();
-		let i8_type = context.i8_type();
 		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
 
 		let tape = {
 			let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
-			// builder.build_array_alloca(i8_type, tape_size, "tape")?
-			builder.build_array_malloc(i8_type, tape_size, "tape")?
+			builder
+				.build_call(
+					malloc,
+					&[tape_size.convert::<BasicMetadataValueEnum<'ctx>>()],
+					"tape",
+				)?
+				.try_as_basic_value()
+				.expect_basic("expected ptr from malloc")
+				.into_pointer_value()
 		};
 
 		let pointer = builder.build_alloca(ptr_int_type, "pointer\0")?;
@@ -38,7 +48,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 	pub fn setup(
 		self,
 		builder: &Builder<'ctx>,
-		functions: &AssemblerFunctions<'ctx>,
+		functions: AssemblerFunctions<'ctx>,
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 

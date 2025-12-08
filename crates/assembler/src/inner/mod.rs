@@ -57,9 +57,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let basic_block = context.append_basic_block(functions.main, "entry\0");
 		builder.position_at_end(basic_block);
 
-		let pointers = AssemblerPointers::new(&module, &builder)?;
+		let pointers = AssemblerPointers::new(&module, &builder, functions.malloc)?;
 
-		pointers.setup(&builder, &functions)?;
+		pointers.setup(&builder, functions)?;
 
 		let start_block = context.append_basic_block(functions.main, "start\0");
 		builder.build_unconditional_branch(start_block)?;
@@ -99,7 +99,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let debug_builder = AssemblerDebugBuilder::new(&module, &file_name, &directory)?;
 
-		debug_builder.declare_subprograms(&functions)?;
+		debug_builder.declare_subprograms(functions)?;
 
 		let debug_loc = debug_builder.create_debug_location(
 			module.get_context(),
@@ -175,7 +175,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"\0",
 		)?;
 
-		self.builder.build_free(self.pointers.tape)?;
+		self.builder.build_call(
+			self.functions.free,
+			&[self.pointers.tape.convert::<BasicMetadataValueEnum<'ctx>>()],
+			"\0",
+		)?;
 
 		self.builder.build_return(None)?;
 
