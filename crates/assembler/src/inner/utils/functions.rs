@@ -16,9 +16,9 @@ use crate::{AssemblyError, ContextExt as _, ContextGetter as _};
 pub struct AssemblerFunctions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
-	pub main: FunctionValue<'ctx>,
 	pub malloc: FunctionValue<'ctx>,
 	pub free: FunctionValue<'ctx>,
+	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 }
 
@@ -41,9 +41,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			void_type.fn_type(&[i8_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
 		let putchar = module.add_function("rust_putchar", putchar_ty, Some(Linkage::External));
 
-		let main_ty = void_type.fn_type(&[], false);
-		let main = module.add_function("main", main_ty, None);
-
 		let malloc_ty = ptr_type.fn_type(
 			&[ptr_int_type.convert::<BasicMetadataTypeEnum<'ctx>>()],
 			false,
@@ -53,6 +50,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let free_ty =
 			void_type.fn_type(&[ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
 		let free = module.add_function("rust_free", free_ty, Some(Linkage::External));
+
+		let main_ty = void_type.fn_type(&[], false);
+		let main = module.add_function("main", main_ty, None);
 
 		let lifetime = {
 			let lifetime_start = get_intrinsic_function_from_name(
@@ -72,9 +72,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let this = Self {
 			getchar,
 			putchar,
-			main,
 			malloc,
 			free,
+			main,
 			lifetime,
 		};
 
@@ -101,6 +101,9 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let target_cpu_features_attr =
 			context.create_string_attribute("target-features", cpu_features);
 		let probe_stack_attr = context.create_string_attribute("probe-stack", "inline-asm");
+		let alloc_family_attr = context.create_string_attribute("alloc-family", "malloc");
+		let allockind_alloc_attr = context.create_named_enum_attribute("allockind", 1);
+		let allockind_free_attr = context.create_named_enum_attribute("allockind", 4);
 
 		add_attributes_to(
 			self.putchar,
@@ -144,6 +147,28 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				nounwind_attr,
 			]
 			.map(AppliedAttribute::Function),
+		);
+		add_attributes_to(
+			self.malloc,
+			[
+				AppliedAttribute::Function(nounwind_attr),
+				AppliedAttribute::Function(probe_stack_attr),
+				AppliedAttribute::Function(target_cpu_attr),
+				AppliedAttribute::Function(target_cpu_features_attr),
+				AppliedAttribute::Function(alloc_family_attr),
+				AppliedAttribute::Function(allockind_alloc_attr),
+			],
+		);
+		add_attributes_to(
+			self.free,
+			[
+				AppliedAttribute::Function(nounwind_attr),
+				AppliedAttribute::Function(probe_stack_attr),
+				AppliedAttribute::Function(target_cpu_attr),
+				AppliedAttribute::Function(target_cpu_features_attr),
+				AppliedAttribute::Function(alloc_family_attr),
+				AppliedAttribute::Function(allockind_free_attr),
+			],
 		);
 	}
 }
