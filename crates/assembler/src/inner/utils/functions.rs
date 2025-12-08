@@ -44,8 +44,10 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
 
-		let malloc_ty =
-			ptr_type.fn_type(&[ptr_int_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
+		let malloc_ty = ptr_type.fn_type(
+			&[ptr_int_type.convert::<BasicMetadataTypeEnum<'ctx>>()],
+			false,
+		);
 		let malloc = module.add_function("rust_malloc", malloc_ty, Some(Linkage::External));
 
 		let free_ty =
