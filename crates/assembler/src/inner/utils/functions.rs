@@ -117,8 +117,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			"memory",
 			ARG_READ | ARG_WRITE | INACCESSABLE_READ | INACCESSABLE_WRITE,
 		);
-
-		tracing::info!(?allockind_free_attr);
+		let dead_on_return_attr = context.create_named_enum_attribute("dead_on_return", 0b0);
 
 		add_attributes_to(
 			self.putchar,
@@ -181,6 +180,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				AppliedAttribute::Function(arg_readwrite_inaccessable_readwrite_memory_attr),
 				AppliedAttribute::Param(0, allocptr_attr),
 				AppliedAttribute::Param(0, noundef_attr),
+				AppliedAttribute::Param(0, dead_on_return_attr),
 			],
 		);
 		add_attributes_to(
