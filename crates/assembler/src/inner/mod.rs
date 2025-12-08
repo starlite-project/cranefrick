@@ -15,7 +15,7 @@ use inkwell::{
 	llvm_sys::prelude::LLVMContextRef,
 	module::{FlagBehavior, Module},
 	targets::{TargetMachine, TargetTriple},
-	values::{BasicMetadataValueEnum, BasicValueEnum},
+	values::{BasicMetadataValueEnum, BasicValueEnum, LLVMTailCallKind},
 };
 
 pub use self::utils::AssemblerFunctions;
@@ -175,11 +175,13 @@ impl<'ctx> InnerAssembler<'ctx> {
 			"\0",
 		)?;
 
-		self.builder.build_call(
+		let free_call = self.builder.build_call(
 			self.functions.free,
 			&[self.pointers.tape.convert::<BasicMetadataValueEnum<'ctx>>()],
 			"\0",
 		)?;
+
+		free_call.set_tail_call_kind(LLVMTailCallKind::LLVMTailCallKindTail);
 
 		self.builder.build_return(None)?;
 

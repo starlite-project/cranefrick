@@ -107,7 +107,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 			context.create_string_attribute("target-features", cpu_features);
 		let probe_stack_attr = context.create_string_attribute("probe-stack", "inline-asm");
 		let alloc_family_attr = context.create_string_attribute("alloc-family", "alloc");
-		let allockind_alloc_attr = context.create_named_enum_attribute("allockind", 0b0001_0001);
+		let allockind_alloc_attr = context.create_named_enum_attribute("allockind", 0b0000_1001);
 		let allockind_free_attr = context.create_named_enum_attribute("allockind", 0b0100);
 		let noalias_attr = context.create_named_enum_attribute("noalias", 0b0);
 		let arg_none_inaccessable_readwrite_memory_attr =

@@ -29,11 +29,7 @@ pub unsafe extern "C" fn rust_getchar() -> u8 {
 #[unsafe(no_mangle)]
 #[must_use]
 pub unsafe extern "C" fn rust_alloc(size: usize) -> *mut c_void {
-	let ptr = unsafe { libc::malloc(size) };
-
-	unsafe { core::ptr::write_bytes(ptr.cast::<u8>(), 0, size) }
-
-	ptr
+	unsafe { libc::malloc(size) }
 }
 
 #[unsafe(no_mangle)]
