@@ -59,7 +59,6 @@ impl<'ctx> AssemblerPointers<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let context = self.context();
 
-		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
 		let ptr_type = context.custom_width_int_type(POINTER_SIZE as u32);
 
