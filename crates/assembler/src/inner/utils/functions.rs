@@ -1,4 +1,3 @@
-use frick_spec::POINTER_SIZE;
 use frick_utils::Convert as _;
 use inkwell::{
 	attributes::{Attribute, AttributeLoc},
@@ -16,8 +15,6 @@ use crate::{AssemblyError, ContextExt as _, ContextGetter as _};
 pub struct AssemblerFunctions<'ctx> {
 	pub getchar: FunctionValue<'ctx>,
 	pub putchar: FunctionValue<'ctx>,
-	pub alloc: FunctionValue<'ctx>,
-	pub free: FunctionValue<'ctx>,
 	pub main: FunctionValue<'ctx>,
 	pub lifetime: IntrinsicFunctionSet<'ctx>,
 }
@@ -32,7 +29,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let void_type = context.void_type();
 		let i8_type = context.i8_type();
 		let ptr_type = context.default_ptr_type();
-		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
 
 		let getchar_ty = i8_type.fn_type(&[], false);
 		let getchar = module.add_function("rust_getchar", getchar_ty, Some(Linkage::External));
@@ -40,16 +36,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let putchar_ty =
 			void_type.fn_type(&[i8_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
 		let putchar = module.add_function("rust_putchar", putchar_ty, Some(Linkage::External));
-
-		let alloc_ty = ptr_type.fn_type(
-			&[ptr_int_type.convert::<BasicMetadataTypeEnum<'ctx>>()],
-			false,
-		);
-		let alloc = module.add_function("rust_alloc", alloc_ty, Some(Linkage::External));
-
-		let free_ty =
-			void_type.fn_type(&[ptr_type.convert::<BasicMetadataTypeEnum<'ctx>>()], false);
-		let free = module.add_function("rust_free", free_ty, Some(Linkage::External));
 
 		let main_ty = void_type.fn_type(&[], false);
 		let main = module.add_function("main", main_ty, None);
@@ -72,8 +58,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let this = Self {
 			getchar,
 			putchar,
-			alloc,
-			free,
 			main,
 			lifetime,
 		};
@@ -85,6 +69,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 
 	fn setup(self, cpu_name: &str, cpu_features: &str) {
 		const ARG_READ: u64 = 0b0001;
+		#[allow(unused)]
 		const ARG_WRITE: u64 = 0b0010;
 		const INACCESSABLE_READ: u64 = 0b0100;
 		const INACCESSABLE_WRITE: u64 = 0b1000;
@@ -106,18 +91,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		let target_cpu_features_attr =
 			context.create_string_attribute("target-features", cpu_features);
 		let probe_stack_attr = context.create_string_attribute("probe-stack", "inline-asm");
-		let alloc_family_attr = context.create_string_attribute("alloc-family", "alloc");
-		let allockind_alloc_attr = context.create_named_enum_attribute("allockind", 0b0000_1001);
-		let allockind_free_attr = context.create_named_enum_attribute("allockind", 0b0100);
-		let noalias_attr = context.create_named_enum_attribute("noalias", 0b0);
-		let arg_none_inaccessable_readwrite_memory_attr =
-			context.create_named_enum_attribute("memory", INACCESSABLE_READ | INACCESSABLE_WRITE);
-		let allocptr_attr = context.create_named_enum_attribute("allocptr", 0b0);
-		let arg_readwrite_inaccessable_readwrite_memory_attr = context.create_named_enum_attribute(
-			"memory",
-			ARG_READ | ARG_WRITE | INACCESSABLE_READ | INACCESSABLE_WRITE,
-		);
-		let dead_on_return_attr = context.create_named_enum_attribute("dead_on_return", 0b0);
 
 		add_attributes_to(
 			self.putchar,
@@ -149,38 +122,6 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 				AppliedAttribute::Function(nounwind_attr),
 				AppliedAttribute::Return(zeroext_attr),
 				AppliedAttribute::Return(noundef_attr),
-			],
-		);
-		add_attributes_to(
-			self.alloc,
-			[
-				AppliedAttribute::Function(nounwind_attr),
-				AppliedAttribute::Function(probe_stack_attr),
-				AppliedAttribute::Function(target_cpu_attr),
-				AppliedAttribute::Function(target_cpu_features_attr),
-				AppliedAttribute::Function(alloc_family_attr),
-				AppliedAttribute::Function(allockind_alloc_attr),
-				AppliedAttribute::Function(willreturn_attr),
-				AppliedAttribute::Function(nofree_attr),
-				AppliedAttribute::Function(arg_none_inaccessable_readwrite_memory_attr),
-				AppliedAttribute::Return(noalias_attr),
-				AppliedAttribute::Return(noundef_attr),
-			],
-		);
-		add_attributes_to(
-			self.free,
-			[
-				AppliedAttribute::Function(nounwind_attr),
-				AppliedAttribute::Function(probe_stack_attr),
-				AppliedAttribute::Function(target_cpu_attr),
-				AppliedAttribute::Function(target_cpu_features_attr),
-				AppliedAttribute::Function(alloc_family_attr),
-				AppliedAttribute::Function(allockind_free_attr),
-				AppliedAttribute::Function(willreturn_attr),
-				AppliedAttribute::Function(arg_readwrite_inaccessable_readwrite_memory_attr),
-				AppliedAttribute::Param(0, allocptr_attr),
-				AppliedAttribute::Param(0, noundef_attr),
-				AppliedAttribute::Param(0, dead_on_return_attr),
 			],
 		);
 		add_attributes_to(

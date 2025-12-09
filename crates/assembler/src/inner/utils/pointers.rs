@@ -1,16 +1,15 @@
 use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_utils::Convert as _;
 use inkwell::{
-	attributes::AttributeLoc,
 	builder::Builder,
 	context::AsContextRef,
 	llvm_sys::prelude::LLVMContextRef,
 	module::Module,
-	values::{BasicMetadataValueEnum, FunctionValue, PointerValue},
+	values::{BasicMetadataValueEnum, PointerValue},
 };
 
 use super::AssemblerFunctions;
-use crate::{AssemblyError, ContextExt, ContextGetter as _};
+use crate::{AssemblyError, ContextGetter as _};
 
 #[derive(Debug, Clone, Copy)]
 pub struct AssemblerPointers<'ctx> {
@@ -19,32 +18,16 @@ pub struct AssemblerPointers<'ctx> {
 }
 
 impl<'ctx> AssemblerPointers<'ctx> {
-	pub fn new(
-		module: &Module<'ctx>,
-		builder: &Builder<'ctx>,
-		malloc: FunctionValue<'ctx>,
-	) -> Result<Self, AssemblyError> {
+	pub fn new(module: &Module<'ctx>, builder: &Builder<'ctx>) -> Result<Self, AssemblyError> {
 		let context = module.get_context();
+
+		let cell_type = context.i8_type();
 		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
 
 		let tape = {
 			let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
 
-			let tape_malloc_call = builder.build_call(
-				malloc,
-				&[tape_size.convert::<BasicMetadataValueEnum<'ctx>>()],
-				"tape",
-			)?;
-
-			let dereferenceable_or_null_attr =
-				context.create_named_enum_attribute("dereferenceable_or_null", TAPE_SIZE as u64);
-
-			tape_malloc_call.add_attribute(AttributeLoc::Return, dereferenceable_or_null_attr);
-
-			tape_malloc_call
-				.try_as_basic_value()
-				.expect_basic("expected ptr from malloc")
-				.into_pointer_value()
+			builder.build_array_alloca(cell_type, tape_size, "tape")?
 		};
 
 		let pointer = builder.build_alloca(ptr_int_type, "pointer\0")?;
