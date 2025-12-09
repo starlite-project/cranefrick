@@ -1,3 +1,4 @@
 mod pointer;
+mod simplify;
 
-pub use self::pointer::*;
+pub use self::{pointer::*, simplify::*};

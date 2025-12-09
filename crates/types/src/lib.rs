@@ -136,6 +136,7 @@ pub enum BinaryOperation {
 	Sub,
 	Mul,
 	BitwiseAnd,
+	BitwiseShl,
 }
 
 pub trait RegisterType: self::sealed::Sealed {}
