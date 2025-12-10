@@ -12,53 +12,38 @@ impl SimplifyMultiplicationPass {
 	fn transform_mul_to_shl(instrs: &mut [BrainInstruction]) -> bool {
 		let mut changed_any = false;
 
-		// Found this trick at https://internals.rust-lang.org/t/a-windows-mut-method-on-slice/16941/9
-		let cell_of_slice = {
-			let cell: &Cell<[BrainInstruction]> = Cell::from_mut(instrs);
+		let mut i = 1;
 
-			cell.as_slice_of_cells()
-		};
+		while i < instrs.len() {
+			if let [
+				BrainInstructionType::StoreImmediateIntoRegister { imm, output_reg },
+				BrainInstructionType::PerformBinaryRegisterOperation {
+					lhs_reg,
+					rhs_reg,
+					output_reg: binary_output_reg,
+					op: BinaryOperation::Mul,
+				},
+			] = [instrs[i - 1].instr(), instrs[i].instr()]
+				&& (output_reg == lhs_reg || output_reg == rhs_reg)
+				&& imm.value().is_power_of_two()
+			{
+				let new_imm = Imm::cell(imm.value().ilog2().convert::<u64>());
 
-		for x in cell_of_slice.windows_n::<2>() {
-			match [x[0].get().instr(), x[1].get().instr()] {
-				[
-					BrainInstructionType::StoreImmediateIntoRegister { imm, output_reg },
-					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg,
-						rhs_reg,
-						output_reg: binary_output_reg,
-						op: BinaryOperation::Mul,
-					},
-				] if lhs_reg == output_reg
-					|| rhs_reg == output_reg && imm.value().is_power_of_two() =>
-				{
-					let new_value = Imm::cell(imm.value().ilog2().convert::<u64>());
+				*instrs[i - 1] = BrainInstructionType::StoreImmediateIntoRegister {
+					imm: new_imm,
+					output_reg,
+				};
+				*instrs[i] = BrainInstructionType::PerformBinaryRegisterOperation {
+					lhs_reg,
+					rhs_reg,
+					output_reg: binary_output_reg,
+					op: BinaryOperation::BitwiseShl,
+				};
 
-					if matches!(new_value.value(), 0) {
-						continue;
-					}
-
-					x[0].set(BrainInstruction::new(
-						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: new_value,
-							output_reg,
-						},
-						x[0].get().byte_offset(),
-					));
-					x[1].set(BrainInstruction::new(
-						BrainInstructionType::PerformBinaryRegisterOperation {
-							lhs_reg,
-							rhs_reg,
-							output_reg: binary_output_reg,
-							op: BinaryOperation::BitwiseShl,
-						},
-						x[1].get().byte_offset(),
-					));
-
-					changed_any = true;
-				}
-				_ => {}
+				changed_any = true;
 			}
+
+			i += 1;
 		}
 
 		changed_any
@@ -90,10 +75,43 @@ impl SimplifyMultiplicationPass {
 			i += 1;
 		}
 
-		for range in indices_to_replace {
+		for range in indices_to_replace.into_iter().rev() {
+			let perform_instr_idx = *range.end();
+
 			let Some(sliced_instrs) = instrs.get_mut(range) else {
 				continue;
 			};
+
+			assert_eq!(sliced_instrs.len(), 2);
+
+			let BrainInstructionType::StoreImmediateIntoRegister { output_reg, .. } =
+				*sliced_instrs[0]
+			else {
+				unreachable!();
+			};
+
+			let BrainInstructionType::PerformBinaryRegisterOperation {
+				lhs_reg,
+				rhs_reg,
+				output_reg: binary_output_reg,
+				..
+			} = *sliced_instrs[1]
+			else {
+				unreachable!()
+			};
+
+			let reg_with_value = if output_reg == lhs_reg {
+				rhs_reg
+			} else {
+				lhs_reg
+			};
+
+			*sliced_instrs[0] = BrainInstructionType::DuplicateRegister {
+				input_reg: reg_with_value.cast(),
+				output_reg: binary_output_reg.cast(),
+			};
+
+			instrs.remove(perform_instr_idx);
 		}
 
 		removed_any
