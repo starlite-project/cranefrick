@@ -113,6 +113,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 			BinaryOperation::Sub => self.builder.build_int_sub(lhs_value, rhs_value, "\0")?,
 			BinaryOperation::Mul => self.builder.build_int_mul(lhs_value, rhs_value, "\0")?,
 			BinaryOperation::BitwiseAnd => self.builder.build_and(lhs_value, rhs_value, "\0")?,
+			BinaryOperation::BitwiseShl => {
+				self.builder.build_left_shift(lhs_value, rhs_value, "\0")?
+			}
 			op => unimplemented!("binary operation {op:?}"),
 		};
 

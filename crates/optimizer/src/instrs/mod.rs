@@ -48,6 +48,8 @@ impl InstructionsOptimizer {
 		*progress |= self.run_pass(passes::PointerRedundantLoadsPass);
 
 		*progress |= self.run_pass(passes::StoreLoadsPass);
+
+		*progress |= self.run_pass(passes::SimplifyMultiplicationPass);
 	}
 
 	fn run_pass<P: Pass>(&mut self, mut pass: P) -> bool {
