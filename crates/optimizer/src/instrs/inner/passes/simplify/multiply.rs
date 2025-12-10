@@ -110,6 +110,8 @@ impl SimplifyMultiplicationPass {
 			};
 
 			instrs.remove(perform_instr_idx);
+
+			removed_any = true;
 		}
 
 		removed_any
