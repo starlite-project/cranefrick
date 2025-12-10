@@ -35,6 +35,10 @@ impl Pass for SimplifyMultiplicationPass {
 				{
 					let new_value = Imm::cell(imm.value().ilog2().convert::<u64>());
 
+					if matches!(new_value.value(), 0) {
+						continue;
+					}
+
 					x[0].set(BrainInstruction::new(
 						BrainInstructionType::StoreImmediateIntoRegister {
 							imm: new_value,
