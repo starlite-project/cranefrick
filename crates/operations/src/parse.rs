@@ -9,7 +9,7 @@ use std::{
 use ariadne::{FileCache, IndexType, Label, Report, ReportKind};
 use chumsky::{input::ValueInput, prelude::*};
 
-use crate::{BrainOperation, BrainOperationType};
+use crate::{BrainOperation, BrainOperationType, CellOffsetOptions};
 
 pub fn parse(file_path: impl AsRef<Path>) -> io::Result<Vec<BrainOperation>> {
 	let file_path = file_path.as_ref().to_owned();
@@ -58,7 +58,7 @@ fn parser<'src>()
 			just('-').to(BrainOperationType::decrement_cell(1)),
 			just('<').to(BrainOperationType::MovePointer(-1)),
 			just('>').to(BrainOperationType::MovePointer(1)),
-			just('.').to(BrainOperationType::OutputCurrentCell),
+			just('.').to(BrainOperationType::OutputCell(CellOffsetOptions::default())),
 			just(',').to(BrainOperationType::InputIntoCell),
 			none_of("+-<>.,[]").map(BrainOperationType::Comment),
 		))

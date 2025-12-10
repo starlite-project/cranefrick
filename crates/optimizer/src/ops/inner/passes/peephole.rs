@@ -98,11 +98,34 @@ pub fn optimize_output_value(ops: [&BrainOperation; 2]) -> Option<Change> {
 	match ops.map(BrainOperation::op) {
 		[
 			&BrainOperationType::SetCell(CellOffsetOptions { offset: 0, value }),
-			&BrainOperationType::OutputCurrentCell,
+			&BrainOperationType::OutputCell(CellOffsetOptions {
+				value: 0,
+				offset: 0,
+			}),
 		] => Some(Change::swap([
 			BrainOperation::new(BrainOperationType::OutputValue(value), ops[1].span()),
 			BrainOperation::new(BrainOperationType::set_cell_at(value, 0), ops[0].span()),
 		])),
+		_ => None,
+	}
+}
+
+pub fn optimize_output_cell(ops: [&BrainOperation; 3]) -> Option<Change> {
+	match ops.map(BrainOperation::op) {
+		ops @ [
+			&BrainOperationType::IncrementCell(inc_options),
+			&BrainOperationType::OutputCell(output_options),
+			&BrainOperationType::DecrementCell(dec_options),
+		] if inc_options == dec_options && output_options.offset() == inc_options.offset() => {
+			tracing::info!(?ops, "made it");
+
+			Some(Change::replace(BrainOperationType::OutputCell(
+				CellOffsetOptions {
+					value: inc_options.value(),
+					offset: inc_options.offset(),
+				},
+			)))
+		}
 		_ => None,
 	}
 }

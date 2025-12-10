@@ -82,7 +82,7 @@ pub enum BrainOperationType {
 	MovePointer(i32),
 	MoveCellValue(CellOffsetOptions),
 	InputIntoCell,
-	OutputCurrentCell,
+	OutputCell(CellOffsetOptions),
 	OutputValue(u8),
 	DynamicLoop(Vec<BrainOperation>),
 	Comment(char),
