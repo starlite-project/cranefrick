@@ -8,9 +8,8 @@ use crate::instrs::inner::Pass;
 
 pub struct SimplifyMultiplicationPass;
 
-impl Pass for SimplifyMultiplicationPass {
-	// TODO: figure out how to get the value at the register we need it at
-	fn run(&mut self, instrs: &mut Vec<BrainInstruction>) -> bool {
+impl SimplifyMultiplicationPass {
+	fn transform_mul_to_shl(instrs: &mut [BrainInstruction]) -> bool {
 		let mut changed_any = false;
 
 		// Found this trick at https://internals.rust-lang.org/t/a-windows-mut-method-on-slice/16941/9
@@ -63,5 +62,46 @@ impl Pass for SimplifyMultiplicationPass {
 		}
 
 		changed_any
+	}
+
+	fn remove_redundant_multiplications(instrs: &mut Vec<BrainInstruction>) -> bool {
+		let mut removed_any = false;
+
+		let mut i = 1;
+
+		let mut indices_to_replace = Vec::new();
+
+		while i < instrs.len() {
+			if let [
+				BrainInstructionType::StoreImmediateIntoRegister { imm, output_reg },
+				BrainInstructionType::PerformBinaryRegisterOperation {
+					lhs_reg,
+					rhs_reg,
+					op: BinaryOperation::Mul,
+					..
+				},
+			] = [instrs[i - 1].instr(), instrs[i].instr()]
+				&& (output_reg == lhs_reg || output_reg == rhs_reg)
+				&& matches!(imm.value(), 1)
+			{
+				indices_to_replace.push((i - 1)..=i);
+			}
+
+			i += 1;
+		}
+
+		for range in indices_to_replace {
+			let Some(sliced_instrs) = instrs.get_mut(range) else {
+				continue;
+			};
+		}
+
+		removed_any
+	}
+}
+
+impl Pass for SimplifyMultiplicationPass {
+	fn run(&mut self, instrs: &mut Vec<BrainInstruction>) -> bool {
+		Self::remove_redundant_multiplications(instrs) || Self::transform_mul_to_shl(instrs)
 	}
 }
