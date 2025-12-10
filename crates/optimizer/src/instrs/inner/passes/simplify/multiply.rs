@@ -47,7 +47,7 @@ impl SimplifyMultiplicationPass {
 		changed_any
 	}
 
-	fn remove_redundant_multiplications(instrs: &mut [BrainInstruction]) -> bool {
+	fn remove_redundant_multiplications(instrs: &mut Vec<BrainInstruction>) -> bool {
 		let mut removed_any = false;
 
 		let mut i = 1;
@@ -74,7 +74,9 @@ impl SimplifyMultiplicationPass {
 		}
 
 		for range in indices_to_replace.into_iter().rev() {
-			let Some(sliced_instrs) = &mut instrs.get_mut(range) else {
+			let last_instr_idx = *range.end();
+
+			let Some(sliced_instrs) = instrs.get_mut(range) else {
 				continue;
 			};
 
@@ -102,13 +104,11 @@ impl SimplifyMultiplicationPass {
 				lhs_reg
 			};
 
-			*sliced_instrs = std::slice::from_mut(&mut BrainInstruction::new(
-				BrainInstructionType::DuplicateRegister {
-					input_reg: reg_with_value.cast(),
-					output_reg: binary_output_reg.cast(),
-				},
-				sliced_instrs[0].byte_offset(),
-			));
+			*sliced_instrs[0] = BrainInstructionType::DuplicateRegister {
+				input_reg: reg_with_value.cast(),
+				output_reg: binary_output_reg.cast(),
+			};
+			instrs.remove(last_instr_idx);
 
 			removed_any = true;
 		}
