@@ -1,8 +1,6 @@
-use std::cell::Cell;
-
 use frick_instructions::{BrainInstruction, BrainInstructionType, Imm};
 use frick_types::BinaryOperation;
-use frick_utils::{Convert as _, SliceExt as _};
+use frick_utils::Convert as _;
 
 use crate::instrs::inner::Pass;
 
