@@ -511,29 +511,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "frick_ir"
-version = "0.1.0"
-dependencies = [
- "ariadne",
- "chumsky",
- "criterion",
- "frick_utils",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "frick_old_optimizer"
-version = "0.1.0"
-dependencies = [
- "frick_ir",
- "frick_utils",
- "serde",
- "tracing",
- "tracing-indicatif",
-]
-
-[[package]]
 name = "frick_operations"
 version = "0.1.0"
 dependencies = [

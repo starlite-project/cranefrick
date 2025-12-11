@@ -45,8 +45,6 @@ members = [
     "crates/assembler",
     "crates/instructions",
     "crates/interop",
-    "crates/ir",
-    "crates/old_optimizer",
     "crates/operations",
     "crates/optimizer",
     "crates/serialize",
