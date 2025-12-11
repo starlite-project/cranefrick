@@ -150,6 +150,32 @@ pub fn optimize_output_cell(ops: [&BrainOperation; 3]) -> Option<Change> {
 				),
 			]))
 		}
+		[
+			&BrainOperationType::IncrementCell(CellOffsetOptions {
+				value: a,
+				offset: 0,
+			}),
+			&BrainOperationType::OutputCell(CellOffsetOptions {
+				value: output_value,
+				offset: 0,
+			}),
+			&BrainOperationType::IncrementCell(CellOffsetOptions {
+				value: b,
+				offset: 0,
+			}),
+		] => Some(Change::swap([
+			BrainOperation::new(
+				BrainOperationType::OutputCell(CellOffsetOptions::new(
+					a.wrapping_add(output_value),
+					0,
+				)),
+				ops[0].span().start..ops[1].span().end,
+			),
+			BrainOperation::new(
+				BrainOperationType::increment_cell(a.wrapping_add(b)),
+				ops[2].span(),
+			),
+		])),
 		_ => None,
 	}
 }
