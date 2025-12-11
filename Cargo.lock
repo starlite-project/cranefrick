@@ -488,6 +488,7 @@ dependencies = [
  "inkwell",
  "libc",
  "line-numbers",
+ "rustc-hash 2.1.1",
  "send_wrapper",
  "tracing",
 ]

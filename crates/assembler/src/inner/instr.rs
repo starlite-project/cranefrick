@@ -1,7 +1,7 @@
 use frick_instructions::Imm;
 use frick_spec::POINTER_SIZE;
 use frick_types::{Any, BinaryOperation, Bool, Int, Pointer, Register};
-use frick_utils::{Convert as _, InsertOrPush as _};
+use frick_utils::Convert as _;
 use inkwell::{
 	IntPredicate,
 	attributes::AttributeLoc,
@@ -251,7 +251,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		let basic_value = self
 			.registers
 			.borrow()
-			.get(reg.index())
+			.get(&reg.index())
 			.copied()
 			.ok_or_else(|| AssemblyError::NoValueInRegister(reg.index()))?;
 
@@ -272,7 +272,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.registers
 			.borrow_mut()
-			.insert_or_push(reg.index(), value.as_basic_value_enum());
+			.insert(reg.index(), value.as_basic_value_enum());
 
 		Ok(())
 	}

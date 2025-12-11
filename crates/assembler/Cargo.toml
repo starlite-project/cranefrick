@@ -22,5 +22,6 @@ frick_utils = { workspace = true, features = [
 inkwell.workspace = true
 libc.workspace = true
 line-numbers = "0.4"
+rustc-hash.workspace = true
 send_wrapper.workspace = true
 tracing.workspace = true

@@ -17,6 +17,7 @@ use inkwell::{
 	targets::{TargetMachine, TargetTriple},
 	values::{BasicMetadataValueEnum, BasicValueEnum},
 };
+use rustc_hash::FxHashMap;
 
 pub use self::utils::AssemblerFunctions;
 use self::utils::{AssemblerDebugBuilder, AssemblerPointers};
@@ -30,7 +31,7 @@ pub struct InnerAssembler<'ctx> {
 	pointers: AssemblerPointers<'ctx>,
 	target_machine: TargetMachine,
 	debug_builder: AssemblerDebugBuilder<'ctx>,
-	registers: RefCell<Vec<BasicValueEnum<'ctx>>>,
+	registers: RefCell<FxHashMap<usize, BasicValueEnum<'ctx>>>,
 	loop_blocks: RefCell<Vec<LoopBlocks<'ctx>>>,
 }
 

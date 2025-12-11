@@ -295,6 +295,26 @@ pub fn optimize_output_cell(ops: [&BrainOperation; 3]) -> Option<Change> {
 			),
 			BrainOperation::new(BrainOperationType::SetCell(set_options), ops[2].span()),
 		])),
+		[
+			&BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: dec_value,
+				offset: 0,
+			}),
+			&BrainOperationType::OutputCell(CellOffsetOptions {
+				value: output_value,
+				offset: 0,
+			}),
+			&BrainOperationType::SetCell(set_options @ CellOffsetOptions { offset: 0, .. }),
+		] => Some(Change::swap([
+			BrainOperation::new(
+				BrainOperationType::OutputCell(CellOffsetOptions::new(
+					output_value.wrapping_sub(dec_value),
+					0,
+				)),
+				ops[0].span().start..ops[1].span().end,
+			),
+			BrainOperation::new(BrainOperationType::SetCell(set_options), ops[2].span()),
+		])),
 		_ => None,
 	}
 }
