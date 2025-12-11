@@ -30,6 +30,16 @@ pub fn optimize_move_cell_value(ops: &[BrainOperation]) -> Option<Change> {
 				value: 1,
 				offset: 0,
 			}),
+		]
+		| [
+			BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: 1,
+				offset: 0,
+			}),
+			BrainOperationType::IncrementCell(CellOffsetOptions {
+				value: a,
+				offset: x,
+			}),
 		] => Some(Change::replace(BrainOperationType::MoveCellValue(
 			CellOffsetOptions::new(*a, *x),
 		))),

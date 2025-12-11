@@ -183,3 +183,23 @@ pub fn add_offsets(ops: [&BrainOperation; 3]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_constant_moves(ops: [&BrainOperation; 2]) -> Option<Change> {
+	match ops.map(BrainOperation::op) {
+		[
+			&BrainOperationType::SetCell(set_options),
+			&BrainOperationType::MoveCellValue(move_options),
+		] if matches!(set_options.offset(), 0) => {
+			let value_to_add = set_options.value().wrapping_mul(move_options.value());
+
+			Some(Change::swap([
+				BrainOperation::new(BrainOperationType::clear_cell(), ops[0].span()),
+				BrainOperation::new(
+					BrainOperationType::increment_cell_at(value_to_add, move_options.offset()),
+					ops[1].span(),
+				),
+			]))
+		}
+		_ => None,
+	}
+}
