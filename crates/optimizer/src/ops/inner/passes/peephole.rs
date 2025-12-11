@@ -97,6 +97,13 @@ pub fn optimize_set_cell(ops: [&BrainOperation; 2]) -> Option<Change> {
 			| &BrainOperationType::SetCell(CellOffsetOptions { offset: 0, .. }),
 			&BrainOperationType::SetCell(CellOffsetOptions { offset: 0, .. }),
 		] => Some(Change::remove_offset(0)),
+		[
+			i,
+			&BrainOperationType::SetCell(CellOffsetOptions {
+				value: 0,
+				offset: 0,
+			}),
+		] if i.is_zeroing_cell() => Some(Change::remove_offset(1)),
 		_ => None,
 	}
 }
@@ -268,6 +275,26 @@ pub fn optimize_output_cell(ops: [&BrainOperation; 3]) -> Option<Change> {
 				ops[2].span(),
 			),
 		])),
+		[
+			&BrainOperationType::IncrementCell(CellOffsetOptions {
+				value: inc_value,
+				offset: 0,
+			}),
+			&BrainOperationType::OutputCell(CellOffsetOptions {
+				value: output_value,
+				offset: 0,
+			}),
+			&BrainOperationType::SetCell(set_options @ CellOffsetOptions { offset: 0, .. }),
+		] => Some(Change::swap([
+			BrainOperation::new(
+				BrainOperationType::OutputCell(CellOffsetOptions::new(
+					output_value.wrapping_add(inc_value),
+					0,
+				)),
+				ops[0].span().start..ops[1].span().end,
+			),
+			BrainOperation::new(BrainOperationType::SetCell(set_options), ops[2].span()),
+		])),
 		_ => None,
 	}
 }
@@ -342,6 +369,19 @@ pub fn optimize_constant_moves(ops: [&BrainOperation; 2]) -> Option<Change> {
 				),
 			]))
 		}
+		_ => None,
+	}
+}
+
+pub fn remove_redundant_offsets(ops: [&BrainOperation; 2]) -> Option<Change> {
+	match ops.map(BrainOperation::op) {
+		[
+			&BrainOperationType::IncrementCell(CellOffsetOptions { value, offset: x }),
+			&BrainOperationType::MovePointer(y),
+		] if x == y => Some(Change::swap([
+			BrainOperation::new(BrainOperationType::MovePointer(y), ops[1].span()),
+			BrainOperation::new(BrainOperationType::increment_cell(value), ops[0].span()),
+		])),
 		_ => None,
 	}
 }

@@ -97,7 +97,7 @@ impl BrainOperationType {
 				| Self::SetCell(CellOffsetOptions {
 					value: 0,
 					offset: 0
-				})
+				}) | Self::MoveCellValue(..)
 		)
 	}
 
