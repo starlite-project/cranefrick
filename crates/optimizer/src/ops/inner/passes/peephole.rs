@@ -332,7 +332,7 @@ pub fn add_offsets(ops: [&BrainOperation; 3]) -> Option<Change> {
 					options.value(),
 					options.offset().wrapping_add(x),
 				),
-				ops[1].span(),
+				ops[0].span().start..ops[1].span().end,
 			),
 			BrainOperation::new(
 				BrainOperationType::MovePointer(x.wrapping_add(y)),
@@ -349,7 +349,7 @@ pub fn add_offsets(ops: [&BrainOperation; 3]) -> Option<Change> {
 					options.value(),
 					options.offset().wrapping_add(x),
 				),
-				ops[1].span(),
+				ops[0].span().start..ops[1].span().end,
 			),
 			BrainOperation::new(
 				BrainOperationType::MovePointer(x.wrapping_add(y)),
@@ -363,7 +363,24 @@ pub fn add_offsets(ops: [&BrainOperation; 3]) -> Option<Change> {
 		] => Some(Change::swap([
 			BrainOperation::new(
 				BrainOperationType::set_cell_at(options.value(), options.offset().wrapping_add(x)),
-				ops[1].span(),
+				ops[0].span().start..ops[1].span().end,
+			),
+			BrainOperation::new(
+				BrainOperationType::MovePointer(x.wrapping_add(y)),
+				ops[0].span(),
+			),
+		])),
+		[
+			&BrainOperationType::MovePointer(x),
+			&BrainOperationType::OutputCell(options),
+			&BrainOperationType::MovePointer(y),
+		] => Some(Change::swap([
+			BrainOperation::new(
+				BrainOperationType::OutputCell(CellOffsetOptions::new(
+					options.value(),
+					options.offset().wrapping_add(x),
+				)),
+				ops[0].span().start..ops[1].span().end,
 			),
 			BrainOperation::new(
 				BrainOperationType::MovePointer(x.wrapping_add(y)),
