@@ -50,6 +50,34 @@ pub fn optimize_consecutive_ops(ops: [&BrainOperation; 2]) -> Option<Change> {
 		} else {
 			Change::replace(BrainOperationType::MovePointer(a.wrapping_add(b)))
 		}),
+		[
+			&BrainOperationType::IncrementCell(CellOffsetOptions {
+				value: a,
+				offset: x,
+			}),
+			&BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: b,
+				offset: y,
+			}),
+		]
+		| [
+			&BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: b,
+				offset: y,
+			}),
+			&BrainOperationType::IncrementCell(CellOffsetOptions {
+				value: a,
+				offset: x,
+			}),
+		] if x == y => Some(if a == b {
+			Change::remove()
+		} else {
+			Change::replace(if a > b {
+				BrainOperationType::increment_cell_at(a.wrapping_sub(b), x)
+			} else {
+				BrainOperationType::decrement_cell_at(b.wrapping_sub(a), x)
+			})
+		}),
 		_ => None,
 	}
 }
@@ -151,6 +179,44 @@ pub fn optimize_output_cell(ops: [&BrainOperation; 3]) -> Option<Change> {
 			]))
 		}
 		[
+			&BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: dec_value,
+				offset: 0,
+			}),
+			&BrainOperationType::OutputCell(CellOffsetOptions {
+				value: output_value,
+				offset: 0,
+			}),
+			&BrainOperationType::IncrementCell(CellOffsetOptions {
+				value: inc_value,
+				offset: 0,
+			}),
+		] => {
+			if dec_value == inc_value {
+				return Some(Change::replace(BrainOperationType::OutputCell(
+					CellOffsetOptions::new(output_value.wrapping_sub(dec_value), 0),
+				)));
+			}
+
+			Some(Change::swap([
+				BrainOperation::new(
+					BrainOperationType::OutputCell(CellOffsetOptions::new(
+						output_value.wrapping_sub(dec_value),
+						0,
+					)),
+					ops[0].span().start..ops[1].span().end,
+				),
+				BrainOperation::new(
+					if inc_value > dec_value {
+						BrainOperationType::increment_cell(inc_value.wrapping_sub(dec_value))
+					} else {
+						BrainOperationType::decrement_cell(dec_value.wrapping_sub(inc_value))
+					},
+					ops[2].span(),
+				),
+			]))
+		}
+		[
 			&BrainOperationType::IncrementCell(CellOffsetOptions {
 				value: a,
 				offset: 0,
@@ -173,6 +239,32 @@ pub fn optimize_output_cell(ops: [&BrainOperation; 3]) -> Option<Change> {
 			),
 			BrainOperation::new(
 				BrainOperationType::increment_cell(a.wrapping_add(b)),
+				ops[2].span(),
+			),
+		])),
+		[
+			&BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: a,
+				offset: 0,
+			}),
+			&BrainOperationType::OutputCell(CellOffsetOptions {
+				value: output_value,
+				offset: 0,
+			}),
+			&BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: b,
+				offset: 0,
+			}),
+		] => Some(Change::swap([
+			BrainOperation::new(
+				BrainOperationType::OutputCell(CellOffsetOptions::new(
+					output_value.wrapping_sub(a),
+					0,
+				)),
+				ops[0].span().start..ops[1].span().end,
+			),
+			BrainOperation::new(
+				BrainOperationType::decrement_cell(a.wrapping_add(b)),
 				ops[2].span(),
 			),
 		])),
