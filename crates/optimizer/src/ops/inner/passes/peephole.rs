@@ -112,19 +112,43 @@ pub fn optimize_output_value(ops: [&BrainOperation; 2]) -> Option<Change> {
 
 pub fn optimize_output_cell(ops: [&BrainOperation; 3]) -> Option<Change> {
 	match ops.map(BrainOperation::op) {
-		ops @ [
-			&BrainOperationType::IncrementCell(inc_options),
-			&BrainOperationType::OutputCell(output_options),
-			&BrainOperationType::DecrementCell(dec_options),
-		] if inc_options == dec_options && output_options.offset() == inc_options.offset() => {
-			tracing::info!(?ops, "made it");
+		[
+			&BrainOperationType::IncrementCell(CellOffsetOptions {
+				value: inc_value,
+				offset: 0,
+			}),
+			&BrainOperationType::OutputCell(CellOffsetOptions {
+				value: output_value,
+				offset: 0,
+			}),
+			&BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: dec_value,
+				offset: 0,
+			}),
+		] => {
+			if inc_value == dec_value {
+				return Some(Change::replace(BrainOperationType::OutputCell(
+					CellOffsetOptions::new(inc_value.wrapping_add(output_value), 0),
+				)));
+			}
 
-			Some(Change::replace(BrainOperationType::OutputCell(
-				CellOffsetOptions {
-					value: inc_options.value(),
-					offset: inc_options.offset(),
-				},
-			)))
+			Some(Change::swap([
+				BrainOperation::new(
+					BrainOperationType::OutputCell(CellOffsetOptions::new(
+						inc_value.wrapping_add(output_value),
+						0,
+					)),
+					ops[0].span().start..ops[1].span().end,
+				),
+				BrainOperation::new(
+					if inc_value > dec_value {
+						BrainOperationType::increment_cell(inc_value.wrapping_sub(dec_value))
+					} else {
+						BrainOperationType::decrement_cell(dec_value.wrapping_sub(inc_value))
+					},
+					ops[2].span(),
+				),
+			]))
 		}
 		_ => None,
 	}
