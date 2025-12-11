@@ -107,7 +107,7 @@ fn install_tracing(folder_path: &Path) {
 	tracing_subscriber::registry()
 		.with(file_layer)
 		.with(fmt_layer)
-		.with(indicatif_layer.with_filter(IndicatifFilter::new(false)))
+		.with(indicatif_layer.with_filter(IndicatifFilter::new(true)))
 		.with(ErrorLayer::default())
 		.init();
 }
