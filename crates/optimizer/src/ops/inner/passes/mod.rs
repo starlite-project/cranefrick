@@ -4,7 +4,6 @@ mod peephole;
 use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
 
 pub use self::{loops::*, peephole::*};
-use super::Change;
 
 pub fn fix_beginning_instructions(ops: &mut Vec<BrainOperation>) -> bool {
 	match ops.first() {
@@ -20,6 +19,6 @@ pub fn fix_beginning_instructions(ops: &mut Vec<BrainOperation>) -> bool {
 			}
 			_ => false,
 		},
-		Some(..) | None => false,
+		None => false,
 	}
 }

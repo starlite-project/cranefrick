@@ -1,11 +1,9 @@
-#![expect(unused)]
-
 mod change;
 pub mod passes;
 
 use std::array;
 
-use frick_operations::{BrainOperation, BrainOperationType};
+use frick_operations::BrainOperation;
 
 pub use self::change::*;
 
