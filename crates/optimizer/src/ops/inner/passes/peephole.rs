@@ -10,6 +10,7 @@ pub fn remove_noop_ops(ops: [&BrainOperation; 1]) -> Option<Change> {
 			| &BrainOperationType::IncrementCell(CellOffsetOptions { value: 0, .. })
 			| &BrainOperationType::DecrementCell(CellOffsetOptions { value: 0, .. }),
 		] => Some(Change::remove()),
+		[BrainOperationType::DynamicLoop(ops)] if ops.is_empty() => Some(Change::remove()),
 		_ => None,
 	}
 }
