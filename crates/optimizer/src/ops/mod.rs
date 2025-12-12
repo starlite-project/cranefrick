@@ -62,6 +62,8 @@ impl OperationsOptimizer {
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_changes_before_input);
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_noop_ops);
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_redundant_offsets);
+
+		*progress |= run_peephole_pass(self.ops_mut(), passes::unroll_constant_loop);
 	}
 
 	pub const fn ops(&self) -> &Vec<BrainOperation> {

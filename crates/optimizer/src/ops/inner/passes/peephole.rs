@@ -1,6 +1,6 @@
 use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
 
-use crate::ops::inner::Change;
+use crate::ops::inner::{Change, utils::is_basic_loop};
 
 pub fn remove_noop_ops(ops: [&BrainOperation; 1]) -> Option<Change> {
 	match ops.map(BrainOperation::op) {
@@ -439,6 +439,50 @@ pub fn optimize_take_cell_value(ops: [&BrainOperation; 2]) -> Option<Change> {
 		] if x == y => Some(Change::replace(BrainOperationType::TakeCellValue(
 			CellOffsetOptions::new(value, x),
 		))),
+		_ => None,
+	}
+}
+
+pub fn unroll_constant_loop(ops: [&BrainOperation; 2]) -> Option<Change> {
+	match ops.map(BrainOperation::op) {
+		[
+			&BrainOperationType::SetCell(CellOffsetOptions {
+				value: set_value,
+				offset: 0,
+			}),
+			BrainOperationType::DynamicLoop(loop_ops),
+		] if is_basic_loop(loop_ops) => {
+			let decrement_index = {
+				let mut idx = None;
+
+				for (i, op) in loop_ops.iter().enumerate() {
+					if matches!(
+						op.op(),
+						BrainOperationType::DecrementCell(CellOffsetOptions {
+							value: 1,
+							offset: 0
+						})
+					) {
+						idx = Some(i);
+						break;
+					}
+				}
+
+				idx?
+			};
+
+			let mut loop_ops = loop_ops.clone();
+
+			loop_ops.remove(decrement_index);
+
+			let mut output = Vec::new();
+
+			for _ in 0..set_value {
+				output.extend_from_slice(&loop_ops);
+			}
+
+			Some(Change::swap(output))
+		}
 		_ => None,
 	}
 }
