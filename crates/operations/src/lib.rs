@@ -156,4 +156,15 @@ impl BrainOperationType {
 	pub const fn clear_cell_at(offset: i32) -> Self {
 		Self::set_cell_at(0, offset)
 	}
+
+	#[must_use]
+	pub const fn offset(&self) -> Option<i32> {
+		match self {
+			Self::IncrementCell(CellOffsetOptions { offset, .. })
+			| Self::DecrementCell(CellOffsetOptions { offset, .. })
+			| Self::SetCell(CellOffsetOptions { offset, .. })
+			| Self::OutputCell(CellOffsetOptions { offset, .. }) => Some(*offset),
+			_ => None,
+		}
+	}
 }

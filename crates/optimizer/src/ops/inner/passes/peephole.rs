@@ -1,6 +1,6 @@
 use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
 
-use crate::ops::inner::{Change, utils::is_basic_loop};
+use crate::ops::inner::{Change, utils::is_basic_inc_dec_loop};
 
 pub fn remove_noop_ops(ops: [&BrainOperation; 1]) -> Option<Change> {
 	match ops.map(BrainOperation::op) {
@@ -469,7 +469,7 @@ pub fn unroll_constant_loop(ops: [&BrainOperation; 2]) -> Option<Change> {
 				offset: 0,
 			}),
 			BrainOperationType::DynamicLoop(loop_ops),
-		] if is_basic_loop(loop_ops) => {
+		] if is_basic_inc_dec_loop(loop_ops) => {
 			let decrement_index = {
 				let mut idx = None;
 
@@ -501,6 +501,8 @@ pub fn unroll_constant_loop(ops: [&BrainOperation; 2]) -> Option<Change> {
 			for _ in 0..set_value {
 				output.extend_from_slice(&loop_ops);
 			}
+
+			output.sort_by_key(|o| o.offset().unwrap_or_default());
 
 			Some(Change::swap(output))
 		}
