@@ -430,3 +430,15 @@ pub fn remove_redundant_offsets(ops: [&BrainOperation; 2]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_take_cell_value(ops: [&BrainOperation; 2]) -> Option<Change> {
+	match ops.map(BrainOperation::op) {
+		[
+			&BrainOperationType::MoveCellValue(CellOffsetOptions { value, offset: x }),
+			&BrainOperationType::MovePointer(y),
+		] if x == y => Some(Change::replace(BrainOperationType::TakeCellValue(
+			CellOffsetOptions::new(value, x),
+		))),
+		_ => None,
+	}
+}

@@ -366,6 +366,59 @@ impl ToInstructions for BrainOperation {
 					.map(|i| BrainInstruction::new(i, self.span().start))
 					.collect()
 			}
+			&BrainOperationType::TakeCellValue(CellOffsetOptions { value, offset }) => {
+				let (current_cell_info, mut instrs) = LoadCellInformation::create(0, 0, None);
+
+				instrs.extend([
+					BrainInstructionType::StoreImmediateIntoRegister {
+						imm: Imm::CELL_ZERO,
+						output_reg: Register::new(current_cell_info.instr_offset),
+					},
+					BrainInstructionType::StoreRegisterIntoCell {
+						value_reg: Register::new(current_cell_info.instr_offset),
+						pointer_reg: current_cell_info.pointer_reg,
+					},
+					BrainInstructionType::StoreImmediateIntoRegister {
+						imm: Imm::cell(value.convert::<u64>()),
+						output_reg: Register::new(current_cell_info.instr_offset + 1),
+					},
+					BrainInstructionType::PerformBinaryRegisterOperation {
+						lhs_reg: current_cell_info.cell_reg,
+						rhs_reg: Register::new(current_cell_info.instr_offset + 1),
+						output_reg: Register::new(current_cell_info.instr_offset + 2),
+						op: BinaryOperation::Mul,
+					},
+				]);
+
+				let (other_cell_info, mut other_cell_instrs) = LoadCellInformation::create(
+					offset,
+					current_cell_info.instr_offset + 3,
+					Some(current_cell_info.tape_pointer_reg),
+				);
+
+				instrs.append(&mut other_cell_instrs);
+
+				instrs.extend([
+					BrainInstructionType::PerformBinaryRegisterOperation {
+						lhs_reg: Register::new(current_cell_info.instr_offset + 2),
+						rhs_reg: other_cell_info.cell_reg,
+						output_reg: Register::new(other_cell_info.instr_offset),
+						op: BinaryOperation::Add,
+					},
+					BrainInstructionType::StoreRegisterIntoCell {
+						value_reg: Register::new(other_cell_info.instr_offset),
+						pointer_reg: other_cell_info.pointer_reg,
+					},
+					BrainInstructionType::StoreRegisterIntoTapePointer {
+						input_reg: other_cell_info.tape_pointer_reg,
+					},
+				]);
+
+				instrs
+					.into_iter()
+					.map(|i| BrainInstruction::new(i, self.span().start))
+					.collect()
+			}
 			&BrainOperationType::InputIntoCell => [
 				BrainInstructionType::InputIntoRegister {
 					output_reg: Register::new(0),
