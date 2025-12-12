@@ -46,3 +46,19 @@ pub fn optimize_move_cell_value(ops: &[BrainOperation]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn remove_infinite_loops(ops: &[BrainOperation]) -> Option<Change> {
+	let mapped = ops.iter().map(BrainOperation::op).collect::<Vec<_>>();
+
+	match &*mapped {
+		[
+			..,
+			BrainOperationType::SetCell(CellOffsetOptions {
+				value: 1..=u8::MAX,
+				offset: 0,
+			}),
+		]
+		| [BrainOperationType::InputIntoCell] => Some(Change::remove()),
+		_ => None,
+	}
+}

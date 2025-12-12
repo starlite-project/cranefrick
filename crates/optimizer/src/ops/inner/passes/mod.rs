@@ -22,3 +22,17 @@ pub fn fix_beginning_instructions(ops: &mut Vec<BrainOperation>) -> bool {
 		None => false,
 	}
 }
+
+pub fn remove_non_io_ending_operations(ops: &mut Vec<BrainOperation>) -> bool {
+	let old_len = ops.len();
+
+	loop {
+		if ops.last().is_some_and(|o| o.has_io()) {
+			break;
+		}
+
+		ops.pop();
+	}
+
+	ops.len() != old_len
+}

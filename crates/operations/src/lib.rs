@@ -103,6 +103,15 @@ impl BrainOperationType {
 	}
 
 	#[must_use]
+	pub fn has_io(&self) -> bool {
+		match self {
+			Self::InputIntoCell | Self::OutputCell(..) | Self::OutputValue(..) => true,
+			Self::DynamicLoop(ops) => ops.iter().any(|i| i.has_io()),
+			_ => false,
+		}
+	}
+
+	#[must_use]
 	pub const fn child_ops(&self) -> Option<&Vec<BrainOperation>> {
 		match self {
 			Self::DynamicLoop(ops) => Some(ops),
