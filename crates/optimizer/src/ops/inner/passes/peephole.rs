@@ -407,6 +407,24 @@ pub fn optimize_constant_moves(ops: [&BrainOperation; 2]) -> Option<Change> {
 				),
 			]))
 		}
+		[
+			&BrainOperationType::SetCell(set_options),
+			&BrainOperationType::TakeCellValue(take_options),
+		] if matches!(set_options.offset(), 0) => {
+			let value_to_add = set_options.value().wrapping_mul(take_options.value());
+
+			Some(Change::swap([
+				BrainOperation::new(BrainOperationType::clear_cell(), ops[0].span()),
+				BrainOperation::new(
+					BrainOperationType::MovePointer(take_options.offset()),
+					ops[1].span(),
+				),
+				BrainOperation::new(
+					BrainOperationType::increment_cell(value_to_add),
+					ops[1].span(),
+				),
+			]))
+		}
 		_ => None,
 	}
 }
@@ -475,7 +493,10 @@ pub fn unroll_constant_loop(ops: [&BrainOperation; 2]) -> Option<Change> {
 
 			loop_ops.remove(decrement_index);
 
-			let mut output = Vec::new();
+			let mut output = vec![BrainOperation::new(
+				BrainOperationType::clear_cell(),
+				ops[0].span(),
+			)];
 
 			for _ in 0..set_value {
 				output.extend_from_slice(&loop_ops);
