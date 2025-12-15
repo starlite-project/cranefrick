@@ -5,22 +5,49 @@ use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
 
 pub use self::{loops::*, peephole::*};
 
-pub fn fix_beginning_instructions(ops: &mut Vec<BrainOperation>) -> bool {
-	match ops.first() {
-		Some(op) => match op.op() {
-			BrainOperationType::DynamicLoop(..) => {
-				ops.remove(0);
-				true
+pub fn fix_beginning_instructions(ops: &mut [BrainOperation]) -> bool {
+	let mut changed_any = false;
+
+	let mut i = 0;
+
+	let mut indices_checked = Vec::new();
+
+	loop {
+		match *ops[i].op() {
+			BrainOperationType::IncrementCell(CellOffsetOptions { value, offset }) => {
+				if indices_checked.contains(&offset) {
+					break;
+				}
+
+				*ops[i].op_mut() = BrainOperationType::SetCell(CellOffsetOptions { value, offset });
+				changed_any = true;
+				indices_checked.push(offset);
 			}
-			&BrainOperationType::IncrementCell(CellOffsetOptions { value, offset }) => {
-				ops[0] =
-					BrainOperation::new(BrainOperationType::set_cell_at(value, offset), op.span());
-				true
+			BrainOperationType::MovePointer(offset) => {
+				if indices_checked.contains(&offset) {
+					break;
+				}
+
+				for i in &mut indices_checked {
+					*i = i.wrapping_sub(offset);
+				}
 			}
-			_ => false,
-		},
-		None => false,
+			BrainOperationType::SetCell(CellOffsetOptions { offset, .. }) => {
+				if indices_checked.contains(&offset) {
+					break;
+				}
+
+				indices_checked.push(offset);
+			}
+			_ => {
+				break;
+			}
+		}
+
+		i += 1;
 	}
+
+	changed_any
 }
 
 pub fn remove_non_io_ending_operations(ops: &mut Vec<BrainOperation>) -> bool {
