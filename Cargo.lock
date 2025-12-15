@@ -519,6 +519,7 @@ dependencies = [
  "chumsky",
  "frick_utils",
  "serde",
+ "tracing",
  "tracing-indicatif",
 ]
 

@@ -11,6 +11,7 @@ use chumsky::{input::ValueInput, prelude::*};
 
 use crate::{BrainOperation, BrainOperationType, CellOffsetOptions};
 
+#[tracing::instrument("parse code", skip_all)]
 pub fn parse(file_path: impl AsRef<Path>) -> io::Result<Vec<BrainOperation>> {
 	let file_path = file_path.as_ref().to_owned();
 
