@@ -105,6 +105,24 @@ pub fn optimize_set_cell(ops: [&BrainOperation; 2]) -> Option<Change> {
 				offset: 0,
 			}),
 		] if i.is_zeroing_cell() => Some(Change::remove_offset(1)),
+		[
+			&BrainOperationType::SetCell(set_options),
+			&BrainOperationType::IncrementCell(inc_options),
+		] if set_options.offset() == inc_options.offset() => {
+			Some(Change::replace(BrainOperationType::set_cell_at(
+				set_options.value().wrapping_add(inc_options.value()),
+				set_options.offset(),
+			)))
+		}
+		[
+			&BrainOperationType::SetCell(set_options),
+			&BrainOperationType::DecrementCell(dec_options),
+		] if set_options.offset() == dec_options.offset() => {
+			Some(Change::replace(BrainOperationType::set_cell_at(
+				set_options.value().wrapping_sub(dec_options.value()),
+				set_options.offset(),
+			)))
+		}
 		_ => None,
 	}
 }
