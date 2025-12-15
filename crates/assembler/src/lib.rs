@@ -94,7 +94,7 @@ impl Assembler {
 				.ok_or(AssemblyError::NoTargetMachine)?
 		};
 
-		target_machine.set_fast_instruction_selection(true);
+		target_machine.set_fast_instruction_selection(false);
 		target_machine.set_asm_verbosity(true);
 
 		info!("lowering into LLVM IR");
