@@ -71,6 +71,17 @@ pub fn optimize_beginning_incs(ops: &mut Vec<BrainOperation>) -> bool {
 
 				indices_checked.push(offset);
 			}
+			BrainOperationType::TakeCellValue(CellOffsetOptions { offset, .. })
+				if !indices_checked.contains(&0) =>
+			{
+				*ops[i].op_mut() = BrainOperationType::MovePointer(offset);
+				changed_any = true;
+			}
+			BrainOperationType::DynamicLoop(..) if !indices_checked.contains(&0) => {
+				ops.remove(i);
+
+				return true;
+			}
 			_ => {
 				break;
 			}

@@ -457,6 +457,13 @@ pub fn remove_redundant_offsets(ops: [&BrainOperation; 2]) -> Option<Change> {
 			BrainOperation::new(BrainOperationType::increment_cell(value), ops[0].span()),
 		])),
 		[
+			&BrainOperationType::SetCell(CellOffsetOptions { value, offset: x }),
+			&BrainOperationType::MovePointer(y),
+		] if x == y => Some(Change::swap([
+			BrainOperation::new(BrainOperationType::MovePointer(y), ops[1].span()),
+			BrainOperation::new(BrainOperationType::set_cell(value), ops[0].span()),
+		])),
+		[
 			&BrainOperationType::MovePointer(x),
 			&BrainOperationType::SetCell(CellOffsetOptions { value, offset: y }),
 		] if x == -y => Some(Change::swap([
