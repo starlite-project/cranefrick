@@ -28,9 +28,9 @@ impl Display for InstructionsOptimizerError {
 				f.write_str("register(")?;
 				Display::fmt(&register, f)?;
 				f.write_str(") is invalid; expected ")?;
-				f.write_str(&*register_type(Some(expected)))?;
+				f.write_str(&register_type(Some(expected)))?;
 				f.write_str(", found ")?;
-				f.write_str(&*register_type(found))
+				f.write_str(&register_type(found))
 			}
 		}
 	}
