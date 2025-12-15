@@ -232,9 +232,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let compare_value = self.value_at(input_reg)?;
 
-		self.builder
-			.build_conditional_branch(compare_value, loop_info.exit, loop_info.body)?;
+		let br_instr =
+			self.builder
+				.build_conditional_branch(compare_value, loop_info.exit, loop_info.body)?;
 		self.builder.position_at_end(loop_info.body);
+
+		self.add_loop_metadata_to_br(br_instr)?;
 
 		Ok(())
 	}

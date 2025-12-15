@@ -8,9 +8,9 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-llvm-sys.workspace = true
 libc.workspace = true
+llvm-sys.workspace = true
 
 [build-dependencies]
-build-rs = "0.3"
 cc = "1"
+build-rs = "0.3"

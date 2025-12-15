@@ -5,6 +5,7 @@ use std::{
 	ffi::{CStr, CString},
 };
 
+use frick_llvm_ext::LLVMCreateSelfReferentialDistinctNodeInContext;
 use frick_utils::Convert as _;
 use inkwell::{
 	AddressSpace,
@@ -19,7 +20,7 @@ use inkwell::{
 		LLVMGEPNoWrapFlags,
 		core::{
 			LLVMBuildGEPWithNoWrapFlags, LLVMCreateConstantRangeAttribute, LLVMIsNewDbgInfoFormat,
-			LLVMSetIsNewDbgInfoFormat,
+			LLVMMetadataAsValue, LLVMSetIsNewDbgInfoFormat,
 		},
 		target_machine::LLVMSetTargetMachineFastISel,
 	},
@@ -56,6 +57,8 @@ pub trait ContextExt<'ctx> {
 		lower_bound: u64,
 		upper_bound: u64,
 	) -> Attribute;
+
+	fn self_referential_distinct_metadata_node(&self) -> MetadataValue<'ctx>;
 }
 
 impl<'ctx> ContextExt<'ctx> for &'ctx Context {
@@ -84,6 +87,16 @@ impl<'ctx> ContextExt<'ctx> for &'ctx Context {
 			))
 		}
 	}
+
+	fn self_referential_distinct_metadata_node(&self) -> MetadataValue<'ctx> {
+		unsafe {
+			let metadata_ptr = LLVMCreateSelfReferentialDistinctNodeInContext(self.raw());
+
+			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
+
+			MetadataValue::new(value_ptr)
+		}
+	}
 }
 
 impl<'ctx> ContextExt<'ctx> for ContextRef<'ctx> {
@@ -110,6 +123,16 @@ impl<'ctx> ContextExt<'ctx> for ContextRef<'ctx> {
 				&raw const lower_bound,
 				&raw const upper_bound,
 			))
+		}
+	}
+
+	fn self_referential_distinct_metadata_node(&self) -> MetadataValue<'ctx> {
+		unsafe {
+			let metadata_ptr = LLVMCreateSelfReferentialDistinctNodeInContext(self.raw());
+
+			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
+
+			MetadataValue::new(value_ptr)
 		}
 	}
 }

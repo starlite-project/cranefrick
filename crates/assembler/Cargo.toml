@@ -10,6 +10,7 @@ version.workspace = true
 [dependencies]
 frick_instructions.workspace = true
 frick_interop.workspace = true
+frick_llvm_ext = { path = "../llvm_ext" }
 frick_operations.workspace = true
 frick_spec = { path = "../spec" }
 frick_types.workspace = true
