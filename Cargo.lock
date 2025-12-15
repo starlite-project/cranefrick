@@ -159,6 +159,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "build-rs"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cde4c9ce1d8e6e94b4c0ee341c000d79335b7c55b7d7979b36ca803c85c091ba"
+dependencies = [
+ "unicode-ident",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -509,6 +518,16 @@ name = "frick_interop"
 version = "0.1.0"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "frick_llvm_ext"
+version = "0.1.0"
+dependencies = [
+ "build-rs",
+ "cc",
+ "libc",
+ "llvm-sys",
 ]
 
 [[package]]

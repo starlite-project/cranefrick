@@ -43,6 +43,7 @@ name = "is_all_zero"
 [workspace]
 members = [
     "crates/assembler",
+    "crates/ext",
     "crates/instructions",
     "crates/interop",
     "crates/operations",
@@ -75,6 +76,7 @@ inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "7abf48a2cf4f
     "llvm21-1"
 ] }
 libc = "0.2"
+llvm-sys = { git = "https://gitlab.com/taricorp/llvm-sys.rs.git", branch = "llvm-21" }
 ron = "0.12"
 rustc-hash = "2"
 send_wrapper = "0.6"

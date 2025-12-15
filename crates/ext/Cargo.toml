@@ -1,0 +1,16 @@
+lints.workspace = true
+
+[package]
+edition.workspace = true
+license.workspace = true
+name = "frick_llvm_ext"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+llvm-sys.workspace = true
+libc.workspace = true
+
+[build-dependencies]
+build-rs = "0.3"
+cc = "1"
