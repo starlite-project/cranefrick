@@ -9,5 +9,9 @@ unsafe extern "C" {
 		Count: ::libc::c_uint,
 	) -> LLVMMetadataRef;
 
-	pub fn LLVMCreateSelfReferentialDistinctNodeInContext(C: LLVMContextRef) -> LLVMMetadataRef;
+	pub fn LLVMCreateSelfReferentialDistinctNodeInContext(
+		C: LLVMContextRef,
+		Nodes: *mut LLVMMetadataRef,
+		Count: ::libc::c_uint,
+	) -> LLVMMetadataRef;
 }

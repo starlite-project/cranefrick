@@ -41,7 +41,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let context = self.context();
 
-		let loop_metadata_node = context.self_referential_distinct_metadata_node();
+		let loop_metadata_node = context.self_referential_distinct_metadata_node(&[]);
 		let loop_metadata_id = context.get_kind_id("llvm.loop");
 
 		instr.set_metadata(loop_metadata_node, loop_metadata_id)?;

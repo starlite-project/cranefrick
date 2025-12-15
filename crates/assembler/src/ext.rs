@@ -20,14 +20,15 @@ use inkwell::{
 		LLVMGEPNoWrapFlags,
 		core::{
 			LLVMBuildGEPWithNoWrapFlags, LLVMCreateConstantRangeAttribute, LLVMIsNewDbgInfoFormat,
-			LLVMMetadataAsValue, LLVMSetIsNewDbgInfoFormat,
+			LLVMMetadataAsValue, LLVMSetIsNewDbgInfoFormat, LLVMValueAsMetadata,
 		},
+		prelude::LLVMMetadataRef,
 		target_machine::LLVMSetTargetMachineFastISel,
 	},
 	module::Module,
 	targets::TargetMachine,
 	types::{BasicType, PointerType},
-	values::{AsValueRef, IntValue, MetadataValue, PointerValue},
+	values::{AsValueRef, BasicMetadataValueEnum, IntValue, MetadataValue, PointerValue},
 };
 
 pub trait ContextGetter<'ctx> {
@@ -58,7 +59,10 @@ pub trait ContextExt<'ctx> {
 		upper_bound: u64,
 	) -> Attribute;
 
-	fn self_referential_distinct_metadata_node(&self) -> MetadataValue<'ctx>;
+	fn self_referential_distinct_metadata_node(
+		&self,
+		nodes: &[BasicMetadataValueEnum<'ctx>],
+	) -> MetadataValue<'ctx>;
 }
 
 impl<'ctx> ContextExt<'ctx> for &'ctx Context {
@@ -88,9 +92,21 @@ impl<'ctx> ContextExt<'ctx> for &'ctx Context {
 		}
 	}
 
-	fn self_referential_distinct_metadata_node(&self) -> MetadataValue<'ctx> {
+	fn self_referential_distinct_metadata_node(
+		&self,
+		nodes: &[BasicMetadataValueEnum<'ctx>],
+	) -> MetadataValue<'ctx> {
+		let mut values: Vec<LLVMMetadataRef> = nodes
+			.iter()
+			.map(|val| unsafe { LLVMValueAsMetadata(val.as_value_ref()) })
+			.collect();
+
 		unsafe {
-			let metadata_ptr = LLVMCreateSelfReferentialDistinctNodeInContext(self.raw());
+			let metadata_ptr = LLVMCreateSelfReferentialDistinctNodeInContext(
+				self.raw(),
+				values.as_mut_ptr(),
+				values.len() as u32,
+			);
 
 			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
 
@@ -126,9 +142,21 @@ impl<'ctx> ContextExt<'ctx> for ContextRef<'ctx> {
 		}
 	}
 
-	fn self_referential_distinct_metadata_node(&self) -> MetadataValue<'ctx> {
+	fn self_referential_distinct_metadata_node(
+		&self,
+		nodes: &[BasicMetadataValueEnum<'ctx>],
+	) -> MetadataValue<'ctx> {
+		let mut values: Vec<LLVMMetadataRef> = nodes
+			.iter()
+			.map(|val| unsafe { LLVMValueAsMetadata(val.as_value_ref()) })
+			.collect();
+
 		unsafe {
-			let metadata_ptr = LLVMCreateSelfReferentialDistinctNodeInContext(self.raw());
+			let metadata_ptr = LLVMCreateSelfReferentialDistinctNodeInContext(
+				self.raw(),
+				values.as_mut_ptr(),
+				values.len() as u32,
+			);
 
 			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
 
