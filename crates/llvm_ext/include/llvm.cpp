@@ -22,12 +22,10 @@ extern "C"
 
     LLVMMetadataRef LLVMCreateSelfReferentialDistinctNodeInContext(LLVMContextRef C, LLVMMetadataRef *Nodes, unsigned Count)
     {
-        SmallVector<Metadata *, 4> vec;
-        for (unsigned i = 0; i < Count; i++)
-            vec.push_back(reinterpret_cast<Metadata *>(Nodes[i]));
-
-        auto temp = MDNode::getTemporary(*unwrap(C), vec);
+        auto temp = MDNode::getTemporary(*unwrap(C), {});
         SmallVector<Metadata *, 1> ops = {temp.get()};
+        for (unsigned i = 0; i < Count; i++)
+            ops.push_back(reinterpret_cast<Metadata*>(Nodes[i]));
         MDNode* ret = MDNode::getDistinct(*unwrap(C), ops);
         temp->replaceAllUsesWith(ret);
         return wrap(ret);
