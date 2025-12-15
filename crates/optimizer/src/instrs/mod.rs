@@ -6,6 +6,7 @@ use frick_instructions::BrainInstruction;
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use verify::Verifier;
 
 pub use self::error::*;
 use self::inner::{Pass, passes};
@@ -28,11 +29,11 @@ impl InstructionsOptimizer {
 	pub fn run(&mut self) -> Result<(), InstructionsOptimizerError> {
 		let mut iteration = 0;
 
-		let mut progress = self.run_passes(iteration);
+		let mut progress = self.run_passes(iteration)?;
 
 		while progress {
 			iteration += 1;
-			progress = self.run_passes(iteration);
+			progress = self.run_passes(iteration)?;
 		}
 
 		info!(iterations = iteration);
@@ -41,12 +42,14 @@ impl InstructionsOptimizer {
 	}
 
 	#[tracing::instrument(skip(self))]
-	fn run_passes(&mut self, iteration: usize) -> bool {
+	fn run_passes(&mut self, iteration: usize) -> Result<bool, InstructionsOptimizerError> {
 		let mut progress = false;
 
 		self.run_each_pass(&mut progress);
 
-		progress
+		Verifier::run(&self.instrs)?;
+
+		Ok(progress)
 	}
 
 	fn run_each_pass(&mut self, progress: &mut bool) {

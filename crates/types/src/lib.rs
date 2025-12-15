@@ -139,4 +139,12 @@ pub enum BinaryOperation {
 	BitwiseShl,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum RegisterTypeEnum {
+	Any,
+	Bool,
+	Int,
+	Pointer,
+}
+
 pub trait RegisterType: self::sealed::Sealed {}
