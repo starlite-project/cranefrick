@@ -30,6 +30,10 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			builder.build_array_alloca(cell_type, tape_size, "tape")?
 		};
 
+		if let Some(tape_instr) = tape.as_instruction() {
+			tape_instr.set_alignment(4)?;
+		}
+
 		let pointer = builder.build_alloca(ptr_int_type, "pointer\0")?;
 
 		Ok(Self { tape, pointer })

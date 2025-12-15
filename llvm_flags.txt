@@ -88,6 +88,7 @@ adce
 sroa<modify-cfg>
 load-store-vectorizer
 slp-vectorizer
+memcpyopt
 select-optimize
 simplifycfg
 aggressive-instcombine
