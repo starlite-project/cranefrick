@@ -1,4 +1,5 @@
 use frick_instructions::{BrainInstruction, BrainInstructionType};
+use frick_spec::POINTER_SIZE;
 use frick_types::RegisterTypeEnum;
 use rustc_hash::FxHashMap;
 
@@ -41,7 +42,7 @@ impl Verifier {
 					output_reg,
 				} => match registers.get(&pointer_reg.index()).copied() {
 					Some(RegisterTypeEnum::Pointer) => {
-						registers.insert(output_reg.index(), RegisterTypeEnum::Int);
+						registers.insert(output_reg.index(), RegisterTypeEnum::Int(Some(8)));
 					}
 					found => {
 						return Err(InstructionsOptimizerError::RegisterInvalid {
@@ -59,8 +60,9 @@ impl Verifier {
 						registers.get(&value_reg.index()).copied(),
 						registers.get(&pointer_reg.index()).copied(),
 					) {
-						(Some(RegisterTypeEnum::Int), Some(RegisterTypeEnum::Pointer)) => {}
-						(Some(RegisterTypeEnum::Int), found) => {
+						(Some(RegisterTypeEnum::Int(Some(8))), Some(RegisterTypeEnum::Pointer)) => {
+						}
+						(Some(RegisterTypeEnum::Int(Some(8))), found) => {
 							return Err(InstructionsOptimizerError::RegisterInvalid {
 								register: pointer_reg.index(),
 								expected: RegisterTypeEnum::Pointer,
@@ -70,25 +72,31 @@ impl Verifier {
 						(found, ..) => {
 							return Err(InstructionsOptimizerError::RegisterInvalid {
 								register: value_reg.index(),
-								expected: RegisterTypeEnum::Int,
+								expected: RegisterTypeEnum::Int(Some(8)),
 								found,
 							});
 						}
 					}
 				}
-				BrainInstructionType::StoreImmediateIntoRegister { output_reg, .. }
-				| BrainInstructionType::LoadTapePointerIntoRegister { output_reg }
-				| BrainInstructionType::InputIntoRegister { output_reg } => {
-					registers.insert(output_reg.index(), RegisterTypeEnum::Int);
+				BrainInstructionType::StoreImmediateIntoRegister { imm, output_reg } => {
+					registers.insert(
+						output_reg.index(),
+						RegisterTypeEnum::Int(Some(imm.size() as usize)),
+					);
 				}
-				BrainInstructionType::StoreRegisterIntoTapePointer { input_reg }
-				| BrainInstructionType::OutputFromRegister { input_reg } => {
+				BrainInstructionType::LoadTapePointerIntoRegister { output_reg } => {
+					registers.insert(
+						output_reg.index(),
+						RegisterTypeEnum::Int(Some(POINTER_SIZE)),
+					);
+				}
+				BrainInstructionType::StoreRegisterIntoTapePointer { input_reg } => {
 					match registers.get(&input_reg.index()).copied() {
-						Some(RegisterTypeEnum::Int) => {}
+						Some(RegisterTypeEnum::Int(Some(64))) => {}
 						found => {
 							return Err(InstructionsOptimizerError::RegisterInvalid {
 								register: input_reg.index(),
-								expected: RegisterTypeEnum::Int,
+								expected: RegisterTypeEnum::Int(Some(64)),
 								found,
 							});
 						}
@@ -98,13 +106,13 @@ impl Verifier {
 					tape_pointer_reg,
 					output_reg,
 				} => match registers.get(&tape_pointer_reg.index()).copied() {
-					Some(RegisterTypeEnum::Int) => {
+					Some(RegisterTypeEnum::Int(Some(64))) => {
 						registers.insert(output_reg.index(), RegisterTypeEnum::Pointer);
 					}
 					found => {
 						return Err(InstructionsOptimizerError::RegisterInvalid {
 							register: output_reg.index(),
-							expected: RegisterTypeEnum::Int,
+							expected: RegisterTypeEnum::Int(Some(64)),
 							found,
 						});
 					}
@@ -118,20 +126,20 @@ impl Verifier {
 					registers.get(&lhs_reg.index()).copied(),
 					registers.get(&rhs_reg.index()).copied(),
 				) {
-					(Some(RegisterTypeEnum::Int), Some(RegisterTypeEnum::Int)) => {
-						registers.insert(output_reg.index(), RegisterTypeEnum::Int);
+					(Some(RegisterTypeEnum::Int(a)), Some(RegisterTypeEnum::Int(b))) if a == b => {
+						registers.insert(output_reg.index(), RegisterTypeEnum::Int(a));
 					}
-					(Some(RegisterTypeEnum::Int), found) => {
+					(Some(RegisterTypeEnum::Int(a)), found) => {
 						return Err(InstructionsOptimizerError::RegisterInvalid {
 							register: rhs_reg.index(),
-							expected: RegisterTypeEnum::Int,
+							expected: RegisterTypeEnum::Int(a),
 							found,
 						});
 					}
 					(found, ..) => {
 						return Err(InstructionsOptimizerError::RegisterInvalid {
 							register: lhs_reg.index(),
-							expected: RegisterTypeEnum::Int,
+							expected: RegisterTypeEnum::Int(None),
 							found,
 						});
 					}
@@ -151,6 +159,21 @@ impl Verifier {
 						});
 					}
 				},
+				BrainInstructionType::InputIntoRegister { output_reg } => {
+					registers.insert(output_reg.index(), RegisterTypeEnum::Int(Some(8)));
+				}
+				BrainInstructionType::OutputFromRegister { input_reg } => {
+					match registers.get(&input_reg.index()).copied() {
+						Some(RegisterTypeEnum::Int(Some(8))) => {}
+						found => {
+							return Err(InstructionsOptimizerError::RegisterInvalid {
+								register: input_reg.index(),
+								expected: RegisterTypeEnum::Int(Some(8)),
+								found,
+							});
+						}
+					}
+				}
 				BrainInstructionType::CompareRegisterToRegister {
 					lhs_reg,
 					rhs_reg,
@@ -159,20 +182,23 @@ impl Verifier {
 					registers.get(&lhs_reg.index()).copied(),
 					registers.get(&rhs_reg.index()).copied(),
 				) {
-					(Some(RegisterTypeEnum::Int), Some(RegisterTypeEnum::Int)) => {
+					(
+						Some(RegisterTypeEnum::Int(Some(8))),
+						Some(RegisterTypeEnum::Int(Some(8))),
+					) => {
 						registers.insert(output_reg.index(), RegisterTypeEnum::Bool);
 					}
-					(Some(RegisterTypeEnum::Int), found) => {
+					(Some(RegisterTypeEnum::Int(Some(8))), found) => {
 						return Err(InstructionsOptimizerError::RegisterInvalid {
 							register: rhs_reg.index(),
-							expected: RegisterTypeEnum::Int,
+							expected: RegisterTypeEnum::Int(Some(8)),
 							found,
 						});
 					}
 					(found, ..) => {
 						return Err(InstructionsOptimizerError::RegisterInvalid {
 							register: lhs_reg.index(),
-							expected: RegisterTypeEnum::Int,
+							expected: RegisterTypeEnum::Int(Some(8)),
 							found,
 						});
 					}

@@ -143,7 +143,7 @@ pub enum BinaryOperation {
 pub enum RegisterTypeEnum {
 	Any,
 	Bool,
-	Int,
+	Int(Option<usize>),
 	Pointer,
 }
 

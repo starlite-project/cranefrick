@@ -529,6 +529,7 @@ dependencies = [
  "frick_instructions",
  "frick_operations",
  "frick_serialize",
+ "frick_spec",
  "frick_types",
  "frick_utils",
  "rustc-hash 2.1.1",

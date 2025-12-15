@@ -11,6 +11,7 @@ version.workspace = true
 frick_instructions.workspace = true
 frick_operations.workspace = true
 frick_serialize.workspace = true
+frick_spec.workspace = true
 frick_types.workspace = true
 frick_utils = { workspace = true, features = ["insert_or_push", "iter_ext"] }
 rustc-hash.workspace = true
