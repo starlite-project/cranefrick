@@ -19,7 +19,16 @@ pub fn fix_beginning_instructions(ops: &mut [BrainOperation]) -> bool {
 					break;
 				}
 
-				*ops[i].op_mut() = BrainOperationType::SetCell(CellOffsetOptions { value, offset });
+				*ops[i].op_mut() = BrainOperationType::set_cell_at(value, offset);
+				changed_any = true;
+				indices_checked.push(offset);
+			}
+			BrainOperationType::DecrementCell(CellOffsetOptions { value, offset }) => {
+				if indices_checked.contains(&offset) {
+					break;
+				}
+
+				*ops[i].op_mut() = BrainOperationType::set_cell_at(0u8.wrapping_sub(value), offset);
 				changed_any = true;
 				indices_checked.push(offset);
 			}
