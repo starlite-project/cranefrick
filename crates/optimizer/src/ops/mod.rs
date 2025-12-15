@@ -57,6 +57,7 @@ impl OperationsOptimizer {
 		*progress |= run_peephole_pass(self.ops_mut(), passes::optimize_take_cell_value);
 
 		*progress |= passes::fix_beginning_instructions(self.ops_mut());
+		*progress |= passes::optimize_beginning_incs(self.ops_mut());
 		*progress |= passes::remove_non_io_ending_operations(self.ops_mut());
 
 		*progress |= run_peephole_pass(self.ops_mut(), passes::remove_unreachable_loops);

@@ -5,7 +5,25 @@ use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
 
 pub use self::{loops::*, peephole::*};
 
-pub fn fix_beginning_instructions(ops: &mut [BrainOperation]) -> bool {
+pub fn fix_beginning_instructions(ops: &mut Vec<BrainOperation>) -> bool {
+	let mut changed_any = false;
+
+	let Some(op) = ops.first() else {
+		return changed_any;
+	};
+
+	match op.op() {
+		BrainOperationType::DynamicLoop(..) | BrainOperationType::MoveCellValue(..) => {
+			ops.remove(0);
+			changed_any = true;
+		}
+		_ => {}
+	}
+
+	changed_any
+}
+
+pub fn optimize_beginning_incs(ops: &mut Vec<BrainOperation>) -> bool {
 	let mut changed_any = false;
 
 	let mut i = 0;
@@ -40,6 +58,11 @@ pub fn fix_beginning_instructions(ops: &mut [BrainOperation]) -> bool {
 				for i in &mut indices_checked {
 					*i = i.wrapping_sub(offset);
 				}
+			}
+			BrainOperationType::SetCell(CellOffsetOptions { value: 0, .. }) => {
+				ops.remove(i);
+
+				return true;
 			}
 			BrainOperationType::SetCell(CellOffsetOptions { offset, .. }) => {
 				if indices_checked.contains(&offset) {
