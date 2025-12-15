@@ -1,10 +1,13 @@
+mod error;
 mod inner;
+mod verify;
 
 use frick_instructions::BrainInstruction;
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
+pub use self::error::*;
 use self::inner::{Pass, passes};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -22,7 +25,7 @@ impl InstructionsOptimizer {
 	}
 
 	#[tracing::instrument("optimize instructions", skip(self))]
-	pub fn run(&mut self) {
+	pub fn run(&mut self) -> Result<(), InstructionsOptimizerError> {
 		let mut iteration = 0;
 
 		let mut progress = self.run_passes(iteration);
@@ -33,6 +36,8 @@ impl InstructionsOptimizer {
 		}
 
 		info!(iterations = iteration);
+
+		Ok(())
 	}
 
 	#[tracing::instrument(skip(self))]

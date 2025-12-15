@@ -1,6 +1,12 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-use std::{fs, io::Error as IoError, path::Path};
+use std::{
+	error::Error,
+	fmt::{Display, Formatter, Result as FmtResult},
+	fs,
+	io::Error as IoError,
+	path::Path,
+};
 
 use serde::Serialize;
 
@@ -9,6 +15,26 @@ pub enum SerializeError {
 	#[cfg(feature = "ron")]
 	Ron(ron::Error),
 	Io(IoError),
+}
+
+impl Display for SerializeError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		match self {
+			#[cfg(feature = "ron")]
+			Self::Ron(..) => f.write_str("an error occurred serializing as RON"),
+			Self::Io(..) => f.write_str("an IO error has occurred"),
+		}
+	}
+}
+
+impl Error for SerializeError {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
+		match self {
+			#[cfg(feature = "ron")]
+			Self::Ron(e) => Some(e),
+			Self::Io(e) => Some(e),
+		}
+	}
 }
 
 impl From<IoError> for SerializeError {

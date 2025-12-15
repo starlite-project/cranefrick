@@ -46,7 +46,7 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	let output = Optimizer::run(operations, args.output_path());
+	let output = Optimizer::run(operations, args.output_path())?;
 
 	let assembler = match args.passes_path() {
 		None => Assembler::new("default<O0>".to_owned(), args.file_path().to_owned()),
