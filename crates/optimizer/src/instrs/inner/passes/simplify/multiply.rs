@@ -7,7 +7,7 @@ use crate::instrs::inner::Pass;
 pub struct SimplifyMultiplicationPass;
 
 impl SimplifyMultiplicationPass {
-	fn transform_mul_to_shl(instrs: &mut [BrainInstruction]) -> bool {
+	fn transform_mul_to_shl(instrs: &mut Vec<BrainInstruction>) -> bool {
 		let mut changed_any = false;
 
 		let mut i = 1;
@@ -25,20 +25,43 @@ impl SimplifyMultiplicationPass {
 				&& (output_reg == lhs_reg || output_reg == rhs_reg)
 				&& imm.value().is_power_of_two()
 			{
-				let new_imm = Imm::cell(imm.value().ilog2().convert::<u64>());
+				match imm.value() {
+					2 => {
+						let other_reg = if output_reg == lhs_reg {
+							rhs_reg
+						} else {
+							lhs_reg
+						};
 
-				*instrs[i - 1] = BrainInstructionType::StoreImmediateIntoRegister {
-					imm: new_imm,
-					output_reg,
-				};
-				*instrs[i] = BrainInstructionType::PerformBinaryRegisterOperation {
-					lhs_reg,
-					rhs_reg,
-					output_reg: binary_output_reg,
-					op: BinaryOperation::BitwiseShl,
-				};
+						*instrs[i] = BrainInstructionType::PerformBinaryRegisterOperation {
+							lhs_reg: other_reg,
+							rhs_reg: other_reg,
+							output_reg: binary_output_reg,
+							op: BinaryOperation::Add,
+						};
 
-				changed_any = true;
+						instrs.remove(i - 1);
+
+						i -= 1;
+						changed_any = true;
+					}
+					x => {
+						let new_imm = Imm::cell(x.ilog2().convert::<u64>());
+
+						*instrs[i - 1] = BrainInstructionType::StoreImmediateIntoRegister {
+							imm: new_imm,
+							output_reg,
+						};
+						*instrs[i] = BrainInstructionType::PerformBinaryRegisterOperation {
+							lhs_reg,
+							rhs_reg,
+							output_reg: binary_output_reg,
+							op: BinaryOperation::BitwiseShl,
+						};
+
+						changed_any = true;
+					}
+				}
 			}
 
 			i += 1;
