@@ -115,19 +115,27 @@ where
 
 pub enum Any {}
 
-impl RegisterType for Any {}
+impl RegisterType for Any {
+	type RustType = core::convert::Infallible;
+}
 
 pub enum Bool {}
 
-impl RegisterType for Bool {}
+impl RegisterType for Bool {
+	type RustType = bool;
+}
 
 pub enum Int {}
 
-impl RegisterType for Int {}
+impl RegisterType for Int {
+	type RustType = Imm;
+}
 
 pub enum Pointer {}
 
-impl RegisterType for Pointer {}
+impl RegisterType for Pointer {
+	type RustType = *const ();
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -147,4 +155,6 @@ pub enum RegisterTypeEnum {
 	Pointer,
 }
 
-pub trait RegisterType: self::sealed::Sealed {}
+pub trait RegisterType: self::sealed::Sealed {
+	type RustType;
+}
