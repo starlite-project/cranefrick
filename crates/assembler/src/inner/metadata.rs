@@ -16,7 +16,16 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let context = self.context();
 
-		let loop_metadata_node = context.self_referential_distinct_metadata_node(&[]);
+		let mustprogress_metadata_node = {
+			let key = context.metadata_string("llvm.loop.mustprogress");
+
+			context.metadata_node(&[key.convert::<BasicMetadataValueEnum<'ctx>>()])
+		};
+
+		let loop_metadata_node =
+			context.self_referential_distinct_metadata_node(&[mustprogress_metadata_node
+				.convert::<BasicMetadataValueEnum<'ctx>>(
+			)]);
 		let loop_metadata_id = context.get_kind_id("llvm.loop");
 
 		instr.set_metadata(loop_metadata_node, loop_metadata_id)?;
