@@ -11,6 +11,7 @@ use std::{
 	fmt::{Debug, Display, Formatter, Result as FmtResult, Write as _},
 	fs,
 	io::Error as IoError,
+	os::raw::c_void,
 	path::{Path, PathBuf},
 };
 
@@ -20,6 +21,13 @@ use inkwell::{
 	OptimizationLevel,
 	builder::BuilderError,
 	context::Context,
+	llvm_sys::{
+		LLVMDiagnosticSeverity,
+		core::{
+			LLVMContextSetDiagnosticHandler, LLVMGetDiagInfoDescription, LLVMGetDiagInfoSeverity,
+		},
+		prelude::LLVMDiagnosticInfoRef,
+	},
 	module::Module,
 	passes::PassBuilderOptions,
 	support::LLVMString,
@@ -74,6 +82,16 @@ impl Assembler {
 
 		let cpu = TargetMachine::get_host_cpu_name().to_string();
 		let cpu_features = TargetMachine::get_host_cpu_features().to_string();
+
+		unsafe {
+			let context = self.context.raw();
+
+			LLVMContextSetDiagnosticHandler(
+				context,
+				Some(llvm_diagnostic_handler),
+				std::ptr::null_mut(),
+			);
+		}
 
 		let target_triple = {
 			let default_triple = TargetMachine::get_default_triple();
@@ -357,5 +375,16 @@ impl Display for ToWriteType {
 			Self::Optimized => "optimized",
 			Self::Stripped => "stripped",
 		})
+	}
+}
+
+extern "C" fn llvm_diagnostic_handler(di: LLVMDiagnosticInfoRef, _ctx: *mut c_void) {
+	let message = unsafe { CStr::from_ptr(LLVMGetDiagInfoDescription(di)) }.to_string_lossy();
+
+	match unsafe { LLVMGetDiagInfoSeverity(di) } {
+		LLVMDiagnosticSeverity::LLVMDSError => tracing::error!("{message}"),
+		LLVMDiagnosticSeverity::LLVMDSWarning => tracing::warn!("{message}"),
+		LLVMDiagnosticSeverity::LLVMDSRemark => tracing::debug!("{message}"),
+		LLVMDiagnosticSeverity::LLVMDSNote => tracing::trace!("{message}"),
 	}
 }
