@@ -237,9 +237,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 				.build_conditional_branch(compare_value, loop_info.exit, loop_info.body)?;
 		self.builder.position_at_end(loop_info.body);
 
-		self.add_loop_metadata_to_br(br_instr)?;
-
-		Ok(())
+		self.add_loop_metadata_to_br(br_instr)
 	}
 
 	pub(super) fn jump_to_header(&self) -> Result<(), AssemblyError> {
