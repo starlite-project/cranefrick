@@ -164,15 +164,6 @@ impl Assembler {
 			ToWriteType::Optimized,
 		)?;
 
-		if module.strip_debug_info() {
-			info!("verifying stripped LLVM IR");
-			module.verify()?;
-
-			target_machine.set_asm_verbosity(false);
-
-			write_data(&target_machine, &module, output_path, ToWriteType::Stripped)?;
-		}
-
 		info!("creating JIT execution engine");
 		let execution_engine = module.create_mcjit_execution_engine_with_memory_manager(
 			MemoryManager::new(),
@@ -365,7 +356,6 @@ fn write_data(
 enum ToWriteType {
 	Unoptimized,
 	Optimized,
-	Stripped,
 }
 
 impl Display for ToWriteType {
@@ -373,7 +363,6 @@ impl Display for ToWriteType {
 		f.write_str(match *self {
 			Self::Unoptimized => "unoptimized",
 			Self::Optimized => "optimized",
-			Self::Stripped => "stripped",
 		})
 	}
 }

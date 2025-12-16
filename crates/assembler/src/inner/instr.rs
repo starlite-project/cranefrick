@@ -24,10 +24,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let cell_value = self.builder.build_load(cell_type, ptr_value, "\0")?;
 
-		if let Some(load_instr) = cell_value.as_instruction_value() {
-			self.add_noalias_metadata_to_mem(load_instr)?;
-		}
-
 		self.set_value_at(output_reg, cell_value)
 	}
 
