@@ -48,7 +48,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
-		let ptr_type = context.custom_width_int_type(POINTER_SIZE as u32);
+		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
 
 		let tape_array_size = i64_type.const_int(TAPE_SIZE as u64, false);
 
@@ -75,7 +75,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let i8_zero = i8_type.const_zero();
 
 		builder.build_memset(self.tape, 1, i8_zero, tape_array_size)?;
-		builder.build_store(self.pointer, ptr_type.const_zero())?;
+		builder.build_store(self.pointer, ptr_int_type.const_zero())?;
 
 		Ok(())
 	}
