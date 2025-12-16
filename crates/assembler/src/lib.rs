@@ -382,9 +382,9 @@ extern "C" fn llvm_diagnostic_handler(di: LLVMDiagnosticInfoRef, _ctx: *mut c_vo
 	let message = unsafe { CStr::from_ptr(LLVMGetDiagInfoDescription(di)) }.to_string_lossy();
 
 	match unsafe { LLVMGetDiagInfoSeverity(di) } {
-		LLVMDiagnosticSeverity::LLVMDSError => tracing::error!("{message}"),
-		LLVMDiagnosticSeverity::LLVMDSWarning => tracing::warn!("{message}"),
-		LLVMDiagnosticSeverity::LLVMDSRemark => tracing::debug!("{message}"),
-		LLVMDiagnosticSeverity::LLVMDSNote => tracing::trace!("{message}"),
+		LLVMDiagnosticSeverity::LLVMDSError => tracing::error!("LLVM: {message}"),
+		LLVMDiagnosticSeverity::LLVMDSWarning => tracing::warn!("LLVM: {message}"),
+		LLVMDiagnosticSeverity::LLVMDSRemark => tracing::debug!("LLVM: {message}"),
+		LLVMDiagnosticSeverity::LLVMDSNote => tracing::trace!("LLVM: {message}"),
 	}
 }
