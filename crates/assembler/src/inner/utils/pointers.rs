@@ -61,7 +61,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 			"\0",
 		)?;
 
-		let pointer_size = i64_type.const_int(8, false);
+		let pointer_size = i64_type.const_int(POINTER_SIZE as u64 / 8, false);
 
 		builder.build_call(
 			functions.lifetime.start,
