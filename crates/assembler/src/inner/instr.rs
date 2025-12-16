@@ -63,6 +63,10 @@ impl<'ctx> InnerAssembler<'ctx> {
 			.builder
 			.build_load(pointer_type, self.pointers.pointer, "\0")?;
 
+		if let Some(load_instr) = value.as_instruction_value() {
+			self.add_range_metadata_to_pointer_load(load_instr)?;
+		}
+
 		self.set_value_at(output_reg, value)
 	}
 
