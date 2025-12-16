@@ -44,7 +44,8 @@ name = "is_all_zero"
 members = [
     "crates/assembler",
     "crates/instructions",
-    "crates/interop", "crates/llvm_ext",
+    "crates/interop",
+    "crates/llvm_ext",
     "crates/operations",
     "crates/optimizer",
     "crates/serialize",
