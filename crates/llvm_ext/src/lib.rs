@@ -3,12 +3,6 @@
 use llvm_sys::prelude::{LLVMContextRef, LLVMMetadataRef};
 
 unsafe extern "C" {
-	pub fn LLVMCreateSelfReferentialNodeInContext(
-		C: LLVMContextRef,
-		Nodes: *mut LLVMMetadataRef,
-		Count: ::libc::c_uint,
-	) -> LLVMMetadataRef;
-
 	pub fn LLVMCreateDistinctNodeInContext(
 		C: LLVMContextRef,
 		Nodes: *mut LLVMMetadataRef,

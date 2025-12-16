@@ -7,7 +7,6 @@ use std::{
 
 use frick_llvm_ext::{
 	LLVMCreateDistinctNodeInContext, LLVMCreateSelfReferentialDistinctNodeInContext,
-	LLVMCreateSelfReferentialNodeInContext,
 };
 use frick_utils::Convert as _;
 use inkwell::{
@@ -65,11 +64,6 @@ pub trait ContextExt<'ctx> {
 	fn distinct_metadata_node(&self, nodes: &[BasicMetadataValueEnum<'ctx>])
 	-> MetadataValue<'ctx>;
 
-	fn self_referential_metadata_node(
-		&self,
-		nodes: &[BasicMetadataValueEnum<'ctx>],
-	) -> MetadataValue<'ctx>;
-
 	fn self_referential_distinct_metadata_node(
 		&self,
 		nodes: &[BasicMetadataValueEnum<'ctx>],
@@ -114,28 +108,6 @@ impl<'ctx> ContextExt<'ctx> for &'ctx Context {
 
 		unsafe {
 			let metadata_ptr = LLVMCreateDistinctNodeInContext(
-				self.raw(),
-				values.as_mut_ptr(),
-				values.len() as u32,
-			);
-
-			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
-
-			MetadataValue::new(value_ptr)
-		}
-	}
-
-	fn self_referential_metadata_node(
-		&self,
-		nodes: &[BasicMetadataValueEnum<'ctx>],
-	) -> MetadataValue<'ctx> {
-		let mut values: Vec<LLVMMetadataRef> = nodes
-			.iter()
-			.map(|val| unsafe { LLVMValueAsMetadata(val.as_value_ref()) })
-			.collect();
-
-		unsafe {
-			let metadata_ptr = LLVMCreateSelfReferentialNodeInContext(
 				self.raw(),
 				values.as_mut_ptr(),
 				values.len() as u32,
@@ -208,28 +180,6 @@ impl<'ctx> ContextExt<'ctx> for ContextRef<'ctx> {
 
 		unsafe {
 			let metadata_ptr = LLVMCreateDistinctNodeInContext(
-				self.raw(),
-				values.as_mut_ptr(),
-				values.len() as u32,
-			);
-
-			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
-
-			MetadataValue::new(value_ptr)
-		}
-	}
-
-	fn self_referential_metadata_node(
-		&self,
-		nodes: &[BasicMetadataValueEnum<'ctx>],
-	) -> MetadataValue<'ctx> {
-		let mut values: Vec<LLVMMetadataRef> = nodes
-			.iter()
-			.map(|val| unsafe { LLVMValueAsMetadata(val.as_value_ref()) })
-			.collect();
-
-		unsafe {
-			let metadata_ptr = LLVMCreateSelfReferentialNodeInContext(
 				self.raw(),
 				values.as_mut_ptr(),
 				values.len() as u32,
