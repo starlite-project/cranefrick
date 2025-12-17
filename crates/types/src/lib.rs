@@ -192,6 +192,24 @@ pub enum RegisterTypeEnum {
 	Pointer,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RegOrImm<T: RegisterType> {
+	Reg(Register<T>),
+	Imm(T::RustType),
+}
+
+impl<T: RegisterType> RegOrImm<T> {
+	#[must_use]
+	pub const fn reg(r: Register<T>) -> Self {
+		Self::Reg(r)
+	}
+
+	#[must_use]
+	pub const fn imm(value: T::RustType) -> Self {
+		Self::Imm(value)
+	}
+}
+
 pub trait RegisterType: self::sealed::Sealed {
 	type RustType;
 }
