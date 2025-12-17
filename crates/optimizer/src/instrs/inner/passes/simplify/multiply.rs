@@ -1,5 +1,5 @@
-use frick_instructions::{BrainInstruction, BrainInstructionType, Imm};
-use frick_types::BinaryOperation;
+use frick_instructions::{BrainInstruction, BrainInstructionType};
+use frick_types::{BinaryOperation, Immediate};
 use frick_utils::Convert as _;
 
 use crate::instrs::inner::Pass;
@@ -46,7 +46,7 @@ impl SimplifyMultiplicationPass {
 						changed_any = true;
 					}
 					x => {
-						let new_imm = Imm::cell(x.ilog2().convert::<u64>());
+						let new_imm = Immediate::cell(x.ilog2().convert::<u64>());
 
 						*instrs[i - 1] = BrainInstructionType::StoreImmediateIntoRegister {
 							imm: new_imm,

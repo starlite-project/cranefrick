@@ -9,7 +9,44 @@ use core::{
 	marker::PhantomData,
 };
 
+use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Immediate {
+	value: u64,
+	size: u32,
+}
+
+impl Immediate {
+	pub const CELL_ZERO: Self = Self::cell(0);
+	pub const TAPE_SIZE_MINUS_ONE: Self = Self::pointer(TAPE_SIZE as u64 - 1);
+
+	#[must_use]
+	pub const fn new(value: u64, size: u32) -> Self {
+		Self { value, size }
+	}
+
+	#[must_use]
+	pub const fn pointer(value: u64) -> Self {
+		Self::new(value, POINTER_SIZE as u32)
+	}
+
+	#[must_use]
+	pub const fn cell(value: u64) -> Self {
+		Self::new(value, 8)
+	}
+
+	#[must_use]
+	pub const fn value(self) -> u64 {
+		self.value
+	}
+
+	#[must_use]
+	pub const fn size(self) -> u32 {
+		self.size
+	}
+}
 
 #[repr(transparent)]
 pub struct Register<T>
@@ -128,7 +165,7 @@ impl RegisterType for Bool {
 pub enum Int {}
 
 impl RegisterType for Int {
-	type RustType = Imm;
+	type RustType = Immediate;
 }
 
 pub enum Pointer {}

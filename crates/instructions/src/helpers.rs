@@ -1,11 +1,10 @@
 use alloc::vec::Vec;
 
 use frick_spec::TAPE_SIZE;
-use frick_types::{BinaryOperation, Int, Pointer, Register};
+use frick_types::{BinaryOperation, Immediate, Int, Pointer, Register};
 use frick_utils::Convert as _;
 
 use super::BrainInstructionType;
-use crate::Imm;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoadCellInformation {
@@ -69,7 +68,7 @@ impl LoadCellInformation {
 					let cell_reg = Register::new(instr_offset + 5);
 					instrs.extend([
 						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Imm::pointer(offset.unsigned_abs().convert::<u64>()),
+							imm: Immediate::pointer(offset.unsigned_abs().convert::<u64>()),
 							output_reg: Register::new(instr_offset),
 						},
 						BrainInstructionType::PerformBinaryRegisterOperation {
@@ -83,7 +82,7 @@ impl LoadCellInformation {
 							},
 						},
 						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Imm::pointer(TAPE_SIZE as u64 - 1),
+							imm: Immediate::TAPE_SIZE_MINUS_ONE,
 							output_reg: Register::new(instr_offset + 2),
 						},
 						BrainInstructionType::PerformBinaryRegisterOperation {
@@ -119,7 +118,7 @@ impl LoadCellInformation {
 							output_reg: Register::new(instr_offset),
 						},
 						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Imm::pointer(offset.unsigned_abs().convert::<u64>()),
+							imm: Immediate::pointer(offset.unsigned_abs().convert::<u64>()),
 							output_reg: Register::new(instr_offset + 1),
 						},
 						BrainInstructionType::PerformBinaryRegisterOperation {
@@ -133,7 +132,7 @@ impl LoadCellInformation {
 							},
 						},
 						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Imm::pointer(TAPE_SIZE as u64 - 1),
+							imm: Immediate::TAPE_SIZE_MINUS_ONE,
 							output_reg: Register::new(instr_offset + 3),
 						},
 						BrainInstructionType::PerformBinaryRegisterOperation {

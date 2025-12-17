@@ -1,6 +1,5 @@
-use frick_instructions::Imm;
 use frick_spec::POINTER_SIZE;
-use frick_types::{Any, BinaryOperation, Bool, Int, Pointer, Register};
+use frick_types::{Any, BinaryOperation, Bool, Immediate, Int, Pointer, Register};
 use frick_utils::Convert as _;
 use inkwell::{
 	IntPredicate,
@@ -44,7 +43,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn store_immediate_into_register(
 		&self,
 		output_reg: Register<Int>,
-		imm: Imm,
+		imm: Immediate,
 	) -> Result<(), AssemblyError> {
 		let int_type = self.context().custom_width_int_type(imm.size());
 

@@ -9,8 +9,8 @@ use alloc::{vec, vec::Vec};
 use core::ops::{Deref, DerefMut, Range};
 
 use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
-use frick_spec::{POINTER_SIZE, TAPE_SIZE};
-use frick_types::{Any, BinaryOperation, Bool, Int, Pointer, Register};
+use frick_spec::TAPE_SIZE;
+use frick_types::{Any, BinaryOperation, Bool, Immediate, Int, Pointer, Register};
 use frick_utils::Convert as _;
 use serde::{Deserialize, Serialize};
 
@@ -72,7 +72,7 @@ pub enum BrainInstructionType {
 		pointer_reg: Register<Pointer>,
 	},
 	StoreImmediateIntoRegister {
-		imm: Imm,
+		imm: Immediate,
 		output_reg: Register<Int>,
 	},
 	LoadTapePointerIntoRegister {
@@ -172,7 +172,7 @@ impl ToInstructions for BrainOperation {
 
 				instrs.extend([
 					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Imm::cell(value.convert::<u64>()),
+						imm: Immediate::cell(value.convert::<u64>()),
 						output_reg: Register::new(load_cell_info.instr_offset),
 					},
 					BrainInstructionType::PerformBinaryRegisterOperation {
@@ -197,7 +197,7 @@ impl ToInstructions for BrainOperation {
 
 				instrs.extend([
 					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Imm::cell(value.convert::<u64>()),
+						imm: Immediate::cell(value.convert::<u64>()),
 						output_reg: Register::new(load_cell_info.instr_offset),
 					},
 					BrainInstructionType::PerformBinaryRegisterOperation {
@@ -227,7 +227,7 @@ impl ToInstructions for BrainOperation {
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
 					output_reg: Register::new(2),
-					imm: Imm::cell(value.convert::<u64>()),
+					imm: Immediate::cell(value.convert::<u64>()),
 				},
 				BrainInstructionType::StoreRegisterIntoCell {
 					value_reg: Register::new(2),
@@ -242,7 +242,7 @@ impl ToInstructions for BrainOperation {
 					output_reg: Register::new(0),
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Imm::pointer(offset.unsigned_abs().convert::<u64>()),
+					imm: Immediate::pointer(offset.unsigned_abs().convert::<u64>()),
 					output_reg: Register::new(1),
 				},
 				BrainInstructionType::PerformBinaryRegisterOperation {
@@ -256,7 +256,7 @@ impl ToInstructions for BrainOperation {
 					},
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Imm::pointer(TAPE_SIZE as u64 - 1),
+					imm: Immediate::TAPE_SIZE_MINUS_ONE,
 					output_reg: Register::new(3),
 				},
 				BrainInstructionType::PerformBinaryRegisterOperation {
@@ -270,7 +270,7 @@ impl ToInstructions for BrainOperation {
 					output_reg: Register::new(5),
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Imm::cell(value.convert::<u64>()),
+					imm: Immediate::cell(value.convert::<u64>()),
 					output_reg: Register::new(6),
 				},
 				BrainInstructionType::StoreRegisterIntoCell {
@@ -286,7 +286,7 @@ impl ToInstructions for BrainOperation {
 					output_reg: Register::new(0),
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Imm::pointer(offset.unsigned_abs().convert::<u64>()),
+					imm: Immediate::pointer(offset.unsigned_abs().convert::<u64>()),
 					output_reg: Register::new(1),
 				},
 				BrainInstructionType::PerformBinaryRegisterOperation {
@@ -300,7 +300,7 @@ impl ToInstructions for BrainOperation {
 					},
 				},
 				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Imm::pointer(TAPE_SIZE as u64 - 1),
+					imm: Immediate::TAPE_SIZE_MINUS_ONE,
 					output_reg: Register::new(3),
 				},
 				BrainInstructionType::PerformBinaryRegisterOperation {
@@ -321,7 +321,7 @@ impl ToInstructions for BrainOperation {
 
 				instrs.extend([
 					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Imm::CELL_ZERO,
+						imm: Immediate::CELL_ZERO,
 						output_reg: Register::new(current_cell_info.instr_offset),
 					},
 					BrainInstructionType::StoreRegisterIntoCell {
@@ -329,7 +329,7 @@ impl ToInstructions for BrainOperation {
 						pointer_reg: current_cell_info.pointer_reg,
 					},
 					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Imm::cell(value.convert::<u64>()),
+						imm: Immediate::cell(value.convert::<u64>()),
 						output_reg: Register::new(current_cell_info.instr_offset + 1),
 					},
 					BrainInstructionType::PerformBinaryRegisterOperation {
@@ -371,7 +371,7 @@ impl ToInstructions for BrainOperation {
 
 				instrs.extend([
 					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Imm::CELL_ZERO,
+						imm: Immediate::CELL_ZERO,
 						output_reg: Register::new(current_cell_info.instr_offset),
 					},
 					BrainInstructionType::StoreRegisterIntoCell {
@@ -379,7 +379,7 @@ impl ToInstructions for BrainOperation {
 						pointer_reg: current_cell_info.pointer_reg,
 					},
 					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Imm::cell(value.convert::<u64>()),
+						imm: Immediate::cell(value.convert::<u64>()),
 						output_reg: Register::new(current_cell_info.instr_offset + 1),
 					},
 					BrainInstructionType::PerformBinaryRegisterOperation {
@@ -448,7 +448,7 @@ impl ToInstructions for BrainOperation {
 				} else {
 					instrs.extend([
 						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Imm::cell(value.convert::<u64>()),
+							imm: Immediate::cell(value.convert::<u64>()),
 							output_reg: Register::new(load_cell_info.instr_offset),
 						},
 						BrainInstructionType::PerformBinaryRegisterOperation {
@@ -470,7 +470,7 @@ impl ToInstructions for BrainOperation {
 			}
 			&BrainOperationType::OutputValue(value) => [
 				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Imm::cell(value.convert::<u64>()),
+					imm: Immediate::cell(value.convert::<u64>()),
 					output_reg: Register::new(0),
 				},
 				BrainInstructionType::OutputFromRegister {
@@ -496,7 +496,7 @@ impl ToInstructions for BrainOperation {
 					},
 					BrainInstructionType::StoreImmediateIntoRegister {
 						output_reg: Register::new(3),
-						imm: Imm::CELL_ZERO,
+						imm: Immediate::CELL_ZERO,
 					},
 					BrainInstructionType::CompareRegisterToRegister {
 						lhs_reg: Register::new(2),
@@ -533,48 +533,4 @@ impl ToInstructions for BrainOperation {
 			)],
 		}
 	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Imm {
-	value: u64,
-	size: ImmSize,
-}
-
-impl Imm {
-	pub const CELL_ZERO: Self = Self::cell(0);
-
-	#[must_use]
-	pub const fn new(value: u64, size: ImmSize) -> Self {
-		Self { value, size }
-	}
-
-	#[must_use]
-	pub const fn pointer(value: u64) -> Self {
-		Self::new(value, ImmSize::Pointer)
-	}
-
-	#[must_use]
-	pub const fn cell(value: u64) -> Self {
-		Self::new(value, ImmSize::Cell)
-	}
-
-	#[must_use]
-	pub const fn value(self) -> u64 {
-		self.value
-	}
-
-	#[must_use]
-	pub const fn size(self) -> u32 {
-		match self.size {
-			ImmSize::Cell => 8,
-			ImmSize::Pointer => POINTER_SIZE as u32,
-		}
-	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ImmSize {
-	Cell,
-	Pointer,
 }
