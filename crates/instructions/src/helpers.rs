@@ -1,6 +1,5 @@
 use alloc::vec::Vec;
 
-use frick_spec::TAPE_SIZE;
 use frick_types::{BinaryOperation, Immediate, Int, Pointer, Register};
 use frick_utils::Convert as _;
 

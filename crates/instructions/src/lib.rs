@@ -9,7 +9,6 @@ use alloc::{vec, vec::Vec};
 use core::ops::{Deref, DerefMut, Range};
 
 use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
-use frick_spec::TAPE_SIZE;
 use frick_types::{Any, BinaryOperation, Bool, Immediate, Int, Pointer, Register};
 use frick_utils::Convert as _;
 use serde::{Deserialize, Serialize};
