@@ -258,7 +258,8 @@ extern "C" fn llvm_diagnostic_handler(di: LLVMDiagnosticInfoRef, _ctx: *mut c_vo
 	match unsafe { LLVMGetDiagInfoSeverity(di) } {
 		LLVMDiagnosticSeverity::LLVMDSError => tracing::error!("LLVM: {message}"),
 		LLVMDiagnosticSeverity::LLVMDSWarning => tracing::warn!("LLVM: {message}"),
-		LLVMDiagnosticSeverity::LLVMDSRemark => tracing::debug!("LLVM: {message}"),
-		LLVMDiagnosticSeverity::LLVMDSNote => tracing::trace!("LLVM: {message}"),
+		LLVMDiagnosticSeverity::LLVMDSNote | LLVMDiagnosticSeverity::LLVMDSRemark => {
+			tracing::trace!("LLVM: {message}");
+		}
 	}
 }
