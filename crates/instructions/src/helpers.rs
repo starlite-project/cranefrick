@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use frick_types::{BinaryOperation, Immediate, Int, Pointer, Register};
+use frick_types::{BinaryOperation, Immediate, Int, Pointer, RegOrImm, Register};
 use frick_utils::Convert as _;
 
 use super::BrainInstructionType;
@@ -66,27 +66,21 @@ impl LoadCellInformation {
 					let pointer_reg = Register::new(instr_offset + 4);
 					let cell_reg = Register::new(instr_offset + 5);
 					instrs.extend([
-						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Immediate::pointer(offset.unsigned_abs().convert::<u64>()),
+						BrainInstructionType::PerformBinaryValueOperation {
+							lhs: RegOrImm::Reg(tape_pointer_reg),
+							rhs: RegOrImm::Imm(Immediate::pointer(
+								offset.unsigned_abs().convert::<u64>(),
+							)),
 							output_reg: Register::new(instr_offset),
-						},
-						BrainInstructionType::PerformBinaryRegisterOperation {
-							lhs_reg: tape_pointer_reg,
-							rhs_reg: Register::new(instr_offset),
-							output_reg: Register::new(instr_offset + 1),
 							op: if offset.is_positive() {
 								BinaryOperation::Add
 							} else {
 								BinaryOperation::Sub
 							},
 						},
-						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Immediate::TAPE_SIZE_MINUS_ONE,
-							output_reg: Register::new(instr_offset + 2),
-						},
-						BrainInstructionType::PerformBinaryRegisterOperation {
-							lhs_reg: Register::new(instr_offset + 1),
-							rhs_reg: Register::new(instr_offset + 2),
+						BrainInstructionType::PerformBinaryValueOperation {
+							lhs: RegOrImm::Reg(Register::new(instr_offset)),
+							rhs: RegOrImm::Imm(Immediate::TAPE_SIZE_MINUS_ONE),
 							output_reg: new_tape_pointer_reg,
 							op: BinaryOperation::BitwiseAnd,
 						},
@@ -116,13 +110,11 @@ impl LoadCellInformation {
 						BrainInstructionType::LoadTapePointerIntoRegister {
 							output_reg: Register::new(instr_offset),
 						},
-						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Immediate::pointer(offset.unsigned_abs().convert::<u64>()),
-							output_reg: Register::new(instr_offset + 1),
-						},
-						BrainInstructionType::PerformBinaryRegisterOperation {
-							lhs_reg: Register::new(instr_offset),
-							rhs_reg: Register::new(instr_offset + 1),
+						BrainInstructionType::PerformBinaryValueOperation {
+							lhs: RegOrImm::Reg(Register::new(instr_offset)),
+							rhs: RegOrImm::Imm(Immediate::pointer(
+								offset.unsigned_abs().convert::<u64>(),
+							)),
 							output_reg: Register::new(instr_offset + 2),
 							op: if offset.is_positive() {
 								BinaryOperation::Add
@@ -130,13 +122,9 @@ impl LoadCellInformation {
 								BinaryOperation::Sub
 							},
 						},
-						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Immediate::TAPE_SIZE_MINUS_ONE,
-							output_reg: Register::new(instr_offset + 3),
-						},
-						BrainInstructionType::PerformBinaryRegisterOperation {
-							lhs_reg: Register::new(instr_offset + 2),
-							rhs_reg: Register::new(instr_offset + 3),
+						BrainInstructionType::PerformBinaryValueOperation {
+							lhs: RegOrImm::Reg(Register::new(instr_offset + 2)),
+							rhs: RegOrImm::Imm(Immediate::TAPE_SIZE_MINUS_ONE),
 							output_reg: tape_pointer_reg,
 							op: BinaryOperation::BitwiseAnd,
 						},

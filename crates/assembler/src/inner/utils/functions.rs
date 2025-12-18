@@ -9,7 +9,7 @@ use inkwell::{
 	values::FunctionValue,
 };
 
-use crate::{AssemblyError, ContextExt as _, ContextGetter as _};
+use crate::{AssemblyError, ContextExt as _, IntoContext as _};
 
 #[derive(Debug, Clone, Copy)]
 pub struct AssemblerFunctions<'ctx> {
@@ -74,7 +74,7 @@ impl<'ctx> AssemblerFunctions<'ctx> {
 		const INACCESSABLE_READ: u64 = 0b0100;
 		const INACCESSABLE_WRITE: u64 = 0b1000;
 
-		let context = self.context();
+		let context = self.into_context();
 
 		let nocallback_attr = context.create_named_enum_attribute("nocallback", 0b0);
 		let nofree_attr = context.create_named_enum_attribute("nofree", 0b0);

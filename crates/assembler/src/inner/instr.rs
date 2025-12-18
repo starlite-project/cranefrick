@@ -1,5 +1,5 @@
 use frick_spec::POINTER_SIZE;
-use frick_types::{Any, BinaryOperation, Bool, Immediate, Int, Pointer, Register};
+use frick_types::{Any, BinaryOperation, Bool, Immediate, Int, Pointer, RegOrImm, Register};
 use frick_utils::Convert as _;
 use inkwell::{
 	IntPredicate,
@@ -9,7 +9,7 @@ use inkwell::{
 };
 
 use super::{AssemblyError, InnerAssembler, LoopBlocks, utils::Castable};
-use crate::{BuilderExt as _, ContextExt, ContextGetter as _};
+use crate::{BuilderExt as _, ContextExt, IntoContext as _};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn load_cell_into_register(
@@ -17,7 +17,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		pointer_reg: Register<Pointer>,
 		output_reg: Register<Int>,
 	) -> Result<(), AssemblyError> {
-		let cell_type = self.context().i8_type();
+		let cell_type = self.into_context().i8_type();
 
 		let ptr_value = self.value_at(pointer_reg)?;
 
@@ -40,12 +40,26 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
+	pub(super) fn store_value_into_cell(
+		&self,
+		value: RegOrImm<Int>,
+		pointer_reg: Register<Pointer>,
+	) -> Result<(), AssemblyError> {
+		let ptr_value = self.value_at(pointer_reg)?;
+
+		let cell_value = self.resolve_value(value)?;
+
+		self.builder.build_store(ptr_value, cell_value)?;
+
+		Ok(())
+	}
+
 	pub(super) fn store_immediate_into_register(
 		&self,
 		output_reg: Register<Int>,
 		imm: Immediate,
 	) -> Result<(), AssemblyError> {
-		let int_type = self.context().custom_width_int_type(imm.size());
+		let int_type = self.into_context().custom_width_int_type(imm.size());
 
 		let value = int_type.const_int(imm.value(), false);
 
@@ -56,7 +70,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		&self,
 		output_reg: Register<Int>,
 	) -> Result<(), AssemblyError> {
-		let pointer_type = self.context().custom_width_int_type(POINTER_SIZE as u32);
+		let pointer_type = self
+			.into_context()
+			.custom_width_int_type(POINTER_SIZE as u32);
 
 		let value = self
 			.builder
@@ -85,7 +101,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 		input_reg: Register<Int>,
 		output_reg: Register<Pointer>,
 	) -> Result<(), AssemblyError> {
-		let cell_type = self.context().i8_type();
+		let cell_type = self.into_context().i8_type();
 		let pointer_value = self.value_at(input_reg)?;
 
 		let offset_pointer = unsafe {
@@ -125,6 +141,30 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.set_value_at(output_reg, new_value)
 	}
 
+	pub(super) fn perform_binary_value_operation(
+		&self,
+		lhs: RegOrImm<Int>,
+		rhs: RegOrImm<Int>,
+		output_reg: Register<Int>,
+		op: BinaryOperation,
+	) -> Result<(), AssemblyError> {
+		let lhs_value = self.resolve_value(lhs)?;
+		let rhs_value = self.resolve_value(rhs)?;
+
+		let new_value = match op {
+			BinaryOperation::Add => self.builder.build_int_add(lhs_value, rhs_value, "\0")?,
+			BinaryOperation::Sub => self.builder.build_int_sub(lhs_value, rhs_value, "\0")?,
+			BinaryOperation::Mul => self.builder.build_int_mul(lhs_value, rhs_value, "\0")?,
+			BinaryOperation::BitwiseAnd => self.builder.build_and(lhs_value, rhs_value, "\0")?,
+			BinaryOperation::BitwiseShl => {
+				self.builder.build_left_shift(lhs_value, rhs_value, "\0")?
+			}
+			op => unimplemented!("binary operation {op:?}"),
+		};
+
+		self.set_value_at(output_reg, new_value)
+	}
+
 	pub(super) fn duplicate_register(
 		&self,
 		input_reg: Register<Any>,
@@ -136,7 +176,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub(super) fn input_into_register(&self, reg: Register<Int>) -> Result<(), AssemblyError> {
-		let context = self.context();
+		let context = self.into_context();
 
 		let cell_type = context.i8_type();
 		let call_site_value = self
@@ -160,7 +200,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	}
 
 	pub(super) fn output_from_register(&self, reg: Register<Int>) -> Result<(), AssemblyError> {
-		let context = self.context();
+		let context = self.into_context();
 
 		let register_value = self.value_at(reg)?;
 
@@ -180,7 +220,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 	pub(super) fn start_loop(&self) -> Result<(), AssemblyError> {
 		let loop_blocks = {
-			let context = self.context();
+			let context = self.into_context();
 
 			let header = context.append_basic_block(self.functions.main, "loop.header\0");
 			let body = context.append_basic_block(self.functions.main, "loop.body\0");
@@ -245,6 +285,19 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.builder.build_unconditional_branch(loop_info.header)?;
 
 		Ok(())
+	}
+
+	fn resolve_value<T: Castable<'ctx>>(
+		&self,
+		reg_or_imm: RegOrImm<T>,
+	) -> Result<T::Value, AssemblyError> {
+		match reg_or_imm {
+			RegOrImm::Reg(r) => self.value_at(r),
+			RegOrImm::Imm(i) => match T::try_from_rust_type(self.into_context(), i) {
+				Some(i) => Ok(i),
+				None => Err(AssemblyError::CannotGetConstant),
+			},
+		}
 	}
 
 	fn value_at<T: Castable<'ctx>>(&self, reg: Register<T>) -> Result<T::Value, AssemblyError> {

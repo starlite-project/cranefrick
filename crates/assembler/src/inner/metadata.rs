@@ -3,7 +3,7 @@ use frick_utils::Convert as _;
 use inkwell::values::{BasicMetadataValueEnum, InstructionOpcode, InstructionValue};
 
 use super::InnerAssembler;
-use crate::{AssemblyError, ContextExt, ContextGetter as _};
+use crate::{AssemblyError, ContextExt, IntoContext as _};
 
 impl<'ctx> InnerAssembler<'ctx> {
 	pub(super) fn add_loop_metadata_to_br(
@@ -14,7 +14,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			return Ok(());
 		}
 
-		let context = self.context();
+		let context = self.into_context();
 
 		let mustprogress_metadata_node = {
 			let key = context.metadata_string("llvm.loop.mustprogress");
@@ -41,7 +41,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 			return Ok(());
 		}
 
-		let context = self.context();
+		let context = self.into_context();
 
 		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
 

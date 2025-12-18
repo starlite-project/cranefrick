@@ -134,6 +134,7 @@ pub enum BrainInstructionType {
 
 impl BrainInstructionType {
 	#[must_use]
+	#[allow(deprecated)]
 	pub fn uses_register(self, reg: usize) -> bool {
 		match self {
 			Self::LoadCellIntoRegister {
@@ -194,8 +195,8 @@ impl ToInstructions for BrainOperation {
 						output_reg: Register::new(load_cell_info.instr_offset),
 						op: BinaryOperation::Add,
 					},
-					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(load_cell_info.instr_offset),
+					BrainInstructionType::StoreValueIntoCell {
+						value: RegOrImm::Reg(Register::new(load_cell_info.instr_offset)),
 						pointer_reg: load_cell_info.pointer_reg,
 					},
 				]);
@@ -209,18 +210,14 @@ impl ToInstructions for BrainOperation {
 				let (load_cell_info, mut instrs) = LoadCellInformation::create(offset, 0, None);
 
 				instrs.extend([
-					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Immediate::cell(value.convert::<u64>()),
+					BrainInstructionType::PerformBinaryValueOperation {
+						lhs: RegOrImm::Reg(load_cell_info.cell_reg),
+						rhs: RegOrImm::Imm(Immediate::cell(value.convert::<u64>())),
 						output_reg: Register::new(load_cell_info.instr_offset),
-					},
-					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: load_cell_info.cell_reg,
-						rhs_reg: Register::new(load_cell_info.instr_offset),
-						output_reg: Register::new(load_cell_info.instr_offset + 1),
 						op: BinaryOperation::Sub,
 					},
-					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(load_cell_info.instr_offset + 1),
+					BrainInstructionType::StoreValueIntoCell {
+						value: RegOrImm::Reg(Register::new(load_cell_info.instr_offset)),
 						pointer_reg: load_cell_info.pointer_reg,
 					},
 				]);
@@ -238,12 +235,8 @@ impl ToInstructions for BrainOperation {
 					tape_pointer_reg: Register::new(0),
 					output_reg: Register::new(1),
 				},
-				BrainInstructionType::StoreImmediateIntoRegister {
-					output_reg: Register::new(2),
-					imm: Immediate::cell(value.convert::<u64>()),
-				},
-				BrainInstructionType::StoreRegisterIntoCell {
-					value_reg: Register::new(2),
+				BrainInstructionType::StoreValueIntoCell {
+					value: RegOrImm::Imm(Immediate::cell(value.convert::<u64>())),
 					pointer_reg: Register::new(1),
 				},
 			]

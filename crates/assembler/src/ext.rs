@@ -33,15 +33,16 @@ use inkwell::{
 	values::{AsValueRef, BasicMetadataValueEnum, IntValue, MetadataValue, PointerValue},
 };
 
-pub trait ContextGetter<'ctx> {
-	fn context(&self) -> ContextRef<'ctx>;
+pub trait IntoContext<'ctx> {
+	#[allow(clippy::wrong_self_convention)]
+	fn into_context(&self) -> ContextRef<'ctx>;
 }
 
-impl<'ctx, C> ContextGetter<'ctx> for C
+impl<'ctx, C> IntoContext<'ctx> for C
 where
 	C: AsContextRef<'ctx>,
 {
-	fn context(&self) -> ContextRef<'ctx> {
+	fn into_context(&self) -> ContextRef<'ctx> {
 		let raw_context_ref = self.as_ctx_ref();
 
 		unsafe { ContextRef::new(raw_context_ref) }

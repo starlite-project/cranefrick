@@ -9,7 +9,7 @@ use inkwell::{
 };
 
 use super::AssemblerFunctions;
-use crate::{AssemblyError, ContextGetter as _};
+use crate::{AssemblyError, IntoContext as _};
 
 #[derive(Debug, Clone, Copy)]
 pub struct AssemblerPointers<'ctx> {
@@ -44,7 +44,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		builder: &Builder<'ctx>,
 		functions: AssemblerFunctions<'ctx>,
 	) -> Result<(), AssemblyError> {
-		let context = self.context();
+		let context = self.into_context();
 
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();

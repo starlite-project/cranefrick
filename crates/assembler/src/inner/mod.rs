@@ -21,7 +21,7 @@ use rustc_hash::FxHashMap;
 
 pub use self::utils::AssemblerFunctions;
 use self::utils::{AssemblerDebugBuilder, AssemblerPointers};
-use super::{AssemblyError, ContextGetter as _, ModuleExt as _};
+use super::{AssemblyError, IntoContext as _, ModuleExt as _};
 
 pub struct InnerAssembler<'ctx> {
 	file_data: String,
@@ -144,11 +144,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		tracing::debug!("declaring variables");
 		self.debug_builder
-			.declare_variables(self.context(), self.pointers)?;
+			.declare_variables(self.into_context(), self.pointers)?;
 
 		self.builder.unset_current_debug_location();
 
-		let context = self.context();
+		let context = self.into_context();
 
 		let i64_type = context.i64_type();
 
@@ -192,7 +192,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 			let line_span = line_positions.from_region(i_range.start, i_range.end)[0];
 			let debug_loc = self.debug_builder.create_debug_location(
-				self.context(),
+				self.into_context(),
 				(line_span.line.as_usize() + 1) as u32,
 				line_span.start_col + 1,
 				self.debug_builder.get_current_scope(),
@@ -219,6 +219,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 				value_reg,
 				pointer_reg,
 			} => self.store_register_into_cell(value_reg, pointer_reg)?,
+			BrainInstructionType::StoreValueIntoCell { value, pointer_reg } => {
+				self.store_value_into_cell(value, pointer_reg)?;
+			}
 			BrainInstructionType::StoreImmediateIntoRegister { output_reg, imm } => {
 				self.store_immediate_into_register(output_reg, imm)?;
 			}
@@ -238,6 +241,12 @@ impl<'ctx> InnerAssembler<'ctx> {
 				output_reg,
 				op,
 			} => self.perform_binary_register_operation(lhs_reg, rhs_reg, output_reg, op)?,
+			BrainInstructionType::PerformBinaryValueOperation {
+				lhs,
+				rhs,
+				output_reg,
+				op,
+			} => self.perform_binary_value_operation(lhs, rhs, output_reg, op)?,
 			BrainInstructionType::DuplicateRegister {
 				input_reg,
 				output_reg,
