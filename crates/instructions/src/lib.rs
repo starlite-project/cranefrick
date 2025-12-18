@@ -66,8 +66,13 @@ pub enum BrainInstructionType {
 		pointer_reg: Register<Pointer>,
 		output_reg: Register<Int>,
 	},
+	#[deprecated]
 	StoreRegisterIntoCell {
 		value_reg: Register<Int>,
+		pointer_reg: Register<Pointer>,
+	},
+	StoreValueIntoCell {
+		value: RegOrImm<Int>,
 		pointer_reg: Register<Pointer>,
 	},
 	StoreImmediateIntoRegister {
@@ -84,13 +89,14 @@ pub enum BrainInstructionType {
 		tape_pointer_reg: Register<Int>,
 		output_reg: Register<Pointer>,
 	},
+	#[deprecated]
 	PerformBinaryRegisterOperation {
 		lhs_reg: Register<Int>,
 		rhs_reg: Register<Int>,
 		output_reg: Register<Int>,
 		op: BinaryOperation,
 	},
-	PerformBinaryOperation {
+	PerformBinaryValueOperation {
 		lhs: RegOrImm<Int>,
 		rhs: RegOrImm<Int>,
 		output_reg: Register<Int>,
@@ -108,9 +114,15 @@ pub enum BrainInstructionType {
 	},
 	StartLoop,
 	EndLoop,
+	#[deprecated]
 	CompareRegisterToRegister {
 		lhs_reg: Register<Int>,
 		rhs_reg: Register<Int>,
+		output_reg: Register<Bool>,
+	},
+	CompareValues {
+		lhs: RegOrImm<Int>,
+		rhs: RegOrImm<Int>,
 		output_reg: Register<Bool>,
 	},
 	JumpIf {
@@ -176,18 +188,14 @@ impl ToInstructions for BrainOperation {
 				let (load_cell_info, mut instrs) = LoadCellInformation::create(offset, 0, None);
 
 				instrs.extend([
-					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Immediate::cell(value.convert::<u64>()),
+					BrainInstructionType::PerformBinaryValueOperation {
+						lhs: RegOrImm::Reg(load_cell_info.cell_reg),
+						rhs: RegOrImm::Imm(Immediate::cell(value.convert::<u64>())),
 						output_reg: Register::new(load_cell_info.instr_offset),
-					},
-					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: load_cell_info.cell_reg,
-						rhs_reg: Register::new(load_cell_info.instr_offset),
-						output_reg: Register::new(load_cell_info.instr_offset + 1),
 						op: BinaryOperation::Add,
 					},
 					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(load_cell_info.instr_offset + 1),
+						value_reg: Register::new(load_cell_info.instr_offset),
 						pointer_reg: load_cell_info.pointer_reg,
 					},
 				]);
