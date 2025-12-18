@@ -1,3 +1,5 @@
+#![allow(deprecated, unused)]
+
 mod error;
 mod inner;
 mod verify;
@@ -6,10 +8,12 @@ use frick_instructions::BrainInstruction;
 use frick_utils::IntoIteratorExt as _;
 use serde::{Deserialize, Serialize};
 use tracing::info;
-use verify::Verifier;
 
 pub use self::error::*;
-use self::inner::{Pass, passes};
+use self::{
+	inner::{Pass, passes},
+	verify::Verifier,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]

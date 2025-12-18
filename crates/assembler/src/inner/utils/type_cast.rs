@@ -6,7 +6,7 @@ use inkwell::{
 	values::{BasicValue, BasicValueEnum, IntValue, PointerValue},
 };
 
-use crate::{ContextExt, IntoContext as _};
+use crate::IntoContext as _;
 
 pub trait Castable<'ctx>: RegisterType {
 	type Type: BasicType<'ctx> + Copy;
