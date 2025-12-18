@@ -251,37 +251,29 @@ impl ToInstructions for BrainOperation {
 					imm: Immediate::pointer(offset.unsigned_abs().convert::<u64>()),
 					output_reg: Register::new(1),
 				},
-				BrainInstructionType::PerformBinaryRegisterOperation {
-					lhs_reg: Register::new(0),
-					rhs_reg: Register::new(1),
-					output_reg: Register::new(2),
+				BrainInstructionType::PerformBinaryValueOperation {
+					lhs: RegOrImm::Reg(Register::new(0)),
+					rhs: RegOrImm::Imm(Immediate::pointer(offset.unsigned_abs().convert::<u64>())),
+					output_reg: Register::new(1),
 					op: if offset.is_positive() {
 						BinaryOperation::Add
 					} else {
 						BinaryOperation::Sub
 					},
 				},
-				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Immediate::TAPE_SIZE_MINUS_ONE,
-					output_reg: Register::new(3),
-				},
-				BrainInstructionType::PerformBinaryRegisterOperation {
-					lhs_reg: Register::new(2),
-					rhs_reg: Register::new(3),
-					output_reg: Register::new(4),
+				BrainInstructionType::PerformBinaryValueOperation {
+					lhs: RegOrImm::Reg(Register::new(1)),
+					rhs: RegOrImm::Imm(Immediate::TAPE_SIZE_MINUS_ONE),
+					output_reg: Register::new(2),
 					op: BinaryOperation::BitwiseAnd,
 				},
 				BrainInstructionType::CalculateTapeOffset {
-					tape_pointer_reg: Register::new(4),
-					output_reg: Register::new(5),
+					tape_pointer_reg: Register::new(2),
+					output_reg: Register::new(3),
 				},
-				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Immediate::cell(value.convert::<u64>()),
-					output_reg: Register::new(6),
-				},
-				BrainInstructionType::StoreRegisterIntoCell {
-					value_reg: Register::new(6),
-					pointer_reg: Register::new(5),
+				BrainInstructionType::StoreValueIntoCell {
+					value: RegOrImm::Imm(Immediate::cell(value.convert::<u64>())),
+					pointer_reg: Register::new(3),
 				},
 			]
 			.into_iter()
@@ -291,32 +283,24 @@ impl ToInstructions for BrainOperation {
 				BrainInstructionType::LoadTapePointerIntoRegister {
 					output_reg: Register::new(0),
 				},
-				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Immediate::pointer(offset.unsigned_abs().convert::<u64>()),
+				BrainInstructionType::PerformBinaryValueOperation {
+					lhs: RegOrImm::Reg(Register::new(0)),
+					rhs: RegOrImm::Imm(Immediate::pointer(offset.unsigned_abs().convert::<u64>())),
 					output_reg: Register::new(1),
-				},
-				BrainInstructionType::PerformBinaryRegisterOperation {
-					lhs_reg: Register::new(0),
-					rhs_reg: Register::new(1),
-					output_reg: Register::new(2),
 					op: if offset.is_positive() {
 						BinaryOperation::Add
 					} else {
 						BinaryOperation::Sub
 					},
 				},
-				BrainInstructionType::StoreImmediateIntoRegister {
-					imm: Immediate::TAPE_SIZE_MINUS_ONE,
-					output_reg: Register::new(3),
-				},
-				BrainInstructionType::PerformBinaryRegisterOperation {
-					lhs_reg: Register::new(2),
-					rhs_reg: Register::new(3),
-					output_reg: Register::new(4),
+				BrainInstructionType::PerformBinaryValueOperation {
+					lhs: RegOrImm::Reg(Register::new(1)),
+					rhs: RegOrImm::Imm(Immediate::TAPE_SIZE_MINUS_ONE),
+					output_reg: Register::new(2),
 					op: BinaryOperation::BitwiseAnd,
 				},
 				BrainInstructionType::StoreRegisterIntoTapePointer {
-					input_reg: Register::new(4),
+					input_reg: Register::new(2),
 				},
 			]
 			.into_iter()
@@ -326,43 +310,35 @@ impl ToInstructions for BrainOperation {
 				let (current_cell_info, mut instrs) = LoadCellInformation::create(0, 0, None);
 
 				instrs.extend([
-					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Immediate::CELL_ZERO,
-						output_reg: Register::new(current_cell_info.instr_offset),
-					},
-					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(current_cell_info.instr_offset),
+					BrainInstructionType::StoreValueIntoCell {
+						value: RegOrImm::Imm(Immediate::CELL_ZERO),
 						pointer_reg: current_cell_info.pointer_reg,
 					},
-					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Immediate::cell(value.convert::<u64>()),
+					BrainInstructionType::PerformBinaryValueOperation {
+						lhs: RegOrImm::Reg(current_cell_info.cell_reg),
+						rhs: RegOrImm::Imm(Immediate::cell(value.convert::<u64>())),
 						output_reg: Register::new(current_cell_info.instr_offset + 1),
-					},
-					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: current_cell_info.cell_reg,
-						rhs_reg: Register::new(current_cell_info.instr_offset + 1),
-						output_reg: Register::new(current_cell_info.instr_offset + 2),
 						op: BinaryOperation::Mul,
 					},
 				]);
 
 				let (other_cell_info, mut other_cell_instrs) = LoadCellInformation::create(
 					offset,
-					current_cell_info.instr_offset + 3,
+					current_cell_info.instr_offset + 2,
 					Some(current_cell_info.tape_pointer_reg),
 				);
 
 				instrs.append(&mut other_cell_instrs);
 
 				instrs.extend([
-					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: Register::new(current_cell_info.instr_offset + 2),
-						rhs_reg: other_cell_info.cell_reg,
+					BrainInstructionType::PerformBinaryValueOperation {
+						lhs: RegOrImm::Reg(Register::new(current_cell_info.instr_offset + 1)),
+						rhs: RegOrImm::Reg(other_cell_info.cell_reg),
 						output_reg: Register::new(other_cell_info.instr_offset),
 						op: BinaryOperation::Add,
 					},
-					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(other_cell_info.instr_offset),
+					BrainInstructionType::StoreValueIntoCell {
+						value: RegOrImm::Reg(Register::new(other_cell_info.instr_offset)),
 						pointer_reg: other_cell_info.pointer_reg,
 					},
 				]);
@@ -376,43 +352,35 @@ impl ToInstructions for BrainOperation {
 				let (current_cell_info, mut instrs) = LoadCellInformation::create(0, 0, None);
 
 				instrs.extend([
-					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Immediate::CELL_ZERO,
-						output_reg: Register::new(current_cell_info.instr_offset),
-					},
-					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(current_cell_info.instr_offset),
+					BrainInstructionType::StoreValueIntoCell {
+						value: RegOrImm::Imm(Immediate::CELL_ZERO),
 						pointer_reg: current_cell_info.pointer_reg,
 					},
-					BrainInstructionType::StoreImmediateIntoRegister {
-						imm: Immediate::cell(value.convert::<u64>()),
+					BrainInstructionType::PerformBinaryValueOperation {
+						lhs: RegOrImm::Reg(current_cell_info.cell_reg),
+						rhs: RegOrImm::Imm(Immediate::cell(value.convert::<u64>())),
 						output_reg: Register::new(current_cell_info.instr_offset + 1),
-					},
-					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: current_cell_info.cell_reg,
-						rhs_reg: Register::new(current_cell_info.instr_offset + 1),
-						output_reg: Register::new(current_cell_info.instr_offset + 2),
 						op: BinaryOperation::Mul,
 					},
 				]);
 
 				let (other_cell_info, mut other_cell_instrs) = LoadCellInformation::create(
 					offset,
-					current_cell_info.instr_offset + 3,
+					current_cell_info.instr_offset + 2,
 					Some(current_cell_info.tape_pointer_reg),
 				);
 
 				instrs.append(&mut other_cell_instrs);
 
 				instrs.extend([
-					BrainInstructionType::PerformBinaryRegisterOperation {
-						lhs_reg: Register::new(current_cell_info.instr_offset + 2),
-						rhs_reg: other_cell_info.cell_reg,
+					BrainInstructionType::PerformBinaryValueOperation {
+						lhs: RegOrImm::Reg(Register::new(current_cell_info.instr_offset + 1)),
+						rhs: RegOrImm::Reg(other_cell_info.cell_reg),
 						output_reg: Register::new(other_cell_info.instr_offset),
 						op: BinaryOperation::Add,
 					},
-					BrainInstructionType::StoreRegisterIntoCell {
-						value_reg: Register::new(other_cell_info.instr_offset),
+					BrainInstructionType::StoreValueIntoCell {
+						value: RegOrImm::Reg(Register::new(other_cell_info.instr_offset)),
 						pointer_reg: other_cell_info.pointer_reg,
 					},
 					BrainInstructionType::StoreRegisterIntoTapePointer {
@@ -436,8 +404,8 @@ impl ToInstructions for BrainOperation {
 					tape_pointer_reg: Register::new(1),
 					output_reg: Register::new(2),
 				},
-				BrainInstructionType::StoreRegisterIntoCell {
-					value_reg: Register::new(0),
+				BrainInstructionType::StoreValueIntoCell {
+					value: RegOrImm::Reg(Register::new(0)),
 					pointer_reg: Register::new(2),
 				},
 			]
@@ -453,18 +421,14 @@ impl ToInstructions for BrainOperation {
 					});
 				} else {
 					instrs.extend([
-						BrainInstructionType::StoreImmediateIntoRegister {
-							imm: Immediate::cell(value.convert::<u64>()),
+						BrainInstructionType::PerformBinaryValueOperation {
+							lhs: RegOrImm::Reg(load_cell_info.cell_reg),
+							rhs: RegOrImm::Imm(Immediate::cell(value.convert::<u64>())),
 							output_reg: Register::new(load_cell_info.instr_offset),
-						},
-						BrainInstructionType::PerformBinaryRegisterOperation {
-							lhs_reg: load_cell_info.cell_reg,
-							rhs_reg: Register::new(load_cell_info.instr_offset),
-							output_reg: Register::new(load_cell_info.instr_offset + 1),
 							op: BinaryOperation::Add,
 						},
 						BrainInstructionType::OutputFromRegister {
-							input_reg: Register::new(load_cell_info.instr_offset + 1),
+							input_reg: Register::new(load_cell_info.instr_offset),
 						},
 					]);
 				}
@@ -500,17 +464,13 @@ impl ToInstructions for BrainOperation {
 						pointer_reg: Register::new(1),
 						output_reg: Register::new(2),
 					},
-					BrainInstructionType::StoreImmediateIntoRegister {
+					BrainInstructionType::CompareValues {
+						lhs: RegOrImm::Reg(Register::new(2)),
+						rhs: RegOrImm::Imm(Immediate::CELL_ZERO),
 						output_reg: Register::new(3),
-						imm: Immediate::CELL_ZERO,
-					},
-					BrainInstructionType::CompareRegisterToRegister {
-						lhs_reg: Register::new(2),
-						rhs_reg: Register::new(3),
-						output_reg: Register::new(4),
 					},
 					BrainInstructionType::JumpIf {
-						input_reg: Register::new(4),
+						input_reg: Register::new(3),
 					},
 				]
 				.into_iter()

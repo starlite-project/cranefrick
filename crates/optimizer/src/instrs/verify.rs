@@ -1,3 +1,5 @@
+#![expect(unused)]
+
 use frick_instructions::{BrainInstruction, BrainInstructionType};
 use frick_spec::POINTER_SIZE;
 use frick_types::RegisterTypeEnum;

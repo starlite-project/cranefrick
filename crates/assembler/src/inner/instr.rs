@@ -26,20 +26,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		self.set_value_at(output_reg, cell_value)
 	}
 
-	pub(super) fn store_register_into_cell(
-		&self,
-		value_reg: Register<Int>,
-		pointer_reg: Register<Pointer>,
-	) -> Result<(), AssemblyError> {
-		let ptr_value = self.value_at(pointer_reg)?;
-
-		let cell_value = self.value_at(value_reg)?;
-
-		self.builder.build_store(ptr_value, cell_value)?;
-
-		Ok(())
-	}
-
 	pub(super) fn store_value_into_cell(
 		&self,
 		value: RegOrImm<Int>,
@@ -115,30 +101,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 		};
 
 		self.set_value_at(output_reg, offset_pointer)
-	}
-
-	pub(super) fn perform_binary_register_operation(
-		&self,
-		lhs: Register<Int>,
-		rhs: Register<Int>,
-		output_reg: Register<Int>,
-		op: BinaryOperation,
-	) -> Result<(), AssemblyError> {
-		let lhs_value = self.value_at::<Int>(lhs)?;
-		let rhs_value = self.value_at::<Int>(rhs)?;
-
-		let new_value = match op {
-			BinaryOperation::Add => self.builder.build_int_add(lhs_value, rhs_value, "\0")?,
-			BinaryOperation::Sub => self.builder.build_int_sub(lhs_value, rhs_value, "\0")?,
-			BinaryOperation::Mul => self.builder.build_int_mul(lhs_value, rhs_value, "\0")?,
-			BinaryOperation::BitwiseAnd => self.builder.build_and(lhs_value, rhs_value, "\0")?,
-			BinaryOperation::BitwiseShl => {
-				self.builder.build_left_shift(lhs_value, rhs_value, "\0")?
-			}
-			op => unimplemented!("binary operation {op:?}"),
-		};
-
-		self.set_value_at(output_reg, new_value)
 	}
 
 	pub(super) fn perform_binary_value_operation(
@@ -250,14 +212,14 @@ impl<'ctx> InnerAssembler<'ctx> {
 		Ok(())
 	}
 
-	pub(super) fn compare_register_to_register(
+	pub(super) fn compare_values(
 		&self,
-		lhs: Register<Int>,
-		rhs: Register<Int>,
+		lhs: RegOrImm<Int>,
+		rhs: RegOrImm<Int>,
 		output_reg: Register<Bool>,
 	) -> Result<(), AssemblyError> {
-		let lhs_value = self.value_at(lhs)?;
-		let rhs_value = self.value_at(rhs)?;
+		let lhs_value = self.resolve_value(lhs)?;
+		let rhs_value = self.resolve_value(rhs)?;
 
 		let output =
 			self.builder

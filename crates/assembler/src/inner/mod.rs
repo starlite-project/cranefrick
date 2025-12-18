@@ -215,10 +215,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 				pointer_reg,
 				output_reg,
 			} => self.load_cell_into_register(pointer_reg, output_reg)?,
-			BrainInstructionType::StoreRegisterIntoCell {
-				value_reg,
-				pointer_reg,
-			} => self.store_register_into_cell(value_reg, pointer_reg)?,
 			BrainInstructionType::StoreValueIntoCell { value, pointer_reg } => {
 				self.store_value_into_cell(value, pointer_reg)?;
 			}
@@ -235,12 +231,6 @@ impl<'ctx> InnerAssembler<'ctx> {
 				tape_pointer_reg,
 				output_reg,
 			} => self.calculate_tape_offset(tape_pointer_reg, output_reg)?,
-			BrainInstructionType::PerformBinaryRegisterOperation {
-				lhs_reg,
-				rhs_reg,
-				output_reg,
-				op,
-			} => self.perform_binary_register_operation(lhs_reg, rhs_reg, output_reg, op)?,
 			BrainInstructionType::PerformBinaryValueOperation {
 				lhs,
 				rhs,
@@ -259,11 +249,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 			}
 			BrainInstructionType::StartLoop => self.start_loop()?,
 			BrainInstructionType::EndLoop => self.end_loop()?,
-			BrainInstructionType::CompareRegisterToRegister {
-				lhs_reg,
-				rhs_reg,
+			BrainInstructionType::CompareValues {
+				lhs,
+				rhs,
 				output_reg,
-			} => self.compare_register_to_register(lhs_reg, rhs_reg, output_reg)?,
+			} => self.compare_values(lhs, rhs, output_reg)?,
 			BrainInstructionType::JumpIf { input_reg } => self.jump_if(input_reg)?,
 			BrainInstructionType::JumpToHeader => self.jump_to_header()?,
 			_ => return Ok(false),
