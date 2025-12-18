@@ -9,7 +9,7 @@ use alloc::{vec, vec::Vec};
 use core::ops::{Deref, DerefMut, Range};
 
 use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
-use frick_types::{Any, BinaryOperation, Bool, Immediate, Int, Pointer, Register};
+use frick_types::{Any, BinaryOperation, Bool, Immediate, Int, Pointer, RegOrImm, Register};
 use frick_utils::Convert as _;
 use serde::{Deserialize, Serialize};
 
@@ -87,6 +87,12 @@ pub enum BrainInstructionType {
 	PerformBinaryRegisterOperation {
 		lhs_reg: Register<Int>,
 		rhs_reg: Register<Int>,
+		output_reg: Register<Int>,
+		op: BinaryOperation,
+	},
+	PerformBinaryOperation {
+		lhs: RegOrImm<Int>,
+		rhs: RegOrImm<Int>,
 		output_reg: Register<Int>,
 		op: BinaryOperation,
 	},

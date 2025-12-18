@@ -192,7 +192,6 @@ pub enum RegisterTypeEnum {
 	Pointer,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RegOrImm<T: RegisterType> {
 	Reg(Register<T>),
 	Imm(T::RustType),
@@ -207,6 +206,47 @@ impl<T: RegisterType> RegOrImm<T> {
 	#[must_use]
 	pub const fn imm(value: T::RustType) -> Self {
 		Self::Imm(value)
+	}
+}
+
+impl<T: RegisterType> Clone for RegOrImm<T>
+where
+	T::RustType: Clone,
+{
+	fn clone(&self) -> Self {
+		match self {
+			Self::Reg(r) => Self::Reg(*r),
+			Self::Imm(i) => Self::Imm(i.clone()),
+		}
+	}
+}
+
+impl<T: RegisterType> Copy for RegOrImm<T> where T::RustType: Copy {}
+
+impl<T: RegisterType> Debug for RegOrImm<T>
+where
+	T::RustType: Debug,
+{
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		match self {
+			Self::Reg(r) => f.debug_tuple("Reg").field(&r).finish(),
+			Self::Imm(i) => f.debug_tuple("Imm").field(&i).finish(),
+		}
+	}
+}
+
+impl<T: RegisterType> Eq for RegOrImm<T> where T::RustType: Eq {}
+
+impl<T: RegisterType> PartialEq for RegOrImm<T>
+where
+	T::RustType: PartialEq,
+{
+	fn eq(&self, other: &Self) -> bool {
+		match (self, other) {
+			(Self::Reg(lhs), Self::Reg(rhs)) => lhs == rhs,
+			(Self::Imm(lhs), Self::Imm(rhs)) => lhs == rhs,
+			_ => false,
+		}
 	}
 }
 
