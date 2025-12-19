@@ -1,8 +1,6 @@
-#![expect(unused)]
-
 use frick_instructions::{BrainInstruction, BrainInstructionType};
 use frick_spec::POINTER_SIZE;
-use frick_types::RegisterTypeEnum;
+use frick_types::{RegOrImm, RegisterTypeEnum};
 use rustc_hash::FxHashMap;
 
 use super::InstructionsOptimizerError;
@@ -38,6 +36,7 @@ impl Verifier {
 		let mut registers = FxHashMap::default();
 
 		for i in instrs.iter().copied() {
+			tracing::trace!("at {i:?}");
 			match i.instr() {
 				BrainInstructionType::LoadCellIntoRegister {
 					pointer_reg,
@@ -95,6 +94,9 @@ impl Verifier {
 				BrainInstructionType::StoreRegisterIntoTapePointer { input_reg } => {
 					match registers.get(&input_reg.index()).copied() {
 						Some(RegisterTypeEnum::Int(Some(64))) => {}
+						Some(RegisterTypeEnum::Int((None))) => {
+							tracing::warn!("got an int, expected an int64");
+						}
 						found => {
 							return Err(InstructionsOptimizerError::RegisterInvalid {
 								register: input_reg.index(),
@@ -111,9 +113,13 @@ impl Verifier {
 					Some(RegisterTypeEnum::Int(Some(64))) => {
 						registers.insert(output_reg.index(), RegisterTypeEnum::Pointer);
 					}
+					Some(RegisterTypeEnum::Int(None)) => {
+						tracing::warn!("got an int, expected an int64");
+						registers.insert(output_reg.index(), RegisterTypeEnum::Pointer);
+					}
 					found => {
 						return Err(InstructionsOptimizerError::RegisterInvalid {
-							register: output_reg.index(),
+							register: tape_pointer_reg.index(),
 							expected: RegisterTypeEnum::Int(Some(64)),
 							found,
 						});
@@ -146,6 +152,41 @@ impl Verifier {
 						});
 					}
 				},
+				#[allow(clippy::collapsible_match)]
+				BrainInstructionType::PerformBinaryValueOperation {
+					lhs,
+					rhs,
+					output_reg,
+					..
+				} => {
+					if let RegOrImm::Reg(lhs) = lhs {
+						match registers.get(&lhs.index()).copied() {
+							Some(RegisterTypeEnum::Int(..)) => {}
+							found => {
+								return Err(InstructionsOptimizerError::RegisterInvalid {
+									register: lhs.index(),
+									expected: RegisterTypeEnum::Int(None),
+									found,
+								});
+							}
+						}
+					}
+
+					if let RegOrImm::Reg(rhs) = rhs {
+						match registers.get(&rhs.index()).copied() {
+							Some(RegisterTypeEnum::Int(..)) => {}
+							found => {
+								return Err(InstructionsOptimizerError::RegisterInvalid {
+									register: rhs.index(),
+									expected: RegisterTypeEnum::Int(None),
+									found,
+								});
+							}
+						}
+					}
+
+					registers.insert(output_reg.index(), RegisterTypeEnum::Int(None));
+				}
 				BrainInstructionType::DuplicateRegister {
 					input_reg,
 					output_reg,
@@ -167,6 +208,9 @@ impl Verifier {
 				BrainInstructionType::OutputFromRegister { input_reg } => {
 					match registers.get(&input_reg.index()).copied() {
 						Some(RegisterTypeEnum::Int(Some(8))) => {}
+						Some(RegisterTypeEnum::Int(None)) => {
+							tracing::warn!("got an int, expected an int8");
+						}
 						found => {
 							return Err(InstructionsOptimizerError::RegisterInvalid {
 								register: input_reg.index(),

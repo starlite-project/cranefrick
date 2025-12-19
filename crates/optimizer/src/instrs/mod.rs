@@ -51,7 +51,7 @@ impl InstructionsOptimizer {
 
 		self.run_each_pass(&mut progress);
 
-		// Verifier::run(&self.instrs)?;
+		Verifier::run(&self.instrs)?;
 
 		Ok(progress)
 	}
