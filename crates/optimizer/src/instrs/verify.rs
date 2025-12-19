@@ -95,7 +95,7 @@ impl Verifier {
 					match registers.get(&input_reg.index()).copied() {
 						Some(RegisterTypeEnum::Int(Some(64))) => {}
 						Some(RegisterTypeEnum::Int((None))) => {
-							tracing::warn!("got an int, expected an int64");
+							tracing::trace!("got an int, expected an int64");
 						}
 						found => {
 							return Err(InstructionsOptimizerError::RegisterInvalid {
@@ -114,7 +114,7 @@ impl Verifier {
 						registers.insert(output_reg.index(), RegisterTypeEnum::Pointer);
 					}
 					Some(RegisterTypeEnum::Int(None)) => {
-						tracing::warn!("got an int, expected an int64");
+						tracing::trace!("got an int, expected an int64");
 						registers.insert(output_reg.index(), RegisterTypeEnum::Pointer);
 					}
 					found => {
@@ -209,7 +209,7 @@ impl Verifier {
 					match registers.get(&input_reg.index()).copied() {
 						Some(RegisterTypeEnum::Int(Some(8))) => {}
 						Some(RegisterTypeEnum::Int(None)) => {
-							tracing::warn!("got an int, expected an int8");
+							tracing::trace!("got an int, expected an int8");
 						}
 						found => {
 							return Err(InstructionsOptimizerError::RegisterInvalid {
@@ -249,6 +249,41 @@ impl Verifier {
 						});
 					}
 				},
+				BrainInstructionType::CompareValues {
+					lhs,
+					rhs,
+					output_reg,
+				} => {
+					match lhs {
+						RegOrImm::Imm(imm) => assert_eq!(imm.size(), 8),
+						RegOrImm::Reg(lhs_reg) => match registers.get(&lhs_reg.index()).copied() {
+							Some(RegisterTypeEnum::Int(Some(8))) => {}
+							found => {
+								return Err(InstructionsOptimizerError::RegisterInvalid {
+									register: lhs_reg.index(),
+									expected: RegisterTypeEnum::Int(Some(8)),
+									found,
+								});
+							}
+						},
+					}
+
+					match rhs {
+						RegOrImm::Imm(imm) => assert_eq!(imm.size(), 8),
+						RegOrImm::Reg(rhs_reg) => match registers.get(&rhs_reg.index()).copied() {
+							Some(RegisterTypeEnum::Int(Some(8))) => {}
+							found => {
+								return Err(InstructionsOptimizerError::RegisterInvalid {
+									register: rhs_reg.index(),
+									expected: RegisterTypeEnum::Int(Some(8)),
+									found,
+								});
+							}
+						},
+					}
+
+					registers.insert(output_reg.index(), RegisterTypeEnum::Bool);
+				}
 				BrainInstructionType::JumpIf { input_reg } => {
 					match registers.get(&input_reg.index()).copied() {
 						Some(RegisterTypeEnum::Bool) => {}
