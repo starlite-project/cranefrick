@@ -8,7 +8,7 @@ Setup cells 19 to 23 as 65; 24 to 28 as 70; 29 to 33 as 75; 34 to 38 as 80; 39 t
 Finish setting up alphabet
 <<<++++<+++<++<+<<++++<+++<++<+<<++++<+++<++<+<<++++<+++<++<+<<++++<+++<++<+
 Setup counters for A
-[>]++++[>++++<-]>
+>>>>>>>>>>>>>>>>>>>>>>>>>++++[>++++<-]>
 Jump to cell 0
 [<]<[<]<[<]<[<]
 Set text color to red
