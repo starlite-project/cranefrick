@@ -11,6 +11,8 @@ use inkwell::{
 use super::AssemblerFunctions;
 use crate::{AssemblyError, IntoContext as _};
 
+const TAPE_ALIGNMENT: u32 = 4;
+
 #[derive(Debug, Clone, Copy)]
 pub struct AssemblerPointers<'ctx> {
 	pub tape: PointerValue<'ctx>,
@@ -31,7 +33,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		};
 
 		if let Some(tape_instr) = tape.as_instruction() {
-			tape_instr.set_alignment(4)?;
+			tape_instr.set_alignment(TAPE_ALIGNMENT)?;
 		}
 
 		let pointer = builder.build_alloca(ptr_int_type, "pointer\0")?;
@@ -74,7 +76,7 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		let i8_zero = i8_type.const_zero();
 
-		builder.build_memset(self.tape, 1, i8_zero, tape_array_size)?;
+		builder.build_memset(self.tape, TAPE_ALIGNMENT, i8_zero, tape_array_size)?;
 		builder.build_store(self.pointer, ptr_int_type.const_zero())?;
 
 		Ok(())
