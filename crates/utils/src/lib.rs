@@ -13,6 +13,10 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "tracing_indicatif_ext")]
+#[cfg_attr(feature = "tracing_indicatif_ext", doc(hidden))]
+pub use tracing_indicatif;
+
 #[cfg(feature = "contains_range")]
 mod contains_range;
 #[cfg(any(feature = "get_or_zero", feature = "convert", feature = "into_range"))]
@@ -23,6 +27,8 @@ mod insert_or_push;
 mod iter;
 #[cfg(feature = "slice_ext")]
 mod slice;
+#[cfg(feature = "tracing_indicatif_ext")]
+mod tracing_indicatif_ext;
 
 #[cfg(feature = "contains_range")]
 pub use self::contains_range::*;

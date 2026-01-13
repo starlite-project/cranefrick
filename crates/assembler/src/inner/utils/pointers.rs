@@ -25,9 +25,9 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
 
 		let tape = {
-			let tape_size = ptr_int_type.const_int(TAPE_SIZE as u64, false);
+			let tape_type = cell_type.array_type(TAPE_SIZE as u32);
 
-			builder.build_array_alloca(cell_type, tape_size, "tape")?
+			builder.build_alloca(tape_type, "tape")?
 		};
 
 		if let Some(tape_instr) = tape.as_instruction() {

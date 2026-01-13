@@ -18,7 +18,8 @@ frick_utils = { workspace = true, features = [
     "convert",
     "get_or_zero",
     "insert_or_push",
-    "slice_ext"
+    "slice_ext",
+    "tracing_indicatif_ext"
 ] }
 inkwell.workspace = true
 libc.workspace = true

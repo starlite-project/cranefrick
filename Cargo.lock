@@ -580,6 +580,9 @@ dependencies = [
 [[package]]
 name = "frick_utils"
 version = "0.1.0"
+dependencies = [
+ "tracing-indicatif",
+]
 
 [[package]]
 name = "fsio"

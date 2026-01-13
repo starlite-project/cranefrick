@@ -1,3 +1,4 @@
+dependencies.tracing-indicatif = { workspace = true, optional = true }
 lints.workspace = true
 
 [package]
@@ -16,3 +17,4 @@ insert_or_push = ["alloc"]
 into_range = []
 iter_ext = []
 slice_ext = []
+tracing_indicatif_ext = ["dep:tracing-indicatif"]
