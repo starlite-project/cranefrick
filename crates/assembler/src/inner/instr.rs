@@ -1,4 +1,4 @@
-use frick_spec::POINTER_SIZE;
+use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_types::{Any, BinaryOperation, Bool, Immediate, Int, Pointer, RegOrImm, Register};
 use frick_utils::Convert as _;
 use inkwell::{
@@ -87,14 +87,20 @@ impl<'ctx> InnerAssembler<'ctx> {
 		input_reg: Register<Int>,
 		output_reg: Register<Pointer>,
 	) -> Result<(), AssemblyError> {
+		let context = self.into_context();
+
 		let cell_type = self.into_context().i8_type();
+		let tape_type = cell_type.array_type(TAPE_SIZE as u32);
+		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
+
+		let zero_value = ptr_int_type.const_zero();
 		let pointer_value = self.value_at(input_reg)?;
 
 		let offset_pointer = unsafe {
 			self.builder.build_gep_with_no_wrap_flags(
-				cell_type,
+				tape_type,
 				self.pointers.tape,
-				&[pointer_value],
+				&[zero_value, pointer_value],
 				"\0",
 				LLVMGEPFlagInBounds | LLVMGEPFlagNUW,
 			)?
