@@ -23,9 +23,18 @@ pub unsafe extern "C" fn rust_putchar(c: u8) {
 #[unsafe(no_mangle)]
 #[must_use]
 pub unsafe extern "C" fn rust_getchar() -> u8 {
-	let char = unsafe { libc::getchar() };
+	let mut stdin = io::stdin().lock();
 
-	if char >= 0 { char as u8 } else { 0 }
+	let mut value = 0;
+
+	if let Err(e) = stdin.read_exact(slice::from_mut(&mut value)) {
+		match e.kind() {
+			io::ErrorKind::UnexpectedEof => value = 10,
+			_ => abort(),
+		}
+	}
+
+	value
 }
 
 #[unsafe(no_mangle)]
