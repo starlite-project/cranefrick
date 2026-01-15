@@ -23,7 +23,9 @@ pub unsafe extern "C" fn rust_putchar(c: u8) {
 #[unsafe(no_mangle)]
 #[must_use]
 pub unsafe extern "C" fn rust_getchar() -> u8 {
-	unsafe { libc::getchar() as u8 }
+	let char = unsafe { libc::getchar() };
+
+	if char >= 0 { char as u8 } else { 0 }
 }
 
 #[unsafe(no_mangle)]
