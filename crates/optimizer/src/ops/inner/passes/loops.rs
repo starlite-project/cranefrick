@@ -1,4 +1,5 @@
 use frick_operations::{BrainOperation, BrainOperationType, CellOffsetOptions};
+use frick_utils::RuntimeArray;
 
 use crate::ops::inner::Change;
 
@@ -18,9 +19,13 @@ pub fn optimize_clear_cell(ops: &[BrainOperation]) -> Option<Change> {
 }
 
 pub fn optimize_move_cell_value(ops: &[BrainOperation]) -> Option<Change> {
-	let mapped = ops.iter().map(BrainOperation::op).collect::<Vec<_>>();
+	let mapped = ops
+		.iter()
+		.map(BrainOperation::op)
+		.collect::<RuntimeArray<_, 2>>()
+		.into_array()?;
 
-	match &*mapped {
+	match mapped {
 		[
 			BrainOperationType::IncrementCell(CellOffsetOptions {
 				value: a,
@@ -64,10 +69,14 @@ pub fn remove_infinite_loops(ops: &[BrainOperation]) -> Option<Change> {
 }
 
 pub fn optimize_clear_decrement_loop(ops: &[BrainOperation]) -> Option<Change> {
-	let mapped = ops.iter().map(BrainOperation::op).collect::<Vec<_>>();
+	let mapped = ops
+		.iter()
+		.map(BrainOperation::op)
+		.collect::<RuntimeArray<_, 2>>()
+		.into_array()?;
 
-	match &*mapped {
-		&[
+	match mapped {
+		[
 			&BrainOperationType::SetCell(CellOffsetOptions { value: 0, offset }),
 			&BrainOperationType::DecrementCell(CellOffsetOptions {
 				value: 1,

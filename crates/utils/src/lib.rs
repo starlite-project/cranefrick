@@ -25,6 +25,8 @@ mod convert;
 mod insert_or_push;
 #[cfg(feature = "iter_ext")]
 mod iter;
+#[cfg(feature = "runtime_array")]
+mod runtime_array;
 #[cfg(feature = "slice_ext")]
 mod slice;
 #[cfg(feature = "tracing_indicatif_ext")]
@@ -38,5 +40,7 @@ pub use self::convert::*;
 pub use self::insert_or_push::*;
 #[cfg(feature = "iter_ext")]
 pub use self::iter::*;
+#[cfg(feature = "runtime_array")]
+pub use self::runtime_array::*;
 #[cfg(feature = "slice_ext")]
 pub use self::slice::*;
