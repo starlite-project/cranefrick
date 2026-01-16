@@ -6,6 +6,7 @@ use core::{
 pub struct RuntimeArray<T, const N: usize>(Option<[T; N]>);
 
 impl<T, const N: usize> RuntimeArray<T, N> {
+	#[inline]
 	pub fn into_array(self) -> Option<[T; N]> {
 		self.0
 	}
@@ -14,18 +15,21 @@ impl<T, const N: usize> RuntimeArray<T, N> {
 impl<T, const N: usize> Deref for RuntimeArray<T, N> {
 	type Target = Option<[T; N]>;
 
+	#[inline]
 	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
 }
 
 impl<T, const N: usize> DerefMut for RuntimeArray<T, N> {
+	#[inline]
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.0
 	}
 }
 
 impl<T, const N: usize> From<[T; N]> for RuntimeArray<T, N> {
+	#[inline]
 	fn from(value: [T; N]) -> Self {
 		Self(Some(value))
 	}
