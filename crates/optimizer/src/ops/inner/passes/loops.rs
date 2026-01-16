@@ -62,3 +62,21 @@ pub fn remove_infinite_loops(ops: &[BrainOperation]) -> Option<Change> {
 		_ => None,
 	}
 }
+
+pub fn optimize_clear_decrement_loop(ops: &[BrainOperation]) -> Option<Change> {
+	let mapped = ops.iter().map(BrainOperation::op).collect::<Vec<_>>();
+
+	match &*mapped {
+		&[
+			&BrainOperationType::SetCell(CellOffsetOptions { value: 0, offset }),
+			&BrainOperationType::DecrementCell(CellOffsetOptions {
+				value: 1,
+				offset: 0,
+			}),
+		] => Some(Change::swap([
+			BrainOperation::new(BrainOperationType::set_cell_at(0, offset), ops[0].span()),
+			BrainOperation::new(BrainOperationType::set_cell(0), ops[1].span()),
+		])),
+		_ => None,
+	}
+}

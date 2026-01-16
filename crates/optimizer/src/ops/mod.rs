@@ -67,6 +67,8 @@ impl OperationsOptimizer {
 		*progress |= run_loop_pass(self.ops_mut(), passes::remove_infinite_loops);
 
 		*progress |= run_peephole_pass(self.ops_mut(), passes::unroll_constant_loop);
+
+		*progress |= run_loop_pass(self.ops_mut(), passes::optimize_clear_decrement_loop);
 	}
 
 	pub const fn ops(&self) -> &Vec<BrainOperation> {
