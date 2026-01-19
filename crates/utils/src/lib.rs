@@ -4,6 +4,7 @@
 	feature(nonzero_internals),
 	allow(internal_features)
 )]
+#![cfg_attr(feature = "runtime_array", feature(maybe_uninit_array_assume_init))]
 #![cfg_attr(
 	any(feature = "contains_range", feature = "into_range"),
 	feature(step_trait)

@@ -38,27 +38,31 @@ impl<T, const N: usize> From<[T; N]> for RuntimeArray<T, N> {
 impl<T, const N: usize> FromIterator<T> for RuntimeArray<T, N> {
 	fn from_iter<V: IntoIterator<Item = T>>(iter: V) -> Self {
 		let mut count = 0usize;
-		let mut uninit_array = MaybeUninit::<[T; N]>::uninit();
+		let mut uninit_array: [MaybeUninit<T>; N] = unsafe { MaybeUninit::uninit().assume_init() };
 
 		for value in iter {
 			if count >= N {
+				for mut initialized in uninit_array {
+					unsafe { MaybeUninit::assume_init_drop(&mut initialized) }
+				}
+
 				return Self(None);
 			}
 
-			unsafe {
-				uninit_array
-					.as_mut_ptr()
-					.cast::<T>()
-					.add(count)
-					.write(value);
-			}
+			uninit_array[count].write(value);
 
 			count += 1;
 		}
 
 		if count == N {
-			Self(Some(unsafe { MaybeUninit::assume_init(uninit_array) }))
+			Self(Some(unsafe {
+				MaybeUninit::array_assume_init(uninit_array)
+			}))
 		} else {
+			for initialized in &mut uninit_array[0..count] {
+				unsafe { MaybeUninit::assume_init_drop(initialized) }
+			}
+
 			Self(None)
 		}
 	}
