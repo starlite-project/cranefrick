@@ -1,5 +1,5 @@
 use core::{
-	mem::MaybeUninit,
+	mem::{self, MaybeUninit},
 	ops::{Deref, DerefMut},
 };
 
@@ -42,8 +42,10 @@ impl<T, const N: usize> FromIterator<T> for RuntimeArray<T, N> {
 
 		for value in iter {
 			if count >= N {
-				for mut initialized in uninit_array {
-					unsafe { MaybeUninit::assume_init_drop(&mut initialized) }
+				if mem::needs_drop::<T>() {
+					for mut initialized in uninit_array {
+						unsafe { MaybeUninit::assume_init_drop(&mut initialized) }
+					}
 				}
 
 				return Self(None);
@@ -59,8 +61,10 @@ impl<T, const N: usize> FromIterator<T> for RuntimeArray<T, N> {
 				MaybeUninit::array_assume_init(uninit_array)
 			}))
 		} else {
-			for initialized in &mut uninit_array[0..count] {
-				unsafe { MaybeUninit::assume_init_drop(initialized) }
+			if mem::needs_drop::<T>() {
+				for initialized in &mut uninit_array[0..count] {
+					unsafe { MaybeUninit::assume_init_drop(initialized) }
+				}
 			}
 
 			Self(None)
