@@ -106,3 +106,25 @@ pub fn remove_non_io_ending_operations(ops: &mut Vec<BrainOperation>) -> bool {
 
 	ops.len() != old_len
 }
+
+pub fn remove_ops_before_output_value(ops: &mut Vec<BrainOperation>) -> bool {
+	let old_len = ops.len();
+
+	let Some((output_value, rest_of_ops)) = ops.split_last() else {
+		return false;
+	};
+
+	if !matches!(output_value.op(), BrainOperationType::OutputValue(..)) {
+		return false;
+	}
+
+	let Some(second_to_last) = rest_of_ops.last() else {
+		return false;
+	};
+
+	if !second_to_last.has_io() {
+		ops.remove(old_len - 2);
+	}
+
+	ops.len() != old_len
+}
