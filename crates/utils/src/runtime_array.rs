@@ -128,7 +128,14 @@ mod tests {
 
 		assert!(arr.is_none());
 
-		let arr = orig_array.into_iter().collect::<RuntimeArray<_, 3>>();
+		let arr = orig_array
+			.clone()
+			.into_iter()
+			.collect::<RuntimeArray<_, 3>>();
+
+		assert!(arr.is_some());
+
+		let arr = orig_array.into_iter().collect::<RuntimeArray<_, 5>>();
 
 		assert!(arr.is_some());
 	}
