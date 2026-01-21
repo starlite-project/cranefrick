@@ -82,7 +82,7 @@ mod tests {
 
 	#[test]
 	fn it_works() {
-		let orig_array = alloc::vec![Box::new(1u32), Box::new(2), Box::new(3)];
+		let orig_array = alloc::vec![1u32, 2, 3];
 
 		let arr = orig_array
 			.clone()
@@ -115,5 +115,21 @@ mod tests {
 		let arr = orig_array.into_iter().collect::<RuntimeArray<_, 5>>();
 
 		assert!(arr.is_none());
+	}
+
+	#[test]
+	fn drops_properly() {
+		let orig_array = alloc::vec![Box::new(1u32), Box::new(2), Box::new(3)];
+
+		let arr = orig_array
+			.clone()
+			.into_iter()
+			.collect::<RuntimeArray<_, 1>>();
+
+		assert!(arr.is_none());
+
+		let arr = orig_array.into_iter().collect::<RuntimeArray<_, 3>>();
+
+		assert!(arr.is_some());
 	}
 }
