@@ -43,9 +43,7 @@ impl<T, const N: usize> FromIterator<T> for RuntimeArray<T, N> {
 		for value in iter {
 			if count >= N {
 				if mem::needs_drop::<T>() {
-					for mut initialized in uninit_array {
-						unsafe { MaybeUninit::assume_init_drop(&mut initialized) }
-					}
+					unsafe { uninit_array[..].assume_init_drop() };
 				}
 
 				return Self(None);
@@ -62,8 +60,8 @@ impl<T, const N: usize> FromIterator<T> for RuntimeArray<T, N> {
 			}))
 		} else {
 			if mem::needs_drop::<T>() {
-				for initialized in &mut uninit_array[0..count] {
-					unsafe { MaybeUninit::assume_init_drop(initialized) }
+				unsafe {
+					uninit_array[..count].assume_init_drop();
 				}
 			}
 

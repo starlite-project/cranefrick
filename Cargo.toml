@@ -137,7 +137,7 @@ useless_nonzero_new_unchecked = "allow"
 [workspace.package]
 edition = "2024"
 license = "MIT or Apache-2.0"
-rust-version = "1.90"
+rust-version = "1.93"
 version = "0.1.0"
 
 [profile.release]
