@@ -56,7 +56,6 @@ members = [
 resolver = "3"
 
 [workspace.dependencies]
-arbitrary = "1"
 ariadne = "0.6"
 chumsky = { version = "0.12", default-features = false }
 clap = "4"
@@ -65,7 +64,6 @@ criterion = "0.8"
 dhat = "0.3"
 frick_instructions = { path = "crates/instructions" }
 frick_interop = { path = "crates/interop" }
-frick_ir = { path = "crates/ir" }
 frick_operations = { path = "crates/operations" }
 frick_serialize = { path = "crates/serialize" }
 frick_spec = { path = "crates/spec" }
@@ -159,3 +157,6 @@ opt-level = 3
 
 [patch.crates-io]
 llvm-sys = { git = "https://gitlab.com/taricorp/llvm-sys.rs.git", branch = "llvm-21" }
+
+[package.metadata.cargo-shear]
+ignored = ["rusty-hook"]
