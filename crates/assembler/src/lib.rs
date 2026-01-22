@@ -168,12 +168,14 @@ impl Assembler {
 
 		if let Some(getchar) = module.get_function("rust_getchar\0") {
 			info!("adding rust_getchar to execution engine");
-			execution_engine.add_global_mapping(&getchar, frick_interop::rust_getchar as usize);
+			execution_engine
+				.add_global_mapping(&getchar, (frick_interop::rust_getchar as *const ()).addr());
 		}
 
 		if let Some(putchar) = module.get_function("rust_putchar\0") {
 			info!("adding rust_putchar to execution engine");
-			execution_engine.add_global_mapping(&putchar, frick_interop::rust_putchar as usize);
+			execution_engine
+				.add_global_mapping(&putchar, (frick_interop::rust_putchar as *const ()).addr());
 		}
 
 		Ok(AssembledModule {
