@@ -472,7 +472,6 @@ dependencies = [
  "criterion",
  "dhat",
  "frick_assembler",
- "frick_instructions",
  "frick_operations",
  "frick_optimizer",
  "mimalloc",
@@ -491,7 +490,6 @@ dependencies = [
  "frick_instructions",
  "frick_interop",
  "frick_llvm_ext",
- "frick_operations",
  "frick_spec",
  "frick_types",
  "frick_utils",
@@ -518,7 +516,6 @@ name = "frick_interop"
 version = "0.1.0"
 dependencies = [
  "libc",
- "tracing",
 ]
 
 [[package]]
