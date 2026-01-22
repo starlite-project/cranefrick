@@ -55,9 +55,7 @@ impl<T, const N: usize> FromIterator<T> for RuntimeArray<T, N> {
 		}
 
 		if count == N {
-			Self(Some(unsafe {
-				MaybeUninit::array_assume_init(uninit_array)
-			}))
+			Self(Some(unsafe { mem::transmute_copy(&uninit_array) }))
 		} else {
 			if mem::needs_drop::<T>() {
 				unsafe {
@@ -135,6 +133,6 @@ mod tests {
 
 		let arr = orig_array.into_iter().collect::<RuntimeArray<_, 5>>();
 
-		assert!(arr.is_some());
+		assert!(arr.is_none());
 	}
 }
