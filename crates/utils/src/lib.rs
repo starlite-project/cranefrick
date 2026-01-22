@@ -13,6 +13,7 @@ extern crate alloc;
 #[cfg_attr(feature = "tracing_indicatif_ext", doc(hidden))]
 pub use tracing_indicatif;
 
+#[cfg(feature = "nightly")]
 mod contains_range;
 mod convert;
 #[cfg(feature = "alloc")]
@@ -23,6 +24,8 @@ mod slice;
 #[cfg(feature = "tracing_indicatif_ext")]
 mod tracing_indicatif_ext;
 
+#[cfg(feature = "nightly")]
+pub use self::contains_range::*;
 #[cfg(feature = "alloc")]
 pub use self::insert_or_push::*;
-pub use self::{contains_range::*, convert::*, iter::*, runtime_array::*, slice::*};
+pub use self::{convert::*, iter::*, runtime_array::*, slice::*};
