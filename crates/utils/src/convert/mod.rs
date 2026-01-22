@@ -1,17 +1,13 @@
-#[cfg(feature = "convert")]
 use core::convert::TryInto;
 
-#[cfg(feature = "get_or_zero")]
+#[cfg(feature = "nightly")]
 mod get_or_zero;
-#[cfg(feature = "into_range")]
+#[cfg(feature = "nightly")]
 mod into_range;
 
-#[cfg(feature = "get_or_zero")]
-pub use self::get_or_zero::*;
-#[cfg(feature = "into_range")]
-pub use self::into_range::*;
+#[cfg(feature = "nightly")]
+pub use self::{get_or_zero::*, into_range::*};
 
-#[cfg(feature = "convert")]
 pub trait Convert
 where
 	Self: Sized,
@@ -26,10 +22,8 @@ where
 	}
 }
 
-#[cfg(feature = "convert")]
 impl<T> Convert for T {}
 
-#[cfg(feature = "convert")]
 pub trait TryConvert
 where
 	Self: Sized,
@@ -44,5 +38,4 @@ where
 	}
 }
 
-#[cfg(feature = "convert")]
 impl<T> TryConvert for T {}

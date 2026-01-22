@@ -14,7 +14,7 @@ chumsky = { workspace = true, default-features = false, optional = true, feature
     "stacker",
     "std"
 ] }
-frick_utils = { workspace = true, features = ["iter_ext"] }
+frick_utils = { workspace = true, features = ["alloc"] }
 serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"

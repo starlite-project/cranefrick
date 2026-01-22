@@ -10,7 +10,7 @@ version.workspace = true
 [dependencies]
 frick_operations.workspace = true
 frick_types.workspace = true
-frick_utils = { workspace = true, features = ["convert"] }
+frick_utils.workspace = true
 serde = { workspace = true, default-features = false, features = [
     "alloc",
     "derive"

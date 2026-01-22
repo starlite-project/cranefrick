@@ -10,12 +10,5 @@ version.workspace = true
 
 [features]
 alloc = []
-contains_range = []
-convert = []
-get_or_zero = []
-insert_or_push = ["alloc"]
-into_range = []
-runtime_array = []
-iter_ext = []
-slice_ext = []
 tracing_indicatif_ext = ["dep:tracing-indicatif"]
+nightly = []

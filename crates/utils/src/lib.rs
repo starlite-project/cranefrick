@@ -1,12 +1,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(
-	feature = "get_or_zero",
-	feature(nonzero_internals),
+	feature = "nightly",
+	feature(nonzero_internals, step_trait),
 	allow(internal_features)
-)]
-#![cfg_attr(
-	any(feature = "contains_range", feature = "into_range"),
-	feature(step_trait)
 )]
 #![no_std]
 
@@ -17,30 +13,16 @@ extern crate alloc;
 #[cfg_attr(feature = "tracing_indicatif_ext", doc(hidden))]
 pub use tracing_indicatif;
 
-#[cfg(feature = "contains_range")]
 mod contains_range;
-#[cfg(any(feature = "get_or_zero", feature = "convert", feature = "into_range"))]
 mod convert;
-#[cfg(feature = "insert_or_push")]
+#[cfg(feature = "alloc")]
 mod insert_or_push;
-#[cfg(feature = "iter_ext")]
 mod iter;
-#[cfg(feature = "runtime_array")]
 mod runtime_array;
-#[cfg(feature = "slice_ext")]
 mod slice;
 #[cfg(feature = "tracing_indicatif_ext")]
 mod tracing_indicatif_ext;
 
-#[cfg(feature = "contains_range")]
-pub use self::contains_range::*;
-#[cfg(any(feature = "get_or_zero", feature = "convert", feature = "into_range"))]
-pub use self::convert::*;
-#[cfg(feature = "insert_or_push")]
+#[cfg(feature = "alloc")]
 pub use self::insert_or_push::*;
-#[cfg(feature = "iter_ext")]
-pub use self::iter::*;
-#[cfg(feature = "runtime_array")]
-pub use self::runtime_array::*;
-#[cfg(feature = "slice_ext")]
-pub use self::slice::*;
+pub use self::{contains_range::*, convert::*, iter::*, runtime_array::*, slice::*};

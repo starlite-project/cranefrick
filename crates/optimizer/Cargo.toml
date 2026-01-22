@@ -13,11 +13,7 @@ frick_operations.workspace = true
 frick_serialize.workspace = true
 frick_spec.workspace = true
 frick_types.workspace = true
-frick_utils = { workspace = true, features = [
-    "insert_or_push",
-    "iter_ext",
-    "runtime_array"
-] }
+frick_utils = { workspace = true, features = ["alloc"] }
 rustc-hash.workspace = true
 serde = { workspace = true, default-features = false, features = [
     "alloc",

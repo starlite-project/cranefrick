@@ -14,10 +14,7 @@ frick_llvm_ext = { path = "../llvm_ext" }
 frick_spec = { path = "../spec" }
 frick_types.workspace = true
 frick_utils = { workspace = true, features = [
-    "convert",
-    "get_or_zero",
-    "insert_or_push",
-    "slice_ext",
+    "alloc",
     "tracing_indicatif_ext"
 ] }
 inkwell.workspace = true
