@@ -69,14 +69,13 @@ frick_serialize = { path = "crates/serialize" }
 frick_spec = { path = "crates/spec" }
 frick_types = { path = "crates/types" }
 frick_utils = { path = "crates/utils" }
-inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "2bc7cb950086960b126f90c479b3ae04eb308661", features = [
+inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "5172a534c58fb9219de6c9bc3ce816caf25079b1", features = [
     "llvm21-1"
 ] }
 libc = "0.2"
 llvm-sys = { git = "https://gitlab.com/taricorp/llvm-sys.rs.git", branch = "llvm-21" }
 ron = "0.12"
 rustc-hash = "2"
-send_wrapper = "0.6"
 serde = { version = "1", default-features = false }
 tracing = "0.1"
 tracing-indicatif = "0.3"

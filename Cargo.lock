@@ -497,7 +497,6 @@ dependencies = [
  "libc",
  "line-numbers",
  "rustc-hash 2.1.1",
- "send_wrapper",
  "tracing",
 ]
 
@@ -682,7 +681,7 @@ dependencies = [
 [[package]]
 name = "inkwell"
 version = "0.8.0"
-source = "git+https://github.com/TheDan64/inkwell.git?rev=2bc7cb950086960b126f90c479b3ae04eb308661#2bc7cb950086960b126f90c479b3ae04eb308661"
+source = "git+https://github.com/TheDan64/inkwell.git?rev=5172a534c58fb9219de6c9bc3ce816caf25079b1#5172a534c58fb9219de6c9bc3ce816caf25079b1"
 dependencies = [
  "bitflags",
  "inkwell_internals",
@@ -695,7 +694,7 @@ dependencies = [
 [[package]]
 name = "inkwell_internals"
 version = "0.13.0"
-source = "git+https://github.com/TheDan64/inkwell.git?rev=2bc7cb950086960b126f90c479b3ae04eb308661#2bc7cb950086960b126f90c479b3ae04eb308661"
+source = "git+https://github.com/TheDan64/inkwell.git?rev=5172a534c58fb9219de6c9bc3ce816caf25079b1#5172a534c58fb9219de6c9bc3ce816caf25079b1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1190,12 +1189,6 @@ name = "semver"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
-
-[[package]]
-name = "send_wrapper"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
 name = "serde"

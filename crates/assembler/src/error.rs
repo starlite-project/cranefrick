@@ -8,11 +8,10 @@ use std::{
 use frick_instructions::BrainInstructionType;
 use frick_utils::Convert as _;
 use inkwell::{builder::BuilderError, support::LLVMString, values::InstructionValueError};
-use send_wrapper::SendWrapper;
 
 #[derive(Debug)]
 pub enum AssemblyError {
-	Llvm(SendWrapper<LLVMString>),
+	Llvm(LLVMString),
 	NoTargetMachine,
 	IntrinsicNotFound(Cow<'static, str>),
 	InvalidIntrinsicDeclaration(Cow<'static, str>),
@@ -77,7 +76,7 @@ impl StdError for AssemblyError {
 	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			Self::Inkwell(e) => Some(e),
-			Self::Llvm(e) => Some(&**e),
+			Self::Llvm(e) => Some(e),
 			Self::Io(e) => Some(e),
 			Self::NoTargetMachine
 			| Self::IntrinsicNotFound(..)
@@ -93,7 +92,7 @@ impl StdError for AssemblyError {
 
 impl From<LLVMString> for AssemblyError {
 	fn from(value: LLVMString) -> Self {
-		Self::Llvm(SendWrapper::new(value))
+		Self::Llvm(value)
 	}
 }
 
