@@ -1,3 +1,5 @@
+use std::num::NonZero;
+
 use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_utils::Convert as _;
 use inkwell::{
@@ -24,7 +26,8 @@ impl<'ctx> AssemblerPointers<'ctx> {
 		let context = module.get_context();
 
 		let cell_type = context.i8_type();
-		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
+		let ptr_int_type = context
+			.custom_width_int_type(unsafe { NonZero::new_unchecked(POINTER_SIZE as u32) })?;
 
 		let tape = {
 			let tape_type = cell_type.array_type(TAPE_SIZE as u32);
@@ -50,7 +53,8 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		let i8_type = context.i8_type();
 		let i64_type = context.i64_type();
-		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
+		let ptr_int_type = context
+			.custom_width_int_type(unsafe { NonZero::new_unchecked(POINTER_SIZE as u32) })?;
 
 		let tape_array_size = i64_type.const_int(TAPE_SIZE as u64, false);
 

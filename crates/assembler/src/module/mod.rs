@@ -1,8 +1,5 @@
-mod memory;
-
 use inkwell::{execution_engine::ExecutionEngine, values::FunctionValue};
 
-pub use self::memory::*;
 use super::AssemblyError;
 
 pub struct AssembledModule<'ctx> {

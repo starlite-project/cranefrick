@@ -22,6 +22,7 @@ pub enum AssemblyError {
 	NoValueInRegister(usize),
 	NoLoopInfo,
 	CannotGetConstant,
+	Custom(String),
 }
 
 impl AssemblyError {
@@ -68,6 +69,10 @@ impl Display for AssemblyError {
 			}
 			Self::NoLoopInfo => f.write_str("no loop info was present when expected"),
 			Self::CannotGetConstant => f.write_str("cannot create LLVM value from rust constant"),
+			Self::Custom(c) => {
+				f.write_str("custom error: ")?;
+				f.write_str(c)
+			}
 		}
 	}
 }
@@ -85,7 +90,8 @@ impl StdError for AssemblyError {
 			| Self::PointerNotLoaded
 			| Self::NoValueInRegister(..)
 			| Self::NoLoopInfo
-			| Self::CannotGetConstant => None,
+			| Self::CannotGetConstant
+			| Self::Custom(..) => None,
 		}
 	}
 }
@@ -117,5 +123,11 @@ impl From<InstructionValueError> for AssemblyError {
 impl From<IoError> for AssemblyError {
 	fn from(value: IoError) -> Self {
 		Self::Io(value)
+	}
+}
+
+impl From<&str> for AssemblyError {
+	fn from(value: &str) -> Self {
+		Self::Custom(value.to_owned())
 	}
 }

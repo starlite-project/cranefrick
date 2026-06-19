@@ -1,3 +1,5 @@
+use std::num::NonZero;
+
 use frick_types::{Any, Bool, Int, Pointer, RegisterType};
 use frick_utils::Convert as _;
 use inkwell::{
@@ -81,7 +83,9 @@ impl<'ctx> Castable<'ctx> for Int {
 	) -> Option<Self::Value> {
 		let context = context.into_context();
 
-		let int_type = context.custom_width_int_type(v.size());
+		let int_type = context
+			.custom_width_int_type(unsafe { NonZero::new_unchecked(v.size()) })
+			.ok()?;
 
 		Some(int_type.const_int(v.value(), false))
 	}

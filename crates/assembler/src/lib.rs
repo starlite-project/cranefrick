@@ -34,11 +34,8 @@ use libc::c_void;
 use tracing::info;
 
 pub(crate) use self::ext::*;
+use self::inner::{AssemblerFunctions, InnerAssembler};
 pub use self::{error::*, module::AssembledModule};
-use self::{
-	inner::{AssemblerFunctions, InnerAssembler},
-	module::MemoryManager,
-};
 
 pub struct Assembler {
 	context: Context,
@@ -158,13 +155,7 @@ impl Assembler {
 		)?;
 
 		info!("creating JIT execution engine");
-		let execution_engine = module.create_mcjit_execution_engine_with_memory_manager(
-			MemoryManager::new(),
-			OptimizationLevel::Aggressive,
-			CodeModel::JITDefault,
-			false,
-			true,
-		)?;
+		let execution_engine = module.create_jit_execution_engine(OptimizationLevel::Aggressive)?;
 
 		if let Some(getchar) = module.get_function("rust_getchar\0") {
 			info!("adding rust_getchar to execution engine");

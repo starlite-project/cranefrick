@@ -1,3 +1,5 @@
+use std::num::NonZero;
+
 use frick_spec::{POINTER_SIZE, TAPE_SIZE};
 use frick_types::{Any, BinaryOperation, Bool, Immediate, Int, Pointer, RegOrImm, Register};
 use frick_utils::Convert as _;
@@ -45,7 +47,9 @@ impl<'ctx> InnerAssembler<'ctx> {
 		output_reg: Register<Int>,
 		imm: Immediate,
 	) -> Result<(), AssemblyError> {
-		let int_type = self.into_context().custom_width_int_type(imm.size());
+		let int_type = self
+			.into_context()
+			.custom_width_int_type(unsafe { NonZero::new_unchecked(imm.size()) })?;
 
 		let value = int_type.const_int(imm.value(), false);
 
@@ -58,7 +62,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	) -> Result<(), AssemblyError> {
 		let pointer_type = self
 			.into_context()
-			.custom_width_int_type(POINTER_SIZE as u32);
+			.custom_width_int_type(unsafe { NonZero::new_unchecked(POINTER_SIZE as u32) })?;
 
 		let value = self
 			.builder
@@ -91,7 +95,8 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let cell_type = self.into_context().i8_type();
 		let tape_type = cell_type.array_type(TAPE_SIZE as u32);
-		let ptr_int_type = context.custom_width_int_type(POINTER_SIZE as u32);
+		let ptr_int_type = context
+			.custom_width_int_type(unsafe { NonZero::new_unchecked(POINTER_SIZE as u32) })?;
 
 		let zero_value = ptr_int_type.const_zero();
 		let pointer_value = self.value_at(input_reg)?;
@@ -239,12 +244,11 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		let compare_value = self.value_at(input_reg)?;
 
-		let br_instr =
-			self.builder
-				.build_conditional_branch(compare_value, loop_info.exit, loop_info.body)?;
+		self.builder
+			.build_conditional_branch(compare_value, loop_info.exit, loop_info.body)?;
 		self.builder.position_at_end(loop_info.body);
 
-		self.add_loop_metadata_to_br(br_instr)
+		Ok(())
 	}
 
 	pub(super) fn jump_to_header(&self) -> Result<(), AssemblyError> {

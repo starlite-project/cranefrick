@@ -5,9 +5,6 @@ use std::{
 	ffi::{CStr, CString},
 };
 
-use frick_llvm_ext::{
-	LLVMCreateDistinctNodeInContext, LLVMCreateSelfReferentialDistinctNodeInContext,
-};
 use frick_utils::Convert as _;
 use inkwell::{
 	AddressSpace,
@@ -22,15 +19,14 @@ use inkwell::{
 		LLVMGEPNoWrapFlags,
 		core::{
 			LLVMBuildGEPWithNoWrapFlags, LLVMCreateConstantRangeAttribute, LLVMIsNewDbgInfoFormat,
-			LLVMMetadataAsValue, LLVMSetIsNewDbgInfoFormat, LLVMValueAsMetadata,
+			LLVMSetIsNewDbgInfoFormat,
 		},
-		prelude::LLVMMetadataRef,
 		target_machine::LLVMSetTargetMachineFastISel,
 	},
 	module::Module,
 	targets::TargetMachine,
 	types::{BasicType, PointerType},
-	values::{AsValueRef, BasicMetadataValueEnum, IntValue, MetadataValue, PointerValue},
+	values::{AsValueRef, IntValue, MetadataValue, PointerValue},
 };
 
 pub trait IntoContext<'ctx> {
@@ -61,14 +57,6 @@ pub trait ContextExt<'ctx> {
 		lower_bound: u64,
 		upper_bound: u64,
 	) -> Attribute;
-
-	fn distinct_metadata_node(&self, nodes: &[BasicMetadataValueEnum<'ctx>])
-	-> MetadataValue<'ctx>;
-
-	fn self_referential_distinct_metadata_node(
-		&self,
-		nodes: &[BasicMetadataValueEnum<'ctx>],
-	) -> MetadataValue<'ctx>;
 }
 
 impl<'ctx> ContextExt<'ctx> for &'ctx Context {
@@ -97,50 +85,6 @@ impl<'ctx> ContextExt<'ctx> for &'ctx Context {
 			))
 		}
 	}
-
-	fn distinct_metadata_node(
-		&self,
-		nodes: &[BasicMetadataValueEnum<'ctx>],
-	) -> MetadataValue<'ctx> {
-		let mut values: Vec<LLVMMetadataRef> = nodes
-			.iter()
-			.map(|val| unsafe { LLVMValueAsMetadata(val.as_value_ref()) })
-			.collect();
-
-		unsafe {
-			let metadata_ptr = LLVMCreateDistinctNodeInContext(
-				self.raw(),
-				values.as_mut_ptr(),
-				values.len() as u32,
-			);
-
-			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
-
-			MetadataValue::new(value_ptr)
-		}
-	}
-
-	fn self_referential_distinct_metadata_node(
-		&self,
-		nodes: &[BasicMetadataValueEnum<'ctx>],
-	) -> MetadataValue<'ctx> {
-		let mut values: Vec<LLVMMetadataRef> = nodes
-			.iter()
-			.map(|val| unsafe { LLVMValueAsMetadata(val.as_value_ref()) })
-			.collect();
-
-		unsafe {
-			let metadata_ptr = LLVMCreateSelfReferentialDistinctNodeInContext(
-				self.raw(),
-				values.as_mut_ptr(),
-				values.len() as u32,
-			);
-
-			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
-
-			MetadataValue::new(value_ptr)
-		}
-	}
 }
 
 impl<'ctx> ContextExt<'ctx> for ContextRef<'ctx> {
@@ -167,50 +111,6 @@ impl<'ctx> ContextExt<'ctx> for ContextRef<'ctx> {
 				&raw const lower_bound,
 				&raw const upper_bound,
 			))
-		}
-	}
-
-	fn distinct_metadata_node(
-		&self,
-		nodes: &[BasicMetadataValueEnum<'ctx>],
-	) -> MetadataValue<'ctx> {
-		let mut values: Vec<LLVMMetadataRef> = nodes
-			.iter()
-			.map(|val| unsafe { LLVMValueAsMetadata(val.as_value_ref()) })
-			.collect();
-
-		unsafe {
-			let metadata_ptr = LLVMCreateDistinctNodeInContext(
-				self.raw(),
-				values.as_mut_ptr(),
-				values.len() as u32,
-			);
-
-			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
-
-			MetadataValue::new(value_ptr)
-		}
-	}
-
-	fn self_referential_distinct_metadata_node(
-		&self,
-		nodes: &[BasicMetadataValueEnum<'ctx>],
-	) -> MetadataValue<'ctx> {
-		let mut values: Vec<LLVMMetadataRef> = nodes
-			.iter()
-			.map(|val| unsafe { LLVMValueAsMetadata(val.as_value_ref()) })
-			.collect();
-
-		unsafe {
-			let metadata_ptr = LLVMCreateSelfReferentialDistinctNodeInContext(
-				self.raw(),
-				values.as_mut_ptr(),
-				values.len() as u32,
-			);
-
-			let value_ptr = LLVMMetadataAsValue(self.raw(), metadata_ptr);
-
-			MetadataValue::new(value_ptr)
 		}
 	}
 }

@@ -3,7 +3,7 @@ use frick_utils::RuntimeArray;
 
 use crate::ops::inner::Change;
 
-pub fn optimize_clear_cell(ops: &[BrainOperation]) -> Option<Change> {
+pub const fn optimize_clear_cell(ops: &[BrainOperation]) -> Option<Change> {
 	match ops {
 		[op] => match op.op() {
 			&BrainOperationType::DecrementCell(CellOffsetOptions { value, offset: 0 })

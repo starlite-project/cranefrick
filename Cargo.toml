@@ -8,7 +8,6 @@ version.workspace = true
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true, features = ["capture-spantrace"] }
-dhat = { workspace = true, optional = true }
 frick_assembler = { path = "crates/assembler" }
 frick_operations = { workspace = true, features = ["parse"] }
 frick_optimizer = { path = "crates/optimizer" }
@@ -23,13 +22,13 @@ tracing-subscriber = { workspace = true, features = [
 [target.'cfg(target_os = "windows")'.dependencies]
 mimalloc = "0.1"
 
+[build-dependencies]
+vcpkg = "0.2.15"
+
 [dev-dependencies]
 criterion.workspace = true
 rand = "0.9"
 rusty-hook = "0.11"
-
-[features]
-heap_profiling = ["dep:dhat"]
 
 [[bench]]
 harness = false
@@ -69,8 +68,8 @@ frick_serialize = { path = "crates/serialize" }
 frick_spec = { path = "crates/spec" }
 frick_types = { path = "crates/types" }
 frick_utils = { path = "crates/utils" }
-inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "5172a534c58fb9219de6c9bc3ce816caf25079b1", features = [
-    "llvm21-1"
+inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "39f778fc393ee6d31d595ae1bb1c524b9d799e57", features = [
+    "llvm22-1"
 ] }
 libc = "0.2"
 llvm-sys = { git = "https://gitlab.com/taricorp/llvm-sys.rs.git", branch = "llvm-21" }

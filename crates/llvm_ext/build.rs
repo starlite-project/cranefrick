@@ -3,7 +3,11 @@ fn main() {
 
 	cc::Build::new()
 		.cpp(true)
-		.includes(["/usr/include/llvm-c", "/usr/include/llvm"])
+		.includes(if cfg!(unix) {
+			["/usr/include/llvm-c", "/usr/include/llvm"]
+		} else {
+			["C:\\LLVM\\include\\llvm", "C:\\LLVM\\include"]
+		})
 		.files(["./include/llvm.cpp"])
 		.compile("llvm_ext");
 }
