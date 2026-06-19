@@ -68,7 +68,7 @@ impl Assembler {
 	) -> Result<AssembledModule<'ctx>, AssemblyError> {
 		info!("initializing all targets");
 
-		Target::initialize_all(&InitializationConfig::default());
+		Target::initialize_native(&InitializationConfig::default())?;
 
 		let cpu = TargetMachine::get_host_cpu_name().to_string();
 		let cpu_features = TargetMachine::get_host_cpu_features().to_string();
@@ -109,7 +109,7 @@ impl Assembler {
 		let assembler = InnerAssembler::new(
 			&self.context,
 			target_machine,
-			target_triple,
+			&target_triple,
 			&cpu,
 			&cpu_features,
 			&self.file_path,

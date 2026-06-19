@@ -3,7 +3,7 @@ build-std = ["core", "alloc", "std", "panic_abort"]
 
 [build]
 rustdocflags = ["--cfg", "docsrs", "--show-type-layout", "-Z", "unstable-options"]
-rustflags = ["-C", "target-cpu=native"]
+rustflags = ["-C", "target-cpu=native", "-C", "default-linker-libraries=off", "-C", "target-feature=+crt-static", "-L", "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\um\\x64", "-L", "D:\\vcpkg\\installed\\x64-windows\\lib"]
 
 [alias]
 mutate = "mutants --test-tool=nextest -v -V --all-features"

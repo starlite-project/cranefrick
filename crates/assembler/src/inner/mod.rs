@@ -39,7 +39,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 	pub fn new(
 		context: &'ctx Context,
 		target_machine: TargetMachine,
-		target_triple: TargetTriple,
+		target_triple: &TargetTriple,
 		cpu_name: &str,
 		cpu_features: &str,
 		file_path: &Path,
@@ -53,7 +53,7 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		module.set_new_debug_format(true);
 		module.set_data_layout(&data_layout);
-		module.set_triple(&target_triple);
+		module.set_triple(target_triple);
 
 		let basic_block = context.append_basic_block(functions.main, "entry\0");
 		builder.position_at_end(basic_block);

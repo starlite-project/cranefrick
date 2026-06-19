@@ -128,6 +128,12 @@ impl From<IoError> for AssemblyError {
 
 impl From<&str> for AssemblyError {
 	fn from(value: &str) -> Self {
-		Self::Custom(value.to_owned())
+		Self::from(value.to_owned())
+	}
+}
+
+impl From<String> for AssemblyError {
+	fn from(value: String) -> Self {
+		Self::Custom(value)
 	}
 }
