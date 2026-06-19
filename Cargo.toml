@@ -19,9 +19,6 @@ tracing-subscriber = { workspace = true, features = [
     "tracing-log"
 ] }
 
-[target.'cfg(target_os = "windows")'.dependencies]
-mimalloc = "0.1"
-
 [build-dependencies]
 vcpkg = "0.2.15"
 
