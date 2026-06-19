@@ -60,21 +60,13 @@ impl<'ctx> AssemblerPointers<'ctx> {
 
 		builder.build_call(
 			functions.lifetime.start,
-			&[
-				tape_array_size.convert::<BasicMetadataValueEnum<'ctx>>(),
-				self.tape.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
+			&[self.tape.convert::<BasicMetadataValueEnum<'ctx>>()],
 			"\0",
 		)?;
 
-		let pointer_size = i64_type.const_int(POINTER_SIZE as u64 / 8, false);
-
 		builder.build_call(
 			functions.lifetime.start,
-			&[
-				pointer_size.convert::<BasicMetadataValueEnum<'ctx>>(),
-				self.pointer.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
+			&[self.pointer.convert::<BasicMetadataValueEnum<'ctx>>()],
 			"\0",
 		)?;
 

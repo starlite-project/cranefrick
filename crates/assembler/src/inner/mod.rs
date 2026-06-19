@@ -5,7 +5,6 @@ mod utils;
 use std::{cell::RefCell, fs, path::Path};
 
 use frick_instructions::{BrainInstruction, BrainInstructionType};
-use frick_spec::TAPE_SIZE;
 use frick_utils::Convert as _;
 use inkwell::{
 	basic_block::BasicBlock,
@@ -148,31 +147,18 @@ impl<'ctx> InnerAssembler<'ctx> {
 
 		self.builder.unset_current_debug_location();
 
-		let context = self.into_context();
-
-		let i64_type = context.i64_type();
-
-		let i64_size = i64_type.const_int(8, false);
-
-		let tape_size = i64_type.const_int(TAPE_SIZE as u64, false);
-
 		tracing::debug!("ending lifetimes in exit block");
 		self.builder.build_call(
 			self.functions.lifetime.end,
-			&[
-				tape_size.convert::<BasicMetadataValueEnum<'ctx>>(),
-				self.pointers.tape.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
+			&[self.pointers.tape.convert::<BasicMetadataValueEnum<'ctx>>()],
 			"\0",
 		)?;
 		self.builder.build_call(
 			self.functions.lifetime.end,
-			&[
-				i64_size.convert::<BasicMetadataValueEnum<'ctx>>(),
-				self.pointers
-					.pointer
-					.convert::<BasicMetadataValueEnum<'ctx>>(),
-			],
+			&[self
+				.pointers
+				.pointer
+				.convert::<BasicMetadataValueEnum<'ctx>>()],
 			"\0",
 		)?;
 
